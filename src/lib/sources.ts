@@ -1,42 +1,47 @@
 import type { SourceType } from "@/types/domain";
 
+/**
+ * Nível de evidência de cada fonte. É apenas informativo:
+ * o produto não certifica nem garante nenhum preço.
+ */
+export type EvidenceLevel = "comprovado" | "verificado" | "informado" | "anunciado";
+
 export interface SourceDescriptor {
   label: string;
   description: string;
-  /** Nível de evidência apenas informativo — não é uma certificação. */
-  tone: "documento" | "estabelecimento" | "pesquisa" | "comunidade";
+  level: EvidenceLevel;
 }
 
 export const SOURCE_LABELS: Record<SourceType, SourceDescriptor> = {
   receipt: {
-    label: "Confirmado por nota fiscal",
+    label: "Comprovado por nota fiscal",
     description: "O preço foi conferido em um documento de compra.",
-    tone: "documento",
-  },
-  store_list: {
-    label: "Enviado pelo supermercado",
-    description: "O preço foi informado pelo próprio estabelecimento.",
-    tone: "estabelecimento",
+    level: "comprovado",
   },
   weekly_audit: {
-    label: "Pesquisa semanal",
+    label: "Verificado em pesquisa",
     description: "O preço foi anotado durante uma visita de pesquisa.",
-    tone: "pesquisa",
+    level: "verificado",
   },
   shelf_photo: {
     label: "Foto da etiqueta",
     description: "O preço veio de uma foto da etiqueta na loja.",
-    tone: "documento",
+    level: "verificado",
+  },
+  store_list: {
+    label: "Informado pelo mercado",
+    description: "O preço foi informado pelo próprio estabelecimento.",
+    level: "informado",
   },
   community: {
     label: "Informado pela comunidade",
     description: "O preço foi enviado por um morador e conferido antes de publicar.",
-    tone: "comunidade",
+    level: "informado",
   },
   social_media: {
     label: "Oferta anunciada",
     description: "O preço veio de um anúncio do mercado em rede social ou WhatsApp.",
-    tone: "estabelecimento",
+    level: "anunciado",
   },
 };
 

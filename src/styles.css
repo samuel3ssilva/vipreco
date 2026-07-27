@@ -220,6 +220,10 @@
   background-color: var(--color-card);
   color: var(--color-foreground);
   font-size: 1rem;
+  &::placeholder {
+    color: var(--color-muted-foreground);
+    opacity: 1;
+  }
   &:focus {
     outline: none;
     border-color: var(--color-ring);

@@ -38,7 +38,7 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite", "Óleo", "Açúcar"];
+const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
 
 function HomePage() {
   const opportunities = useQuery({

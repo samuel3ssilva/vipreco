@@ -126,8 +126,8 @@ Critério de conclusão: `bun run lint && bun run test && bun run build` com sa�
 ### Onda 1 — Lançamento em Artemis (1–2 semanas)
 
 - [ ] A1.1 Cadastrar os 4–5 mercados reais (nome, bairro, endereço, maps_url).
-- [ ] A1.2 Definir a cesta de ~40 SKUs prioritários (cesta básica + itens de `product_watch_requests` do teste) e cadastrar com GTIN real.
-- [ ] A1.3 Primeira coleta completa de preços (`source_type='weekly_audit'`); rotina semanal documentada (dia fixo, rota, responsável).
+- [ ] A1.2 Definir a cesta de ~40 SKUs prioritários (cesta básica + itens de `product_watch_requests` do teste) e cadastrar com GTIN real. Rascunho das 40 categorias/produtos pronto (`cesta-artemis-40-skus.csv`); falta preencher marca, variante e GTIN em campo e cadastrar no banco.
+- [ ] A1.3 Primeira coleta completa de preços (`source_type='weekly_audit'`); rotina semanal documentada (dia fixo: sábado; responsável: Samuel; rota entre os mercados definida após A1.1).
 - [ ] A1.4 Desativar registros `is_demo` e remover o aviso de ambiente de teste.
 - [x] A1.5 Meta tags Open Graph por produto (nome, menor preço, mercado) para preview bonito no WhatsApp.
 - [x] A1.6 Honeypot no formulário de sugestão + limite suave de envios por sessão (client-side é suficiente no piloto).
@@ -204,7 +204,9 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
 
 ## 8. Decisões pendentes
 
-1. Ferramenta de analytics (Cloudflare Web Analytics vs. Umami) — decidir na Onda 1.
+1. ~~Ferramenta de analytics (Cloudflare Web Analytics vs. Umami) — decidir na Onda 1.~~
+   Decidido: **Cloudflare Web Analytics** (zero config, o deploy já é Cloudflare/Nitro). Falta
+   ativar no painel Cloudflare — nenhuma alteração de código necessária.
 2. Preço do pacote Mercado Parceiro — validar na primeira conversa de venda.
 3. Domínio próprio e nome público final (Preço Artemis serve para o piloto; a expansão pedirá marca que funcione em Piracicaba inteira).
 4. Momento de reavaliar notificações/lista de compras como mecanismo de retenção — somente após o gate.

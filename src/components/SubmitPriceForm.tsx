@@ -1,10 +1,15 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { getMarkets, submitPriceUpdate } from "@/services/catalog";
 import { formatProductName } from "@/lib/format";
+import {
+  hasReachedSubmissionLimit,
+  MAX_SUBMISSIONS_PER_SESSION,
+  recordSubmission,
+} from "@/lib/submission-guard";
 import type { Product, SubmissionSourceType } from "@/types/domain";
 
 const SOURCE_OPTIONS: Array<{ value: SubmissionSourceType; label: string }> = [
@@ -51,8 +56,15 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
     price: `${titleId}-preco`,
     source: `${titleId}-fonte`,
     comment: `${titleId}-comentario`,
+    website: `${titleId}-website`,
   };
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [limitReached, setLimitReached] = useState(false);
+  const honeypotRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLimitReached(hasReachedSubmissionLimit());
+  }, []);
 
   const marketsQuery = useQuery({
     queryKey: ["markets"],
@@ -81,6 +93,18 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
   const productLabel = useMemo(() => formatProductName(product), [product]);
 
   async function onSubmit(values: FormValues) {
+    if (honeypotRef.current?.value) {
+      // Provável bot: finge sucesso sem gravar nada.
+      reset({ marketId: defaultMarketId ?? "", price: "", comment: "" });
+      setStatus("sent");
+      return;
+    }
+
+    if (hasReachedSubmissionLimit()) {
+      setLimitReached(true);
+      return;
+    }
+
     setStatus("sending");
     try {
       await submitPriceUpdate({
@@ -90,6 +114,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
         sourceType: values.sourceType,
         comment: values.comment ?? null,
       });
+      recordSubmission();
       reset({ marketId: defaultMarketId ?? "", price: "", comment: "" });
       setStatus("sent");
     } catch {
@@ -130,8 +155,34 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
               </button>
             </div>
           </div>
+        ) : limitReached ? (
+          <div className="mt-4 space-y-4" role="alert">
+            <p className="card-base bg-surface">
+              Você já enviou {MAX_SUBMISSIONS_PER_SESSION} sugestões nesta sessão. Aguarde um pouco
+              e tente novamente mais tarde.
+            </p>
+            <button type="button" className="btn-base btn-primary" onClick={onClose}>
+              Fechar
+            </button>
+          </div>
         ) : (
           <form className="mt-4 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div
+              aria-hidden="true"
+              className="absolute h-px w-px overflow-hidden"
+              style={{ clip: "rect(0 0 0 0)", clipPath: "inset(50%)" }}
+            >
+              <label htmlFor={ids.website}>Deixe este campo em branco</label>
+              <input
+                id={ids.website}
+                ref={honeypotRef}
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+
             <div>
               <label htmlFor={ids.market} className="mb-1 block text-sm font-semibold">
                 Supermercado

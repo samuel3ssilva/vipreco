@@ -55,6 +55,7 @@ export interface Price {
   is_featured: boolean;
   is_active: boolean;
   is_demo: boolean;
+  created_at: string;
 }
 
 export interface PriceWithMarket extends Price {

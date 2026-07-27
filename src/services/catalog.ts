@@ -14,7 +14,7 @@ import type {
 const PRODUCT_FIELDS = "id,name,brand,variant,size_text,gtin,category,is_active,is_demo";
 const MARKET_FIELDS = "id,name,neighborhood,address,maps_url,is_active,is_demo";
 const PRICE_FIELDS =
-  "id,product_id,market_id,price,source_type,observed_at,valid_until,special_condition,source_reference,is_featured,is_active,is_demo";
+  "id,product_id,market_id,price,source_type,observed_at,valid_until,special_condition,source_reference,is_featured,is_active,is_demo,created_at";
 
 class ServiceError extends Error {
   constructor(message: string) {

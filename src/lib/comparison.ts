@@ -12,6 +12,18 @@ export function isValidPrice(
 }
 
 /**
+ * Compara dois preços por recência: `observed_at` → `created_at` → `id`.
+ * Retorna positivo quando `a` é mais recente que `b`.
+ */
+function compareRecency(a: Pick<Price, "observed_at" | "created_at" | "id">, b: typeof a): number {
+  const observedDiff = new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime();
+  if (observedDiff !== 0) return observedDiff;
+  const createdDiff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  if (createdDiff !== 0) return createdDiff;
+  return a.id.localeCompare(b.id);
+}
+
+/**
  * Mantém apenas o preço válido mais recente de cada mercado
  * e ordena do menor para o maior preço.
  */
@@ -25,7 +37,7 @@ export function latestValidPricePerMarket(
     if (!isValidPrice(price, now)) continue;
     if (!price.market?.is_active) continue;
     const current = byMarket.get(price.market_id);
-    if (!current || new Date(price.observed_at) > new Date(current.observed_at)) {
+    if (!current || compareRecency(price, current) > 0) {
       byMarket.set(price.market_id, price);
     }
   }

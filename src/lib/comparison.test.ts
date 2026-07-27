@@ -35,6 +35,7 @@ function price(
     is_featured: false,
     is_active: true,
     is_demo: true,
+    created_at: "2026-07-25T12:00:00Z",
     market: market(overrides.market_id),
     ...overrides,
   };
@@ -107,6 +108,54 @@ describe("latestValidPricePerMarket", () => {
     );
 
     expect(result.map((entry) => entry.id)).toEqual(["c"]);
+  });
+
+  it("desempata por created_at quando observed_at é igual", () => {
+    const result = latestValidPricePerMarket(
+      [
+        price({
+          id: "older",
+          market_id: "m1",
+          price: 10,
+          observed_at: "2026-07-25T00:00:00Z",
+          created_at: "2026-07-25T08:00:00Z",
+        }),
+        price({
+          id: "newer",
+          market_id: "m1",
+          price: 12,
+          observed_at: "2026-07-25T00:00:00Z",
+          created_at: "2026-07-25T09:00:00Z",
+        }),
+      ],
+      NOW,
+    );
+
+    expect(result.map((entry) => entry.id)).toEqual(["newer"]);
+  });
+
+  it("desempata por id quando observed_at e created_at são iguais", () => {
+    const result = latestValidPricePerMarket(
+      [
+        price({
+          id: "a-first",
+          market_id: "m1",
+          price: 10,
+          observed_at: "2026-07-25T00:00:00Z",
+          created_at: "2026-07-25T08:00:00Z",
+        }),
+        price({
+          id: "b-second",
+          market_id: "m1",
+          price: 12,
+          observed_at: "2026-07-25T00:00:00Z",
+          created_at: "2026-07-25T08:00:00Z",
+        }),
+      ],
+      NOW,
+    );
+
+    expect(result.map((entry) => entry.id)).toEqual(["b-second"]);
   });
 });
 

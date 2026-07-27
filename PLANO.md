@@ -119,7 +119,7 @@ higiene, dados reais e distribuição. A instrumentação do piloto já existe n
 - [x] A0.4 Desempate determinístico em `latestValidPricePerMarket` (`observed_at` → `created_at` → `id`) + teste.
 - [x] A0.5 Migration: coluna `markets.city` NOT NULL DEFAULT 'Artemis' + índice.
 - [x] A0.6 Migration: função `approve_submission(submission_id)` (SECURITY DEFINER, executável só por `service_role` via Studio) que cria o `price` e marca a submissão como `approved`.
-- [ ] A0.7 Substituir o CLAUDE.md antigo pelo novo (stack real) e commitar este PLANO.md.
+- [x] A0.7 Substituir o CLAUDE.md antigo pelo novo (stack real) e commitar este PLANO.md.
 
 Critério de conclusão: `bun run lint && bun run test && bun run build` com saída zero.
 

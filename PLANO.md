@@ -210,3 +210,7 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
 2. Preço do pacote Mercado Parceiro — validar na primeira conversa de venda.
 3. Domínio próprio e nome público final (Preço Artemis serve para o piloto; a expansão pedirá marca que funcione em Piracicaba inteira).
 4. Momento de reavaliar notificações/lista de compras como mecanismo de retenção — somente após o gate.
+5. ~~Backend no Lovable Cloud (sem SQL Editor manual, só IA/crédito) — travava aplicar migrations.~~
+   Resolvido: migrado para projeto Supabase próprio (schema aplicado e verificado). Decisão tomada
+   de sair do Lovable por completo (deploy direto na Cloudflare + desconectar sync do Git) —
+   execução pendente, não é mais bloqueio para nenhuma tarefa.

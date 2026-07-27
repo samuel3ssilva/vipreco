@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing } from "lucide-react";
+import { BellRing, Flag } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PriceCard } from "@/components/PriceCard";
+import { PriceSummary } from "@/components/PriceSummary";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
 import { SubmitPriceForm } from "@/components/SubmitPriceForm";
 import { DecisionFeedback } from "@/components/DecisionFeedback";
+import { UsualMarketPicker } from "@/components/UsualMarketPicker";
+import { SectionHeader } from "@/components/PageContainer";
 import { getProductComparison, registerWatchRequest } from "@/services/catalog";
 import { compareWithUsualMarket } from "@/lib/comparison";
-import { formatDate, formatPrice, formatPriceDifference, formatProductName, formatRelativeDay } from "@/lib/format";
+import { formatDate, formatRelativeDay } from "@/lib/format";
 import { getUsualMarketId, hasWatched, markWatched } from "@/lib/local-preferences";
 
 export const Route = createFileRoute("/produto/$productId")({
@@ -27,6 +30,8 @@ export const Route = createFileRoute("/produto/$productId")({
         property: "og:description",
         content: "Preço válido mais recente por mercado, fonte da informação e data da observação.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ProductPage,
@@ -117,114 +122,93 @@ function ProductPage() {
 
   const { product, entries, lastUpdatedAt } = data;
   const isDemo = product.is_demo || entries.some((entry) => entry.is_demo);
+  const lowest = entries[0]?.price ?? 0;
 
   return (
     <AppShell>
       <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl">{product.name}</h1>
-          <p className="mt-1 text-muted-foreground">
-            Marca: {product.brand ?? "não informada"} · Variante: {product.variant ?? "única"} · Tamanho:{" "}
-            {product.size_text ?? "não informado"}
+        <header className="space-y-1">
+          <p className="eyebrow">{product.category ?? "Produto"}</p>
+          <h1 className="text-xl font-bold sm:text-2xl">{product.name}</h1>
+          <p className="meta-text">
+            {product.brand ?? "Marca não informada"} · {product.variant ?? "Variante única"} ·{" "}
+            {product.size_text ?? "Tamanho não informado"}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="meta-text">
             {lastUpdatedAt
-              ? `Preço mais recente observado em ${formatDate(lastUpdatedAt)} (${formatRelativeDay(lastUpdatedAt)}).`
+              ? `${entries.length} ${entries.length === 1 ? "mercado" : "mercados"} · Preço mais recente em ${formatDate(lastUpdatedAt)} (${formatRelativeDay(lastUpdatedAt)})`
               : "Ainda não há preços válidos cadastrados para este produto."}
           </p>
-        </div>
-
-        <PriceDisclaimer showDemoNotice={isDemo} />
+        </header>
 
         {entries.length === 0 ? (
-          <StateMessage
-            variant="empty"
-            title="Nenhum preço válido cadastrado."
-            description="Você pode avisar quando encontrar este produto ou pedir para acompanharmos."
-          />
+          <>
+            <PriceDisclaimer showDemoNotice={isDemo} />
+            <StateMessage
+              variant="empty"
+              title="Nenhum preço válido cadastrado."
+              description="Você pode informar um preço que viu na loja ou pedir para acompanharmos este produto."
+            />
+          </>
         ) : (
           <>
-            <section aria-labelledby="resumo-titulo" className="card-base bg-surface">
-              <h2 id="resumo-titulo" className="text-lg">
-                Resumo da comparação
-              </h2>
-              <p className="mt-1">
-                Menor preço válido: <strong>{formatPrice(entries[0].price)}</strong> em{" "}
-                <strong>{entries[0].market.name}</strong>.
-              </p>
-              {comparison.kind === "no-usual-market" ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Escolha seu mercado habitual na página inicial para ver a diferença comparada a ele.
-                </p>
-              ) : comparison.kind === "no-price" ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Ainda não temos preço válido deste produto no seu mercado habitual.
-                </p>
-              ) : comparison.kind === "cheapest" ? (
-                <p className="mt-2 text-sm">
-                  Seu mercado habitual já está com o menor preço cadastrado. Não precisa mudar de loja.
-                </p>
-              ) : (
-                <p className="mt-2 text-sm">
-                  Em {comparison.best.market.name} está{" "}
-                  <strong>{formatPriceDifference(comparison.difference)}</strong> mais barato que no seu
-                  mercado habitual ({comparison.usual.market.name}). Avalie se a diferença compensa o
-                  deslocamento.
-                </p>
-              )}
-            </section>
+            <PriceSummary best={entries[0]} comparison={comparison} />
 
-            <section aria-labelledby="precos-titulo">
-              <h2 id="precos-titulo" className="text-xl">
-                Preços por mercado
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Mostramos apenas o preço válido mais recente de cada mercado, do menor para o maior.
-              </p>
-              <ul className="mt-3 space-y-3">
+            <UsualMarketPicker compact onChange={setUsual} />
+
+            <section aria-labelledby="precos-titulo" className="space-y-2">
+              <SectionHeader
+                id="precos-titulo"
+                title="Preços por mercado"
+                description="Preço válido mais recente de cada mercado, do menor para o maior."
+                display={false}
+              />
+              <ul className="space-y-2">
                 {entries.map((entry, index) => (
                   <PriceCard
                     key={entry.id}
                     entry={entry}
                     isLowest={index === 0}
                     isUsualMarket={entry.market_id === usualMarketId}
+                    differenceToLowest={Number((entry.price - lowest).toFixed(2))}
                     onReport={() => setShowForm(true)}
                   />
                 ))}
               </ul>
             </section>
+
+            <PriceDisclaimer showDemoNotice={isDemo} />
           </>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-base btn-primary" onClick={() => setShowForm(true)}>
-            Informar preço deste produto
-          </button>
-          <button
-            type="button"
-            className="btn-base btn-secondary"
-            disabled={watched || watchStatus === "sending"}
-            onClick={() => void watch()}
-          >
-            <BellRing aria-hidden="true" className="size-5" />
-            {watched ? "Interesse registrado" : "Quero acompanhar este produto"}
-          </button>
-        </div>
-        {watchStatus === "error" ? (
-          <p role="alert" className="text-sm font-semibold text-destructive">
-            Não conseguimos registrar seu interesse agora. Tente novamente.
+        <section aria-label="Ajude a manter os preços atualizados" className="card-compact bg-surface">
+          <h2 className="text-base font-bold">Viu um preço diferente?</h2>
+          <p className="meta-text mt-0.5">
+            Sua informação é conferida por uma pessoa antes de aparecer para os outros moradores.
           </p>
-        ) : null}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="btn-base btn-primary btn-sm" onClick={() => setShowForm(true)}>
+              <Flag aria-hidden="true" className="size-4" />
+              Informar preço
+            </button>
+            <button
+              type="button"
+              className="btn-base btn-secondary btn-sm"
+              disabled={watched || watchStatus === "sending"}
+              onClick={() => void watch()}
+            >
+              <BellRing aria-hidden="true" className="size-4" />
+              {watched ? "Interesse registrado" : "Quero acompanhar"}
+            </button>
+          </div>
+          {watchStatus === "error" ? (
+            <p role="alert" className="mt-2 text-sm font-semibold text-destructive">
+              Não conseguimos registrar seu interesse agora. Tente novamente.
+            </p>
+          ) : null}
+        </section>
 
         <DecisionFeedback productId={product.id} />
-
-        <p className="text-sm text-muted-foreground">
-          Produto selecionado: {formatProductName(product)}.{" "}
-          <Link to="/como-funciona" className="underline">
-            Entenda de onde vêm os preços
-          </Link>
-          .
-        </p>
       </div>
 
       {showForm ? (

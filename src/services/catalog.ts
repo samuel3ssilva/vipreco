@@ -146,3 +146,49 @@ export async function submitDecisionFeedback(input: DecisionFeedbackInput): Prom
   });
   if (error) fail("Não foi possível registrar a sua resposta agora.", error);
 }
+
+export interface ProductPriceStats {
+  /** Menor preço válido entre os mercados cadastrados. */
+  lowest: number | null;
+  /** Quantidade de mercados com preço válido. */
+  marketCount: number;
+  lastObservedAt: string | null;
+}
+
+/**
+ * Estatísticas de preço para vários produtos, usando as mesmas regras da comparação:
+ * apenas o preço válido mais recente de cada mercado.
+ */
+export async function getProductsPriceStats(
+  productIds: string[],
+): Promise<Record<string, ProductPriceStats>> {
+  const ids = [...new Set(productIds)].filter(Boolean);
+  if (ids.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("prices")
+    .select(`${PRICE_FIELDS},market:markets(${MARKET_FIELDS})`)
+    .in("product_id", ids)
+    .order("observed_at", { ascending: false });
+
+  if (error) fail("Não foi possível carregar os preços agora.", error);
+
+  const byProduct = new Map<string, PriceWithMarket[]>();
+  for (const row of (data ?? []) as unknown as PriceWithMarket[]) {
+    if (!row.market) continue;
+    const list = byProduct.get(row.product_id) ?? [];
+    list.push(row);
+    byProduct.set(row.product_id, list);
+  }
+
+  const result: Record<string, ProductPriceStats> = {};
+  for (const id of ids) {
+    const entries = latestValidPricePerMarket(byProduct.get(id) ?? []);
+    result[id] = {
+      lowest: entries.length > 0 ? entries[0].price : null,
+      marketCount: entries.length,
+      lastObservedAt: lastUpdatedAt(entries),
+    };
+  }
+  return result;
+}

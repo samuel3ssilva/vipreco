@@ -129,7 +129,7 @@ Critério de conclusão: `bun run lint && bun run test && bun run build` com sa�
 - [ ] A1.2 Definir a cesta de ~40 SKUs prioritários (cesta básica + itens de `product_watch_requests` do teste) e cadastrar com GTIN real.
 - [ ] A1.3 Primeira coleta completa de preços (`source_type='weekly_audit'`); rotina semanal documentada (dia fixo, rota, responsável).
 - [ ] A1.4 Desativar registros `is_demo` e remover o aviso de ambiente de teste.
-- [ ] A1.5 Meta tags Open Graph por produto (nome, menor preço, mercado) para preview bonito no WhatsApp.
+- [x] A1.5 Meta tags Open Graph por produto (nome, menor preço, mercado) para preview bonito no WhatsApp.
 - [ ] A1.6 Honeypot no formulário de sugestão + limite suave de envios por sessão (client-side é suficiente no piloto).
 - [ ] A1.7 Divulgação nos grupos de WhatsApp do bairro via família; registrar em qual grupo/data cada link foi postado.
 

@@ -13,27 +13,35 @@ import { UsualMarketPicker } from "@/components/UsualMarketPicker";
 import { SectionHeader } from "@/components/PageContainer";
 import { getProductComparison, registerWatchRequest } from "@/services/catalog";
 import { compareWithUsualMarket } from "@/lib/comparison";
-import { formatDate, formatRelativeDay } from "@/lib/format";
+import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { getUsualMarketId, hasWatched, markWatched } from "@/lib/local-preferences";
 
+const DEFAULT_TITLE = "Comparar preços do produto — Preço Artemis";
+const DEFAULT_DESCRIPTION =
+  "Compare o preço válido mais recente de cada mercado para o mesmo produto e veja a diferença em relação ao seu mercado habitual.";
+
 export const Route = createFileRoute("/produto/$productId")({
-  head: () => ({
-    meta: [
-      { title: "Comparar preços do produto — Preço Artemis" },
-      {
-        name: "description",
-        content:
-          "Compare o preço válido mais recente de cada mercado para o mesmo produto e veja a diferença em relação ao seu mercado habitual.",
-      },
-      { property: "og:title", content: "Comparar preços do produto — Preço Artemis" },
-      {
-        property: "og:description",
-        content: "Preço válido mais recente por mercado, fonte da informação e data da observação.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
+  loader: ({ params }) => getProductComparison(params.productId),
+  head: ({ loaderData }) => {
+    const lowest = loaderData?.entries[0];
+    const title = loaderData
+      ? `${formatProductName(loaderData.product)} — Preço Artemis`
+      : DEFAULT_TITLE;
+    const description = lowest
+      ? `A partir de ${formatPrice(lowest.price)} no ${lowest.market.name}. Preço válido mais recente por mercado, fonte da informação e data da observação.`
+      : DEFAULT_DESCRIPTION;
+
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary" },
+      ],
+    };
+  },
   component: ProductPage,
   errorComponent: () => (
     <AppShell>
@@ -54,6 +62,7 @@ export const Route = createFileRoute("/produto/$productId")({
 
 function ProductPage() {
   const { productId } = Route.useParams();
+  const loaderData = Route.useLoaderData();
   const [usualMarketId, setUsual] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [watched, setWatched] = useState(false);
@@ -68,6 +77,7 @@ function ProductPage() {
     queryKey: ["product-comparison", productId],
     queryFn: () => getProductComparison(productId),
     staleTime: 30_000,
+    initialData: loaderData ?? undefined,
   });
 
   const comparison = useMemo(

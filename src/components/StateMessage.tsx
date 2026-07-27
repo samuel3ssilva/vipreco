@@ -6,28 +6,47 @@ interface StateMessageProps {
   title: string;
   description?: ReactNode;
   onRetry?: () => void;
+  className?: string;
 }
 
-export function StateMessage({ variant, title, description, onRetry }: StateMessageProps) {
+export function StateMessage({ variant, title, description, onRetry, className = "" }: StateMessageProps) {
   const Icon = variant === "loading" ? Loader2 : variant === "error" ? AlertCircle : Inbox;
 
   return (
     <div
-      className="card-base flex flex-col items-center gap-2 text-center"
+      className={`card-base flex flex-col items-center gap-1.5 py-6 text-center ${className}`}
       role={variant === "error" ? "alert" : "status"}
       aria-live="polite"
     >
       <Icon
         aria-hidden="true"
-        className={`size-7 text-muted-foreground ${variant === "loading" ? "animate-spin" : ""}`}
+        className={`size-6 ${variant === "error" ? "text-destructive" : "text-muted-foreground"} ${
+          variant === "loading" ? "animate-spin" : ""
+        }`}
       />
       <p className="font-semibold">{title}</p>
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      {description ? <p className="meta-text max-w-md">{description}</p> : null}
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="btn-base btn-secondary mt-2">
+        <button type="button" onClick={onRetry} className="btn-base btn-secondary btn-sm mt-2">
           Tentar novamente
         </button>
       ) : null}
     </div>
   );
+}
+
+export function LoadingState({ title = "Carregando…", ...rest }: Omit<StateMessageProps, "variant" | "title"> & { title?: string }) {
+  return <StateMessage variant="loading" title={title} {...rest} />;
+}
+
+export function EmptyState({ title, ...rest }: Omit<StateMessageProps, "variant">) {
+  return <StateMessage variant="empty" title={title} {...rest} />;
+}
+
+export function ErrorState({
+  title = "Não conseguimos carregar estas informações.",
+  description = "Verifique sua conexão e tente novamente.",
+  ...rest
+}: Omit<StateMessageProps, "variant" | "title"> & { title?: string }) {
+  return <StateMessage variant="error" title={title} description={description} {...rest} />;
 }

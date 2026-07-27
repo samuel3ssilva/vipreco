@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, FileCheck2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProductSearch } from "@/components/ProductSearch";
 import { UsualMarketPicker } from "@/components/UsualMarketPicker";
@@ -96,7 +96,7 @@ function HomePage() {
           <SectionHeader
             id="oportunidades-titulo"
             title="Oportunidades da semana"
-            description="Preços baixos conferidos recentemente. Confira a data e a condição antes de ir à loja."
+            description="Preços baixos conferidos recentemente nos mercados de Artemis."
           />
           {opportunities.isPending ? (
             <StateMessage variant="loading" title="Carregando oportunidades…" />
@@ -110,8 +110,8 @@ function HomePage() {
           ) : validOpportunities.length === 0 ? (
             <StateMessage
               variant="empty"
-              title="Nenhuma oportunidade cadastrada no momento."
-              description="Use a busca para comparar um produto específico."
+              title="Estamos começando a mapear preços em Artemis."
+              description="As primeiras oportunidades aparecem aqui assim que forem conferidas. Por enquanto, use a busca para comparar um produto específico."
             />
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -206,7 +206,11 @@ function HomePage() {
               })}
             </ul>
           ) : (
-            <StateMessage variant="empty" title="Ainda não há produtos com preços recentes." />
+            <StateMessage
+              variant="empty"
+              title="Ainda estamos cadastrando os primeiros produtos."
+              description="Volte em breve ou use a busca para ver o que já está disponível."
+            />
           )}
         </section>
 
@@ -214,7 +218,7 @@ function HomePage() {
 
         <section className="card-compact bg-surface">
           <h2 className="flex items-center gap-1.5 text-base font-bold">
-            <Sparkles aria-hidden="true" className="size-4 text-primary" />
+            <FileCheck2 aria-hidden="true" className="size-4 text-primary" />
             De onde vêm esses preços?
           </h2>
           <p className="meta-text mt-0.5">

@@ -2,7 +2,7 @@ import { AlertBanner } from "@/components/AlertBanner";
 
 export function PriceDisclaimer({ showDemoNotice }: { showDemoNotice?: boolean }) {
   return (
-    <AlertBanner tone="atencao">
+    <AlertBanner tone="neutro">
       <p>
         <strong>Os preços podem mudar.</strong> Confira a data, a fonte e as condições antes de
         comprar.

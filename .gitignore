@@ -25,6 +25,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local design-review tool state (Impeccable)
+.impeccable/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

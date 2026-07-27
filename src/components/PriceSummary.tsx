@@ -52,10 +52,11 @@ export function PriceSummary({ best, comparison }: PriceSummaryProps) {
 
       <div className="mt-3 border-t border-border pt-3 text-sm">
         {comparison.kind === "no-usual-market" ? (
-          <p className="text-muted-foreground">
-            <Store aria-hidden="true" className="mr-1 inline size-4 align--2" />
+          <p className="flex items-start gap-1.5 text-muted-foreground">
+            <Store aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             Escolha seu mercado habitual abaixo para ver quanto você economiza.
           </p>
+
         ) : comparison.kind === "no-price" ? (
           <p className="text-muted-foreground">
             Ainda não temos preço válido deste produto no seu mercado habitual.

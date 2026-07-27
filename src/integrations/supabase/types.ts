@@ -14,13 +14,268 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      decision_feedback: {
+        Row: {
+          created_at: string
+          decision_type: string | null
+          helpfulness: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision_type?: string | null
+          helpfulness: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          decision_type?: string | null
+          helpfulness?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_feedback_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      markets: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_demo: boolean
+          maps_url: string | null
+          name: string
+          neighborhood: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_demo?: boolean
+          maps_url?: string | null
+          name: string
+          neighborhood?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_demo?: boolean
+          maps_url?: string | null
+          name?: string
+          neighborhood?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      price_submissions: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          market_id: string
+          product_id: string
+          reviewed_at: string | null
+          source_type: string
+          status: string
+          submitted_price: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          market_id: string
+          product_id: string
+          reviewed_at?: string | null
+          source_type: string
+          status?: string
+          submitted_price: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          market_id?: string
+          product_id?: string
+          reviewed_at?: string | null
+          source_type?: string
+          status?: string
+          submitted_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_submissions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_submissions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prices: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_demo: boolean
+          is_featured: boolean
+          market_id: string
+          observed_at: string
+          price: number
+          product_id: string
+          source_reference: string | null
+          source_type: string
+          special_condition: string | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_demo?: boolean
+          is_featured?: boolean
+          market_id: string
+          observed_at?: string
+          price: number
+          product_id: string
+          source_reference?: string | null
+          source_type: string
+          special_condition?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_demo?: boolean
+          is_featured?: boolean
+          market_id?: string
+          observed_at?: string
+          price?: number
+          product_id?: string
+          source_reference?: string | null
+          source_type?: string
+          special_condition?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prices_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_watch_requests: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_watch_requests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string | null
+          category: string | null
+          created_at: string
+          gtin: string | null
+          id: string
+          is_active: boolean
+          is_demo: boolean
+          name: string
+          search_text: string
+          size_text: string | null
+          updated_at: string
+          variant: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          gtin?: string | null
+          id?: string
+          is_active?: boolean
+          is_demo?: boolean
+          name: string
+          search_text?: string
+          size_text?: string | null
+          updated_at?: string
+          variant?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          gtin?: string | null
+          id?: string
+          is_active?: boolean
+          is_demo?: boolean
+          name?: string
+          search_text?: string
+          size_text?: string | null
+          updated_at?: string
+          variant?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      pa_normalize_text: { Args: { input: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

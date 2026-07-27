@@ -24,7 +24,8 @@ const schema = z.object({
       return Number.isFinite(parsed) && parsed > 0;
     }, { message: "O preço deve ser maior que zero." }),
   sourceType: z.enum(["receipt", "shelf_photo", "community", "social_media"], {
-    message: "Escolha a fonte da informação.",
+    required_error: "Escolha a fonte da informação.",
+    invalid_type_error: "Escolha a fonte da informação.",
   }),
   comment: z.string().max(280, { message: "O comentário deve ter no máximo 280 caracteres." }).optional(),
 });

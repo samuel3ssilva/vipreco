@@ -95,7 +95,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
         aria-labelledby={titleId}
         className="max-h-[92vh] w-full max-w-lg overflow-auto rounded-t-2xl border border-border bg-card p-4 sm:rounded-2xl"
       >
-        <h2 id={titleId} className="text-xl">
+        <h2 id={titleId} className="text-lg font-bold">
           Informar atualização de preço
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">

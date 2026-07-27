@@ -1,4 +1,4 @@
-import { SOURCE_LABELS } from "@/lib/sources";
+import { SOURCE_LABELS, type EvidenceLevel } from "@/lib/sources";
 import type { SourceType } from "@/types/domain";
 import { FileCheck2, Store, ClipboardList, Camera, Users, Megaphone } from "lucide-react";
 
@@ -11,24 +11,30 @@ const ICONS: Record<SourceType, typeof FileCheck2> = {
   social_media: Megaphone,
 };
 
-const TONE_CLASS: Record<string, string> = {
-  documento: "bg-secondary text-secondary-foreground border-primary/40",
-  estabelecimento: "bg-surface text-surface-foreground border-border",
-  pesquisa: "bg-muted text-muted-foreground border-border",
-  comunidade: "bg-card text-muted-foreground border-dashed border-border",
+/** Pesos visuais diferentes por nível de evidência (nunca só cor: o texto muda também). */
+const LEVEL_CLASS: Record<EvidenceLevel, string> = {
+  comprovado: "border-success/45 bg-success/12 text-success font-semibold",
+  verificado: "border-primary/35 bg-primary/8 text-primary font-semibold",
+  informado: "border-border bg-muted text-muted-foreground font-medium",
+  anunciado: "border-dashed border-border bg-transparent text-muted-foreground font-medium",
 };
 
-export function SourceBadge({ source }: { source: SourceType }) {
+interface SourceBadgeProps {
+  source: SourceType;
+  className?: string;
+}
+
+export function SourceBadge({ source, className = "" }: SourceBadgeProps) {
   const descriptor = SOURCE_LABELS[source];
   const Icon = ICONS[source];
   if (!descriptor) return null;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${TONE_CLASS[descriptor.tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${LEVEL_CLASS[descriptor.level]} ${className}`}
       title={descriptor.description}
     >
-      <Icon aria-hidden="true" className="size-4" />
+      <Icon aria-hidden="true" className="size-3.5 shrink-0" />
       <span>{descriptor.label}</span>
       <span className="sr-only">. {descriptor.description}</span>
     </span>

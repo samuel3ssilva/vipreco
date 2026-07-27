@@ -50,7 +50,7 @@ export function DecisionFeedback({ productId }: { productId: string }) {
 
   return (
     <section className="card-base" aria-labelledby="feedback-titulo">
-      <h2 id="feedback-titulo" className="text-lg">
+      <h2 id="feedback-titulo" className="text-base font-bold">
         Essa informação ajudou sua decisão de compra?
       </h2>
 

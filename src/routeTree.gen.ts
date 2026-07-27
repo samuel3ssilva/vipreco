@@ -9,8 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ComoFuncionaRouteImport } from './routes/como-funciona'
+import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ComoFuncionaRoute = ComoFuncionaRouteImport.update({
+  id: '/como-funciona',
+  path: '/como-funciona',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuscarRoute = BuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +31,50 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buscar': typeof BuscarRoute
+  '/como-funciona': typeof ComoFuncionaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buscar': typeof BuscarRoute
+  '/como-funciona': typeof ComoFuncionaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buscar': typeof BuscarRoute
+  '/como-funciona': typeof ComoFuncionaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/buscar' | '/como-funciona'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/buscar' | '/como-funciona'
+  id: '__root__' | '/' | '/buscar' | '/como-funciona'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuscarRoute: typeof BuscarRoute
+  ComoFuncionaRoute: typeof ComoFuncionaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/como-funciona': {
+      id: '/como-funciona'
+      path: '/como-funciona'
+      fullPath: '/como-funciona'
+      preLoaderRoute: typeof ComoFuncionaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buscar': {
+      id: '/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof BuscarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +87,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuscarRoute: BuscarRoute,
+  ComoFuncionaRoute: ComoFuncionaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

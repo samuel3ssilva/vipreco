@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 
 /** Container central com a largura máxima do produto (1120px). */
-export function PageContainer({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function PageContainer({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return <div className={`page-container ${className}`}>{children}</div>;
 }
 

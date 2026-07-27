@@ -15,13 +15,13 @@ e as contribuições da comunidade entram como sugestões pendentes de revisão.
 
 ## Rotas
 
-| Rota | Descrição |
-| --- | --- |
-| `/` | Oportunidades da semana, produtos atualizados e mercado habitual |
-| `/buscar` | Busca por nome, marca, variante, tamanho ou código de barras |
-| `/produto/$productId` | Comparação de preços do mesmo produto entre mercados |
-| `/como-funciona` | Origem dos dados, revisão e limites do sistema |
-| `/sitemap.xml` | Sitemap gerado no servidor |
+| Rota                  | Descrição                                                        |
+| --------------------- | ---------------------------------------------------------------- |
+| `/`                   | Oportunidades da semana, produtos atualizados e mercado habitual |
+| `/buscar`             | Busca por nome, marca, variante, tamanho ou código de barras     |
+| `/produto/$productId` | Comparação de preços do mesmo produto entre mercados             |
+| `/como-funciona`      | Origem dos dados, revisão e limites do sistema                   |
+| `/sitemap.xml`        | Sitemap gerado no servidor                                       |
 
 ## Modelo de dados
 

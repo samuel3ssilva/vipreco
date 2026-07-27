@@ -35,7 +35,12 @@ describe("formatação", () => {
 
   it("monta nome completo do produto", () => {
     expect(
-      formatProductName({ name: "Café", brand: "Bom Dia", variant: "Tradicional", size_text: "500 g" }),
+      formatProductName({
+        name: "Café",
+        brand: "Bom Dia",
+        variant: "Tradicional",
+        size_text: "500 g",
+      }),
     ).toBe("Café Bom Dia Tradicional 500 g");
   });
 

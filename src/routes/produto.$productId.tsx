@@ -114,7 +114,11 @@ function ProductPage() {
         <StateMessage
           variant="empty"
           title="Produto não encontrado."
-          description={<Link to="/buscar" className="underline">Buscar outro produto</Link>}
+          description={
+            <Link to="/buscar" className="underline">
+              Buscar outro produto
+            </Link>
+          }
         />
       </AppShell>
     );
@@ -181,13 +185,20 @@ function ProductPage() {
           </>
         )}
 
-        <section aria-label="Ajude a manter os preços atualizados" className="card-compact bg-surface">
+        <section
+          aria-label="Ajude a manter os preços atualizados"
+          className="card-compact bg-surface"
+        >
           <h2 className="text-base font-bold">Viu um preço diferente?</h2>
           <p className="meta-text mt-0.5">
             Sua informação é conferida por uma pessoa antes de aparecer para os outros moradores.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="btn-base btn-primary btn-sm" onClick={() => setShowForm(true)}>
+            <button
+              type="button"
+              className="btn-base btn-primary btn-sm"
+              onClick={() => setShowForm(true)}
+            >
               <Flag aria-hidden="true" className="size-4" />
               Informar preço
             </button>
@@ -212,7 +223,11 @@ function ProductPage() {
       </div>
 
       {showForm ? (
-        <SubmitPriceForm product={product} defaultMarketId={usualMarketId} onClose={() => setShowForm(false)} />
+        <SubmitPriceForm
+          product={product}
+          defaultMarketId={usualMarketId}
+          onClose={() => setShowForm(false)}
+        />
       ) : null}
     </AppShell>
   );

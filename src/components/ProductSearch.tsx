@@ -132,7 +132,11 @@ export function ProductSearch({
             <div className="p-4 text-sm" role="alert">
               <p className="font-semibold">Não conseguimos buscar agora.</p>
               <p className="meta-text">Verifique sua conexão com a internet.</p>
-              <button type="button" className="btn-base btn-secondary btn-sm mt-2" onClick={() => refetch()}>
+              <button
+                type="button"
+                className="btn-base btn-secondary btn-sm mt-2"
+                onClick={() => refetch()}
+              >
                 Tentar novamente
               </button>
             </div>
@@ -167,7 +171,10 @@ export function ProductSearch({
                         {product.variant ? ` ${product.variant}` : ""}
                       </span>
                       <span className="meta-text">
-                        {[product.size_text ?? "tamanho não informado", product.gtin ? `Código ${product.gtin}` : null]
+                        {[
+                          product.size_text ?? "tamanho não informado",
+                          product.gtin ? `Código ${product.gtin}` : null,
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>

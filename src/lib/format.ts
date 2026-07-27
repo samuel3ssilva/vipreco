@@ -14,7 +14,9 @@ export function formatPriceDifference(value: number): string {
 }
 
 /** Nome completo do produto: nome, marca, variante e tamanho. */
-export function formatProductName(product: Pick<Product, "name" | "brand" | "variant" | "size_text">) {
+export function formatProductName(
+  product: Pick<Product, "name" | "brand" | "variant" | "size_text">,
+) {
   return [product.name, product.brand, product.variant, product.size_text]
     .filter(Boolean)
     .join(" ");

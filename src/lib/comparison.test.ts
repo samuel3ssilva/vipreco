@@ -22,7 +22,9 @@ function market(id: string, overrides: Partial<Market> = {}): Market {
   };
 }
 
-function price(overrides: Partial<PriceWithMarket> & { id: string; market_id: string; price: number }): PriceWithMarket {
+function price(
+  overrides: Partial<PriceWithMarket> & { id: string; market_id: string; price: number },
+): PriceWithMarket {
   return {
     product_id: "p1",
     source_type: "receipt",
@@ -40,21 +42,43 @@ function price(overrides: Partial<PriceWithMarket> & { id: string; market_id: st
 
 describe("isValidPrice", () => {
   it("aceita preço ativo, já observado e sem validade", () => {
-    expect(isValidPrice({ is_active: true, observed_at: "2026-07-20T00:00:00Z", valid_until: null }, NOW)).toBe(true);
+    expect(
+      isValidPrice(
+        { is_active: true, observed_at: "2026-07-20T00:00:00Z", valid_until: null },
+        NOW,
+      ),
+    ).toBe(true);
   });
 
   it("rejeita preço inativo", () => {
-    expect(isValidPrice({ is_active: false, observed_at: "2026-07-20T00:00:00Z", valid_until: null }, NOW)).toBe(false);
+    expect(
+      isValidPrice(
+        { is_active: false, observed_at: "2026-07-20T00:00:00Z", valid_until: null },
+        NOW,
+      ),
+    ).toBe(false);
   });
 
   it("rejeita oferta vencida", () => {
     expect(
-      isValidPrice({ is_active: true, observed_at: "2026-07-01T00:00:00Z", valid_until: "2026-07-10T00:00:00Z" }, NOW),
+      isValidPrice(
+        {
+          is_active: true,
+          observed_at: "2026-07-01T00:00:00Z",
+          valid_until: "2026-07-10T00:00:00Z",
+        },
+        NOW,
+      ),
     ).toBe(false);
   });
 
   it("rejeita preço com data futura", () => {
-    expect(isValidPrice({ is_active: true, observed_at: "2026-08-01T00:00:00Z", valid_until: null }, NOW)).toBe(false);
+    expect(
+      isValidPrice(
+        { is_active: true, observed_at: "2026-08-01T00:00:00Z", valid_until: null },
+        NOW,
+      ),
+    ).toBe(false);
   });
 });
 

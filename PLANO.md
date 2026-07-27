@@ -21,7 +21,7 @@ para conquistar uma cidade.
   (operação de dados + pacote comercial + distribuição local) validado em Artemis.
 
 **Regra de ouro:** toda decisão de MVP responde à pergunta
-*"isso funciona quando forem 50 mercados em vez de 5?"* — mas nada é construído
+_"isso funciona quando forem 50 mercados em vez de 5?"_ — mas nada é construído
 para 50 mercados antes do gate da Onda 3.
 
 ---
@@ -44,24 +44,24 @@ para 50 mercados antes do gate da Onda 3.
 
 Um único pacote mensal, vendido pessoalmente, que agrupa quatro entregas:
 
-| Entrega | O que é | Base técnica |
-| --- | --- | --- |
-| Implantação de catálogo | Carga e manutenção do catálogo do mercado (taxa de setup + mensalidade — o cliente paga para resolver o cold start de dados) | `products` + `prices` com `source_type='store_list'` |
-| Perfil oficial | Página do mercado com selo verificado, endereço, horário e **botão de WhatsApp** | Nova rota + campos em `markets` |
-| Ofertas oficiais | Encarte semanal publicado como ofertas rotuladas, com validade — cada oferta gera card compartilhável | `prices.is_featured` + `valid_until`, seção separada da comparação |
-| Relatório mensal | Posição de preços do mercado vs. concorrência, PDF (manual no início) | Dados já existentes + `decision_feedback` |
+| Entrega                 | O que é                                                                                                                      | Base técnica                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Implantação de catálogo | Carga e manutenção do catálogo do mercado (taxa de setup + mensalidade — o cliente paga para resolver o cold start de dados) | `products` + `prices` com `source_type='store_list'`               |
+| Perfil oficial          | Página do mercado com selo verificado, endereço, horário e **botão de WhatsApp**                                             | Nova rota + campos em `markets`                                    |
+| Ofertas oficiais        | Encarte semanal publicado como ofertas rotuladas, com validade — cada oferta gera card compartilhável                        | `prices.is_featured` + `valid_until`, seção separada da comparação |
+| Relatório mensal        | Posição de preços do mercado vs. concorrência, PDF (manual no início)                                                        | Dados já existentes + `decision_feedback`                          |
 
 Guardrails permanentes: oferta paga **nunca** reordena a lista orgânica;
 **nunca vender exclusividade**; contrato simples, cobrança via Pix, sem fidelidade.
 
 ### 2.3 Monetização por fase
 
-| Fase | Forma | Status |
-| --- | --- | --- |
-| Artemis (piloto) | Pacote Mercado Parceiro (2 clientes-âncora) | Validação de disposição a pagar |
-| Piracicaba | Pacote Parceiro em escala + geração de clientes via WhatsApp com métricas + relatório premium por categoria | Ativa após o gate |
-| Piracicaba madura | Painel de inteligência competitiva para independentes | Exige densidade de dados |
-| Multi-cidade | Marca branca / replicação do playbook; estudos para indústria; API de preços | Fora do horizonte atual |
+| Fase              | Forma                                                                                                       | Status                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Artemis (piloto)  | Pacote Mercado Parceiro (2 clientes-âncora)                                                                 | Validação de disposição a pagar |
+| Piracicaba        | Pacote Parceiro em escala + geração de clientes via WhatsApp com métricas + relatório premium por categoria | Ativa após o gate               |
+| Piracicaba madura | Painel de inteligência competitiva para independentes                                                       | Exige densidade de dados        |
+| Multi-cidade      | Marca branca / replicação do playbook; estudos para indústria; API de preços                                | Fora do horizonte atual         |
 
 Cortadas até existir cobertura multi-cidade (nenhum comprador existe antes disso):
 estudos para fabricantes, API de preços, campanhas patrocinadas por desempenho.
@@ -113,7 +113,7 @@ higiene, dados reais e distribuição. A instrumentação do piloto já existe n
 
 ### Onda 0 — Higiene da fundação (1–2 dias)
 
-- [ ] A0.1 Rodar `bun run format` e zerar `bun run lint`.
+- [x] A0.1 Rodar `bun run format` e zerar `bun run lint`.
 - [ ] A0.2 Adicionar `.env` ao `.gitignore`, `git rm --cached .env`, criar `.env.example` sem valores.
 - [ ] A0.3 Migration: índice único parcial em `products.gtin` (WHERE gtin IS NOT NULL) + unicidade da identidade canônica normalizada (name+brand+variant+size_text).
 - [ ] A0.4 Desempate determinístico em `latestValidPricePerMarket` (`observed_at` → `created_at` → `id`) + teste.
@@ -155,11 +155,11 @@ conversa, não no planejamento.
 Avaliação formal 90–120 dias após o lançamento da Onda 1. Expandir **somente se
 as três provas forem verdadeiras**:
 
-| # | Prova | Meta | Como medir |
-| --- | --- | --- | --- |
-| 1 | Consumidores usam e voltam | 150–200 usuários únicos/mês (~10% dos lares de Artemis) com 25–30% de retorno semanal | Analytics (ver §6) + `decision_feedback` |
-| 2 | Mercados pagam | 2 parceiros pagando por 3 meses consecutivos | Contratos ativos |
-| 3 | O flywheel de dados gira | ≤50% dos preços vigentes coletados pelo próprio fundador (restante: encartes de parceiros + comunidade aprovada) | `prices.source_type` |
+| #   | Prova                      | Meta                                                                                                             | Como medir                               |
+| --- | -------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 1   | Consumidores usam e voltam | 150–200 usuários únicos/mês (~10% dos lares de Artemis) com 25–30% de retorno semanal                            | Analytics (ver §6) + `decision_feedback` |
+| 2   | Mercados pagam             | 2 parceiros pagando por 3 meses consecutivos                                                                     | Contratos ativos                         |
+| 3   | O flywheel de dados gira   | ≤50% dos preços vigentes coletados pelo próprio fundador (restante: encartes de parceiros + comunidade aprovada) | `prices.source_type`                     |
 
 Se qualquer prova falhar: diagnosticar, ajustar e re-testar em Artemis.
 Expandir um flywheel que não gira é multiplicar um problema.
@@ -192,13 +192,13 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
 
 ## 7. Riscos principais
 
-| Risco | Mitigação |
-| --- | --- |
-| Reputacional: percepção de favorecimento em bairro pequeno | Ranking orgânico intocável, rótulos claros, sem exclusividade, página "Como funciona" transparente |
-| Operacional: coleta depende de uma pessoa | Rotina documentada, família treinada, flywheel como meta explícita do gate |
-| Dados: duplicação de produto quebra a confiança | Constraints de unicidade (A0.3) + revisão manual de novos produtos |
-| Spam nos inserts anônimos | Honeypot + limites no piloto; server-side antes de Piracicaba |
-| Concentração comercial: perder 1 de 2 parceiros = 50% da receita | Relação > contrato; sem fidelidade; valor entregue semanalmente |
+| Risco                                                            | Mitigação                                                                                          |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Reputacional: percepção de favorecimento em bairro pequeno       | Ranking orgânico intocável, rótulos claros, sem exclusividade, página "Como funciona" transparente |
+| Operacional: coleta depende de uma pessoa                        | Rotina documentada, família treinada, flywheel como meta explícita do gate                         |
+| Dados: duplicação de produto quebra a confiança                  | Constraints de unicidade (A0.3) + revisão manual de novos produtos                                 |
+| Spam nos inserts anônimos                                        | Honeypot + limites no piloto; server-side antes de Piracicaba                                      |
+| Concentração comercial: perder 1 de 2 parceiros = 50% da receita | Relação > contrato; sem fidelidade; valor entregue semanalmente                                    |
 
 ---
 

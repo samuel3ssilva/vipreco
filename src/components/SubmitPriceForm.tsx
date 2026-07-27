@@ -19,15 +19,21 @@ const schema = z.object({
   price: z
     .string()
     .min(1, { message: "Informe o preço encontrado." })
-    .refine((value) => {
-      const parsed = Number(value.replace(",", "."));
-      return Number.isFinite(parsed) && parsed > 0;
-    }, { message: "O preço deve ser maior que zero." }),
+    .refine(
+      (value) => {
+        const parsed = Number(value.replace(",", "."));
+        return Number.isFinite(parsed) && parsed > 0;
+      },
+      { message: "O preço deve ser maior que zero." },
+    ),
   sourceType: z.enum(["receipt", "shelf_photo", "community", "social_media"], {
     required_error: "Escolha a fonte da informação.",
     invalid_type_error: "Escolha a fonte da informação.",
   }),
-  comment: z.string().max(280, { message: "O comentário deve ter no máximo 280 caracteres." }).optional(),
+  comment: z
+    .string()
+    .max(280, { message: "O comentário deve ter no máximo 280 caracteres." })
+    .optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -48,7 +54,11 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
   };
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
-  const marketsQuery = useQuery({ queryKey: ["markets"], queryFn: getMarkets, staleTime: 5 * 60_000 });
+  const marketsQuery = useQuery({
+    queryKey: ["markets"],
+    queryFn: getMarkets,
+    staleTime: 5 * 60_000,
+  });
 
   const {
     register,
@@ -111,7 +121,11 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
               <button type="button" className="btn-base btn-primary" onClick={onClose}>
                 Fechar
               </button>
-              <button type="button" className="btn-base btn-secondary" onClick={() => setStatus("idle")}>
+              <button
+                type="button"
+                className="btn-base btn-secondary"
+                onClick={() => setStatus("idle")}
+              >
                 Informar outro preço
               </button>
             </div>
@@ -137,7 +151,10 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
                 ))}
               </select>
               {errors.marketId ? (
-                <p id={`${ids.market}-erro`} className="mt-1 text-sm font-semibold text-destructive">
+                <p
+                  id={`${ids.market}-erro`}
+                  className="mt-1 text-sm font-semibold text-destructive"
+                >
                   {errors.marketId.message}
                 </p>
               ) : null}
@@ -168,14 +185,25 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
               <legend className="mb-1 text-sm font-semibold">Fonte da informação</legend>
               <div className="space-y-2">
                 {SOURCE_OPTIONS.map((option) => (
-                  <label key={option.value} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                    <input type="radio" value={option.value} className="size-5" {...register("sourceType")} />
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-3 rounded-lg border border-border p-3"
+                  >
+                    <input
+                      type="radio"
+                      value={option.value}
+                      className="size-5"
+                      {...register("sourceType")}
+                    />
                     <span>{option.label}</span>
                   </label>
                 ))}
               </div>
               {errors.sourceType ? (
-                <p id={`${ids.source}-erro`} className="mt-1 text-sm font-semibold text-destructive">
+                <p
+                  id={`${ids.source}-erro`}
+                  className="mt-1 text-sm font-semibold text-destructive"
+                >
                   {errors.sourceType.message}
                 </p>
               ) : null}
@@ -198,7 +226,10 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
                 Até 280 caracteres. Não escreva dados pessoais.
               </p>
               {errors.comment ? (
-                <p id={`${ids.comment}-erro`} className="mt-1 text-sm font-semibold text-destructive">
+                <p
+                  id={`${ids.comment}-erro`}
+                  className="mt-1 text-sm font-semibold text-destructive"
+                >
                   {errors.comment.message}
                 </p>
               ) : null}
@@ -211,7 +242,11 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-              <button type="submit" className="btn-base btn-primary" disabled={status === "sending"}>
+              <button
+                type="submit"
+                className="btn-base btn-primary"
+                disabled={status === "sending"}
+              >
                 {status === "sending" ? "Enviando…" : "Enviar informação"}
               </button>
               <button type="button" className="btn-base btn-secondary" onClick={onClose}>

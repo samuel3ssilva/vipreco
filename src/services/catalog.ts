@@ -61,7 +61,12 @@ export async function getMarkets(): Promise<Market[]> {
 /** Comparação de um produto: apenas o preço válido mais recente de cada mercado. */
 export async function getProductComparison(productId: string): Promise<ProductComparison | null> {
   const [productResult, pricesResult] = await Promise.all([
-    supabase.from("products").select(PRODUCT_FIELDS).eq("id", productId).eq("is_active", true).maybeSingle(),
+    supabase
+      .from("products")
+      .select(PRODUCT_FIELDS)
+      .eq("id", productId)
+      .eq("is_active", true)
+      .maybeSingle(),
     supabase
       .from("prices")
       .select(`${PRICE_FIELDS},market:markets(${MARKET_FIELDS})`)
@@ -99,9 +104,9 @@ export async function getWeeklyOpportunities(limit = 6): Promise<Opportunity[]> 
 }
 
 /** Produtos que receberam preços recentes. */
-export async function getRecentlyUpdatedProducts(limit = 6): Promise<
-  Array<{ product: Product; observedAt: string }>
-> {
+export async function getRecentlyUpdatedProducts(
+  limit = 6,
+): Promise<Array<{ product: Product; observedAt: string }>> {
   const { data, error } = await supabase
     .from("prices")
     .select(`observed_at,product:products(${PRODUCT_FIELDS})`)
@@ -111,7 +116,10 @@ export async function getRecentlyUpdatedProducts(limit = 6): Promise<
   if (error) fail("Não foi possível carregar os produtos atualizados agora.", error);
 
   const seen = new Map<string, { product: Product; observedAt: string }>();
-  for (const row of (data ?? []) as unknown as Array<{ observed_at: string; product: Product | null }>) {
+  for (const row of (data ?? []) as unknown as Array<{
+    observed_at: string;
+    product: Product | null;
+  }>) {
     if (!row.product?.is_active) continue;
     if (seen.has(row.product.id)) continue;
     seen.set(row.product.id, { product: row.product, observedAt: row.observed_at });

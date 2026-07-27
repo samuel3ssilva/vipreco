@@ -37,17 +37,17 @@ bun run lint && bun run test && bun run build
 
 ## Mapa do código
 
-| Onde | O quê |
-| --- | --- |
-| `src/lib/comparison.ts` | Regras de domínio de preços (funções puras, testadas em `comparison.test.ts`) |
-| `src/lib/normalize.ts` | Normalização de busca (acentos, caixa, GTIN) |
-| `src/services/catalog.ts` | Único ponto de acesso a dados — componentes não fazem query direta |
-| `src/integrations/supabase/` | Cliente e tipos |
-| `src/lib/local-preferences.ts` | Mercado habitual e afins — somente `localStorage`, sem login |
-| `src/routes/` | `/`, `/buscar`, `/produto/$productId`, `/como-funciona`, `/sitemap.xml` |
-| `src/components/` | `PriceCard`, `PriceSummary`, `SourceBadge`, `SubmitPriceForm`, `UsualMarketPicker`… |
-| `supabase/migrations/` | Migrations versionadas — nunca editar migration aplicada; criar corretiva |
-| `supabase/seed.sql` | Dados fictícios com `is_demo = true`; nunca nomes reais de mercados |
+| Onde                           | O quê                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `src/lib/comparison.ts`        | Regras de domínio de preços (funções puras, testadas em `comparison.test.ts`)       |
+| `src/lib/normalize.ts`         | Normalização de busca (acentos, caixa, GTIN)                                        |
+| `src/services/catalog.ts`      | Único ponto de acesso a dados — componentes não fazem query direta                  |
+| `src/integrations/supabase/`   | Cliente e tipos                                                                     |
+| `src/lib/local-preferences.ts` | Mercado habitual e afins — somente `localStorage`, sem login                        |
+| `src/routes/`                  | `/`, `/buscar`, `/produto/$productId`, `/como-funciona`, `/sitemap.xml`             |
+| `src/components/`              | `PriceCard`, `PriceSummary`, `SourceBadge`, `SubmitPriceForm`, `UsualMarketPicker`… |
+| `supabase/migrations/`         | Migrations versionadas — nunca editar migration aplicada; criar corretiva           |
+| `supabase/seed.sql`            | Dados fictícios com `is_demo = true`; nunca nomes reais de mercados                 |
 
 ## Modelo de dados (nomes reais)
 
@@ -67,7 +67,7 @@ bun run lint && bun run test && bun run build
    250 g ≠ 500 g, 900 ml ≠ 1 L, tradicional ≠ descafeinado. Busca aproximada
    sugere candidatos; não autoriza juntar produtos diferentes.
 2. **Preço válido** = `is_active AND observed_at <= now() AND (valid_until IS NULL
-   OR valid_until >= now())`. Implementado em `isValidPrice()` **e** na policy RLS
+OR valid_until >= now())`. Implementado em `isValidPrice()` **e** na policy RLS
    de `prices` — manter os dois em sincronia sempre.
 3. **Um preço por mercado, ordenado por preço.** Exibir apenas o preço válido mais
    recente de cada mercado, ordenar por preço crescente, desempate determinístico.

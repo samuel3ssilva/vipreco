@@ -56,7 +56,6 @@ export function PriceSummary({ best, comparison }: PriceSummaryProps) {
             <Store aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             Escolha seu mercado habitual abaixo para ver quanto você economiza.
           </p>
-
         ) : comparison.kind === "no-price" ? (
           <p className="text-muted-foreground">
             Ainda não temos preço válido deste produto no seu mercado habitual.
@@ -71,7 +70,8 @@ export function PriceSummary({ best, comparison }: PriceSummaryProps) {
             <strong className="text-success">
               {formatPriceDifference(comparison.difference)} mais barato
             </strong>{" "}
-            que no seu mercado habitual ({comparison.usual.market.name}, {formatPrice(comparison.usual.price)}
+            que no seu mercado habitual ({comparison.usual.market.name},{" "}
+            {formatPrice(comparison.usual.price)}
             ). Avalie se a diferença compensa o deslocamento.
           </p>
         )}

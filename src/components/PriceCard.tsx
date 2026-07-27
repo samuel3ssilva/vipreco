@@ -20,15 +20,13 @@ export function PriceCard({
   onReport,
 }: PriceCardProps) {
   return (
-    <li
-      className={`card-compact ${isLowest ? "border-primary/50 ring-1 ring-primary/25" : ""}`}
-    >
+    <li className={`card-compact ${isLowest ? "border-primary/50 ring-1 ring-primary/25" : ""}`}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-base font-bold">{entry.market.name}</h3>
           <p className="meta-text truncate">
-            {entry.market.neighborhood ?? "Bairro não informado"} · {formatDate(entry.observed_at)} (
-            {formatRelativeDay(entry.observed_at)})
+            {entry.market.neighborhood ?? "Bairro não informado"} · {formatDate(entry.observed_at)}{" "}
+            ({formatRelativeDay(entry.observed_at)})
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {isLowest ? (
@@ -48,7 +46,9 @@ export function PriceCard({
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="text-xl font-bold tabular-nums text-foreground">{formatPrice(entry.price)}</p>
+          <p className="text-xl font-bold tabular-nums text-foreground">
+            {formatPrice(entry.price)}
+          </p>
           {!isLowest && differenceToLowest && differenceToLowest > 0 ? (
             <p className="meta-text">+{formatPrice(differenceToLowest)}</p>
           ) : null}

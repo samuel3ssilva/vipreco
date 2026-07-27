@@ -1,7 +1,10 @@
 import type { Price, PriceWithMarket } from "@/types/domain";
 
 /** Um preço é válido quando está ativo, já foi observado e ainda não venceu. */
-export function isValidPrice(price: Pick<Price, "is_active" | "observed_at" | "valid_until">, now: Date = new Date()) {
+export function isValidPrice(
+  price: Pick<Price, "is_active" | "observed_at" | "valid_until">,
+  now: Date = new Date(),
+) {
   if (!price.is_active) return false;
   if (new Date(price.observed_at).getTime() > now.getTime()) return false;
   if (price.valid_until && new Date(price.valid_until).getTime() < now.getTime()) return false;

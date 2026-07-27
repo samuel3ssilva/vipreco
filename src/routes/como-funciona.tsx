@@ -16,7 +16,8 @@ export const Route = createFileRoute("/como-funciona")({
       { property: "og:title", content: "Como funciona — Preço Artemis" },
       {
         property: "og:description",
-        content: "De onde vêm os preços, como funciona a revisão das sugestões e o que o sistema não garante.",
+        content:
+          "De onde vêm os preços, como funciona a revisão das sugestões e o que o sistema não garante.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -42,7 +42,10 @@ export function UsualMarketPicker({ onChange, compact = false }: UsualMarketPick
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0">
-          <h2 id="mercado-habitual-titulo" className="flex items-center gap-1.5 text-base font-bold">
+          <h2
+            id="mercado-habitual-titulo"
+            className="flex items-center gap-1.5 text-base font-bold"
+          >
             <Store aria-hidden="true" className="size-4 shrink-0 text-primary" />
             Seu mercado habitual
           </h2>
@@ -53,12 +56,17 @@ export function UsualMarketPicker({ onChange, compact = false }: UsualMarketPick
             </p>
           ) : (
             <p className="meta-text mt-0.5">
-              Escolha onde você costuma comprar para ver a diferença de preço. Fica salvo só neste aparelho.
+              Escolha onde você costuma comprar para ver a diferença de preço. Fica salvo só neste
+              aparelho.
             </p>
           )}
         </div>
         {current && !editing ? (
-          <button type="button" className="btn-base btn-quiet btn-sm shrink-0" onClick={() => setEditing(true)}>
+          <button
+            type="button"
+            className="btn-base btn-quiet btn-sm shrink-0"
+            onClick={() => setEditing(true)}
+          >
             <Pencil aria-hidden="true" className="size-4" />
             Trocar
           </button>
@@ -68,7 +76,11 @@ export function UsualMarketPicker({ onChange, compact = false }: UsualMarketPick
       {isError ? (
         <div role="alert" className="mt-2 text-sm">
           <p>Não conseguimos carregar a lista de mercados.</p>
-          <button type="button" className="btn-base btn-secondary btn-sm mt-2" onClick={() => refetch()}>
+          <button
+            type="button"
+            className="btn-base btn-secondary btn-sm mt-2"
+            onClick={() => refetch()}
+          >
             Tentar novamente
           </button>
         </div>
@@ -97,7 +109,11 @@ export function UsualMarketPicker({ onChange, compact = false }: UsualMarketPick
                 })}
               </ul>
               {selected ? (
-                <button type="button" className="btn-base btn-quiet btn-sm mt-2" onClick={() => update(null)}>
+                <button
+                  type="button"
+                  className="btn-base btn-quiet btn-sm mt-2"
+                  onClick={() => update(null)}
+                >
                   Remover mercado habitual
                 </button>
               ) : null}

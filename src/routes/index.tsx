@@ -28,7 +28,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Preço Artemis — onde está mais barato hoje" },
       {
         property: "og:description",
-        content: "Compare produtos iguais entre mercados de Artemis com data e fonte de cada preço.",
+        content:
+          "Compare produtos iguais entre mercados de Artemis com data e fonte de cada preço.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -118,7 +119,9 @@ function HomePage() {
                 <li key={entry.id} className="card-base flex flex-col">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                     <div className="min-w-0">
-                      <h3 className="clamp-2 text-base font-bold">{formatProductName(entry.product)}</h3>
+                      <h3 className="clamp-2 text-base font-bold">
+                        {formatProductName(entry.product)}
+                      </h3>
                       <p className="meta-text truncate">{entry.market.name}</p>
                     </div>
                     <p className="shrink-0 text-xl font-bold tabular-nums text-primary">
@@ -126,7 +129,8 @@ function HomePage() {
                     </p>
                   </div>
                   <p className="meta-text mt-1.5">
-                    Observado em {formatDate(entry.observed_at)} ({formatRelativeDay(entry.observed_at)})
+                    Observado em {formatDate(entry.observed_at)} (
+                    {formatRelativeDay(entry.observed_at)})
                   </p>
                   {entry.special_condition ? (
                     <p className="meta-text">Condição: {entry.special_condition}</p>
@@ -174,7 +178,9 @@ function HomePage() {
                       className="card-compact grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 hover:bg-surface"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate font-semibold">{formatProductName(product)}</span>
+                        <span className="block truncate font-semibold">
+                          {formatProductName(product)}
+                        </span>
                         <span className="meta-text block">
                           {stat && stat.marketCount > 0
                             ? `${stat.marketCount} ${stat.marketCount === 1 ? "mercado" : "mercados"} · `
@@ -186,7 +192,9 @@ function HomePage() {
                         {stat?.lowest != null ? (
                           <>
                             <span className="meta-text block">a partir de</span>
-                            <span className="block font-bold tabular-nums">{formatPrice(stat.lowest)}</span>
+                            <span className="block font-bold tabular-nums">
+                              {formatPrice(stat.lowest)}
+                            </span>
                           </>
                         ) : (
                           <ArrowRight aria-hidden="true" className="size-4 text-muted-foreground" />
@@ -210,7 +218,8 @@ function HomePage() {
             De onde vêm esses preços?
           </h2>
           <p className="meta-text mt-0.5">
-            Notas fiscais, pesquisa em loja, fotos de etiqueta, informações dos mercados e da comunidade.
+            Notas fiscais, pesquisa em loja, fotos de etiqueta, informações dos mercados e da
+            comunidade.
           </p>
           <Link to="/como-funciona" className="btn-base btn-secondary btn-sm mt-2">
             Entender como funciona

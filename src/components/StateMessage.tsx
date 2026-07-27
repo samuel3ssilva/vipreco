@@ -9,7 +9,13 @@ interface StateMessageProps {
   className?: string;
 }
 
-export function StateMessage({ variant, title, description, onRetry, className = "" }: StateMessageProps) {
+export function StateMessage({
+  variant,
+  title,
+  description,
+  onRetry,
+  className = "",
+}: StateMessageProps) {
   const Icon = variant === "loading" ? Loader2 : variant === "error" ? AlertCircle : Inbox;
 
   return (
@@ -35,7 +41,10 @@ export function StateMessage({ variant, title, description, onRetry, className =
   );
 }
 
-export function LoadingState({ title = "Carregando…", ...rest }: Omit<StateMessageProps, "variant" | "title"> & { title?: string }) {
+export function LoadingState({
+  title = "Carregando…",
+  ...rest
+}: Omit<StateMessageProps, "variant" | "title"> & { title?: string }) {
   return <StateMessage variant="loading" title={title} {...rest} />;
 }
 

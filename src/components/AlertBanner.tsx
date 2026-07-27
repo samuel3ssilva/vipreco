@@ -31,7 +31,9 @@ interface AlertBannerProps {
 export function AlertBanner({ tone = "neutro", children, className = "" }: AlertBannerProps) {
   const { className: toneClass, Icon, prefix } = TONE[tone];
   return (
-    <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${toneClass} ${className}`}>
+    <div
+      className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${toneClass} ${className}`}
+    >
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       <div className="min-w-0">
         <span className="sr-only">{prefix}: </span>

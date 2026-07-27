@@ -83,13 +83,17 @@ export function ProductSearch({
       <label htmlFor={inputId} className="mb-1 block text-sm font-semibold">
         {label}
       </label>
-      <div className="flex gap-2">
+      <div className="relative">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           id={inputId}
           type="search"
           inputMode="search"
           autoFocus={autoFocus}
-          className="field-base"
+          className="field-base pl-9"
           placeholder="Ex.: café, arroz 5 kg, 7896..."
           value={term}
           onChange={(event) => {
@@ -103,15 +107,6 @@ export function ProductSearch({
           aria-autocomplete="list"
           aria-describedby={`${inputId}-ajuda`}
         />
-        <button
-          type="button"
-          className="btn-base btn-primary shrink-0"
-          onClick={() => setOpen(true)}
-          aria-label="Buscar produto"
-        >
-          <Search aria-hidden="true" className="size-5" />
-          <span className="hidden sm:inline">Buscar</span>
-        </button>
       </div>
       <p id={`${inputId}-ajuda`} className="meta-text mt-1">
         Busque por nome, marca, variante, tamanho ou código de barras. Digite pelo menos 2 letras.
@@ -144,9 +139,10 @@ export function ProductSearch({
             <p className="meta-text p-4">Buscando produtos…</p>
           ) : results.length === 0 ? (
             <div className="p-4">
-              <p className="font-semibold">Nenhum produto encontrado.</p>
+              <p className="font-semibold">Ainda não temos esse produto no catálogo.</p>
               <p className="meta-text mt-0.5">
-                Tente outro nome, outra marca ou um tamanho diferente. Ex.: “café 500 g”.
+                Pode ser que ainda não tenha sido cadastrado em Artemis — tente outro nome, marca ou
+                tamanho. Ex.: “café 500 g”.
               </p>
             </div>
           ) : (

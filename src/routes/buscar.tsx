@@ -33,15 +33,14 @@ function SearchPage() {
 
   return (
     <AppShell>
-      <div className="space-y-4">
+      <div className="mx-auto max-w-xl space-y-4">
         <div>
           <h1 className="font-display text-2xl">Buscar produto</h1>
-          <p className="meta-text mt-1 max-w-2xl text-sm">
-            Comparamos apenas produtos iguais: mesma marca, mesma variante e mesmo tamanho. Tamanhos
-            diferentes aparecem separados.
+          <p className="meta-text mt-1 text-sm">
+            Comparamos apenas produtos idênticos: mesma marca, variante e tamanho.
           </p>
         </div>
-        <ProductSearch autoFocus inline initialTerm={q ?? ""} label="O que você procura?" />
+        <ProductSearch autoFocus={!q} inline initialTerm={q ?? ""} label="O que você procura?" />
         <PriceDisclaimer />
       </div>
     </AppShell>

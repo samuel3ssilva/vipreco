@@ -114,7 +114,7 @@ higiene, dados reais e distribuição. A instrumentação do piloto já existe n
 ### Onda 0 — Higiene da fundação (1–2 dias)
 
 - [x] A0.1 Rodar `bun run format` e zerar `bun run lint`.
-- [ ] A0.2 Adicionar `.env` ao `.gitignore`, `git rm --cached .env`, criar `.env.example` sem valores.
+- [x] A0.2 Adicionar `.env` ao `.gitignore`, `git rm --cached .env`, criar `.env.example` sem valores.
 - [ ] A0.3 Migration: índice único parcial em `products.gtin` (WHERE gtin IS NOT NULL) + unicidade da identidade canônica normalizada (name+brand+variant+size_text).
 - [ ] A0.4 Desempate determinístico em `latestValidPricePerMarket` (`observed_at` → `created_at` → `id`) + teste.
 - [ ] A0.5 Migration: coluna `markets.city` NOT NULL DEFAULT 'Artemis' + índice.

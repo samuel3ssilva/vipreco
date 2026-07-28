@@ -210,11 +210,16 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
 2. Preço do pacote Mercado Parceiro — validar na primeira conversa de venda.
 3. ~~Domínio próprio e nome público final (Preço Artemis serve para o piloto; a expansão pedirá marca que funcione em Piracicaba inteira).~~
    Decidido: **ViPreço** (`vipreco.com.br`, disponível para registro). Nome não fica mais preso
-   a um bairro, funciona para Piracicaba inteira e além. Falta: comprar o domínio, atualizar o
-   logo/identidade visual (em andamento em ferramenta externa) e planejar o rename do
-   repositório GitHub e do projeto Cloudflare.
+   a um bairro, funciona para Piracicaba inteira e além. Pasta local e repositório GitHub já
+   renomeados (`samuel3ssilva/vipreco`). Falta: comprar o domínio e atualizar o
+   logo/identidade visual (em andamento em ferramenta externa).
 4. Momento de reavaliar notificações/lista de compras como mecanismo de retenção — somente após o gate.
 5. ~~Backend no Lovable Cloud (sem SQL Editor manual, só IA/crédito) — travava aplicar migrations.~~
    Resolvido: migrado para projeto Supabase próprio (schema aplicado e verificado). Decisão tomada
-   de sair do Lovable por completo (deploy direto na Cloudflare + desconectar sync do Git) —
-   execução pendente, não é mais bloqueio para nenhuma tarefa.
+   de sair do Lovable por completo (deploy direto na Cloudflare + desconectar sync do Git).
+   Progresso: `vite.config.ts` não depende mais de `@lovable.dev/vite-tanstack-config` (config
+   própria, validada com lint/test/build e testada ao vivo). Falta: (a) desconectar o sync do
+   Git no painel do Lovable — só o fundador pode fazer; (b) configurar deploy direto via
+   `wrangler` (precisa login); (c) decidir se regenera `bun.lock` do zero (~42 pacotes ainda
+   resolvidos por um mirror privado do Lovable, não trava hoje mas é risco para instalação
+   futura em outra máquina/CI).

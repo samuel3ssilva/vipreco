@@ -13,10 +13,11 @@ produto — nenhuma mudança pode comprometê-lo.
 - React 19 + TypeScript estrito + **TanStack Start / TanStack Router** (rotas em `src/routes/`)
 - Tailwind CSS **v4** — design tokens em `src/styles.css`; componentes shadcn/Radix em `src/components/ui/`
 - TanStack Query para dados; React Hook Form + Zod para formulários
-- Backend: Lovable Cloud (Postgres + Data API compatível com Supabase) via `@supabase/supabase-js`
+- Backend: Supabase (projeto próprio, Postgres + Data API) via `@supabase/supabase-js`
 - Testes: Vitest; Lint: ESLint + Prettier
-- Build/deploy: Vite + Nitro, alvo Cloudflare
-- Projeto conectado ao Lovable — **nunca reescreva histórico já publicado** (ver `AGENTS.md`)
+- Build/deploy: Vite + Nitro, alvo Cloudflare, via `wrangler`
+- `origin/main` de `github.com/samuel3ssilva/vipreco` é a fonte da verdade do código;
+  todo trabalho passa por branch, PR e CI (`.github/workflows/ci.yml`) antes de chegar em `main`
 
 ## Comandos
 

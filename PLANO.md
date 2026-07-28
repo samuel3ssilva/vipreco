@@ -219,10 +219,12 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
    ao vivo). Ejetado `@lovable.dev/vite-tanstack-config`; `bun.lock` regenerado sem o mirror privado
    da Lovable; deploy direto na Cloudflare via `wrangler` testado e funcionando ao vivo; CI
    versionado (`.github/workflows/ci.yml`) cobrindo install congelado + lint + test + build.
-   Falta: (a) confirmar no painel da Lovable se o Git sync já foi desconectado — **enquanto isso
-   não for confirmado, tratar como ainda conectado**, não declarar desconectado sem evidência;
-   (b) comprar `vipreco.com.br` e apontar DNS.
-   **Ambiente atual:** um único Worker Cloudflare + um único projeto Supabase servem tanto para
-   teste quanto para o que será produção — tratado como **"staging legado"** internamente até que
-   a separação real staging/produção seja implementada. Nenhum recurso ao vivo foi renomeado;
-   nenhuma produção nova foi criada.
+   **Saída da Lovable concluída em 2026-07-28:** GitHub App `lovable.dev` suspensa, autorização
+   pessoal revogada, projeto desconectado no painel da Lovable e instalação desinstalada — nas
+   quatro etapas, verificadas tecnicamente sem nenhum efeito colateral. `AGENTS.md` e
+   `.lovable/project.json` removidos por não terem mais função. Falta: comprar `vipreco.com.br`
+   e apontar DNS.
+   **Ambiente atual:** um único Worker Cloudflare + um único projeto Supabase continuam servindo
+   tanto para teste quanto para o que será produção — continua tratado como **"staging legado"**
+   internamente; a separação real staging/produção **ainda não foi implementada**. Nenhum recurso
+   ao vivo foi renomeado; nenhuma produção nova foi criada.

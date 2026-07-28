@@ -78,7 +78,7 @@ export function PriceCard({
         </dl>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {entry.market.maps_url ? (
           <a
             href={entry.market.maps_url}
@@ -90,7 +90,12 @@ export function PriceCard({
             Ver endereço
             <span className="sr-only"> de {entry.market.name} (abre em nova aba)</span>
           </a>
-        ) : null}
+        ) : (
+          <p className="meta-text inline-flex items-center gap-1">
+            <MapPin aria-hidden="true" className="size-4 shrink-0" />
+            {entry.market.address ?? "Endereço não informado"}
+          </p>
+        )}
         <button type="button" className="btn-base btn-quiet btn-sm" onClick={() => onReport(entry)}>
           <Flag aria-hidden="true" className="size-4" />
           Informar atualização

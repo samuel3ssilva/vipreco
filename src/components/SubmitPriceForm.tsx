@@ -61,6 +61,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [limitReached, setLimitReached] = useState(false);
   const honeypotRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLimitReached(hasReachedSubmissionLimit());
@@ -83,8 +84,41 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
   });
 
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    return () => {
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    function getFocusable() {
+      const container = dialogRef.current;
+      if (!container) return [];
+      return Array.from(
+        container.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]",
+        ),
+      ).filter((el) => el.tabIndex !== -1);
+    }
+
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -125,10 +159,12 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="max-h-[92vh] w-full max-w-lg overflow-auto rounded-t-2xl border border-border bg-card p-4 sm:rounded-2xl"
+        tabIndex={-1}
+        className="max-h-[92vh] w-full max-w-lg overflow-auto rounded-t-2xl border border-border bg-card p-4 outline-none sm:rounded-2xl"
       >
         <h2 id={titleId} className="text-lg font-bold">
           Informar atualização de preço

@@ -65,6 +65,7 @@ function ProductPage() {
   const loaderData = Route.useLoaderData();
   const [usualMarketId, setUsual] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [reportMarketId, setReportMarketId] = useState<string | null>(null);
   const [watched, setWatched] = useState(false);
   const [watchStatus, setWatchStatus] = useState<"idle" | "sending" | "error">("idle");
 
@@ -185,7 +186,10 @@ function ProductPage() {
                     isLowest={index === 0}
                     isUsualMarket={entry.market_id === usualMarketId}
                     differenceToLowest={Number((entry.price - lowest).toFixed(2))}
-                    onReport={() => setShowForm(true)}
+                    onReport={(clickedEntry) => {
+                      setReportMarketId(clickedEntry.market_id);
+                      setShowForm(true);
+                    }}
                   />
                 ))}
               </ul>
@@ -207,7 +211,10 @@ function ProductPage() {
             <button
               type="button"
               className="btn-base btn-primary btn-sm"
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setReportMarketId(null);
+                setShowForm(true);
+              }}
             >
               <Flag aria-hidden="true" className="size-4" />
               Informar preço
@@ -235,7 +242,7 @@ function ProductPage() {
       {showForm ? (
         <SubmitPriceForm
           product={product}
-          defaultMarketId={usualMarketId}
+          defaultMarketId={reportMarketId ?? usualMarketId}
           onClose={() => setShowForm(false)}
         />
       ) : null}

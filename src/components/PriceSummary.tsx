@@ -47,7 +47,12 @@ export function PriceSummary({ best, comparison }: PriceSummaryProps) {
             Ver endereço
             <span className="sr-only"> de {best.market.name} (abre em nova aba)</span>
           </a>
-        ) : null}
+        ) : (
+          <p className="meta-text inline-flex shrink-0 items-center gap-1">
+            <MapPin aria-hidden="true" className="size-4 shrink-0" />
+            {best.market.address ?? "Endereço não informado"}
+          </p>
+        )}
       </div>
 
       <div className="mt-3 border-t border-border pt-3 text-sm">

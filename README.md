@@ -10,7 +10,7 @@ e as contribuições da comunidade entram como sugestões pendentes de revisão.
 - Tailwind CSS v4 (design system em `src/styles.css`, tokens oklch verde/azul-petróleo)
 - TanStack Query para carregamento de dados
 - React Hook Form + Zod para formulários e validação
-- Lovable Cloud (Postgres + Data API) como backend
+- Supabase (projeto próprio, Postgres + Data API) como backend
 - Vitest para testes das regras de negócio
 
 ## Rotas
@@ -66,6 +66,20 @@ bun run dev     # ambiente local
 bun run test    # testes (Vitest)
 bun run build   # build de produção
 ```
+
+## Infraestrutura
+
+- **Código:** `origin/main` de [github.com/samuel3ssilva/vipreco](https://github.com/samuel3ssilva/vipreco)
+  é a fonte da verdade. CI (`.github/workflows/ci.yml`) roda instalação com lockfile
+  congelado, lint, testes e build a cada push/PR.
+- **Deploy:** direto na Cloudflare via `wrangler` (Nitro, preset `cloudflare-module`);
+  não depende mais de um pipeline gerenciado pela Lovable.
+- **Ambiente:** hoje existe um único ambiente (Worker + projeto Supabase), usado tanto
+  para teste quanto para o que futuramente será produção — tratado internamente como
+  "staging legado" até que a separação staging/produção seja feita (ver `PLANO.md` §8).
+- **Lovable:** o projeto foi criado e hospedado originalmente pela Lovable; a decisão de
+  sair completamente já foi tomada, mas a desconexão no painel da Lovable **ainda não
+  foi confirmada** — não presuma que o Git sync está desligado.
 
 ## Acessibilidade
 

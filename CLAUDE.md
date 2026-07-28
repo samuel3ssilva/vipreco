@@ -1,4 +1,4 @@
-# CLAUDE.md — Preço Artemis
+# CLAUDE.md — ViPreço
 
 Comparador mobile-first de preços de supermercado. Piloto em Artemis
 (bairro de Piracicaba-SP). O comparador gratuito e **neutro** é o núcleo do

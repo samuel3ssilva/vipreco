@@ -1,4 +1,4 @@
-# PLANO.md — Preço Artemis
+# PLANO.md — ViPreço
 
 > Visão do produto final, tese de negócio e escopo do MVP de teste.
 > O `CLAUDE.md` governa **como** trabalhar no código; este arquivo governa **o quê** e **por quê**.
@@ -8,7 +8,7 @@
 
 ## 1. Tese
 
-O Preço Artemis é um comparador de preços de supermercado que nasce em um bairro
+O ViPreço é um comparador de preços de supermercado que nasce em um bairro
 para conquistar uma cidade.
 
 - **Artemis** (bairro de Piracicaba-SP, ~6 mil habitantes, 4–5 mercados relevantes)
@@ -208,7 +208,11 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
    Decidido: **Cloudflare Web Analytics** (zero config, o deploy já é Cloudflare/Nitro). Falta
    ativar no painel Cloudflare — nenhuma alteração de código necessária.
 2. Preço do pacote Mercado Parceiro — validar na primeira conversa de venda.
-3. Domínio próprio e nome público final (Preço Artemis serve para o piloto; a expansão pedirá marca que funcione em Piracicaba inteira).
+3. ~~Domínio próprio e nome público final (Preço Artemis serve para o piloto; a expansão pedirá marca que funcione em Piracicaba inteira).~~
+   Decidido: **ViPreço** (`vipreco.com.br`, disponível para registro). Nome não fica mais preso
+   a um bairro, funciona para Piracicaba inteira e além. Falta: comprar o domínio, atualizar o
+   logo/identidade visual (em andamento em ferramenta externa) e planejar o rename do
+   repositório GitHub e do projeto Cloudflare.
 4. Momento de reavaliar notificações/lista de compras como mecanismo de retenção — somente após o gate.
 5. ~~Backend no Lovable Cloud (sem SQL Editor manual, só IA/crédito) — travava aplicar migrations.~~
    Resolvido: migrado para projeto Supabase próprio (schema aplicado e verificado). Decisão tomada

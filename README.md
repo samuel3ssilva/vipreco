@@ -1,6 +1,6 @@
-# Preço Artemis
+# ViPreço
 
-MVP mobile-first para comparar preços de supermercados na cidade de Artemis.
+MVP mobile-first para comparar preços de supermercados da sua região.
 Consumidores usam o app **sem login**; o conteúdo é público e somente leitura,
 e as contribuições da comunidade entram como sugestões pendentes de revisão.
 

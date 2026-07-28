@@ -19,17 +19,17 @@ import { isValidPrice } from "@/lib/comparison";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Preço Artemis — onde está mais barato hoje" },
+      { title: "ViPreço — onde está mais barato hoje" },
       {
         name: "description",
         content:
-          "Compare o mesmo produto entre os mercados de Artemis e veja onde está mais barato, quando o preço foi observado e de onde veio a informação.",
+          "Compare o mesmo produto entre os mercados da sua região e veja onde está mais barato, quando o preço foi observado e de onde veio a informação.",
       },
-      { property: "og:title", content: "Preço Artemis — onde está mais barato hoje" },
+      { property: "og:title", content: "ViPreço — onde está mais barato hoje" },
       {
         property: "og:description",
         content:
-          "Compare produtos iguais entre mercados de Artemis com data e fonte de cada preço.",
+          "Compare produtos iguais entre mercados da sua região com data e fonte de cada preço.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -70,7 +70,7 @@ function HomePage() {
       <div className="space-y-8">
         <section aria-labelledby="titulo-principal" className="space-y-3">
           <h1 id="titulo-principal" className="font-display text-2xl leading-tight sm:text-3xl">
-            Descubra onde o seu produto está mais barato em Artemis.
+            Descubra onde o seu produto está mais barato na sua região.
           </h1>
           <p className="meta-text max-w-2xl text-sm">
             Compare produtos iguais entre mercados, com data e fonte de cada preço.
@@ -96,7 +96,7 @@ function HomePage() {
           <SectionHeader
             id="oportunidades-titulo"
             title="Oportunidades da semana"
-            description="Preços baixos conferidos recentemente nos mercados de Artemis."
+            description="Preços baixos conferidos recentemente nos mercados da sua região."
           />
           {opportunities.isPending ? (
             <StateMessage variant="loading" title="Carregando oportunidades…" />
@@ -110,7 +110,7 @@ function HomePage() {
           ) : validOpportunities.length === 0 ? (
             <StateMessage
               variant="empty"
-              title="Estamos começando a mapear preços em Artemis."
+              title="Estamos começando a mapear preços na sua região."
               description="As primeiras oportunidades aparecem aqui assim que forem conferidas. Por enquanto, use a busca para comparar um produto específico."
             />
           ) : (

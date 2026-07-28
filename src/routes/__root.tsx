@@ -77,16 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Preço Artemis" },
+      { title: "ViPreço" },
       {
         name: "description",
-        content: "Compare preços recentes e verificados de supermercados de Artemis.",
+        content: "Compare preços recentes e verificados de supermercados da sua região.",
       },
-      { name: "author", content: "Preço Artemis" },
-      { property: "og:title", content: "Preço Artemis" },
+      { name: "author", content: "ViPreço" },
+      { property: "og:title", content: "ViPreço" },
       {
         property: "og:description",
-        content: "Compare preços recentes e verificados de supermercados de Artemis.",
+        content: "Compare preços recentes e verificados de supermercados da sua região.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

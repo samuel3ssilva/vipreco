@@ -10,16 +10,16 @@ export const Route = createFileRoute("/buscar")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Buscar produto — Preço Artemis" },
+      { title: "Buscar produto — ViPreço" },
       {
         name: "description",
         content:
-          "Busque por nome, marca, variante, tamanho ou código de barras e compare o mesmo produto entre mercados de Artemis.",
+          "Busque por nome, marca, variante, tamanho ou código de barras e compare o mesmo produto entre mercados da sua região.",
       },
-      { property: "og:title", content: "Buscar produto — Preço Artemis" },
+      { property: "og:title", content: "Buscar produto — ViPreço" },
       {
         property: "og:description",
-        content: "Encontre o produto exato e compare preços recentes cadastrados em Artemis.",
+        content: "Encontre o produto exato e compare preços recentes cadastrados na sua região.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

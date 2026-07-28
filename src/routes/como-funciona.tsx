@@ -7,13 +7,13 @@ import { AlertBanner } from "@/components/AlertBanner";
 export const Route = createFileRoute("/como-funciona")({
   head: () => ({
     meta: [
-      { title: "Como funciona — Preço Artemis" },
+      { title: "Como funciona — ViPreço" },
       {
         name: "description",
         content:
-          "Entenda de onde vêm os preços do Preço Artemis, como os produtos são comparados e o que conferir antes de comprar.",
+          "Entenda de onde vêm os preços do ViPreço, como os produtos são comparados e o que conferir antes de comprar.",
       },
-      { property: "og:title", content: "Como funciona — Preço Artemis" },
+      { property: "og:title", content: "Como funciona — ViPreço" },
       {
         property: "og:description",
         content:
@@ -71,7 +71,7 @@ const DETAIL_GROUPS = [
       },
       {
         title: "Mostramos apenas o que está cadastrado",
-        text: "O sistema tem apenas uma amostra dos preços de Artemis. Existem mercados e produtos que ainda não foram cadastrados.",
+        text: "O sistema tem apenas uma amostra dos preços da sua região. Existem mercados e produtos que ainda não foram cadastrados.",
       },
       {
         title: "O que não garantimos",
@@ -90,7 +90,7 @@ function HowItWorksPage() {
         <div>
           <h1 className="font-display text-2xl">Como funciona</h1>
           <p className="meta-text mt-1 max-w-2xl text-sm">
-            Em três passos você compara o mesmo produto entre os mercados de Artemis.
+            Em três passos você compara o mesmo produto entre os mercados da sua região.
           </p>
         </div>
 

@@ -141,8 +141,8 @@ export function ProductSearch({
             <div className="p-4">
               <p className="font-semibold">Ainda não temos esse produto no catálogo.</p>
               <p className="meta-text mt-0.5">
-                Pode ser que ainda não tenha sido cadastrado em Artemis — tente outro nome, marca ou
-                tamanho. Ex.: “café 500 g”.
+                Pode ser que ainda não tenha sido cadastrado na sua região — tente outro nome, marca
+                ou tamanho. Ex.: “café 500 g”.
               </p>
             </div>
           ) : (

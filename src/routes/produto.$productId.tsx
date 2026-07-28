@@ -16,7 +16,7 @@ import { compareWithUsualMarket } from "@/lib/comparison";
 import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { getUsualMarketId, hasWatched, markWatched } from "@/lib/local-preferences";
 
-const DEFAULT_TITLE = "Comparar preços do produto — Preço Artemis";
+const DEFAULT_TITLE = "Comparar preços do produto — ViPreço";
 const DEFAULT_DESCRIPTION =
   "Compare o preço válido mais recente de cada mercado para o mesmo produto e veja a diferença em relação ao seu mercado habitual.";
 
@@ -24,9 +24,7 @@ export const Route = createFileRoute("/produto/$productId")({
   loader: ({ params }) => getProductComparison(params.productId),
   head: ({ loaderData }) => {
     const lowest = loaderData?.entries[0];
-    const title = loaderData
-      ? `${formatProductName(loaderData.product)} — Preço Artemis`
-      : DEFAULT_TITLE;
+    const title = loaderData ? `${formatProductName(loaderData.product)} — ViPreço` : DEFAULT_TITLE;
     const description = lowest
       ? `A partir de ${formatPrice(lowest.price)} no ${lowest.market.name}. Preço válido mais recente por mercado, fonte da informação e data da observação.`
       : DEFAULT_DESCRIPTION;

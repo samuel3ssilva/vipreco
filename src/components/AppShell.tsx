@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
         <PageContainer className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2">
           <Link to="/" className="font-display truncate text-lg font-bold text-primary">
-            Preço Artemis
+            ViPreço
           </Link>
           <nav aria-label="Navegação principal" className="hidden gap-0.5 sm:flex">
             {NAV.map((item) => (

@@ -1,10 +1,5 @@
 export type SourceType =
-  | "receipt"
-  | "store_list"
-  | "weekly_audit"
-  | "shelf_photo"
-  | "community"
-  | "social_media";
+  "receipt" | "store_list" | "weekly_audit" | "shelf_photo" | "community" | "social_media";
 
 export type SubmissionSourceType = Extract<
   SourceType,

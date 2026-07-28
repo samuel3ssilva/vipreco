@@ -209,10 +209,13 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
    ativar no painel Cloudflare — nenhuma alteração de código necessária.
 2. Preço do pacote Mercado Parceiro — validar na primeira conversa de venda.
 3. ~~Domínio próprio e nome público final (Preço Artemis serve para o piloto; a expansão pedirá marca que funcione em Piracicaba inteira).~~
-   Decidido: **ViPreço** (`vipreco.com.br`, disponível para registro). Nome não fica mais preso
-   a um bairro, funciona para Piracicaba inteira e além. Pasta local e repositório GitHub já
-   renomeados (`samuel3ssilva/vipreco`). Falta: comprar o domínio e atualizar o
-   logo/identidade visual (em andamento em ferramenta externa).
+   Decidido: **ViPreço** (`vipreco.com.br`). Nome não fica mais preso a um bairro, funciona
+   para Piracicaba inteira e além. Pasta local e repositório GitHub já renomeados
+   (`samuel3ssilva/vipreco`). **Domínio comprado em 2026-07-28** (confirmado via consulta
+   pública ao Registro.br, expira 2027-07-28). Falta: (a) apontar o DNS para o Worker
+   Cloudflare — hoje o domínio usa o DNS padrão gratuito do Registro.br (`auto.dns.br`), sem
+   nenhum registro `A`/`AAAA`/`CNAME` configurado, então `vipreco.com.br` ainda não resolve
+   para nada; (b) atualizar o logo/identidade visual (em andamento em ferramenta externa).
 4. Momento de reavaliar notificações/lista de compras como mecanismo de retenção — somente após o gate.
 5. ~~Backend no Lovable Cloud (sem SQL Editor manual, só IA/crédito) — travava aplicar migrations.~~
    Resolvido: migrado para projeto Supabase próprio (schema aplicado e verificado; RLS confirmada

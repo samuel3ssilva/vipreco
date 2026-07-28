@@ -215,11 +215,14 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
    logo/identidade visual (em andamento em ferramenta externa).
 4. Momento de reavaliar notificações/lista de compras como mecanismo de retenção — somente após o gate.
 5. ~~Backend no Lovable Cloud (sem SQL Editor manual, só IA/crédito) — travava aplicar migrations.~~
-   Resolvido: migrado para projeto Supabase próprio (schema aplicado e verificado). Decisão tomada
-   de sair do Lovable por completo (deploy direto na Cloudflare + desconectar sync do Git).
-   Progresso: `vite.config.ts` não depende mais de `@lovable.dev/vite-tanstack-config` (config
-   própria, validada com lint/test/build e testada ao vivo). Falta: (a) desconectar o sync do
-   Git no painel do Lovable — só o fundador pode fazer; (b) configurar deploy direto via
-   `wrangler` (precisa login); (c) decidir se regenera `bun.lock` do zero (~42 pacotes ainda
-   resolvidos por um mirror privado do Lovable, não trava hoje mas é risco para instalação
-   futura em outra máquina/CI).
+   Resolvido: migrado para projeto Supabase próprio (schema aplicado e verificado; RLS confirmada
+   ao vivo). Ejetado `@lovable.dev/vite-tanstack-config`; `bun.lock` regenerado sem o mirror privado
+   da Lovable; deploy direto na Cloudflare via `wrangler` testado e funcionando ao vivo; CI
+   versionado (`.github/workflows/ci.yml`) cobrindo install congelado + lint + test + build.
+   Falta: (a) confirmar no painel da Lovable se o Git sync já foi desconectado — **enquanto isso
+   não for confirmado, tratar como ainda conectado**, não declarar desconectado sem evidência;
+   (b) comprar `vipreco.com.br` e apontar DNS.
+   **Ambiente atual:** um único Worker Cloudflare + um único projeto Supabase servem tanto para
+   teste quanto para o que será produção — tratado como **"staging legado"** internamente até que
+   a separação real staging/produção seja implementada. Nenhum recurso ao vivo foi renomeado;
+   nenhuma produção nova foi criada.

@@ -76,8 +76,9 @@ bun run build   # build de produção
   não depende mais de um pipeline gerenciado pela Lovable.
 - **Ambiente:** hoje existe um único ambiente (Worker + projeto Supabase), usado tanto
   para teste quanto para o que futuramente será produção — tratado internamente como
-  "staging legado" até que a separação staging/produção seja feita (ver `PLANO.md` §8).
-  Produção separada ainda não existe.
+  "staging legado" até que a separação staging/produção seja concluída (Onda 2 em
+  andamento, ver `PLANO-MESTRE.md` §1 e §12.1). Produção separada ainda não tem Worker
+  implantado.
 - **Lovable:** o projeto foi criado e hospedado originalmente pela Lovable. O código,
   o banco de dados e o deploy não dependem mais dela — a GitHub App da Lovable foi
   removida (instalação desinstalada, autorização revogada, projeto desconectado) e o

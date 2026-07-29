@@ -4,7 +4,10 @@ Comparador mobile-first de preços de supermercado. Piloto em Artemis
 (bairro de Piracicaba-SP). O comparador gratuito e **neutro** é o núcleo do
 produto — nenhuma mudança pode comprometê-lo.
 
-- **O quê / por quê / escopo por onda:** `PLANO.md`
+- **Estratégia, roadmap, prioridades, gates e escopo (fonte oficial, aprovada pelo
+  PMO):** `PLANO-MESTRE.md`
+- **Histórico da tese de produto original e das Ondas de fundação:** `PLANO.md`
+  (subordinado ao `PLANO-MESTRE.md` em caso de conflito)
 - **Este arquivo:** como trabalhar neste código. Não presuma nada diferente do
   que está escrito aqui — inspecione o código antes de alterar.
 
@@ -85,14 +88,15 @@ OR valid_until >= now())`. Implementado em `isValidPrice()` **e** na policy RLS
 8. **Sem atalhos que escondem erro.** Proibidos: `any`, `@ts-ignore`,
    enfraquecer asserts, `eslint-disable` amplo, `--no-verify`, mocks permanentes.
 9. **Escopo é lei.** Nada de login de consumidor, pagamentos, geolocalização,
-   OCR, notificações ou IA no produto — ver "Fora de escopo" e as ondas no `PLANO.md`.
+   OCR, notificações ou IA no produto — ver "Fora de escopo" em `PLANO.md` §2.4 e a
+   ordem oficial de execução das Ondas em `PLANO-MESTRE.md` §12.
 10. **Mobile-first, pt-BR, acessível.** Funcional a partir de 360 px, áreas de
     toque ≥ 44 px, foco visível, labels associados, erros com `role="alert"`,
     carregamento com `aria-live`, linguagem simples.
 
 ## Processo por tarefa
 
-1. Ler a tarefa (checklist da onda ativa no `PLANO.md`) e o código relacionado.
+1. Ler a tarefa (checklist da onda ativa em `PLANO-MESTRE.md` §12) e o código relacionado.
 2. Fazer a **menor** alteração coerente que resolve a tarefa.
 3. Criar ou atualizar os testes das regras afetadas.
 4. Rodar `bun run lint && bun run test && bun run build` até saída zero.

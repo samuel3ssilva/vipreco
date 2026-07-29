@@ -45,3 +45,21 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: bunx wrangler deploy --name samuel3ssilva-vipreco
+
+      - name: Smoke test (falha o job se o Worker de staging não responder)
+        run: |
+          URL="https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev"
+          for path in "/" "/buscar"; do
+            ok=""
+            for attempt in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL$path" || echo "000")
+              if [ "$code" = "200" ]; then ok=1; break; fi
+              echo "Tentativa $attempt em $path: HTTP $code — tentando de novo em 5s"
+              sleep 5
+            done
+            if [ -z "$ok" ]; then
+              echo "::error::Smoke test falhou em $path após 5 tentativas (último HTTP $code)."
+              exit 1
+            fi
+            echo "OK: $path respondeu 200"
+          done

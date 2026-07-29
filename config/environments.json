@@ -6,8 +6,8 @@
     "workerName": "samuel3ssilva-vipreco"
   },
   "production": {
-    "label": "Produção (a ser criada na Onda 2 — ver PLANO.md)",
-    "supabaseProjectId": null,
+    "label": "Produção (criada na Onda 2 em 2026-07-29 — schema aplicado, sem dado real, sem deploy ainda)",
+    "supabaseProjectId": "wpgglxgddnekzojozqlm",
     "workerName": "vipreco-production"
   }
 }

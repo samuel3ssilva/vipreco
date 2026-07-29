@@ -62,7 +62,19 @@ export default defineConfig(({ command, mode }) => {
           },
           server: { entry: "server" },
         }),
-        ...(command === "build" ? [nitro({ defaultPreset: "cloudflare-module" })] : []),
+        ...(command === "build"
+          ? [
+              nitro({
+                defaultPreset: "cloudflare-module",
+                // CF_WORKER_NAME permite ao workflow de deploy de produção nomear o Worker
+                // explicitamente (`vipreco-production`); sem ela, o nome continua sendo o
+                // gerado automaticamente pelo Nitro (comportamento de staging, inalterado).
+                ...(process.env.CF_WORKER_NAME
+                  ? { cloudflare: { wrangler: { name: process.env.CF_WORKER_NAME } } }
+                  : {}),
+              }),
+            ]
+          : []),
         viteReact(),
       ],
     },

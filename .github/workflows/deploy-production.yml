@@ -1,0 +1,81 @@
+name: Deploy (production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Digite exatamente "deploy production" para confirmar'
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: build, verify-env, deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Confirmar intenção
+        if: ${{ github.event.inputs.confirm != 'deploy production' }}
+        run: |
+          echo "::error::Confirmação não bate. Digite exatamente 'deploy production' para prosseguir."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Write .env.production
+        run: |
+          cat <<EOF > .env.production
+          SUPABASE_PROJECT_ID=${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_PROJECT_ID=${{ secrets.SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          EOF
+
+      - name: Verify environment (falha segura se o ambiente estiver trocado)
+        run: bun run verify-env:production
+
+      - name: Build (Worker de produção, nome explícito)
+        env:
+          CF_WORKER_NAME: vipreco-production
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: bun run build
+
+      - name: Deploy to Cloudflare Workers (production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bunx wrangler deploy --name vipreco-production
+
+      - name: Smoke test (falha o job se o Worker novo não responder)
+        run: |
+          URL="https://vipreco-production.samuel-bortoletto.workers.dev"
+          for path in "/" "/buscar"; do
+            ok=""
+            for attempt in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL$path" || echo "000")
+              if [ "$code" = "200" ]; then ok=1; break; fi
+              echo "Tentativa $attempt em $path: HTTP $code — tentando de novo em 5s"
+              sleep 5
+            done
+            if [ -z "$ok" ]; then
+              echo "::error::Smoke test falhou em $path após 5 tentativas (último HTTP $code)."
+              exit 1
+            fi
+            echo "OK: $path respondeu 200"
+          done

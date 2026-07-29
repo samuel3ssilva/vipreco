@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify-env:staging": "bun scripts/verify-env.ts staging",
+    "verify-env:production": "bun scripts/verify-env.ts production"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

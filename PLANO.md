@@ -1,8 +1,18 @@
-# PLANO.md — ViPreço
+# PLANO.md — ViPreço (histórico e visão de produto pré-Plano Mestre)
 
-> Visão do produto final, tese de negócio e escopo do MVP de teste.
-> O `CLAUDE.md` governa **como** trabalhar no código; este arquivo governa **o quê** e **por quê**.
-> Última revisão: 2026-07-27.
+> **A partir de 2026-07-29, a fonte oficial de estratégia, roadmap, prioridades, gates e
+> escopo é `PLANO-MESTRE.md`, aprovado pelo PMO.** Este arquivo é preservado como registro
+> histórico da tese de produto original e da execução das Ondas de fundação, e continua
+> válido como detalhe (ex.: pacote "Mercado Parceiro" em §2.2, riscos em §7, métricas em §6)
+> que o Plano Mestre referencia sem repetir — mas não decide mais prioridade nem sequência.
+> `CLAUDE.md` continua governando **como** trabalhar no código.
+>
+> **Atenção à numeração:** a "Onda 2 — Mercado Parceiro" da §4 abaixo pertence à trilha de
+> *produto* antiga deste documento. **Não é** a Onda 2 de infraestrutura (separação
+> staging/produção) do `PLANO-MESTRE.md`, já em andamento e associada ao PR #11. Não
+> confundir nem executar uma pelo nome da outra.
+>
+> Última revisão do conteúdo: 2026-07-27. Nota de hierarquia adicionada em 2026-07-29.
 
 ---
 

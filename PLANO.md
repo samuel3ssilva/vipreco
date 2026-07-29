@@ -225,9 +225,19 @@ anti-spam server-side (rate limit em edge function); SEO local por bairro.
    **Saída da Lovable concluída em 2026-07-28:** GitHub App `lovable.dev` suspensa, autorização
    pessoal revogada, projeto desconectado no painel da Lovable e instalação desinstalada — nas
    quatro etapas, verificadas tecnicamente sem nenhum efeito colateral. `AGENTS.md` e
-   `.lovable/project.json` removidos por não terem mais função. Falta: comprar `vipreco.com.br`
-   e apontar DNS.
+   `.lovable/project.json` removidos por não terem mais função. Falta: apontar o DNS de
+   `vipreco.com.br` (já comprado, ver item 3).
    **Ambiente atual:** um único Worker Cloudflare + um único projeto Supabase continuam servindo
    tanto para teste quanto para o que será produção — continua tratado como **"staging legado"**
    internamente; a separação real staging/produção **ainda não foi implementada**. Nenhum recurso
    ao vivo foi renomeado; nenhuma produção nova foi criada.
+6. **Hardening de contas e credencial de deploy — concluído em 2026-07-28.** MFA ativado e
+   confirmado em GitHub, Cloudflare, Supabase e Registro.br (Lovable, mantida só como conta
+   histórica, não oferece essa opção). Sessões revisadas nas contas que expõem essa tela; nenhum
+   acesso desconhecido encontrado. Token de deploy do Cloudflare/`wrangler` trocado de um login
+   OAuth de escopo amplo para um API Token restrito só ao necessário (publicar o Worker); o token
+   antigo foi revogado e confirmado inválido. Decisões registradas para o futuro: (a) o DNS de
+   `vipreco.com.br` vai migrar para a Cloudflare, mas só depois que o ambiente de produção estiver
+   pronto (item 5); (b) a conta da Lovable fica retida como histórico até o fim da Onda 2, sem
+   reconectar; (c) o contato público do domínio (hoje o e-mail pessoal do fundador, visível no
+   whois) deve futuramente migrar para uma conta dedicada ao ViPreço.

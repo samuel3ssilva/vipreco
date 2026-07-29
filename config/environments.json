@@ -1,0 +1,13 @@
+{
+  "$schema": "Não é um arquivo de segredo — os refs de projeto Supabase e nomes de Worker aqui já são públicos (aparecem na URL pública da API/app). Usado só por scripts/verify-env.ts para impedir troca acidental de ambiente.",
+  "staging": {
+    "label": "Staging legado (infraestrutura atual, único ambiente até a Onda 2)",
+    "supabaseProjectId": "wjurqpclauwtbjhhvigy",
+    "workerName": "samuel3ssilva-vipreco"
+  },
+  "production": {
+    "label": "Produção (a ser criada na Onda 2 — ver PLANO.md)",
+    "supabaseProjectId": null,
+    "workerName": "vipreco-production"
+  }
+}

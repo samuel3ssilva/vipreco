@@ -74,11 +74,10 @@ bun run build   # build de produção
   congelado, lint, testes e build a cada push/PR.
 - **Deploy:** direto na Cloudflare via `wrangler` (Nitro, preset `cloudflare-module`);
   não depende mais de um pipeline gerenciado pela Lovable.
-- **Ambiente:** hoje existe um único ambiente (Worker + projeto Supabase), usado tanto
-  para teste quanto para o que futuramente será produção — tratado internamente como
-  "staging legado" até que a separação staging/produção seja concluída (Onda 2 em
-  andamento, ver `PLANO-MESTRE.md` §1 e §12.1). Produção separada ainda não tem Worker
-  implantado.
+- **Ambiente:** staging e produção são ambientes totalmente separados — Workers e projetos
+  Supabase próprios, credenciais próprias via GitHub Environments (Onda 2 concluída, ver
+  `PLANO-MESTRE.md` §1 e §12.1). Produção roda hoje apenas em `workers.dev`, sem DNS
+  próprio e sem dados reais; `vipreco.com.br` permanece sem apontamento até novo gate.
 - **Lovable:** o projeto foi criado e hospedado originalmente pela Lovable. O código,
   o banco de dados e o deploy não dependem mais dela — a GitHub App da Lovable foi
   removida (instalação desinstalada, autorização revogada, projeto desconectado) e o

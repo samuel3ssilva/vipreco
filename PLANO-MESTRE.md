@@ -60,39 +60,38 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 | Onda 1A — GitHub, CI e scans | ✅ | Concluída |
 | Onda 1B — Saída da Lovable | ✅ | Concluída |
 | Onda 1C — Contas, MFA e credenciais | ✅ | Concluída |
-| Onda 2 — Staging e produção separados | 🟡 | Em andamento |
-| Onda 3 — Segurança da aplicação, banco e borda | ⬜ | Pendente |
+| Onda 2 — Staging e produção separados | ✅ | Concluída |
+| Onda 3 — Segurança da aplicação, banco e borda | 🟡 | Em andamento |
 | Onda 4 — Resiliência operacional | ⬜ | Pendente |
 | Onda 5 — Dados reais e piloto Artemis | ⛔ | Bloqueada |
 | Onda 6 — Revisão externa e expansão | ⬜ | Pendente |
 
-### Estado confirmado da Onda 2
+### Estado confirmado do fechamento da Onda 2
 
-- PR #11 aberto e não mergeado;
-- Fase A concluída;
-- Supabase de produção `vipreco-production` criado no plano Free, região São Paulo;
-- quatro migrations aplicadas individualmente;
-- validação estrutural confirmada: 6 tabelas, 6 policies, 6 tabelas com RLS, 4 funções e `pg_trgm` ativa;
-- `.env.production` criado, protegido pelo `.gitignore` e preenchido localmente;
-- `SUPABASE_URL` e `VITE_SUPABASE_URL` precisam conter somente o domínio base, sem `/rest/v1/`;
-- nenhum GitHub Environment criado;
-- nenhum secret cadastrado;
-- nenhum token Cloudflare dedicado à produção criado;
-- nenhum Worker de produção implantado;
-- nenhum deploy de produção executado;
+- PR #11 mergeado em `main` (`559e9f6`), CI e CodeQL verdes, 0 alertas;
+- Worker de staging (`samuel3ssilva-vipreco`) e Worker de produção (`vipreco-production`) implantados, cada um com Supabase próprio;
+- GitHub Environments `staging` e `production` criados, `production` restrito a `main` com required reviewer;
+- oito secrets cadastrados (quatro por ambiente), nenhum valor exposto em log, diff ou commit;
+- isolamento comprovado por dado real observado: produção com 0 linhas em `markets`/`products`/`prices`, escrita anônima bloqueada (401); staging preserva os 4 mercados fictícios de sempre;
 - DNS de `vipreco.com.br` permanece sem apontamento;
-- staging legado permanece ativo, com dados fictícios;
 - nenhum dado real foi cadastrado.
+
+### Estado da Onda 3 (em execução)
+
+- branch `security/onda-3-hardening` criada a partir de `main` (`559e9f6`);
+- mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`;
+- escopo: threat model, auditoria de banco/RLS/grants, `approve_submission()` e recursos dormentes, frontend/bundle, headers/CSP, Turnstile/rate limit condicionado à superfície real, acessibilidade técnica, adoção reversível do Brand System v2, supply chain;
+- nenhuma migration aplicada remotamente, nenhum deploy executado, nenhum dado real cadastrado.
 
 ### Regras imediatas
 
-- finalizar a Onda 2 antes de iniciar Onda 3 ou implementação de produto;
 - não alterar DNS;
 - não cadastrar dados reais;
 - não remover aviso de teste do staging;
-- não remover `approve_submission()` durante a Onda 2;
+- não remover `approve_submission()` sem migration nova, plano de reversão e apresentação no checkpoint humano;
 - não mexer nos PRs do Dependabot;
-- não fazer merge automático.
+- não fazer merge automático do PR da Onda 3;
+- não iniciar Onda 4 ou trilha de produto dentro desta branch.
 
 ---
 
@@ -494,9 +493,9 @@ Piloto de 14 dias por R$ 150–200, como design partner e fora do gate de preço
 
 ## 12. Escopo de engenharia — ordem oficial
 
-### 12.1 Missão atual: encerrar a Onda 2
+### 12.1 Onda 2 — encerrada
 
-O CTO deve executar autonomamente tudo que for local e reversível:
+Registro histórico dos passos executados para fechar a Onda 2 (concluída, PR #11 mergeado em `main`):
 
 1. corrigir `SUPABASE_URL` e `VITE_SUPABASE_URL` em `.env.production`, removendo somente `/rest/v1/`;
 2. garantir formato `https://<project-ref>.supabase.co`;
@@ -537,9 +536,9 @@ O CTO não deve pedir valores no chat nem imprimi-los. Deve fornecer validação
 - concluir documentação e auditoria adversarial;
 - manter PR #11 sem merge até decisão humana.
 
-### 12.2 Onda 3 — segurança
+### 12.2 Onda 3 — segurança (em execução)
 
-Somente após fechamento formal da Onda 2:
+Mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`. Escopo:
 
 - grants, RLS, funções, views e Storage;
 - autenticação e autorização;
@@ -703,8 +702,8 @@ O stack local completo do Supabase permanece **NOT VERIFIED por limitação de m
 ## 17. Decisão de execução
 
 1. O CTO recebe este plano como nova referência.
-2. A única missão executável imediatamente é fechar a Onda 2.
-3. O CTO não inicia Onda 3 ou trilha de produto sem autorização específica do PMO/Founder.
-4. O PR #11 permanece isolado e sem merge até a verificação final.
-5. Dados reais permanecem bloqueados pelo Gate R0.
-6. Após o fechamento da Onda 2, o PMO emitirá uma missão separada para a Onda 3.
+2. A Onda 2 foi encerrada: PR #11 mergeado em `main`, ambientes de staging e produção separados e comprovadamente isolados.
+3. A única missão executável agora é a Onda 3 (segurança da aplicação, banco e borda), sob mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`.
+4. O CTO não inicia Onda 4 ou trilha de produto sem autorização específica do PMO/Founder.
+5. Dados reais permanecem bloqueados pelo Gate R0, que depende também do fechamento da Onda 3.
+6. Ao final da Onda 3, o CTO entrega um checkpoint humano único; o PMO decide os próximos passos.

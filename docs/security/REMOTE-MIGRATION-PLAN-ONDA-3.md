@@ -1,9 +1,11 @@
 # Plano de rollout remoto — Onda 3
 
-Nenhum passo deste plano foi executado. O merge do PR, as migrations remotas e os deploys
-dependem da autorização explícita do PMO/Founder (frase única no checkpoint). Este documento
-existe para que a execução, quando autorizada, siga exatamente esta sequência sem decisão
-improvisada no momento.
+**Executado por completo em 2026-07-30, com autorização explícita do PMO/Founder em cada gate.**
+Os 15 passos abaixo (mais a migration corretiva 3, adicionada durante o próprio rollout) foram
+concluídos: merge do PR #12, achado crítico corrigido via PR #13, migrations aplicadas e
+verificadas em staging e produção, deploy do Worker em staging e produção, aprovação manual do
+required reviewer, verificação pós-deploy completa. Este documento permanece como registro do
+processo seguido e como referência para o próximo rollout remoto desta natureza.
 
 **Correção factual (2026-07-30):** a versão anterior deste documento afirmava, incorretamente,
 que este seria o primeiro deploy do Worker de produção. **Está errado.** `vipreco-production` já

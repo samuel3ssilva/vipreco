@@ -61,7 +61,7 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 | Onda 1B — Saída da Lovable                     |     ✅ | Concluída    |
 | Onda 1C — Contas, MFA e credenciais            |     ✅ | Concluída    |
 | Onda 2 — Staging e produção separados          |     ✅ | Concluída    |
-| Onda 3 — Segurança da aplicação, banco e borda |     🟡 | Em andamento |
+| Onda 3 — Segurança da aplicação, banco e borda |     ✅ | Concluída    |
 | Onda 4 — Resiliência operacional               |     ⬜ | Pendente     |
 | Onda 5 — Dados reais e piloto Artemis          |     ⛔ | Bloqueada    |
 | Onda 6 — Revisão externa e expansão            |     ⬜ | Pendente     |
@@ -76,12 +76,16 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 - DNS de `vipreco.com.br` permanece sem apontamento;
 - nenhum dado real foi cadastrado.
 
-### Estado da Onda 3 (em execução)
+### Estado confirmado do fechamento da Onda 3
 
-- branch `security/onda-3-hardening` criada a partir de `main` (`559e9f6`);
-- mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`;
-- escopo: threat model, auditoria de banco/RLS/grants, `approve_submission()` e recursos dormentes, frontend/bundle, headers/CSP, Turnstile/rate limit condicionado à superfície real, acessibilidade técnica, adoção reversível do Brand System v2, supply chain;
-- nenhuma migration aplicada remotamente, nenhum deploy executado, nenhum dado real cadastrado.
+- PR #12 (hardening) e PR #13 (correção crítica de grants) mergeados em `main` (`b88e514`), CI e CodeQL verdes, 0 alertas;
+- threat model, matriz de autorização do banco, headers/CSP, acessibilidade AA, Brand System v2 (tokens inertes) e supply chain concluídos e documentados em `docs/security/`, `docs/accessibility/`, `docs/design/`;
+- três superfícies de escrita pública fechadas (`price_submissions`, `product_watch_requests`, `decision_feedback`) e a UI correspondente removida das rotas públicas;
+- achado crítico ao vivo durante o rollout: `REVOKE ALL ... FROM PUBLIC` não removia `EXECUTE` de `anon`/`authenticated` (grant direto de plataforma do Supabase) — afetava `approve_submission` desde a Onda 1; corrigido e verificado ao vivo em staging e produção (ver `docs/security/THREAT-MODEL-ONDA-3.md` §5.3);
+- três migrations aplicadas e verificadas ao vivo em staging (`wjurqpclauwtbjhhvigy`) e produção (`wpgglxgddnekzojozqlm`): grants de função corretos, `INSERT` público bloqueado nas três tabelas, leitura pública preservada, `RPC approve_submission` bloqueado para `anon`;
+- deploy do Worker concluído em staging e produção (produção com aprovação manual do required reviewer); produção confirmada vazia e DNS de `vipreco.com.br` inalterado após o deploy;
+- risco de governança registrado, não corrigido nesta Onda: GitHub Environment `production` tem `can_admins_bypass: true` — required reviewer não é um controle absoluto contra um admin do repositório (ver `docs/security/THREAT-MODEL-ONDA-3.md`, tabela de achados);
+- nenhum dado real foi cadastrado; MVP não iniciado.
 
 ### Regras imediatas
 

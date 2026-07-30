@@ -614,6 +614,68 @@ Após Onda 2, o CTO pode preparar em branch separada, somente com dados fictíci
 
 Não combinar essa trilha com o PR #11.
 
+### 12.5 Dois roadmaps — decisão estratégica do Founder/PMO (2026-07-30)
+
+**Nada do trabalho anterior foi apagado ou cancelado.** A partir desta data, a
+implementação segue dois roadmaps paralelos, com ordem de execução explícita:
+
+- **Roadmap A — Teste MVP asset-light:** validar o produto com o menor investimento
+  possível — produto bonito, claro e intuitivo, dados sintéticos, operação manual por
+  trás. Plano completo em `docs/mvp/TEST-MVP-PLAN.md`.
+- **Roadmap B — Pós-validação:** o Gate R0 completo e tudo que dependia dele (dado real,
+  privacidade avançada, NFC-e, cashback, Pix, motor de campanhas, portais, automação,
+  escala), **adiado, não cancelado**, para depois que o Roadmap A produzir sinais
+  positivos.
+
+A regra central: **parecer produto por fora, operar manualmente por dentro, automatizar
+somente depois da validação.**
+
+#### Roadmap A — Teste MVP asset-light
+
+| #   | Passo                         |              Estado              |
+| --- | ----------------------------- | :------------------------------: |
+| A1  | Produto demonstrável e bonito |          🟡 em execução          |
+| A2  | Operação manual de ofertas    |          🟡 em execução          |
+| A3  | Teste fechado de usabilidade  |      ⬜ depende do Gate V0       |
+| A4  | Teste local sem cashback      |      ⬜ depende do Gate V1       |
+| A5  | Campanha concierge opcional   | ⬜ só após o Gate V1, e opcional |
+| A6  | Decisão GO / AJUSTAR / NO-GO  |      ⬜ depende do Gate V2       |
+
+Detalhe de hipóteses, público, escopo, exclusões, métricas, gates (V0/V1/V2) e critérios
+de GO/AJUSTAR/NO-GO em `docs/mvp/TEST-MVP-PLAN.md`.
+
+#### Roadmap B — Pós-validação (preparação antecipada preservada)
+
+| #   | Passo                         |                                      Estado                                       |
+| --- | ----------------------------- | :-------------------------------------------------------------------------------: |
+| B1  | Gate R0 completo              | ⛔ Bloqueada — preparação documental feita, decisão NO-GO registrada (ver abaixo) |
+| B2  | Escrita segura e autenticação |                     ⬜ proposta preservada, não implementada                      |
+| B3  | Ferramentas do comerciante    |                                  ⬜ não iniciado                                  |
+| B4  | NFC-e e cashback              |                                  ⬜ não iniciado                                  |
+| B5  | Pix e conciliação             |                                  ⬜ não iniciado                                  |
+| B6  | Motor de campanhas            |                                  ⬜ não iniciado                                  |
+| B7  | Painel para indústria         |                                  ⬜ não iniciado                                  |
+| B8  | Antifraude e automação        |                                  ⬜ não iniciado                                  |
+| B9  | Resiliência e escala          |                    ✅ Onda 4 concluída (base já feita, ver §1)                    |
+
+A preparação do Gate R0 feita entre 2026-07-30 e o pivô estratégico (PRs #19-#25) foi
+**estacionada, não descartada**: branches e commits preservados, cada PR fechado com
+comentário explicando o motivo, índice completo em
+`docs/strategy/POST-VALIDATION-PARKING-LOT.md`. A decisão **NO-GO** para o piloto robusto
+(PR #25) continua válida — e não bloqueia o Roadmap A, que roda inteiramente fora do
+escopo que aquela nota avalia.
+
+#### O que continua verdade durante o Roadmap A
+
+- nenhum dado pessoal real, nenhum mercado real sem autorização, nenhum preço real sem
+  autorização;
+- produção continua vazia (0 linhas em `markets`/`products`/`prices`);
+- domínio `vipreco.com.br` continua sem apontamento;
+- nenhuma nova superfície pública de escrita — os três controles fechados na Onda 3
+  permanecem fechados e não renderizados;
+- novas descobertas do Roadmap A podem mudar o desenho do Roadmap B — nenhuma peça de B1
+  a B9 deve ser implementada antes de sinal do Roadmap A justificar o investimento.
+
 ---
 
 ## 13. Especificação funcional do MVP

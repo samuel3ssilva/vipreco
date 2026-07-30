@@ -94,6 +94,32 @@ export function findSecretKeyInPublicVar(vars: Record<string, string>): string[]
     );
 }
 
+const SERVER_TO_PUBLIC_PAIRS = [
+  ["SUPABASE_URL", "VITE_SUPABASE_URL"],
+  ["SUPABASE_PROJECT_ID", "VITE_SUPABASE_PROJECT_ID"],
+] as const;
+
+// Onda 3 — achado de revisão adversarial: findCrossEnvironmentMismatch só comparava
+// SUPABASE_PROJECT_ID (a variável não-VITE_*), mas o bundle do navegador é montado a partir
+// de VITE_SUPABASE_URL/VITE_SUPABASE_PROJECT_ID (src/integrations/supabase/client.ts prioriza
+// import.meta.env.VITE_*). Uma edição manual de .env.production que atualizasse só o par
+// server-side deixaria o frontend publicado apontando para o ambiente errado sem que nenhuma
+// checagem anterior detectasse isso. Falha fechado se os dois pares divergirem entre si.
+export function findServerPublicVarDrift(vars: Record<string, string>): string[] {
+  const problems: string[] = [];
+  for (const [serverName, publicName] of SERVER_TO_PUBLIC_PAIRS) {
+    const serverValue = vars[serverName];
+    const publicValue = vars[publicName];
+    if (!serverValue || !publicValue) continue; // já reportado por findMissingVars
+    if (serverValue !== publicValue) {
+      problems.push(
+        `${publicName} ("${publicValue}") não bate com ${serverName} ("${serverValue}") — o bundle do navegador usaria um valor diferente do resto do deploy.`,
+      );
+    }
+  }
+  return problems;
+}
+
 export function findCrossEnvironmentMismatch(
   target: EnvName,
   vars: Record<string, string>,
@@ -153,6 +179,12 @@ function main() {
   const leakedSecrets = findSecretKeyInPublicVar(vars);
   if (leakedSecrets.length > 0) {
     console.error(`FALHA SEGURA — ${leakedSecrets.join(" ")}`);
+    process.exit(1);
+  }
+
+  const drift = findServerPublicVarDrift(vars);
+  if (drift.length > 0) {
+    console.error(`FALHA SEGURA — ${drift.join(" ")}`);
     process.exit(1);
   }
 

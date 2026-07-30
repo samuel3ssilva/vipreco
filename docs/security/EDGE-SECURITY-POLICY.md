@@ -1,9 +1,22 @@
 # Política de segurança de borda — Onda 3
 
 Implementação: `src/lib/security-headers.ts` (função pura, testada em
-`src/lib/security-headers.test.ts`), aplicada a toda resposta pelo wrapper `fetch` do Worker
-em `src/server.ts`. Nenhum header depende de configuração de ambiente — o mesmo código roda em
-staging e produção; a única bifurcação é o `X-Robots-Tag` condicionado ao hostname.
+`src/lib/security-headers.test.ts`), aplicada pelo wrapper `fetch` do Worker em `src/server.ts`
+a toda **rota servida pelo Worker** (SSR/document — `/`, `/buscar`, `/produto/$id`,
+`/como-funciona`, `/sitemap.xml`). Nenhum header depende de configuração de ambiente — o mesmo
+código roda em staging e produção; a única bifurcação é o `X-Robots-Tag` condicionado ao
+hostname.
+
+**Limitação conhecida (achado de revisão adversarial desta Onda):** assets estáticos
+(`/assets/*`, `/favicon.ico`, `/robots.txt`) são servidos pelo binding `ASSETS` do Cloudflare
+Workers, que tem precedência de roteamento sobre o `fetch` handler — essas respostas **não**
+passam por `src/server.ts`. Nenhuma página HTML é servida como asset estático hoje (só JS/CSS/
+ícone/texto), então CSP/X-Frame-Options continuam garantidos em todo documento navegável; ainda
+assim, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` e `Strict-Transport-Security`
+foram replicados via `public/_headers` (mecanismo nativo do Cloudflare para assets estáticos,
+mesclado automaticamente pelo Nitro com a regra de cache que ele já gera) para cobrir esse
+caminho também — verificado por `fetch` real contra `/favicon.ico` e `/robots.txt` via
+`wrangler dev`.
 
 ## Verificação realizada
 
@@ -16,7 +29,7 @@ erro de console, nenhum bloqueio de CSP reportado). `X-Robots-Tag` não aparece 
 (esperado — só ativa em hosts terminados em `.workers.dev`, comportamento coberto pelos testes
 unitários, não pelo `wrangler dev` local).
 
-## Headers aplicados (toda rota, todo ambiente)
+## Headers aplicados (toda rota servida pelo Worker, todo ambiente)
 
 | Header                      | Valor                                                          | Motivo                                                                                                                                                                                                   |
 | --------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

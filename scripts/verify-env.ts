@@ -57,6 +57,43 @@ export function findMissingVars(vars: Record<string, string>): string[] {
   return REQUIRED_VARS.filter((name) => !vars[name]);
 }
 
+const SUPABASE_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
+const URL_VARS_TO_CHECK = ["SUPABASE_URL", "VITE_SUPABASE_URL"] as const;
+
+// Onda 3 — codifica o achado da Onda 2 (campo "REST API" do painel do Supabase copiado por
+// engano para SUPABASE_URL, deixando o sufixo /rest/v1/) como regressão automatizada.
+export function findMalformedSupabaseUrls(vars: Record<string, string>): string[] {
+  const problems: string[] = [];
+  for (const name of URL_VARS_TO_CHECK) {
+    const value = vars[name];
+    if (!value) continue; // já reportado por findMissingVars
+    if (value.includes("/rest/v1")) {
+      problems.push(`${name} contém "/rest/v1" — use a Project URL, não o campo "REST API".`);
+      continue;
+    }
+    if (!SUPABASE_URL_PATTERN.test(value)) {
+      problems.push(`${name} não bate com o formato esperado https://<project-ref>.supabase.co`);
+    }
+  }
+  return problems;
+}
+
+const SECRET_KEY_PREFIX = "sb_secret_";
+const PUBLIC_VAR_PREFIX = "VITE_";
+
+// Onda 3 — falha fechado se uma chave administrativa (formato novo do Supabase,
+// sb_secret_...) acabar atribuída a uma variável VITE_* (inlined no bundle do cliente).
+export function findSecretKeyInPublicVar(vars: Record<string, string>): string[] {
+  return Object.entries(vars)
+    .filter(
+      ([name, value]) => name.startsWith(PUBLIC_VAR_PREFIX) && value.startsWith(SECRET_KEY_PREFIX),
+    )
+    .map(
+      ([name]) =>
+        `${name} contém uma chave no formato ${SECRET_KEY_PREFIX}... — nunca deve ir em variável VITE_*.`,
+    );
+}
+
 export function findCrossEnvironmentMismatch(
   target: EnvName,
   vars: Record<string, string>,
@@ -104,6 +141,18 @@ function main() {
   const missing = findMissingVars(vars);
   if (missing.length > 0) {
     console.error(`Variáveis faltando em ${envPath}: ${missing.join(", ")}`);
+    process.exit(1);
+  }
+
+  const malformedUrls = findMalformedSupabaseUrls(vars);
+  if (malformedUrls.length > 0) {
+    console.error(`FALHA SEGURA — ${malformedUrls.join(" ")}`);
+    process.exit(1);
+  }
+
+  const leakedSecrets = findSecretKeyInPublicVar(vars);
+  if (leakedSecrets.length > 0) {
+    console.error(`FALHA SEGURA — ${leakedSecrets.join(" ")}`);
     process.exit(1);
   }
 

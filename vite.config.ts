@@ -22,6 +22,9 @@ export default defineConfig(({ command, mode }) => {
     },
     {
       define: envDefine,
+      // Fixado explicitamente (Onda 3): nunca publicar mapa de fonte no build
+      // de cliente, independente do default futuro do Nitro/Vite.
+      build: { sourcemap: false },
       ...(isDevBuild
         ? {
             environments: {
@@ -58,7 +61,11 @@ export default defineConfig(({ command, mode }) => {
         tanstackStart({
           importProtection: {
             behavior: "error",
-            client: { files: ["**/server/**"], specifiers: ["server-only"] },
+            // "**/server/**" cobre uma convenção de diretório; "**/*.server.ts"
+            // fecha a lacuna para a convenção de sufixo de arquivo usada neste
+            // projeto (achado da Onda 3 — nenhum arquivo *.server.ts existe
+            // hoje, mas o guard deve barrar a reintrodução por engano).
+            client: { files: ["**/server/**", "**/*.server.ts"], specifiers: ["server-only"] },
           },
           server: { entry: "server" },
         }),

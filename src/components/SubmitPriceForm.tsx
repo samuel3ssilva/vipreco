@@ -203,11 +203,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
           </div>
         ) : (
           <form className="mt-4 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <div
-              aria-hidden="true"
-              className="absolute h-px w-px overflow-hidden"
-              style={{ clip: "rect(0 0 0 0)", clipPath: "inset(50%)" }}
-            >
+            <div aria-hidden="true" className="sr-only">
               <label htmlFor={ids.website}>Deixe este campo em branco</label>
               <input
                 id={ids.website}

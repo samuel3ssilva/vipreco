@@ -77,8 +77,8 @@ function HomePage() {
         <section aria-labelledby="oportunidades-titulo" className="space-y-3">
           <SectionHeader
             id="oportunidades-titulo"
-            title="Oportunidades da semana"
-            description="Preços baixos conferidos recentemente nos mercados da sua região."
+            title="Achados da semana"
+            description="Exemplos fictícios para mostrar como produtos iguais podem aparecer em diferentes mercados."
           />
           {opportunities.isPending ? (
             <StateMessage variant="loading" title="Carregando oportunidades…" />
@@ -142,8 +142,9 @@ function HomePage() {
             De onde vêm esses preços?
           </h2>
           <p className="meta-text mt-0.5">
-            Notas fiscais, pesquisa em loja, fotos de etiqueta, informações dos mercados e da
-            comunidade.
+            Nesta demonstração, todos os preços são fictícios. Quando o teste começar, cada preço
+            será publicado com sua origem identificada, como informação enviada pelo mercado ou
+            pesquisa autorizada.
           </p>
           <Link to="/como-funciona" className="btn-base btn-secondary btn-sm mt-2">
             Entender como funciona

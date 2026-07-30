@@ -81,10 +81,188 @@
   --info: oklch(0.955 0.014 230);
   --info-foreground: oklch(0.36 0.04 230);
   --border: oklch(0.9 0.012 165);
-  --input: oklch(0.86 0.014 165);
+  /* Onda 3: escurecido de 0.86 para 0.60 (mesmo hue) — o valor anterior media
+     ~1.5:1 contra --card/--background, abaixo do 3:1 exigido pela SC 1.4.11
+     para o contorno de campos de formulário em repouso. */
+  --input: oklch(0.6 0.02 165);
   --ring: oklch(0.42 0.095 176);
   --surface: oklch(0.968 0.014 165);
   --surface-foreground: oklch(0.28 0.04 195);
+}
+
+/*
+ * Brand System v2 (ViPreço, direção "Visto") — aprovado pelo PMO/Founder.
+ * Instalado nesta Onda como conjunto INERTE: nenhum componente consome
+ * ainda nenhum --vp-*. A aparência atual do produto ("Preço Artemis",
+ * acima) permanece intocada. Fonte canônica: vipreco-tokens-v2.css/.json
+ * do pacote de marca (fora do repositório). Contraste de cada par
+ * recalculado pela fórmula WCAG em docs/design/BRAND-V2-CONTRAST-RECALC.md
+ * — a única correção feita ali (--vp-time-expired) já está aplicada abaixo.
+ * Fontes não foram self-hosted e o logo/favicon não foram trocados nesta
+ * Onda; ambos ficam para a trilha de produto quando a adoção visual for
+ * autorizada (ver HANDOFF-DESIGN-CTO.md, ordem de adoção).
+ */
+:root {
+  --vp-green: #0e5c3c;
+  --vp-green-hover: #0a3f29;
+  --vp-green-soft: #2f7a56;
+  --vp-green-pale: #8cc7ab;
+  --vp-ink: #10231c;
+  --vp-yellow: #f5c24b;
+  --vp-cream: #fbf7ec;
+  --vp-green-surface: #e7f1ea;
+
+  --vp-bg-page: var(--vp-cream);
+  --vp-bg-surface: #ffffff;
+  --vp-bg-subtle: #f1efe4;
+  --vp-bg-inverse: var(--vp-ink);
+  --vp-text-strong: var(--vp-ink);
+  --vp-text-muted: #5b6b63;
+  --vp-text-faint: #7a8880; /* nao atinge AA em texto normal — usar so em elementos grandes/decorativos, ver recalculo */
+  --vp-text-inverse: var(--vp-cream);
+  --vp-border: #e2ded2;
+  --vp-border-strong: #c9c4b2;
+  --vp-border-inverse: rgb(255 255 255 / 16%);
+
+  --vp-action: var(--vp-green);
+  --vp-action-hover: var(--vp-green-hover);
+  --vp-action-disabled: #c9d6cf;
+  --vp-focus: var(--vp-green);
+
+  --vp-contribute: var(--vp-yellow);
+  --vp-contribute-ink: var(--vp-ink);
+
+  --vp-success: #14764c;
+  --vp-success-bg: #e7f1ea;
+  --vp-warning: #8a6412;
+  --vp-warning-bg: #fbf3d3;
+  --vp-danger: #b3311f;
+  --vp-danger-bg: #fbeae6;
+  --vp-info: #1b5e8a;
+  --vp-info-bg: #e7f0f7;
+
+  --vp-time-now: #0e5c3c;
+  --vp-time-now-bg: #e7f1ea;
+  --vp-time-today: #10231c;
+  --vp-time-today-bg: #f1efe4;
+  --vp-time-soon: #8a4b12;
+  --vp-time-soon-bg: #f7eee2;
+  --vp-time-critical: #b3311f;
+  --vp-time-critical-bg: #fbeae6;
+  /* Onda 3: escurecido de #6B7570 para #656E69 — o valor original media
+     4.45:1 contra --vp-cream, abaixo do minimo 4.5:1 para texto normal
+     (ver docs/design/BRAND-V2-CONTRAST-RECALC.md). Recalculado em 4.92:1. */
+  --vp-time-expired: #656e69;
+  --vp-time-expired-bg: #f1efe4;
+
+  --vp-time-bar-now: 4px;
+  --vp-time-bar-today: 3px;
+  --vp-time-bar-soon: 3px;
+  --vp-time-bar-critical: 5px;
+  --vp-time-bar-expired: 1px;
+
+  --vp-src-store: #10231c;
+  --vp-src-store-bg: #f1efe4;
+  --vp-src-research: #3c4c45;
+  --vp-src-research-bg: #ffffff;
+  --vp-src-receipt: #0e5c3c;
+  --vp-src-receipt-bg: #e7f1ea;
+  --vp-src-collector: #3c4c45;
+  --vp-src-collector-bg: #fbf7ec;
+  --vp-src-ops: #1b5e8a;
+  --vp-src-ops-bg: #e7f0f7;
+
+  /* Dormentes — documentados, fora do MVP (submissao publica). Nao usar em UI. */
+  --vp-src-community: #3c4c45;
+  --vp-src-community-bg: #fbf7ec;
+  --vp-state-pending: #8a6412;
+  --vp-state-pending-bg: #fbf3d3;
+
+  --vp-ver-received: #7a8880;
+  --vp-ver-structured: #5b6b63;
+  --vp-ver-review: #8a6412;
+  --vp-ver-verified: #14764c;
+  --vp-ver-corrected: #1b5e8a;
+
+  --vp-rel-organic: transparent;
+  --vp-rel-partner: #2f7a56;
+  --vp-rel-ad: #10231c;
+  --vp-rel-ad-bg: #f1efe4;
+  --vp-rel-designpartner: #0e5c3c;
+
+  --vp-staging-fg: #6b4a0f;
+  --vp-staging-bg: #fbf3d3;
+  --vp-staging-border: #c89a25;
+  --vp-staging-height: 44px;
+
+  --vp-font-display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  --vp-font-body: "Public Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --vp-font-data: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --vp-fs-display: 2.5rem;
+  --vp-lh-display: 1.1;
+  --vp-fs-h1: 1.875rem;
+  --vp-lh-h1: 1.15;
+  --vp-fs-h2: 1.375rem;
+  --vp-lh-h2: 1.25;
+  --vp-fs-h3: 1.125rem;
+  --vp-lh-h3: 1.35;
+  --vp-fs-body: 1rem;
+  --vp-lh-body: 1.6;
+  --vp-fs-small: 0.875rem;
+  --vp-lh-small: 1.55;
+  --vp-fs-label: 0.8125rem;
+  --vp-fs-price-xl: 2.125rem;
+  --vp-fs-price-l: 1.625rem;
+  --vp-fs-price-m: 1.25rem;
+  --vp-fs-count: 1.125rem;
+  --vp-fs-meta: 0.8125rem;
+
+  --vp-fw-regular: 400;
+  --vp-fw-medium: 500;
+  --vp-fw-semi: 600;
+  --vp-fw-bold: 700;
+  --vp-fw-black: 800;
+  --vp-tracking-display: -0.025em;
+
+  --vp-sp-1: 4px;
+  --vp-sp-2: 8px;
+  --vp-sp-3: 12px;
+  --vp-sp-4: 16px;
+  --vp-sp-5: 20px;
+  --vp-sp-6: 24px;
+  --vp-sp-8: 32px;
+  --vp-sp-10: 40px;
+  --vp-sp-12: 48px;
+  --vp-sp-16: 64px;
+
+  --vp-r-sm: 6px;
+  --vp-r-md: 10px;
+  --vp-r-lg: 14px;
+  --vp-r-xl: 20px;
+  --vp-r-full: 999px;
+
+  --vp-shadow-0: none;
+  --vp-shadow-1: 0 1px 2px rgb(16 35 28 / 6%);
+  --vp-shadow-2: 0 4px 14px rgb(16 35 28 / 10%);
+  --vp-shadow-3: 0 10px 34px rgb(16 35 28 / 16%);
+
+  --vp-content-max: 1160px;
+  --vp-pricecard-max: 560px;
+  --vp-tap-min: 48px;
+  --vp-bp-tablet: 768px;
+  --vp-bp-desktop: 1024px;
+
+  --vp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --vp-dur-fast: 200ms;
+  --vp-dur-base: 250ms;
+  --vp-dur-check: 400ms;
+  --vp-dur-count: 60000ms;
+  --vp-dur-count-fine: 1000ms;
+
+  --vp-icon-grid: 24px;
+  --vp-icon-stroke: 2px;
+  --vp-icon-stroke-dense: 1.5px;
 }
 
 @layer base {

@@ -57,6 +57,69 @@ export function findMissingVars(vars: Record<string, string>): string[] {
   return REQUIRED_VARS.filter((name) => !vars[name]);
 }
 
+const SUPABASE_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
+const URL_VARS_TO_CHECK = ["SUPABASE_URL", "VITE_SUPABASE_URL"] as const;
+
+// Onda 3 — codifica o achado da Onda 2 (campo "REST API" do painel do Supabase copiado por
+// engano para SUPABASE_URL, deixando o sufixo /rest/v1/) como regressão automatizada.
+export function findMalformedSupabaseUrls(vars: Record<string, string>): string[] {
+  const problems: string[] = [];
+  for (const name of URL_VARS_TO_CHECK) {
+    const value = vars[name];
+    if (!value) continue; // já reportado por findMissingVars
+    if (value.includes("/rest/v1")) {
+      problems.push(`${name} contém "/rest/v1" — use a Project URL, não o campo "REST API".`);
+      continue;
+    }
+    if (!SUPABASE_URL_PATTERN.test(value)) {
+      problems.push(`${name} não bate com o formato esperado https://<project-ref>.supabase.co`);
+    }
+  }
+  return problems;
+}
+
+const SECRET_KEY_PREFIX = "sb_secret_";
+const PUBLIC_VAR_PREFIX = "VITE_";
+
+// Onda 3 — falha fechado se uma chave administrativa (formato novo do Supabase,
+// sb_secret_...) acabar atribuída a uma variável VITE_* (inlined no bundle do cliente).
+export function findSecretKeyInPublicVar(vars: Record<string, string>): string[] {
+  return Object.entries(vars)
+    .filter(
+      ([name, value]) => name.startsWith(PUBLIC_VAR_PREFIX) && value.startsWith(SECRET_KEY_PREFIX),
+    )
+    .map(
+      ([name]) =>
+        `${name} contém uma chave no formato ${SECRET_KEY_PREFIX}... — nunca deve ir em variável VITE_*.`,
+    );
+}
+
+const SERVER_TO_PUBLIC_PAIRS = [
+  ["SUPABASE_URL", "VITE_SUPABASE_URL"],
+  ["SUPABASE_PROJECT_ID", "VITE_SUPABASE_PROJECT_ID"],
+] as const;
+
+// Onda 3 — achado de revisão adversarial: findCrossEnvironmentMismatch só comparava
+// SUPABASE_PROJECT_ID (a variável não-VITE_*), mas o bundle do navegador é montado a partir
+// de VITE_SUPABASE_URL/VITE_SUPABASE_PROJECT_ID (src/integrations/supabase/client.ts prioriza
+// import.meta.env.VITE_*). Uma edição manual de .env.production que atualizasse só o par
+// server-side deixaria o frontend publicado apontando para o ambiente errado sem que nenhuma
+// checagem anterior detectasse isso. Falha fechado se os dois pares divergirem entre si.
+export function findServerPublicVarDrift(vars: Record<string, string>): string[] {
+  const problems: string[] = [];
+  for (const [serverName, publicName] of SERVER_TO_PUBLIC_PAIRS) {
+    const serverValue = vars[serverName];
+    const publicValue = vars[publicName];
+    if (!serverValue || !publicValue) continue; // já reportado por findMissingVars
+    if (serverValue !== publicValue) {
+      problems.push(
+        `${publicName} ("${publicValue}") não bate com ${serverName} ("${serverValue}") — o bundle do navegador usaria um valor diferente do resto do deploy.`,
+      );
+    }
+  }
+  return problems;
+}
+
 export function findCrossEnvironmentMismatch(
   target: EnvName,
   vars: Record<string, string>,
@@ -104,6 +167,24 @@ function main() {
   const missing = findMissingVars(vars);
   if (missing.length > 0) {
     console.error(`Variáveis faltando em ${envPath}: ${missing.join(", ")}`);
+    process.exit(1);
+  }
+
+  const malformedUrls = findMalformedSupabaseUrls(vars);
+  if (malformedUrls.length > 0) {
+    console.error(`FALHA SEGURA — ${malformedUrls.join(" ")}`);
+    process.exit(1);
+  }
+
+  const leakedSecrets = findSecretKeyInPublicVar(vars);
+  if (leakedSecrets.length > 0) {
+    console.error(`FALHA SEGURA — ${leakedSecrets.join(" ")}`);
+    process.exit(1);
+  }
+
+  const drift = findServerPublicVarDrift(vars);
+  if (drift.length > 0) {
+    console.error(`FALHA SEGURA — ${drift.join(" ")}`);
     process.exit(1);
   }
 

@@ -1,0 +1,191 @@
+# Threat model — Onda 3
+
+**Método:** recuperação read-only de `origin/main` (`559e9f6`) + inspeção do estado versionado
+(migrations, RLS, grants, funções, rotas, cliente Supabase, build/deploy, workflows). Estado
+ao vivo de Cloudflare/Supabase foi consultado onde a sessão permitia acesso read-only;
+itens não verificáveis a partir do repositório estão marcados `NOT VERIFIED`.
+
+## 1. Ativos e dados
+
+| Ativo                                                                  | Onde vive                                      | Sensibilidade                                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
+| Catálogo (`markets`, `products`, `prices`)                             | Postgres/Supabase, staging + produção          | Baixa — dado público por design, sem PII                                |
+| Sugestões da comunidade (`price_submissions`)                          | Postgres                                       | Baixa/média — sem PII, mas grava texto livre (`comment`, até 280 chars) |
+| Instrumentação anônima (`product_watch_requests`, `decision_feedback`) | Postgres                                       | Baixa — sem identificador de pessoa                                     |
+| Chave publishable + URL do Supabase                                    | Bundle do cliente (por design)                 | Pública, mas é a chave de acesso a todo o restante deste mapa           |
+| Chave `service_role`                                                   | Secrets do GitHub Environment, nunca no bundle | Alta — bypassa RLS inteiramente                                         |
+| Token Cloudflare                                                       | Secrets do GitHub Environment                  | Alta — controla deploy do Worker                                        |
+| Preferências locais (mercado habitual, watch, feedback respondido)     | `localStorage`/`sessionStorage` do navegador   | Baixa — apenas UUIDs, nunca enviado ao backend                          |
+| Código-fonte e histórico                                               | GitHub `samuel3ssilva/vipreco`                 | Média — CI/CodeQL protegem, MFA já endurecido (Onda 1C)                 |
+
+## 2. Papéis e fronteiras de confiança
+
+- **`anon`** (chave publishable) — qualquer visitante do app ou qualquer terceiro que capture a
+  chave publishable (ela é pública por design) e chame a Data API diretamente, **sem passar
+  pelo Worker Cloudflare**. Fronteira real de autorização é inteiramente RLS/GRANT no Postgres,
+  não o frontend nem o Worker.
+- **`authenticated`** — papel existe no schema (mesmos GRANTs que `anon` em toda tabela) mas
+  **não há nenhum fluxo de login/signup ativo no produto** (ver §5, item "Auth"). Hoje é
+  equivalente a `anon` na prática.
+- **`service_role`** — usado apenas em CI (secrets do GitHub Environment) para `approve_submission`
+  e operações administrativas; nunca no frontend.
+- **Worker Cloudflare** — serve o app (SSR + assets estáticos). **Não fica no caminho das
+  chamadas do navegador ao Supabase**: o cliente Supabase chama `SUPABASE_URL` diretamente do
+  navegador. Isso significa que qualquer proteção implementada só no Worker (ex.: rate limit)
+  **não protege as tabelas com INSERT público**, que são acessíveis diretamente via REST do
+  Supabase com a chave publishable, sem tocar no Worker.
+- **PMO/Founder** — único papel com acesso a secrets, credenciais, DNS, merge e dados reais.
+
+## 3. Superfícies públicas
+
+| Superfície                                                                      | Método                                  | Protegida por                                                                                                                                                                          |
+| ------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET` catálogo (`markets`, `products`, `prices`) via Data API                   | REST direto ou via app                  | RLS `SELECT` (`is_active`/validade)                                                                                                                                                    |
+| `INSERT price_submissions` via Data API                                         | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy `WITH CHECK` preservada e dormente (ver §4.2). `SubmitPriceForm` ("Informar preço") continua na UI mas toda tentativa de envio falha |
+| `INSERT product_watch_requests` via Data API                                    | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy dormente. Botão "Quero acompanhar" continua na UI mas toda tentativa falha                                                           |
+| `INSERT decision_feedback` via Data API                                         | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy dormente. Widget de feedback de decisão continua na UI mas toda tentativa falha                                                      |
+| `EXECUTE approve_submission(uuid)`                                              | RPC                                     | `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE TO service_role` — **não chamável por `anon`/`authenticated`**                                                                               |
+| Rotas do app (`/`, `/buscar`, `/produto/$id`, `/como-funciona`, `/sitemap.xml`) | HTTP via Worker                         | Nenhum header de segurança hoje (ver §7)                                                                                                                                               |
+| `workers.dev` de staging e produção                                             | HTTP                                    | Sem autenticação — por design, ainda não são lançamento público, mas são publicamente alcançáveis e **indexáveis** hoje (ver §7)                                                       |
+
+## 4. Atacantes e abusos plausíveis considerados
+
+1. **Visitante anônimo comum** — não é ameaça; é o usuário-alvo do produto.
+2. **Usuário malicioso sem conta** — pode chamar a Data API diretamente (chave publishable é
+   pública). Pode tentar: inundar `price_submissions`/`product_watch_requests`/`decision_feedback`
+   com INSERTs em massa (spam/esgotamento de armazenamento no plano Free); tentar ler dados fora
+   do RLS (bloqueado); tentar `EXECUTE approve_submission` (bloqueado); tentar UPDATE/DELETE em
+   qualquer tabela (bloqueado, sem policy para `anon`/`authenticated`).
+3. **Comerciante futuro** — sem superfície dedicada hoje (fora do MVP); nenhum risco ativo.
+4. **Operador interno futuro** — sem superfície hoje; risco fica para Onda futura quando um
+   papel operacional for criado.
+5. **Script automatizado / crawler** — pode indexar as URLs `workers.dev` (nenhum `X-Robots-Tag`/
+   `noindex` hoje) e pode automatizar INSERTs nas três tabelas de escrita pública (não há
+   rate-limit server-side, apenas soft-cap client-side declaradamente insuficiente).
+6. **Comprometimento da chave publishable** — não é um "comprometimento" real: a chave é pública
+   por design. O risco correto a avaliar é "o que essa chave permite", que é exatamente o RLS
+   documentado acima — já auditado e restrito.
+7. **Erro de configuração staging/produção** — mitigado por `scripts/verify-env.ts` (fail-closed,
+   compara `SUPABASE_PROJECT_ID` contra `config/environments.json` e recusa credencial cruzada)
+   e comprovado em produção (0 linhas, escrita anônima 401) durante o fechamento da Onda 2.
+8. **XSS via conteúdo de produto/mercado** — nenhum `dangerouslySetInnerHTML` ativo no caminho
+   de renderização de dados do Supabase (o único uso existente é em `src/components/ui/chart.tsx`,
+   componente shadcn não utilizado em nenhuma rota). React escapa todo conteúdo textual por padrão.
+9. **Abuso de endpoints** — coberto no item 2 acima; é o achado central desta Onda (§ "escrita
+   pública sem proteção server-side").
+10. **Vazamento por logs, bundle ou source map** — nenhum `service_role`, segredo ou source map
+    encontrado no bundle/config versionado (ver Fase C). `build.sourcemap` não está explicitamente
+    definido — hoje o default do Nitro/Vite é não gerar source map de produção, mas isso não está
+    fixado no código (risco de regressão silenciosa se o default mudar).
+11. **Uso indevido de função `SECURITY DEFINER`** — `approve_submission` é a única função
+    `SECURITY DEFINER` do schema; tem `search_path` fixado e `EXECUTE` restrito a `service_role`.
+    Sem achado bloqueante. Owner efetivo da função não é verificável a partir do repositório —
+    `NOT VERIFIED`, requer checagem `\df+ public.approve_submission` no banco vivo.
+12. **Falha de RLS** — nenhuma tabela exposta pela API está sem RLS habilitado. Nenhuma policy
+    permissiva demais foi encontrada. `pa_normalize_text`, `pa_set_updated_at` e
+    `pa_products_search_text` **não têm `REVOKE` explícito do `EXECUTE` padrão de `PUBLIC`** que
+    o Postgres concede a toda função nova — hoje inofensivo (funções puras/só tocam `NEW` de
+    trigger), mas inconsistente com o padrão de hardening explícito usado em `approve_submission`.
+13. **Dado demo em produção** — `is_demo` **não é uma fronteira de RLS**, é apenas rótulo de
+    proveniência; a policy de SELECT não distingue `is_demo=true` de `false`. O isolamento é
+    inteiramente procedural (seed só é aplicado manualmente em staging). Produção foi confirmada
+    com 0 linhas nas tabelas de negócio no fechamento da Onda 2, mas o banco não tem uma trava
+    técnica que impeça alguém de rodar `seed.sql` contra produção por engano.
+14. **Conteúdo patrocinado confundido com orgânico** — `is_featured` existe apenas em `prices`
+    e não há, ainda, nenhuma UI de anúncio/patrocínio implementada; portanto não há risco ativo
+    de neutralidade nesta Onda. Ponto para a Onda de produto quando "Achados do dia"/publicidade
+    forem implementados: será necessário teste automatizado que `is_featured` nunca entra no
+    `ORDER BY` da comparação orgânica (já é regra em `src/lib/comparison.ts`, mas ainda sem teste
+    específico de neutralidade contra `is_featured`).
+15. **Recurso dormente exposto acidentalmente** — auditado: `approve_submission` está corretamente
+    fechado. Scaffolding de autenticação (`client.server.ts`, `auth-middleware.ts`,
+    `auth-attacher.ts`) existe no repositório, sem nenhum ponto de chamada ativo, mas contradiz o
+    princípio "escopo é lei" pela mera presença de código que manuseia `service_role` e verificação
+    de JWT. Tratado como achado nesta Onda (ver tabela).
+
+## 5. Tabela de achados
+
+| Ativo                                                                              | Ameaça                                                                                                                                                                                                                                   | Superfície                                                                | Controle existente                                                                                                                                                                                                              | Falha                                                                                                                                           | Severidade                                                                                          | Correção                                                                                                                                                                                                                               | Evidência                                                                                                            | Risco residual                                                                                                                                              |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `price_submissions`/`product_watch_requests`/`decision_feedback`                   | Flood automatizado / esgotamento de armazenamento                                                                                                                                                                                        | INSERT direto via Data API (chave publishable), fora do alcance do Worker | **Fechado no checkpoint do PMO (2026-07-29):** `REVOKE INSERT ... FROM anon, authenticated` nas três tabelas (`supabase/migrations/20260729223000_close_public_write_surfaces.sql`), policies de INSERT preservadas e dormentes | Nenhuma — superfície fechada, não mitigada                                                                                                      | **Resolvido (era Média)**                                                                           | `REVOKE INSERT` não destrutivo; testes de regressão estáticos em `supabase/close-public-write-surfaces.test.ts`; verificação viva (INSERT anônimo rejeitado) faz parte do rollout, ver `docs/security/REMOTE-MIGRATION-PLAN-ONDA-3.md` | `supabase/migrations/20260729223000_close_public_write_surfaces.sql`, `supabase/close-public-write-surfaces.test.ts` | Nenhum enquanto a superfície permanecer fechada. Reabertura futura exige endpoint server-side, validação, proteção anti-abuso e novo gate — ver §4.2 abaixo |
+| Todas as rotas do Worker                                                           | Clickjacking, MIME sniffing, referrer leakage, uso indevido de permissões do navegador                                                                                                                                                   | Toda resposta HTTP do Worker                                              | Nenhum header de segurança presente                                                                                                                                                                                             | CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, anti-framing ausentes                                                   | **Alta**                                                                                            | Implementados em `src/server.ts` nesta Onda                                                                                                                                                                                            | `docs/security/EDGE-SECURITY-POLICY.md`                                                                              | Baixo após a correção; validar em staging/produção reais no rollout                                                                                         |
+| URLs `workers.dev` de staging/produção                                             | Indexação prematura por crawlers antes do lançamento oficial                                                                                                                                                                             | `robots.txt` (`Allow: /`), nenhum `X-Robots-Tag`                          | Nenhum                                                                                                                                                                                                                          | Motores de busca podem indexar o ambiente técnico não lançado                                                                                   | **Média**                                                                                           | `X-Robots-Tag: noindex, nofollow` adicionado condicionalmente por host nesta Onda                                                                                                                                                      | `docs/security/EDGE-SECURITY-POLICY.md`                                                                              | Baixo após a correção                                                                                                                                       |
+| `pa_normalize_text`, `pa_set_updated_at`, `pa_products_search_text`                | Uso direto por role não intencional (defesa em profundidade)                                                                                                                                                                             | `EXECUTE` padrão de `PUBLIC` não revogado                                 | Funções são puras/inofensivas hoje                                                                                                                                                                                              | Inconsistência com o padrão explícito de hardening usado em `approve_submission`                                                                | **Baixa**                                                                                           | Migration nova revogando `PUBLIC` e concedendo apenas aos roles que precisam                                                                                                                                                           | `supabase/migrations/…_harden_helper_function_grants.sql`                                                            | Nenhum — funções continuam operando via trigger/índice normalmente                                                                                          |
+| Scaffolding de auth (`client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`) | Superfície morta que manuseia `service_role`/JWT sem necessidade; risco de alguém futuramente importar `supabaseAdmin` de uma rota, já que `importProtection` só cobre `**/server/**` (diretório), não o sufixo `*.server.ts` usado aqui | Código-fonte, build                                                       | Convenção de nome de arquivo, não imposta pelo build                                                                                                                                                                            | Presença de código morto que contradiz "sem login de consumidor" e cujo guard de build tem uma lacuna                                           | **Média**                                                                                           | Removido nesta Onda (zero call sites confirmados; ver Fase C)                                                                                                                                                                          | commit de remoção + `bun run build` verde                                                                            | Nenhum — funcionalidade inexistente foi apenas removida                                                                                                     |
+| `build.sourcemap`                                                                  | Vazamento de código-fonte/estrutura interna via source map público                                                                                                                                                                       | Build de produção                                                         | Default implícito do Nitro/Vite (hoje não gera map, mas não está fixado)                                                                                                                                                        | Ausência de declaração explícita — risco de regressão silenciosa                                                                                | **Baixa**                                                                                           | Fixado explicitamente como `false` para build de cliente nesta Onda                                                                                                                                                                    | `vite.config.ts`                                                                                                     | Nenhum                                                                                                                                                      |
+| GitHub Actions (`ci.yml`, `deploy-staging.yml`, `deploy-production.yml`)           | Token do Actions com permissão implícita ampla; `uses:` não fixado por SHA                                                                                                                                                               | Pipeline de CI/CD                                                         | `codeql.yml` já usa `permissions:` mínimo — os outros três não                                                                                                                                                                  | Token `GITHUB_TOKEN` com escopo padrão (potencialmente mais amplo que o necessário); tags mutáveis (`@v4`, `@v2`, `@v3`) em vez de SHA completo | **Baixa/Média**                                                                                     | `permissions:` mínimo adicionado aos três workflows nesta Onda; SHA-pinning avaliado (ver auditoria de supply chain)                                                                                                                   | `.github/workflows/*.yml`                                                                                            | Baixo                                                                                                                                                       |
+| `bunx wrangler deploy` (ambos os workflows de deploy)                              | Versão do `wrangler` não fixada — build não reprodutível, superfície de supply chain                                                                                                                                                     | Pipeline de deploy                                                        | Nenhum                                                                                                                                                                                                                          | Deploy usa "latest" do npm no momento da execução                                                                                               | **Baixa**                                                                                           | Versão fixada nesta Onda                                                                                                                                                                                                               | `.github/workflows/deploy-*.yml`                                                                                     | Baixo                                                                                                                                                       |
+| `nitro` em versão beta (`3.0.260603-beta`)                                         | Ferramenta de build/deploy crítica em prerelease                                                                                                                                                                                         | `package.json` devDependency                                              | Nenhum — é a versão em uso desde a Onda 1B/2                                                                                                                                                                                    | Instabilidade potencial de uma dependência no caminho crítico de produção                                                                       | **Baixa (NOT VERIFIED — decisão de produto/infra, fora do escopo de correção autônoma desta Onda)** | Nenhuma ação autônoma; registrado para acompanhamento — trocar de beta exige validação de build completa e não é uma "vulnerabilidade direta e material" que justifique atualização fora do escopo                                     | Este documento                                                                                                       | Aceito como risco conhecido                                                                                                                                 |
+| `is_demo`                                                                          | Dado fictício aparecer em produção por engano operacional                                                                                                                                                                                | Nenhuma trava técnica — apenas procedimento                               | `seed.sql` só é aplicado manualmente; `seed.test.ts` testa o conteúdo do arquivo, não o banco vivo                                                                                                                              | RLS não distingue `is_demo`                                                                                                                     | **Baixa (residual aceito)**                                                                         | Fora do escopo de mudança de schema desta Onda — mitigação real é operacional (nunca rodar `seed.sql` contra produção) e já documentada em `CLAUDE.md`/`supabase/seed.sql`                                                             | `supabase/seed.sql` cabeçalho                                                                                        | Aceito — mudar isso exigiria RLS adicional sobre `is_demo`, decisão de produto fora do escopo de correção pontual                                           |
+| Storage do Supabase                                                                | Bucket público criado fora de versionamento, sem policy auditável                                                                                                                                                                        | Painel Supabase (fora do repositório)                                     | Nenhuma evidência de uso no código versionado                                                                                                                                                                                   | Não verificável via `origin/main`                                                                                                               | **NOT VERIFIED**                                                                                    | Verificação read-only do painel ao vivo recomendada no checkpoint                                                                                                                                                                      | Ausência de qualquer referência a `storage.*` no código                                                              | A confirmar pelo Founder/CTO com acesso ao painel                                                                                                           |
+| Config de Auth do Supabase (signup, redirects, confirmação de e-mail)              | Signup público habilitado por padrão do Supabase, sem uso no produto                                                                                                                                                                     | Painel Supabase (fora do repositório)                                     | Nenhuma config versionada (`supabase/config.toml` não tem seção `[auth]`)                                                                                                                                                       | Não verificável via `origin/main`                                                                                                               | **NOT VERIFIED**                                                                                    | Verificação read-only do painel ao vivo recomendada no checkpoint                                                                                                                                                                      | `supabase/config.toml` (1 linha, sem seção `[auth]`)                                                                 | A confirmar pelo Founder/CTO com acesso ao painel                                                                                                           |
+| `approve_submission` — owner efetivo                                               | `SECURITY DEFINER` roda com privilégios do owner; owner não é declarado na migration                                                                                                                                                     | Banco vivo                                                                | `REVOKE`/`GRANT` corretos limitam quem chama, mas não documentam quem é o definer                                                                                                                                               | Não verificável via `origin/main`                                                                                                               | **NOT VERIFIED (baixo risco)**                                                                      | Checar `\df+ public.approve_submission` no banco vivo                                                                                                                                                                                  | `supabase/migrations/20260727155843_approve_submission.sql`                                                          | Baixo — mesmo que o owner seja `postgres`/superuser do projeto, apenas `service_role` pode chamar a função                                                  |
+
+## 4.2 Turnstile e rate limiting — status após o checkpoint do PMO
+
+**NÃO APLICÁVEIS ENQUANTO TODAS AS SUPERFÍCIES PÚBLICAS DE ESCRITA ESTIVEREM FECHADAS.
+OBRIGATÓRIOS ANTES DE REATIVAR QUALQUER UMA DELAS.**
+
+As três únicas tabelas que aceitavam `INSERT` de `anon`/`authenticated`
+(`price_submissions`, `product_watch_requests`, `decision_feedback`) tiveram esse privilégio
+revogado em `supabase/migrations/20260729223000_close_public_write_surfaces.sql` (checkpoint do
+PMO, 2026-07-29). Sem superfície pública de escrita, não há nenhuma ação/RPC/endpoint anônimo que
+produza efeito persistente hoje — logo, criar Turnstile ou um rate limiter agora seria proteger
+uma superfície que não existe (contraria o princípio "não implementar controle que apenas pareça
+seguro sem proteger uma superfície real").
+
+Qualquer futura reabertura de `price_submissions`, `product_watch_requests` ou
+`decision_feedback` — ou criação de qualquer outra ação pública com efeito persistente — deve vir
+acompanhada, na mesma migration/PR que reabre a escrita, de: endpoint/RPC server-side controlado,
+validação server-side, proteção anti-abuso automatizada quando justificada (Turnstile ou
+equivalente), rate limit por risco, testes de bypass, e novo gate do PMO/Founder. Nenhuma
+reabertura parcial (grant sem a proteção correspondente) é aceitável.
+
+## 5.1 Verificação viva — INSERT anônimo nas três tabelas fechadas
+
+Confirmado ao vivo contra **produção**, antes da aplicação da migration de fechamento (baseline
+para o rollout comparar depois/antes — ver `docs/security/REMOTE-MIGRATION-PLAN-ONDA-3.md`):
+leitura pública de `prices` retorna `200` com array vazio; `INSERT` anônimo em `prices` retorna
+`401 permission denied`. O mesmo padrão de RLS+GRANT protegia (antes desta Onda) `prices` — as
+três tabelas de submissão pública seguiam padrão diferente (INSERT liberado por design original,
+agora fechado). A confirmação de que o `INSERT` anônimo nas três tabelas passa a retornar `401`
+**depois** da migration aplicada é o passo 5 (staging) e 11 (produção) do plano de rollout.
+
+## 5.2 Consequência de produto do fechamento — não fica só na matriz de banco
+
+**Atualizado no segundo ajuste do PMO (2026-07-29):** a primeira resposta a este achado (fechar o
+banco e apenas corrigir o texto de erro dos três controles) foi avaliada pelo PMO como insuficiente
+— uma interface que sempre falha não é um estado final aceitável. Os três controles públicos
+ligados às tabelas fechadas deixaram de ser renderizados nas rotas públicas, em staging e em
+produção:
+
+- botão "Informar preço" e botão "Informar atualização" por mercado (abriam `SubmitPriceForm`,
+  escreve em `price_submissions`);
+- botão "Quero acompanhar" (chamava `registerWatchRequest`, escreve em `product_watch_requests`);
+- widget de feedback de decisão `DecisionFeedback` (escreve em `decision_feedback`).
+
+`src/routes/produto.$productId.tsx` não importa mais `SubmitPriceForm` nem `DecisionFeedback`, não
+chama mais `registerWatchRequest`, e `PriceCard` não expõe mais a prop `onReport` que abria o
+formulário a partir de cada card de preço — não há caminho alternativo no frontend para essas três
+ações. **Estrutura preservada e interface pública não renderizada enquanto a superfície de escrita
+permanecer fechada**: os três componentes (`SubmitPriceForm.tsx`, `DecisionFeedback.tsx`) e a
+função `registerWatchRequest` continuam no repositório, sem exclusão destrutiva, prontos para
+religar quando a escrita for reaberta com proteção server-side (Turnstile/rate limit, ver §4.2).
+Nenhum botão desabilitado, mensagem "em breve", feature flag remota, credencial ou infraestrutura
+nova foi introduzida — a remoção é de renderização, resolvida em código, no mesmo PR. Regressão
+estática em `src/routes/produto.$productId.public-surfaces.test.ts` garante que os três controles
+não voltem a aparecer sem que o teste falhe primeiro.
+
+O texto de erro dos três componentes (corrigido na rodada anterior para não implicar problema de
+conexão) permanece no código-fonte como parte do estado dormente dos componentes — deixou de ser
+alcançável por qualquer usuário, já que nada os renderiza mais nas rotas públicas.
+
+## 6. Conclusão da Fase A (atualizada após o segundo ajuste do PMO)
+
+Nenhum bloqueio material impede o merge após as correções deste checkpoint. O achado de maior
+severidade prática (headers/CSP ausentes) já tinha correção direta e local. O achado que o PMO
+classificou como bloqueante (escrita pública nas três tabelas) foi fechado por migration não
+destrutiva; o ajuste seguinte do PMO (interface que sempre falha não é aceitável) foi resolvido
+removendo a renderização dos três controles nas rotas públicas, sem excluir estrutura nem criar
+infraestrutura nova — não resta nenhum item de severidade Média ou superior sem correção ou sem
+`NOT VERIFIED` explicitamente aceito.

@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BellRing, Flag } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PriceCard } from "@/components/PriceCard";
 import { PriceSummary } from "@/components/PriceSummary";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
-import { SubmitPriceForm } from "@/components/SubmitPriceForm";
-import { DecisionFeedback } from "@/components/DecisionFeedback";
 import { UsualMarketPicker } from "@/components/UsualMarketPicker";
 import { SectionHeader } from "@/components/PageContainer";
-import { getProductComparison, registerWatchRequest } from "@/services/catalog";
+import { getProductComparison } from "@/services/catalog";
 import { compareWithUsualMarket } from "@/lib/comparison";
 import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
-import { getUsualMarketId, hasWatched, markWatched } from "@/lib/local-preferences";
+import { getUsualMarketId } from "@/lib/local-preferences";
+
+// Onda 3 (checkpoint PMO 2026-07-29): SubmitPriceForm, DecisionFeedback e o fluxo de
+// "acompanhar produto" (product_watch_requests) foram deliberadamente removidos da renderização
+// desta rota — as tabelas que essas ações escrevem tiveram o INSERT público fechado (ver
+// supabase/migrations/20260729223000_close_public_write_surfaces.sql). Os componentes continuam
+// no repositório, intocados, para religar quando a superfície de escrita for reaberta.
 
 const DEFAULT_TITLE = "Comparar preços do produto — ViPreço";
 const DEFAULT_DESCRIPTION =
@@ -62,14 +65,9 @@ function ProductPage() {
   const { productId } = Route.useParams();
   const loaderData = Route.useLoaderData();
   const [usualMarketId, setUsual] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [reportMarketId, setReportMarketId] = useState<string | null>(null);
-  const [watched, setWatched] = useState(false);
-  const [watchStatus, setWatchStatus] = useState<"idle" | "sending" | "error">("idle");
 
   useEffect(() => {
     setUsual(getUsualMarketId());
-    setWatched(hasWatched(productId));
   }, [productId]);
 
   const { data, isPending, isError, refetch } = useQuery({
@@ -83,18 +81,6 @@ function ProductPage() {
     () => compareWithUsualMarket(data?.entries ?? [], usualMarketId),
     [data, usualMarketId],
   );
-
-  async function watch() {
-    setWatchStatus("sending");
-    try {
-      await registerWatchRequest(productId);
-      markWatched(productId);
-      setWatched(true);
-      setWatchStatus("idle");
-    } catch {
-      setWatchStatus("error");
-    }
-  }
 
   if (isPending) {
     return (
@@ -160,7 +146,7 @@ function ProductPage() {
             <StateMessage
               variant="empty"
               title="Nenhum preço válido cadastrado."
-              description="Você pode informar um preço que viu na loja ou pedir para acompanharmos este produto."
+              description="Ainda não há preços válidos cadastrados para este produto."
             />
           </>
         ) : (
@@ -184,10 +170,6 @@ function ProductPage() {
                     isLowest={index === 0}
                     isUsualMarket={entry.market_id === usualMarketId}
                     differenceToLowest={Number((entry.price - lowest).toFixed(2))}
-                    onReport={(clickedEntry) => {
-                      setReportMarketId(clickedEntry.market_id);
-                      setShowForm(true);
-                    }}
                   />
                 ))}
               </ul>
@@ -196,54 +178,7 @@ function ProductPage() {
             <PriceDisclaimer showDemoNotice={isDemo} />
           </>
         )}
-
-        <section
-          aria-label="Ajude a manter os preços atualizados"
-          className="card-compact bg-surface"
-        >
-          <h2 className="text-base font-bold">Viu um preço diferente?</h2>
-          <p className="meta-text mt-0.5">
-            Sua informação é conferida por uma pessoa antes de aparecer para os outros moradores.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn-base btn-primary btn-sm"
-              onClick={() => {
-                setReportMarketId(null);
-                setShowForm(true);
-              }}
-            >
-              <Flag aria-hidden="true" className="size-4" />
-              Informar preço
-            </button>
-            <button
-              type="button"
-              className="btn-base btn-secondary btn-sm"
-              disabled={watched || watchStatus === "sending"}
-              onClick={() => void watch()}
-            >
-              <BellRing aria-hidden="true" className="size-4" />
-              {watched ? "Interesse registrado" : "Quero acompanhar"}
-            </button>
-          </div>
-          {watchStatus === "error" ? (
-            <p role="alert" className="mt-2 text-sm font-semibold text-destructive">
-              Não conseguimos registrar seu interesse agora. Tente novamente.
-            </p>
-          ) : null}
-        </section>
-
-        <DecisionFeedback productId={product.id} />
       </div>
-
-      {showForm ? (
-        <SubmitPriceForm
-          product={product}
-          defaultMarketId={reportMarketId ?? usualMarketId}
-          onClose={() => setShowForm(false)}
-        />
-      ) : null}
     </AppShell>
   );
 }

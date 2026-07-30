@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   envFilePathFor,
   findCrossEnvironmentMismatch,
+  findMalformedSupabaseUrls,
   findMissingVars,
+  findSecretKeyInPublicVar,
+  findServerPublicVarDrift,
   parseEnvFile,
   type EnvironmentsFile,
 } from "./verify-env";
@@ -53,6 +56,65 @@ describe("findMissingVars", () => {
   it("lista as variáveis obrigatórias ausentes", () => {
     const { SUPABASE_URL: _omit, ...rest } = completeVars;
     expect(findMissingVars(rest)).toEqual(["SUPABASE_URL"]);
+  });
+});
+
+describe("findMalformedSupabaseUrls", () => {
+  it("não reporta nada para uma URL bem formada", () => {
+    expect(findMalformedSupabaseUrls(completeVars)).toEqual([]);
+  });
+
+  it("detecta o sufixo /rest/v1/ copiado por engano do painel", () => {
+    const withSuffix = {
+      ...completeVars,
+      SUPABASE_URL: "https://staging-ref-0000000000.supabase.co/rest/v1/",
+    };
+    const problems = findMalformedSupabaseUrls(withSuffix);
+    expect(problems.some((p) => p.startsWith("SUPABASE_URL") && p.includes("/rest/v1"))).toBe(true);
+  });
+
+  it("detecta uma URL que não bate com o formato https://<ref>.supabase.co", () => {
+    const wrongHost = { ...completeVars, VITE_SUPABASE_URL: "https://example.com" };
+    const problems = findMalformedSupabaseUrls(wrongHost);
+    expect(problems.some((p) => p.startsWith("VITE_SUPABASE_URL"))).toBe(true);
+  });
+});
+
+describe("findSecretKeyInPublicVar", () => {
+  it("não reporta nada quando nenhuma variável pública contém uma chave secreta", () => {
+    expect(findSecretKeyInPublicVar(completeVars)).toEqual([]);
+  });
+
+  it("falha fechado quando uma chave sb_secret_ vaza para uma variável VITE_*", () => {
+    const leaked = { ...completeVars, VITE_SUPABASE_PUBLISHABLE_KEY: "sb_secret_abc123" };
+    const problems = findSecretKeyInPublicVar(leaked);
+    expect(problems.some((p) => p.startsWith("VITE_SUPABASE_PUBLISHABLE_KEY"))).toBe(true);
+  });
+
+  it("não reporta uma chave sb_secret_ em uma variável não pública (sem prefixo VITE_)", () => {
+    const serverOnly = { ...completeVars, SUPABASE_SERVICE_ROLE_KEY: "sb_secret_abc123" };
+    expect(findSecretKeyInPublicVar(serverOnly)).toEqual([]);
+  });
+});
+
+describe("findServerPublicVarDrift", () => {
+  it("não reporta nada quando o par VITE_* bate com o par server-side", () => {
+    expect(findServerPublicVarDrift(completeVars)).toEqual([]);
+  });
+
+  it("detecta VITE_SUPABASE_PROJECT_ID divergindo de SUPABASE_PROJECT_ID (edição manual parcial)", () => {
+    const drifted = { ...completeVars, VITE_SUPABASE_PROJECT_ID: "prod-ref-00000000000000" };
+    const problems = findServerPublicVarDrift(drifted);
+    expect(problems.some((p) => p.startsWith("VITE_SUPABASE_PROJECT_ID"))).toBe(true);
+  });
+
+  it("detecta VITE_SUPABASE_URL divergindo de SUPABASE_URL", () => {
+    const drifted = {
+      ...completeVars,
+      VITE_SUPABASE_URL: "https://prod-ref-00000000000000.supabase.co",
+    };
+    const problems = findServerPublicVarDrift(drifted);
+    expect(problems.some((p) => p.startsWith("VITE_SUPABASE_URL"))).toBe(true);
   });
 });
 

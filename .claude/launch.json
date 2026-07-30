@@ -6,6 +6,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev"],
       "port": 8080
+    },
+    {
+      "name": "vipreco-worker-preview",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "preview:worker"],
+      "port": 4173
     }
   ]
 }

@@ -203,11 +203,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
           </div>
         ) : (
           <form className="mt-4 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <div
-              aria-hidden="true"
-              className="absolute h-px w-px overflow-hidden"
-              style={{ clip: "rect(0 0 0 0)", clipPath: "inset(50%)" }}
-            >
+            <div aria-hidden="true" className="sr-only">
               <label htmlFor={ids.website}>Deixe este campo em branco</label>
               <input
                 id={ids.website}
@@ -268,7 +264,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
               ) : null}
             </div>
 
-            <fieldset>
+            <fieldset aria-describedby={errors.sourceType ? `${ids.source}-erro` : undefined}>
               <legend className="mb-1 text-sm font-semibold">Fonte da informação</legend>
               <div className="space-y-2">
                 {SOURCE_OPTIONS.map((option) => (
@@ -324,7 +320,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
 
             {status === "error" ? (
               <p role="alert" className="text-sm font-semibold text-destructive">
-                Não conseguimos enviar agora. Verifique sua conexão e tente novamente.
+                Não estamos aceitando sugestões de preço no momento.
               </p>
             ) : null}
 

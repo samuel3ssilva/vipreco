@@ -1,7 +1,7 @@
 import { formatDate, formatPrice, formatRelativeDay } from "@/lib/format";
 import { SourceBadge } from "@/components/SourceBadge";
 import type { PriceWithMarket } from "@/types/domain";
-import { MapPin, Flag, Star, Store } from "lucide-react";
+import { MapPin, Star, Store } from "lucide-react";
 
 interface PriceCardProps {
   entry: PriceWithMarket;
@@ -9,16 +9,9 @@ interface PriceCardProps {
   isUsualMarket?: boolean;
   /** Diferença em relação ao menor preço (positiva). */
   differenceToLowest?: number;
-  onReport: (entry: PriceWithMarket) => void;
 }
 
-export function PriceCard({
-  entry,
-  isLowest,
-  isUsualMarket,
-  differenceToLowest,
-  onReport,
-}: PriceCardProps) {
+export function PriceCard({ entry, isLowest, isUsualMarket, differenceToLowest }: PriceCardProps) {
   return (
     <li className={`card-compact ${isLowest ? "border-primary/50 ring-1 ring-primary/25" : ""}`}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
@@ -96,10 +89,6 @@ export function PriceCard({
             {entry.market.address ?? "Endereço não informado"}
           </p>
         )}
-        <button type="button" className="btn-base btn-quiet btn-sm" onClick={() => onReport(entry)}>
-          <Flag aria-hidden="true" className="size-4" />
-          Informar atualização
-        </button>
       </div>
     </li>
   );

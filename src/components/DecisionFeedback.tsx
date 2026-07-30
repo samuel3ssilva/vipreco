@@ -101,7 +101,7 @@ export function DecisionFeedback({ productId }: { productId: string }) {
 
       {status === "error" ? (
         <p role="alert" className="mt-3 text-sm font-semibold text-destructive">
-          Não conseguimos registrar sua resposta agora. Tente novamente.
+          Não estamos registrando respostas no momento.
         </p>
       ) : null}
       <p aria-live="polite" className="sr-only">

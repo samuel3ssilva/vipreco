@@ -20,7 +20,7 @@ export function PriceSummary({ best, comparison }: PriceSummaryProps) {
 
       <div className="mt-1 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div className="min-w-0">
-          <p className="text-4xl font-bold tabular-nums leading-none text-primary sm:text-5xl">
+          <p className="font-data text-4xl font-bold tabular-nums leading-none text-primary sm:text-5xl">
             {formatPrice(best.price)}
           </p>
           <p className="mt-1.5 truncate text-base font-bold">{best.market.name}</p>

@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Home, Search, HelpCircle } from "lucide-react";
+import { Home, Search, HelpCircle, Store } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
 
 const NAV = [
   { to: "/", label: "Início", short: "Início", icon: Home },
   { to: "/buscar", label: "Buscar produto", short: "Buscar", icon: Search },
   { to: "/como-funciona", label: "Como funciona", short: "Ajuda", icon: HelpCircle },
+  { to: "/para-mercados", label: "Para mercados", short: "Mercados", icon: Store },
 ] as const;
 
 export function AppShell({

@@ -8,24 +8,27 @@ estruturalmente no fechamento da Onda 2 (6 tabelas, 6 policies, 6 tabelas com RL
 fonte da verdade para o que muda nesta Onda.
 
 "Antes" = estado ao final da Onda 2 (`main` em `559e9f6`). "Depois" = estado ao final desta
-Onda, após a migration `20260729210000_harden_helper_function_grants.sql`.
+Onda, após `20260729210000_harden_helper_function_grants.sql` e
+`20260729223000_close_public_write_surfaces.sql` (checkpoint do PMO em 2026-07-29: fecha o
+INSERT público de `price_submissions`, `product_watch_requests` e `decision_feedback` — nenhuma
+delas tem superfície legítima de escrita pública no MVP atual).
 
 ## Tabelas
 
-| Recurso                  | Role                    |                    SELECT                    |                             INSERT                             | UPDATE | DELETE | Policy aplicável                                | Justificativa                                                                  | Antes | Depois |
-| ------------------------ | ----------------------- | :------------------------------------------: | :------------------------------------------------------------: | :----: | :----: | ----------------------------------------------- | ------------------------------------------------------------------------------ | ----- | ------ |
-| `markets`                | `anon`, `authenticated` |            ✅ (`is_active=true`)             |                               ❌                               |   ❌   |   ❌   | `"Mercados ativos sao publicos"`                | Catálogo público, editorial (não escrito pela comunidade)                      | igual | igual  |
-| `markets`                | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | CI/migrations/backoffice                                                       | igual | igual  |
-| `products`               | `anon`, `authenticated` |            ✅ (`is_active=true`)             |                               ❌                               |   ❌   |   ❌   | `"Produtos ativos sao publicos"`                | Catálogo público                                                               | igual | igual  |
-| `products`               | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | CI/migrations/backoffice                                                       | igual | igual  |
-| `prices`                 | `anon`, `authenticated` | ✅ (ativo + válido + produto/mercado ativos) |                               ❌                               |   ❌   |   ❌   | `"Precos validos sao publicos"`                 | Só o preço válido mais recente é público (principle #2 do CLAUDE.md)           | igual | igual  |
-| `prices`                 | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Única escrita real é via `approve_submission()` (SECURITY DEFINER, ver abaixo) | igual | igual  |
-| `price_submissions`      | `anon`, `authenticated` |                      ❌                      | ✅ (`status='pending'`, produto/mercado ativos, `comment`≤280) |   ❌   |   ❌   | `"Visitantes podem enviar sugestoes pendentes"` | Comunidade não lê nem escreve em `prices` diretamente (principle #7)           | igual | igual  |
-| `price_submissions`      | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Moderação server-side                                                          | igual | igual  |
-| `product_watch_requests` | `anon`, `authenticated` |                      ❌                      |                       ✅ (produto ativo)                       |   ❌   |   ❌   | `"Visitantes podem registrar interesse"`        | Instrumentação anônima, write-only                                             | igual | igual  |
-| `product_watch_requests` | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Backoffice                                                                     | igual | igual  |
-| `decision_feedback`      | `anon`, `authenticated` |                      ❌                      |                       ✅ (produto ativo)                       |   ❌   |   ❌   | `"Visitantes podem enviar feedback"`            | Instrumentação anônima, write-only                                             | igual | igual  |
-| `decision_feedback`      | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Backoffice                                                                     | igual | igual  |
+| Recurso                  | Role                    |                    SELECT                    |                         INSERT                         | UPDATE | DELETE | Policy aplicável                                           | Justificativa                                                                  | Antes                                                          | Depois                      |
+| ------------------------ | ----------------------- | :------------------------------------------: | :----------------------------------------------------: | :----: | :----: | ---------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------- |
+| `markets`                | `anon`, `authenticated` |            ✅ (`is_active=true`)             |                           ❌                           |   ❌   |   ❌   | `"Mercados ativos sao publicos"`                           | Catálogo público, editorial (não escrito pela comunidade)                      | igual                                                          | igual                       |
+| `markets`                | `service_role`          |                      ✅                      |                           ✅                           |   ✅   |   ✅   | GRANT ALL                                                  | CI/migrations/backoffice                                                       | igual                                                          | igual                       |
+| `products`               | `anon`, `authenticated` |            ✅ (`is_active=true`)             |                           ❌                           |   ❌   |   ❌   | `"Produtos ativos sao publicos"`                           | Catálogo público                                                               | igual                                                          | igual                       |
+| `products`               | `service_role`          |                      ✅                      |                           ✅                           |   ✅   |   ✅   | GRANT ALL                                                  | CI/migrations/backoffice                                                       | igual                                                          | igual                       |
+| `prices`                 | `anon`, `authenticated` | ✅ (ativo + válido + produto/mercado ativos) |                           ❌                           |   ❌   |   ❌   | `"Precos validos sao publicos"`                            | Só o preço válido mais recente é público (principle #2 do CLAUDE.md)           | igual                                                          | igual                       |
+| `prices`                 | `service_role`          |                      ✅                      |                           ✅                           |   ✅   |   ✅   | GRANT ALL                                                  | Única escrita real é via `approve_submission()` (SECURITY DEFINER, ver abaixo) | igual                                                          | igual                       |
+| `price_submissions`      | `anon`, `authenticated` |                      ❌                      | ❌ (policy dormente — sem GRANT, RLS nunca é avaliada) |   ❌   |   ❌   | `"Visitantes podem enviar sugestoes pendentes"` (dormente) | Moderação pública fora do MVP; sem endpoint server-side/anti-abuso pronto      | ✅ (`status='pending'`, produto/mercado ativos, `comment`≤280) | **❌ — fechado nesta Onda** |
+| `price_submissions`      | `service_role`          |                      ✅                      |                           ✅                           |   ✅   |   ✅   | GRANT ALL                                                  | Moderação server-side                                                          | igual                                                          | igual                       |
+| `product_watch_requests` | `anon`, `authenticated` |                      ❌                      | ❌ (policy dormente — sem GRANT, RLS nunca é avaliada) |   ❌   |   ❌   | `"Visitantes podem registrar interesse"` (dormente)        | Etapa futura, sem superfície legítima no MVP atual                             | ✅ (produto ativo)                                             | **❌ — fechado nesta Onda** |
+| `product_watch_requests` | `service_role`          |                      ✅                      |                           ✅                           |   ✅   |   ✅   | GRANT ALL                                                  | Backoffice                                                                     | igual                                                          | igual                       |
+| `decision_feedback`      | `anon`, `authenticated` |                      ❌                      | ❌ (policy dormente — sem GRANT, RLS nunca é avaliada) |   ❌   |   ❌   | `"Visitantes podem enviar feedback"` (dormente)            | Sem superfície legítima de escrita pública no MVP atual                        | ✅ (produto ativo)                                             | **❌ — fechado nesta Onda** |
+| `decision_feedback`      | `service_role`          |                      ✅                      |                           ✅                           |   ✅   |   ✅   | GRANT ALL                                                  | Backoffice                                                                     | igual                                                          | igual                       |
 
 Todas as seis tabelas têm `ENABLE ROW LEVEL SECURITY` — nenhuma tabela exposta pela Data API
 está sem RLS. Nenhuma sequence explícita existe (todas as PKs usam `gen_random_uuid()`), então
@@ -64,12 +67,26 @@ confirmada com 0 linhas nas três tabelas no fechamento da Onda 2). Mudar isso e
 adicional condicionada a `is_demo`, uma decisão de produto fora do escopo desta correção pontual
 — registrado como risco residual aceito no threat model.
 
-## Mudança aplicada nesta Onda
+## Mudanças aplicadas nesta Onda
 
-Migration `supabase/migrations/20260729210000_harden_helper_function_grants.sql`: `REVOKE ALL
-... FROM PUBLIC` + `GRANT EXECUTE ... TO service_role` nas três funções auxiliares. Nenhuma
-tabela, policy ou RLS foi alterada — a auditoria não encontrou nenhuma policy permissiva demais,
-nenhum `GRANT ALL` desnecessário e nenhuma tabela sem RLS. `NOT VERIFIED` contra um Postgres ao
-vivo nesta sessão (Docker indisponível no host de desenvolvimento) — revisão feita por leitura de
-assinatura/semântica; recomenda-se replay em ambiente descartável antes do gate humano final, ou
-aceitar o risco (mudança é um `REVOKE`/`GRANT` puro, sem alteração de schema ou dado).
+1. `supabase/migrations/20260729210000_harden_helper_function_grants.sql`: `REVOKE ALL
+... FROM PUBLIC` + `GRANT EXECUTE ... TO service_role` nas três funções auxiliares.
+2. `supabase/migrations/20260729223000_close_public_write_surfaces.sql` (checkpoint do PMO):
+   `REVOKE INSERT ... FROM anon, authenticated` em `price_submissions`, `product_watch_requests`
+   e `decision_feedback`. Não destrutiva — nenhuma tabela, coluna ou policy foi removida; as três
+   policies de INSERT continuam definidas no catálogo, agora dormentes (sem o `GRANT`
+   correspondente, o Postgres nunca chega a avaliar a `USING`/`WITH CHECK` da policy — o
+   privilégio de tabela é checado antes da RLS). `service_role` inalterado em todas as três.
+   **Efeito colateral conhecido:** os três fluxos de UI que hoje escrevem nessas tabelas
+   (`SubmitPriceForm`, `registerWatchRequest`, `DecisionFeedback`) degradam para o estado de erro
+   genérico já existente no código — sem crash, mas as três ações passam a falhar de forma
+   consistente até uma decisão de produto sobre a UI, fora do escopo desta migration.
+
+Nenhuma outra tabela, policy ou RLS foi alterada — a auditoria não encontrou nenhuma policy
+permissiva demais, nenhum `GRANT ALL` desnecessário e nenhuma tabela sem RLS. Ambas as migrations
+ficam `NOT VERIFIED` contra um Postgres ao vivo nesta sessão (Docker indisponível no host de
+desenvolvimento) — revisão feita por leitura de assinatura/semântica e por uma suíte de testes
+estáticos (`supabase/close-public-write-surfaces.test.ts`) que resolve o estado final de GRANT/
+REVOKE lendo todas as migrations em ordem cronológica. A verificação contra banco vivo (leitura
+pública preservada, INSERT anônimo rejeitado) é o passo 5/11 do plano de rollout — ver
+`docs/security/REMOTE-MIGRATION-PLAN-ONDA-3.md`.

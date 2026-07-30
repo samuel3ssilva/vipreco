@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify-env:staging": "bun scripts/verify-env.ts staging",
-    "verify-env:production": "bun scripts/verify-env.ts production"
+    "verify-env:production": "bun scripts/verify-env.ts production",
+    "drill:schema-rebuild": "bash scripts/db-drill/run.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

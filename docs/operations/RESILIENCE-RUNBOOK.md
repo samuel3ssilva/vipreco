@@ -12,7 +12,7 @@ esta Onda — documentados para execução quando autorizado, não simulados.
 | Ativo                                                          | Onde vive                                                                                           | Mecanismo de backup hoje                                                                                                           |
 | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Schema (tabelas, RLS, policies, funções, grants)               | `supabase/migrations/*.sql`, versionado no Git                                                      | Git é o backup — reprodutível do zero, ver §4 (drill automatizado)                                                                 |
-| Dados de negócio (`markets`, `products`, `prices`, submissões) | Postgres gerenciado pelo Supabase (staging `wjurqpclauwtbjhhvigy`, produção `wpgglxgddnekzojozqlm`) | Backup automático da plataforma Supabase — mecanismo exato depende do plano contratado, ver §2 (`NOT VERIFIED`)                    |
+| Dados de negócio (`markets`, `products`, `prices`, submissões) | Postgres gerenciado pelo Supabase (staging `wjurqpclauwtbjhhvigy`, produção `wpgglxgddnekzojozqlm`) | Nenhum hoje (plano Free, confirmado) — ver §2 e §6                                                                                 |
 | Código-fonte e workflows                                       | GitHub `samuel3ssilva/vipreco`                                                                      | Git (histórico completo) + branch protection em `main`                                                                             |
 | Configuração de deploy (Worker)                                | `wrangler.json` gerado no build + nome do Worker                                                    | Reconstruído a cada deploy a partir do código versionado — não há estado a "perder" no Worker em si                                |
 | Secrets (`CLOUDFLARE_API_TOKEN`, `SUPABASE_*`)                 | GitHub Environment secrets                                                                          | Fora do escopo de backup de dado — rotação/recuperação é procedimento de credencial, não de dado (ver `docs/security/` da Onda 1C) |
@@ -24,27 +24,34 @@ dependência que `PLANO-MESTRE.md` §10 registra.
 
 ## 2. RPO/RTO propostos
 
-**`NOT VERIFIED` — depende do plano Supabase contratado.** `docs/security/THREAT-MODEL-ONDA-3.md`
-(item 2 da lista de abusos) registra que o projeto está hoje no **plano Free**. O plano
-Free do Supabase historicamente oferece apenas backup diário automático com retenção
-curta e **não** inclui Point-in-Time Recovery (PITR); PITR granular (RPO de minutos) é
-recurso de planos pagos. Este documento não assume um número de dias de retenção
-específico sem confirmação — isso é **[HUMANO]**: confirmar em
-`Painel Supabase → Project Settings → Database → Backups` para staging e produção antes
-do Gate R0.
+**Atualizado em 2026-07-30 (investigação pós-merge) — corrige a suposição original desta
+seção, ver nota completa em §6.** `docs/security/THREAT-MODEL-ONDA-3.md`
+(item 2 da lista de abusos) já registrava que o projeto está no **plano Free**. A
+suposição original desta seção — de que o plano Free "oferece apenas backup diário
+automático com retenção curta" — estava **errada**: confirmado contra a documentação
+oficial da Supabase (`supabase.com/docs/guides/platform/backups`) que o **plano Free não
+tem nenhum backup automático** — a própria Supabase recomenda que projetos Free exportem
+dados manualmente via `supabase db dump` e mantenham backups externos. Backup diário
+automático (7 dias de retenção) só existe a partir do **plano Pro** (US$ 25/mês); Team dá
+14 dias; Enterprise dá até 30 dias. PITR (RPO de minutos) é add-on pago só em planos
+Pro+, ~US$ 100/mês por 7 dias de retenção (US$ 200/14d, US$ 400/28d), e substitui o
+backup diário quando ativado. Ver a nota de decisão completa em §6.
 
-Proposta condicionada ao que for confirmado:
+Proposta condicionada ao que for decidido em §6:
 
-| Cenário                        | RPO proposto                           | RTO proposto                                                                  | Depende de                                            |
-| ------------------------------ | -------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Plano Free (hoje, presumido)   | Até 24h (janela entre backups diários) | Até 4h (tempo estimado para restaurar um backup + reaplicar deploy do Worker) | Confirmação humana da retenção real no painel         |
-| Se migrar para plano com PITR  | Minutos (RPO quase contínuo)           | Até 1h                                                                        | Decisão de custo — fora do escopo autônomo desta Onda |
-| Schema (independente do plano) | Zero — está no Git                     | Minutos (`bun run drill:schema-rebuild` prova reconstrução total)             | Nada — já automatizado nesta Onda                     |
+| Cenário                            | RPO real hoje                                                                               | RTO real hoje                                                                            | Depende de                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Plano Free (confirmado, é o atual) | **Nenhum backup automático — RPO é "tudo desde o último dump manual", que hoje não existe** | Indefinido — não há artefato de onde restaurar dado real hoje                            | Nenhuma ação de plano; só dump manual (ver §6, opção B) |
+| Se migrar para Pro (backup diário) | Até 24h (janela entre backups diários)                                                      | Até 4h estimado (restaurar backup + redeploy do Worker) — não medido contra banco real   | Custo de US$ 25/mês, ver §6 opção C                     |
+| Se adicionar PITR sobre o Pro      | Minutos (RPO quase contínuo)                                                                | Até 1h estimado — não medido contra banco real                                           | Custo adicional de US$ 100+/mês, ver §6 opção C         |
+| Schema (independente do plano)     | Zero — está no Git                                                                          | Minutos (`bun run drill:schema-rebuild` prova reconstrução total, medido: ~12-16s em CI) | Nada — já automatizado nesta Onda                       |
 
-Enquanto o piloto não tiver dado real (pré-Gate R0), um RPO de 24h é aceitável — não há
-transação financeira nem dado de participante em risco. Esta proposta deve ser
-revisitada explicitamente como pré-requisito do Gate R0, quando dado real passar a
-existir e o custo de recriar uma remarcação perdida deixar de ser hipotético.
+Enquanto o piloto não tiver dado real (pré-Gate R0) e produção continuar confirmada
+vazia, a ausência de backup automático no plano Free é um risco **aceito, não
+ignorado**: não há transação financeira nem dado de participante em risco hoje. Esta
+proposta é, explicitamente, um pré-requisito do Gate R0 (`PLANO-MESTRE.md` §10) — ver §6
+para as alternativas concretas e qual delas o PMO/Founder escolhe antes de liberar dado
+real.
 
 ## 3. Procedimento de restore
 
@@ -68,9 +75,13 @@ comprova (§3.2).
 
 ### 3.2 Restore real de dado — **[HUMANO]**, não executado nesta Onda
 
-Requer acesso ao painel do Supabase (Founder) e, dependendo do mecanismo (ver §2), pode
-exigir criar um projeto Supabase temporário para o dry-run (decisão de custo/escopo do
-PMO). Procedimento a seguir quando autorizado:
+**Atualizado em 2026-07-30:** confirmado que, no plano Free atual, **não existe backup
+automático de onde restaurar** — o procedimento abaixo só é executável depois que uma
+das alternativas do §6 for escolhida e aplicada (dump manual ou upgrade de plano). Não é
+mais apenas uma questão de acesso ao painel — é a ausência do próprio artefato de
+backup. Requer acesso ao painel do Supabase (Founder) e, dependendo do mecanismo
+escolhido em §6, pode exigir custo (upgrade de plano) ou uma nova credencial (connection
+string do Postgres, para dump manual). Procedimento a seguir quando autorizado:
 
 1. Confirmar em `Project Settings → Database → Backups` a lista de backups disponíveis
    para o projeto de **staging** (nunca testar restore contra produção primeiro).
@@ -107,11 +118,77 @@ usando o SHA desejado, mesmo padrão já usado nas Ondas 2 e 3
 
 ## 5. O que fica pendente para o Founder/PMO
 
-- Confirmar o plano Supabase real (Free/Pro) e a retenção de backup efetiva de cada
-  projeto — via painel, sem que o CTO precise de credencial nova.
-- Autorizar (ou não) um restore de teste real em staging, incluindo se um projeto
-  temporário precisa ser criado (implicação de custo).
-- Revisitar o RPO/RTO proposto no §2 antes do Gate R0.
+- Confirmar no painel (`Project Settings → Billing`) que ambos os projetos (staging e
+  produção) seguem no plano Free — este CTO não teve sessão autenticada no painel nesta
+  investigação (ver §6) e se apoiou no registro já feito na Onda 3
+  (`docs/security/THREAT-MODEL-ONDA-3.md`), não numa nova checagem ao vivo.
+- Escolher uma das quatro alternativas da nota de decisão em §6 antes do Gate R0.
+- Revisitar o RPO/RTO proposto no §2 conforme a alternativa escolhida.
 - Configurar alerting nativo do Cloudflare/Supabase no painel (e-mail/webhook), se
   desejado além do `uptime-check.yml` já implementado nesta Onda — configuração de
   conta, não código.
+
+## 6. Nota de decisão — restore real do Supabase (investigação pós-merge, 2026-07-30)
+
+**Mandato:** investigar autonomamente usando documentação oficial e leitura de painel
+disponível, sem restaurar, criar projeto, contratar PITR, mudar de plano ou gerar custo.
+**Painel:** sem sessão autenticada disponível nesta sessão (verificado —
+`supabase.com/dashboard/...` redirecionou para a tela de login); investigação baseada
+inteiramente na documentação oficial da Supabase (`supabase.com/docs/guides/platform/backups`,
+`supabase.com/pricing`, consultadas nesta data).
+
+### 6.1 O que existe no plano atual (Free, confirmado pela Onda 3)
+
+| Pergunta                                 | Resposta                                                                                                                                                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backup automático no Free?               | **Não existe nenhum.** A própria documentação da Supabase recomenda `supabase db dump` manual + backup externo para projetos Free                                                                     |
+| Restore de teste exige upgrade?          | **Sim, na prática** — não há artefato de backup para restaurar hoje; upgrade de plano ou dump manual são pré-requisitos antes de qualquer restore ser possível                                        |
+| Custo do Pro (backup diário, 7 dias)     | US$ 25/mês (inclui US$ 10/mês de crédito de compute, cobre uma instância Micro)                                                                                                                       |
+| Custo de PITR sobre o Pro                | ~US$ 100/mês (7d) a ~US$ 400/mês (28d) — substitui o backup diário, não some com ele                                                                                                                  |
+| Restore é in-place ou cria projeto novo? | **In-place — sobrescreve o projeto existente.** O projeto fica **totalmente inacessível** durante o restore, com downtime proporcional ao tamanho do banco                                            |
+| Como testar sem arriscar o projeto real? | "Duplicate Project" (clonar o projeto para testar o restore na cópia) — documentado pela Supabase, mas não investigado a fundo (custo/disponibilidade da duplicação em si não confirmados nesta Onda) |
+| Impacto em staging se testarmos lá       | Staging ficaria **totalmente fora do ar** durante o teste (mesmo comportamento do restore in-place) — não é uma operação "segura por padrão" só por não ser produção                                  |
+| RPO/RTO realmente suportados             | RPO: 24h (Pro, backup diário) ou minutos (Pro+PITR). RTO: depende do tamanho do banco — **não documentado como número fixo pela Supabase**, só "quanto maior o banco, maior o downtime"               |
+| Como voltar ao estado anterior           | Fazer downgrade de volta a Free (reversível, mas sem garantia de reembolso de mês já cobrado); nenhum outro efeito colateral documentado                                                              |
+
+### 6.2 Alternativas
+
+**A. Manter restore como `NOT VERIFIED`.**
+Custo zero, ação zero. O risco aceito é: se produção precisar de restore real antes do
+Gate R0 rever isso, não há nada para restaurar — mas produção está confirmada vazia, então
+esse risco é hoje puramente teórico. Recomendado como _default_ até uma decisão
+explícita do PMO/Founder.
+
+**B. Executar um "restore gratuito".**
+**Não existe, tecnicamente, um restore gratuito via painel** — o plano Free não tem
+backup para restaurar. A alternativa mais próxima e genuinamente gratuita é um **dump
+lógico manual** (`supabase db dump` ou `pg_dump` direto) seguido de um `pg_restore` de
+teste — mas isso exige uma credencial que este CTO não tem hoje (connection string do
+Postgres com senha, distinta da chave publishable já usada pela Data API) — ou seja,
+mesmo essa opção precisaria de uma nova credencial, o que o mandato desta Onda também
+não autoriza. **Não executável sem uma decisão adicional sobre credencial.**
+
+**C. Contratar capacidade temporária (upgrade para Pro).**
+Custo real: US$ 25/mês, cobrado por pelo menos um ciclo de faturamento (sem garantia de
+reembolso proporcional em downgrade). Depois de pelo menos 24h no Pro (para o primeiro
+backup diário existir), testar restore contra **staging**, nunca produção primeiro — e
+aceitar que staging fica fora do ar durante o teste. Prova RTO real medido, não estimado.
+Requer decisão de custo do PMO/Founder — fora do escopo autônomo desta Onda.
+
+**D. Adiar até imediatamente antes do Gate R0.**
+Consistente com `PLANO-MESTRE.md` §10, que já lista "Onda 4 com backup, restore, logs,
+alertas e plano de incidente minimamente validados" como dependência do Gate R0 — não
+exige, no texto do Plano Mestre, que o restore real já tenha sido exercitado nesta Onda,
+apenas que o runbook exista e o risco esteja registrado (o que este documento cumpre).
+Adiar a decisão de A/B/C não bloqueia o restante da Onda 4.
+
+### 6.3 Recomendação
+
+**D como caminho imediato, convergindo para C (ou A, se o Founder aceitar o risco)
+explicitamente como gate de pré-requisito do Gate R0** — não antes. Não há dado real
+hoje; gastar US$ 25+/mês agora para testar um restore que ainda não protege nada real
+não é urgente. A decisão de qual alternativa vira definitiva deve ser revisitada como
+parte da checklist do Gate R0, não nesta Onda.
+
+**Nenhuma das alternativas foi executada.** Nenhum restore, criação de projeto, upgrade
+de plano ou custo foi gerado por este CTO.

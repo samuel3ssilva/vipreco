@@ -79,7 +79,7 @@ documentos de banco bateu com o SQL real.
 **Veredito da Revisão B:** 2 CONFIRMED, ambos corrigidos nesta mesma Onda (não ficaram como
 pendência para o checkpoint); 0 achados sem correção.
 
-## Conclusão
+## Conclusão da primeira rodada
 
 As duas revisões adversariais, juntas, encontraram dois gaps reais e específicos (cobertura de
 headers em assets estáticos; validação incompleta de deriva de variável de ambiente) — nenhum
@@ -87,3 +87,61 @@ deles bloqueante isoladamente, ambos corrigidos antes deste documento ser finali
 revisão encontrou bypass de RLS, escalação de privilégio, XSS explorável, vazamento de segredo,
 ou falsa sensação de segurança não documentada. `bun run lint && bun run test && bun run build`
 e `verify-env:staging`/`verify-env:production` seguem verdes após as duas correções.
+
+## Segunda rodada — checkpoint do PMO (fechamento das 3 tabelas de escrita pública)
+
+O PMO classificou como bloqueante o achado de escrita pública nas três tabelas
+(`price_submissions`, `product_watch_requests`, `decision_feedback`) e pediu uma migration de
+fechamento. Depois de aplicada (`20260729223000_close_public_write_surfaces.sql`), duas novas
+revisões adversariais independentes foram feitas, focadas exclusivamente nesse commit.
+
+### Revisão A2 — o fechamento é realmente hermético?
+
+Leu todas as 6 migrations em ordem para confirmar que `REVOKE INSERT` é o único privilégio que
+precisava ser revogado (não havia `SELECT`/`UPDATE`/`ALL`/grant de coluna concedido a
+`anon`/`authenticated` nessas três tabelas em nenhuma migration anterior), que nenhuma função
+`SECURITY DEFINER` toca `product_watch_requests`/`decision_feedback`, e que o rollout plan não
+abre uma janela de inconsistência entre deploy do Worker e aplicação da migration.
+
+**Achado confirmado:** o teste estático (`resolveInsertGrant`) resolvia o grantee comparando o
+nome do role em qualquer lugar do statement — um `GRANT ... TO PUBLIC` futuro hipotético (que no
+Postgres reabre acesso para `anon`/`authenticated` também) não seria pego pelo regex, apesar do
+commit alegar que o teste "falha se qualquer migration futura reabrir o INSERT sem intenção".
+**Corrigido** no mesmo commit de resposta: `resolveInsertGrant` agora extrai só a cláusula de
+grantees (depois de `TO`/`FROM`) e trata `PUBLIC` como equivalente a qualquer role nomeado; novo
+teste prova o comportamento contra um `GRANT ... TO PUBLIC` sintético.
+
+**Veredito A2:** o fechamento em si é hermético contra o estado atual do banco (0 outros
+privilégios, 0 caminho via RPC). O único gap era de robustez futura do teste, já corrigido.
+
+### Revisão B2 — a documentação e a UI são honestas sobre a consequência?
+
+**Achado confirmado (severidade média):** `SubmitPriceForm.tsx` mostrava "Verifique sua conexão e
+tente novamente" quando a causa real do erro (depois desta migration) é um bloqueio de permissão
+deliberado e permanente — não rede. `DecisionFeedback`/`registerWatchRequest` diziam "tente
+novamente", implicando que retry ajudaria, quando na verdade a ação está fechada até uma decisão
+de produto. **Corrigido:** as três mensagens reescritas para linguagem honesta ("não estamos
+aceitando/registrando... no momento"), sem implicar problema transitório e sem remover a UI
+(decisão de produto separada).
+
+**Achado confirmado (severidade baixa-média):** `THREAT-MODEL-ONDA-3.md` §3 ainda descrevia as
+três tabelas como "protegidas por RLS `WITH CHECK` + honeypot no frontend" — desatualizado depois
+do fechamento, mesmo com `DATABASE-AUTHORIZATION-MATRIX.md` já correto. **Corrigido:** §3
+atualizada, nova §5.2 registra explicitamente a consequência de produto (os três controles
+continuam na UI e sempre falham) diretamente no threat model, não só na matriz de banco.
+
+**Verificado e correto, sem ação:** a migration não cria Turnstile, credencial ou rate limiter
+(conforme pedido); as policies das três tabelas continuam definidas e documentadas como
+dormentes via `COMMENT ON TABLE`; o teste estático é honesto sobre ser uma checagem textual, não
+uma verificação de banco vivo (aponta explicitamente para o plano de rollout onde a verificação
+viva acontece).
+
+**Veredito B2:** 2 CONFIRMED, ambos corrigidos na mesma resposta.
+
+## Conclusão final
+
+Quatro revisões adversariais no total (duas rodadas), seis achados confirmados no total, todos
+corrigidos antes deste checkpoint ser reapresentado ao PMO. Nenhuma revisão, em nenhuma rodada,
+encontrou bypass de RLS, escalação de privilégio, XSS explorável ou vazamento de segredo.
+`bun run lint && bun run test` (71 testes) `&& bun run build` e `verify-env:staging`/
+`verify-env:production` seguem verdes.

@@ -8,11 +8,7 @@ import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
-import {
-  getProductsPriceStats,
-  getRecentlyUpdatedProducts,
-  getWeeklyOpportunities,
-} from "@/services/catalog";
+import { getWeeklyOpportunities } from "@/services/catalog";
 import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
@@ -46,20 +42,6 @@ function HomePage() {
     queryFn: () => getWeeklyOpportunities(),
     staleTime: 60_000,
   });
-  const recent = useQuery({
-    queryKey: ["recent-products"],
-    queryFn: () => getRecentlyUpdatedProducts(),
-    staleTime: 60_000,
-  });
-
-  const recentIds = (recent.data ?? []).map(({ product }) => product.id);
-  const recentStats = useQuery({
-    queryKey: ["recent-products-stats", recentIds],
-    queryFn: () => getProductsPriceStats(recentIds),
-    enabled: recentIds.length > 0,
-    staleTime: 60_000,
-  });
-
   const validOpportunities = (opportunities.data ?? []).filter((entry) => isValidPrice(entry));
   const isDemo =
     import.meta.env.VITE_DEMO_MODE === "true" ||
@@ -149,68 +131,6 @@ function HomePage() {
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-
-        <section aria-labelledby="recentes-titulo" className="space-y-3">
-          <SectionHeader
-            id="recentes-titulo"
-            title="Atualizados recentemente"
-            description="Produtos com preço conferido nos últimos dias."
-          />
-          {recent.isPending ? (
-            <StateMessage variant="loading" title="Carregando produtos…" />
-          ) : recent.isError ? (
-            <StateMessage
-              variant="error"
-              title="Não conseguimos carregar os produtos."
-              onRetry={() => recent.refetch()}
-            />
-          ) : recent.data && recent.data.length > 0 ? (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {recent.data.map(({ product, observedAt }) => {
-                const stat = recentStats.data?.[product.id];
-                return (
-                  <li key={product.id}>
-                    <Link
-                      to="/produto/$productId"
-                      params={{ productId: product.id }}
-                      className="card-compact grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 hover:bg-surface"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate font-semibold">
-                          {formatProductName(product)}
-                        </span>
-                        <span className="meta-text block">
-                          {stat && stat.marketCount > 0
-                            ? `${stat.marketCount} ${stat.marketCount === 1 ? "mercado" : "mercados"} · `
-                            : ""}
-                          Atualizado {formatRelativeDay(observedAt)}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-right">
-                        {stat?.lowest != null ? (
-                          <>
-                            <span className="meta-text block">a partir de</span>
-                            <span className="font-data block font-bold tabular-nums">
-                              {formatPrice(stat.lowest)}
-                            </span>
-                          </>
-                        ) : (
-                          <ArrowRight aria-hidden="true" className="size-4 text-muted-foreground" />
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <StateMessage
-              variant="empty"
-              title="Ainda estamos cadastrando os primeiros produtos."
-              description="Volte em breve ou use a busca para ver o que já está disponível."
-            />
           )}
         </section>
 

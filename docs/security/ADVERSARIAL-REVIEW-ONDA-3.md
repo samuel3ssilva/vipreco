@@ -138,10 +138,58 @@ viva acontece).
 
 **Veredito B2:** 2 CONFIRMED, ambos corrigidos na mesma resposta.
 
+## Terceira rodada — segundo ajuste do PMO (não renderizar os 3 controles fechados)
+
+O PMO considerou que fechar o banco e só corrigir o texto de erro não bastava: uma interface que
+sempre falha não é um estado final aceitável. Depois de remover a renderização de
+`SubmitPriceForm`, `DecisionFeedback`, `registerWatchRequest` (botão "Quero acompanhar") e o botão
+"Informar atualização" do `PriceCard`, uma revisão adversarial independente foi feita, focada
+exclusivamente nesse commit, com instrução explícita de tentar refutar (não confirmar) quatro
+afirmações específicas do PMO.
+
+**Método:** agente sem conhecimento prévio da conversa, leitura completa de
+`src/routes/produto.$productId.tsx` e `src/components/PriceCard.tsx`, grep de todo `src/` por
+`SubmitPriceForm`, `DecisionFeedback`, `registerWatchRequest`, `onReport` e pelos três nomes de
+tabela, checagem cruzada de todas as outras rotas públicas (`index.tsx`, `buscar.tsx`,
+`como-funciona.tsx`, `__root.tsx`), confirmação de que a migration de fechamento e seu teste não
+foram tocados neste commit, e execução independente de `bun run lint`/`test`/`build`.
+
+**As quatro afirmações do PMO, verificadas:**
+
+1. **Nenhuma entrada pública visível — CONFIRMED.** Nenhuma rota renderiza os três controles;
+   a string "Informar atualização" só aparece como prosa em `como-funciona.tsx`, não como botão.
+2. **Nenhum caminho alternativo no frontend — CONFIRMED.** Grep completo de `src/` não encontrou
+   nenhuma segunda rota, painel de debug ou uso indireto dos componentes/callback fechados.
+3. **Escrita direta bloqueada — CONFIRMED.** O commit não tocou
+   `20260729223000_close_public_write_surfaces.sql` nem seu teste; os 9 testes de bloqueio de
+   INSERT continuam passando.
+4. **Nenhuma regressão de leitura — CONFIRMED.** Nenhum estado/import órfão (`showForm`,
+   `reportMarketId`, `watched`, `watchStatus`, `BellRing`, `Flag`, `hasWatched`, `markWatched`);
+   `lint`/`test`/`build` verdes de forma independente.
+
+**Achado confirmado (severidade média) — lacuna de cobertura do teste, não do código:** o teste
+estático original (`produto.$productId.public-surfaces.test.ts`) só lia dois arquivos fixos
+(`produto.$productId.tsx`, `PriceCard.tsx`). Uma regressão futura que reintroduzisse os mesmos
+controles em outra rota (ex.: uma nova `src/routes/mercado.$id.tsx`) ou uma chamada
+`.insert("price_submissions", …)` ad hoc fora de `src/services/catalog.ts` não seria pega.
+**Corrigido** no mesmo commit de resposta: o teste agora varre recursivamente todo `src/`
+(`ts`/`tsx`), checando em todo arquivo — não só nos dois originalmente tocados — ausência de
+import/JSX dos dois componentes fechados, ausência de chamada a `registerWatchRequest`, e ausência
+de qualquer `.insert(...)`/`.from(...)` direto nas três tabelas fora de `src/services/catalog.ts`
+(o único ponto de acesso a dados autorizado, ver `CLAUDE.md`). O reviewer observou corretamente que
+um rótulo de botão reescrito (ex. "Sugerir preço" em vez de "Informar preço") ainda escaparia da
+checagem de string — limitação aceita, já que a checagem estrutural (import/JSX/chamada) é o que
+detecta reintrodução funcional real; rótulo reescrito sem reintroduzir a função não representa o
+risco que este checkpoint fecha.
+
+**Veredito da terceira rodada:** 4/4 afirmações do PMO confirmadas, 1 achado de robustez de teste
+confirmado e corrigido. Nenhum bypass de RLS, nenhum caminho de escrita alternativo, nenhuma
+regressão de leitura.
+
 ## Conclusão final
 
-Quatro revisões adversariais no total (duas rodadas), seis achados confirmados no total, todos
+Cinco revisões adversariais no total (três rodadas), sete achados confirmados no total, todos
 corrigidos antes deste checkpoint ser reapresentado ao PMO. Nenhuma revisão, em nenhuma rodada,
 encontrou bypass de RLS, escalação de privilégio, XSS explorável ou vazamento de segredo.
-`bun run lint && bun run test` (71 testes) `&& bun run build` e `verify-env:staging`/
+`bun run lint && bun run test` (77 testes) `&& bun run build` e `verify-env:staging`/
 `verify-env:production` seguem verdes.

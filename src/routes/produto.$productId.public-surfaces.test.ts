@@ -1,49 +1,90 @@
-// Onda 3 (checkpoint PMO 2026-07-29): regressão estática garantindo que a rota de produto não
-// importa nem renderiza os três controles públicos ligados às tabelas fechadas
-// (price_submissions, product_watch_requests, decision_feedback). Não há harness de renderização
-// React neste projeto (vitest roda em ambiente "node", sem jsdom/Testing Library, e adicionar essa
-// infraestrutura não é a menor correção possível para este checkpoint) — este teste cobre o que é
-// verificável sem ela: o código-fonte da rota e do PriceCard, lidos como texto, não referenciam os
-// componentes/rótulos/callbacks das ações fechadas. Complementa, sem substituir,
-// supabase/close-public-write-surfaces.test.ts (prova o bloqueio de INSERT no banco).
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+// Onda 3 (checkpoint PMO 2026-07-29): regressão estática garantindo que nenhuma rota pública
+// importa, renderiza ou escreve diretamente nas três tabelas fechadas (price_submissions,
+// product_watch_requests, decision_feedback). Não há harness de renderização React neste projeto
+// (vitest roda em ambiente "node", sem jsdom/Testing Library, e adicionar essa infraestrutura não
+// é a menor correção possível para este checkpoint) — este teste cobre o que é verificável sem
+// ela: o código-fonte de todo `src/`, lido como texto, não referencia os componentes/callbacks das
+// ações fechadas em nenhum arquivo (não só nos dois tocados pela correção original), e nenhum
+// arquivo fora de `src/services/catalog.ts` chama `.insert(...)` nessas três tabelas. Complementa,
+// sem substituir, supabase/close-public-write-surfaces.test.ts (prova o bloqueio de INSERT no
+// banco).
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const ROUTE_FILE = join(process.cwd(), "src", "routes", "produto.$productId.tsx");
-const PRICE_CARD_FILE = join(process.cwd(), "src", "components", "PriceCard.tsx");
+const SRC_DIR = join(process.cwd(), "src");
 const CLOSED_COMPONENT_FILES = [
-  join(process.cwd(), "src", "components", "SubmitPriceForm.tsx"),
-  join(process.cwd(), "src", "components", "DecisionFeedback.tsx"),
+  join(SRC_DIR, "components", "SubmitPriceForm.tsx"),
+  join(SRC_DIR, "components", "DecisionFeedback.tsx"),
 ];
+// Único ponto de acesso a dados do projeto (ver CLAUDE.md) — é o único arquivo autorizado a
+// conter as chamadas .insert(...) nessas três tabelas (a função existe e continua correta; só não
+// pode ser chamada, direta ou indiretamente, por nenhuma rota pública).
+const CATALOG_SERVICE_FILE = join(SRC_DIR, "services", "catalog.ts");
+const THIS_TEST_FILE = join(SRC_DIR, "routes", "produto.$productId.public-surfaces.test.ts");
 
-const routeSource = readFileSync(ROUTE_FILE, "utf-8");
-const priceCardSource = readFileSync(PRICE_CARD_FILE, "utf-8");
+function listSourceFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      files.push(...listSourceFiles(full));
+      continue;
+    }
+    if (/\.(ts|tsx)$/.test(entry) && full !== THIS_TEST_FILE) files.push(full);
+  }
+  return files;
+}
 
-describe("rota /produto/$productId não renderiza os controles fechados (checkpoint PMO)", () => {
-  it("não importa nem renderiza SubmitPriceForm (price_submissions)", () => {
-    expect(routeSource).not.toMatch(/from ["']@\/components\/SubmitPriceForm["']/);
-    expect(routeSource).not.toMatch(/<SubmitPriceForm\b/);
+const allSourceFiles = listSourceFiles(SRC_DIR);
+const sources = new Map(allSourceFiles.map((file) => [file, readFileSync(file, "utf-8")]));
+
+describe("nenhuma rota pública renderiza os controles fechados (checkpoint PMO)", () => {
+  it("nenhum arquivo de src/ importa ou renderiza SubmitPriceForm (price_submissions)", () => {
+    for (const [file, source] of sources) {
+      if (CLOSED_COMPONENT_FILES.includes(file)) continue;
+      expect(source, relative(process.cwd(), file)).not.toMatch(
+        /from ["']@\/components\/SubmitPriceForm["']/,
+      );
+      expect(source, relative(process.cwd(), file)).not.toMatch(/<SubmitPriceForm\b/);
+    }
   });
 
-  it("não importa nem renderiza DecisionFeedback (decision_feedback)", () => {
-    expect(routeSource).not.toMatch(/from ["']@\/components\/DecisionFeedback["']/);
-    expect(routeSource).not.toMatch(/<DecisionFeedback\b/);
+  it("nenhum arquivo de src/ importa ou renderiza DecisionFeedback (decision_feedback)", () => {
+    for (const [file, source] of sources) {
+      if (CLOSED_COMPONENT_FILES.includes(file)) continue;
+      expect(source, relative(process.cwd(), file)).not.toMatch(
+        /from ["']@\/components\/DecisionFeedback["']/,
+      );
+      expect(source, relative(process.cwd(), file)).not.toMatch(/<DecisionFeedback\b/);
+    }
   });
 
-  it("não chama registerWatchRequest (product_watch_requests)", () => {
-    expect(routeSource).not.toMatch(/registerWatchRequest/);
-  });
-
-  it("não contém os rótulos das ações fechadas em nenhum dos dois arquivos", () => {
-    for (const label of ["Informar preço", "Quero acompanhar", "Informar atualização"]) {
-      expect(routeSource).not.toContain(label);
-      expect(priceCardSource).not.toContain(label);
+  it("nenhum arquivo de src/ chama registerWatchRequest (product_watch_requests)", () => {
+    for (const [file, source] of sources) {
+      if (file === CATALOG_SERVICE_FILE) continue; // definição da função, não uma chamada pública
+      expect(source, relative(process.cwd(), file)).not.toMatch(/registerWatchRequest\s*\(/);
     }
   });
 
   it("PriceCard não expõe mais onReport (caminho alternativo que abria o formulário fechado)", () => {
-    expect(priceCardSource).not.toMatch(/onReport/);
+    const priceCard = sources.get(join(SRC_DIR, "components", "PriceCard.tsx"));
+    expect(priceCard).toBeDefined();
+    expect(priceCard).not.toMatch(/onReport/);
+  });
+
+  it("só src/services/catalog.ts escreve diretamente nas três tabelas fechadas", () => {
+    const closedTables = ["price_submissions", "product_watch_requests", "decision_feedback"];
+    for (const [file, source] of sources) {
+      if (file === CATALOG_SERVICE_FILE) continue;
+      for (const table of closedTables) {
+        const pattern = new RegExp(`\\.insert\\([^)]*\\b${table}\\b|from\\(["']${table}["']\\)`);
+        expect(
+          source,
+          `${relative(process.cwd(), file)} não deve referenciar ${table}`,
+        ).not.toMatch(pattern);
+      }
+    }
   });
 
   it("os componentes fechados continuam no repositório, sem exclusão destrutiva", () => {

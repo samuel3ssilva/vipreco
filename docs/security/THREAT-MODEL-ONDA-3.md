@@ -44,7 +44,7 @@ itens não verificáveis a partir do repositório estão marcados `NOT VERIFIED`
 | `INSERT price_submissions` via Data API                                         | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy `WITH CHECK` preservada e dormente (ver §4.2). `SubmitPriceForm` ("Informar preço") continua na UI mas toda tentativa de envio falha |
 | `INSERT product_watch_requests` via Data API                                    | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy dormente. Botão "Quero acompanhar" continua na UI mas toda tentativa falha                                                           |
 | `INSERT decision_feedback` via Data API                                         | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy dormente. Widget de feedback de decisão continua na UI mas toda tentativa falha                                                      |
-| `EXECUTE approve_submission(uuid)`                                              | RPC                                     | `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE TO service_role` — **não chamável por `anon`/`authenticated`**                                                                               |
+| `EXECUTE approve_submission(uuid)`                                              | RPC                                     | **Corrigido em 2026-07-30** (ver §5.3) — `REVOKE ALL FROM PUBLIC` sozinho não bastava; `anon`/`authenticated` tinham `EXECUTE` direto (grant de plataforma do Supabase) desde a Onda 1. `20260730120000_fix_function_grants_explicit_revoke.sql` revoga explicitamente — **não chamável por `anon`/`authenticated`** após esta correção |
 | Rotas do app (`/`, `/buscar`, `/produto/$id`, `/como-funciona`, `/sitemap.xml`) | HTTP via Worker                         | Nenhum header de segurança hoje (ver §7)                                                                                                                                               |
 | `workers.dev` de staging e produção                                             | HTTP                                    | Sem autenticação — por design, ainda não são lançamento público, mas são publicamente alcançáveis e **indexáveis** hoje (ver §7)                                                       |
 
@@ -78,14 +78,19 @@ itens não verificáveis a partir do repositório estão marcados `NOT VERIFIED`
     definido — hoje o default do Nitro/Vite é não gerar source map de produção, mas isso não está
     fixado no código (risco de regressão silenciosa se o default mudar).
 11. **Uso indevido de função `SECURITY DEFINER`** — `approve_submission` é a única função
-    `SECURITY DEFINER` do schema; tem `search_path` fixado e `EXECUTE` restrito a `service_role`.
-    Sem achado bloqueante. Owner efetivo da função não é verificável a partir do repositório —
-    `NOT VERIFIED`, requer checagem `\df+ public.approve_submission` no banco vivo.
+    `SECURITY DEFINER` do schema; tem `search_path` fixado. **Achado crítico, corrigido em
+    2026-07-30 (§5.3):** até a correção, `EXECUTE` não estava de fato restrito a `service_role` —
+    `anon`/`authenticated` tinham `EXECUTE` direto desde a Onda 1 (grant de plataforma do
+    Supabase, não desfeito por `REVOKE ALL FROM PUBLIC`), permitindo em teoria que qualquer
+    visitante anônimo chamasse `approve_submission(uuid)` via RPC e aprovasse sua própria
+    sugestão de preço, sem moderação. Owner efetivo da função continua não verificável a partir
+    do repositório — `NOT VERIFIED`, requer checagem `\df+ public.approve_submission` no banco
+    vivo.
 12. **Falha de RLS** — nenhuma tabela exposta pela API está sem RLS habilitado. Nenhuma policy
-    permissiva demais foi encontrada. `pa_normalize_text`, `pa_set_updated_at` e
-    `pa_products_search_text` **não têm `REVOKE` explícito do `EXECUTE` padrão de `PUBLIC`** que
-    o Postgres concede a toda função nova — hoje inofensivo (funções puras/só tocam `NEW` de
-    trigger), mas inconsistente com o padrão de hardening explícito usado em `approve_submission`.
+    permissiva demais foi encontrada. **Achado relacionado ao item 11, corrigido em 2026-07-30:**
+    `pa_normalize_text`, `pa_set_updated_at` e `pa_products_search_text` tinham `EXECUTE` direto
+    de `anon`/`authenticated` (mesma causa raiz do item 11) — não apenas o `EXECUTE` padrão de
+    `PUBLIC` do Postgres, que era a hipótese original (e estava incompleta). Ver §5.3.
 13. **Dado demo em produção** — `is_demo` **não é uma fronteira de RLS**, é apenas rótulo de
     proveniência; a policy de SELECT não distingue `is_demo=true` de `false`. O isolamento é
     inteiramente procedural (seed só é aplicado manualmente em staging). Produção foi confirmada
@@ -97,8 +102,10 @@ itens não verificáveis a partir do repositório estão marcados `NOT VERIFIED`
     forem implementados: será necessário teste automatizado que `is_featured` nunca entra no
     `ORDER BY` da comparação orgânica (já é regra em `src/lib/comparison.ts`, mas ainda sem teste
     específico de neutralidade contra `is_featured`).
-15. **Recurso dormente exposto acidentalmente** — auditado: `approve_submission` está corretamente
-    fechado. Scaffolding de autenticação (`client.server.ts`, `auth-middleware.ts`,
+15. **Recurso dormente exposto acidentalmente** — auditado: `approve_submission` **estava**
+    exposto por engano até a correção de 2026-07-30 registrada nos itens 11/12 e em §5.3 — não
+    estava corretamente fechado, ao contrário do que esta Onda presumiu até o rollout de staging
+    provar o contrário. Scaffolding de autenticação (`client.server.ts`, `auth-middleware.ts`,
     `auth-attacher.ts`) existe no repositório, sem nenhum ponto de chamada ativo, mas contradiz o
     princípio "escopo é lei" pela mera presença de código que manuseia `service_role` e verificação
     de JWT. Tratado como achado nesta Onda (ver tabela).
@@ -110,7 +117,7 @@ itens não verificáveis a partir do repositório estão marcados `NOT VERIFIED`
 | `price_submissions`/`product_watch_requests`/`decision_feedback`                   | Flood automatizado / esgotamento de armazenamento                                                                                                                                                                                        | INSERT direto via Data API (chave publishable), fora do alcance do Worker | **Fechado no checkpoint do PMO (2026-07-29):** `REVOKE INSERT ... FROM anon, authenticated` nas três tabelas (`supabase/migrations/20260729223000_close_public_write_surfaces.sql`), policies de INSERT preservadas e dormentes | Nenhuma — superfície fechada, não mitigada                                                                                                      | **Resolvido (era Média)**                                                                           | `REVOKE INSERT` não destrutivo; testes de regressão estáticos em `supabase/close-public-write-surfaces.test.ts`; verificação viva (INSERT anônimo rejeitado) faz parte do rollout, ver `docs/security/REMOTE-MIGRATION-PLAN-ONDA-3.md` | `supabase/migrations/20260729223000_close_public_write_surfaces.sql`, `supabase/close-public-write-surfaces.test.ts` | Nenhum enquanto a superfície permanecer fechada. Reabertura futura exige endpoint server-side, validação, proteção anti-abuso e novo gate — ver §4.2 abaixo |
 | Todas as rotas do Worker                                                           | Clickjacking, MIME sniffing, referrer leakage, uso indevido de permissões do navegador                                                                                                                                                   | Toda resposta HTTP do Worker                                              | Nenhum header de segurança presente                                                                                                                                                                                             | CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, anti-framing ausentes                                                   | **Alta**                                                                                            | Implementados em `src/server.ts` nesta Onda                                                                                                                                                                                            | `docs/security/EDGE-SECURITY-POLICY.md`                                                                              | Baixo após a correção; validar em staging/produção reais no rollout                                                                                         |
 | URLs `workers.dev` de staging/produção                                             | Indexação prematura por crawlers antes do lançamento oficial                                                                                                                                                                             | `robots.txt` (`Allow: /`), nenhum `X-Robots-Tag`                          | Nenhum                                                                                                                                                                                                                          | Motores de busca podem indexar o ambiente técnico não lançado                                                                                   | **Média**                                                                                           | `X-Robots-Tag: noindex, nofollow` adicionado condicionalmente por host nesta Onda                                                                                                                                                      | `docs/security/EDGE-SECURITY-POLICY.md`                                                                              | Baixo após a correção                                                                                                                                       |
-| `pa_normalize_text`, `pa_set_updated_at`, `pa_products_search_text`                | Uso direto por role não intencional (defesa em profundidade)                                                                                                                                                                             | `EXECUTE` padrão de `PUBLIC` não revogado                                 | Funções são puras/inofensivas hoje                                                                                                                                                                                              | Inconsistência com o padrão explícito de hardening usado em `approve_submission`                                                                | **Baixa**                                                                                           | Migration nova revogando `PUBLIC` e concedendo apenas aos roles que precisam                                                                                                                                                           | `supabase/migrations/…_harden_helper_function_grants.sql`                                                            | Nenhum — funções continuam operando via trigger/índice normalmente                                                                                          |
+| `approve_submission(uuid)` (`SECURITY DEFINER`) + `pa_normalize_text`, `pa_set_updated_at`, `pa_products_search_text` | **Escalação de privilégio — achado ao vivo no rollout de staging (2026-07-30), não previsto por nenhuma revisão de código.** `anon`/`authenticated` chamarem `approve_submission` via RPC e auto-aprovarem sugestões de preço, ignorando a moderação | `EXECUTE` via RPC (`POST /rest/v1/rpc/approve_submission`)               | `REVOKE ALL ... FROM PUBLIC` (Onda 1, migration `20260727155843`) — **insuficiente**: não revoga o `EXECUTE` que o Supabase concede direto a `anon`/`authenticated` na criação de toda função (`ALTER DEFAULT PRIVILEGES` de plataforma, fora do versionamento) | A hipótese "REVOKE FROM PUBLIC basta" nunca foi verificada contra banco vivo em nenhuma das cinco revisões adversariais anteriores | **Alta (corrigida antes de qualquer aplicação em produção)**                                        | `REVOKE ALL ... FROM PUBLIC, anon, authenticated` explícito nas quatro funções; regressão estática nova assume concedido por padrão (não revogado)                                                                                    | `supabase/migrations/20260730120000_fix_function_grants_explicit_revoke.sql`, `supabase/function-execute-grants.test.ts` | Nenhum após a correção aplicada e verificada ao vivo; **produção só recebe a migration corrigida — nunca esteve exposta por uma migration desta Onda**, mas pode ter estado exposta desde a Onda 1 via `approve_submission` — ver §5.3 |
 | Scaffolding de auth (`client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`) | Superfície morta que manuseia `service_role`/JWT sem necessidade; risco de alguém futuramente importar `supabaseAdmin` de uma rota, já que `importProtection` só cobre `**/server/**` (diretório), não o sufixo `*.server.ts` usado aqui | Código-fonte, build                                                       | Convenção de nome de arquivo, não imposta pelo build                                                                                                                                                                            | Presença de código morto que contradiz "sem login de consumidor" e cujo guard de build tem uma lacuna                                           | **Média**                                                                                           | Removido nesta Onda (zero call sites confirmados; ver Fase C)                                                                                                                                                                          | commit de remoção + `bun run build` verde                                                                            | Nenhum — funcionalidade inexistente foi apenas removida                                                                                                     |
 | `build.sourcemap`                                                                  | Vazamento de código-fonte/estrutura interna via source map público                                                                                                                                                                       | Build de produção                                                         | Default implícito do Nitro/Vite (hoje não gera map, mas não está fixado)                                                                                                                                                        | Ausência de declaração explícita — risco de regressão silenciosa                                                                                | **Baixa**                                                                                           | Fixado explicitamente como `false` para build de cliente nesta Onda                                                                                                                                                                    | `vite.config.ts`                                                                                                     | Nenhum                                                                                                                                                      |
 | GitHub Actions (`ci.yml`, `deploy-staging.yml`, `deploy-production.yml`)           | Token do Actions com permissão implícita ampla; `uses:` não fixado por SHA                                                                                                                                                               | Pipeline de CI/CD                                                         | `codeql.yml` já usa `permissions:` mínimo — os outros três não                                                                                                                                                                  | Token `GITHUB_TOKEN` com escopo padrão (potencialmente mais amplo que o necessário); tags mutáveis (`@v4`, `@v2`, `@v3`) em vez de SHA completo | **Baixa/Média**                                                                                     | `permissions:` mínimo adicionado aos três workflows nesta Onda; SHA-pinning avaliado (ver auditoria de supply chain)                                                                                                                   | `.github/workflows/*.yml`                                                                                            | Baixo                                                                                                                                                       |
@@ -180,12 +187,59 @@ O texto de erro dos três componentes (corrigido na rodada anterior para não im
 conexão) permanece no código-fonte como parte do estado dormente dos componentes — deixou de ser
 alcançável por qualquer usuário, já que nada os renderiza mais nas rotas públicas.
 
-## 6. Conclusão da Fase A (atualizada após o segundo ajuste do PMO)
+## 5.3 Escalação de privilégio em `approve_submission` — achado ao vivo no rollout de staging (2026-07-30)
 
-Nenhum bloqueio material impede o merge após as correções deste checkpoint. O achado de maior
-severidade prática (headers/CSP ausentes) já tinha correção direta e local. O achado que o PMO
-classificou como bloqueante (escrita pública nas três tabelas) foi fechado por migration não
-destrutiva; o ajuste seguinte do PMO (interface que sempre falha não é aceitável) foi resolvido
-removendo a renderização dos três controles nas rotas públicas, sem excluir estrutura nem criar
-infraestrutura nova — não resta nenhum item de severidade Média ou superior sem correção ou sem
+Depois da autorização do PMO/Founder para merge + rollout, `20260729210000_harden_helper_function_grants.sql`
+foi aplicada em staging (`wjurqpclauwtbjhhvigy`). A verificação do passo 3 do plano de rollout
+mostrou que `anon` e `authenticated` continuavam com `EXECUTE` direto nas três funções auxiliares
+— a migration, que só fazia `REVOKE ALL ... FROM PUBLIC`, não teve o efeito esperado.
+
+**Causa raiz:** Supabase concede `EXECUTE` explicitamente a `anon`/`authenticated`/`service_role`
+na criação de toda função no schema `public`, via `ALTER DEFAULT PRIVILEGES` configurado pela
+própria plataforma no provisionamento do projeto — fora do controle de versionamento deste
+repositório. Esse grant é direto (papéis nomeados na ACL), não mediado pelo pseudo-role `PUBLIC`.
+`REVOKE ... FROM PUBLIC` desfaz apenas o default SQL-padrão (que também existe, mas é redundante) —
+nunca desfez o grant direto da plataforma.
+
+**Por que isso é mais grave do que as três funções auxiliares:** `approve_submission(uuid)` —
+`SECURITY DEFINER`, criada na Onda 1 (`20260727155843_approve_submission.sql`) com o mesmo padrão
+`REVOKE ALL ... FROM PUBLIC` — é a única função que escreve em `prices` a partir de
+`price_submissions`. Se ela estiver no mesmo estado (o que é o cenário mais provável, dado que usa
+o padrão idêntico), **qualquer visitante anônimo poderia ter chamado
+`POST /rest/v1/rpc/approve_submission` e aprovado sua própria sugestão de preço, sem passar pela
+moderação — desde a Onda 1, incluindo em produção.** Nenhuma das cinco revisões adversariais
+anteriores (nenhuma com acesso a banco vivo) detectou isso; a Revisão A afirmou explicitamente o
+contrário (ver correção retroativa em `docs/security/ADVERSARIAL-REVIEW-ONDA-3.md`).
+
+**Impacto real estimado: baixo, apesar da severidade do controle ausente.** Produção está
+confirmada vazia (0 linhas em `markets`/`products`/`prices`) desde o fechamento da Onda 2 — não
+havia sugestão de preço real para alguém aprovar indevidamente. O risco era estrutural (o controle
+não existia), não um incidente com dado real comprometido.
+
+**Corrigido:** `supabase/migrations/20260730120000_fix_function_grants_explicit_revoke.sql` — nova
+migration, não destrutiva, não edita nenhuma das duas migrations já aplicadas — revoga
+explicitamente `PUBLIC, anon, authenticated` nas quatro funções (as três auxiliares +
+`approve_submission`) e reafirma `service_role`. Regressão estática nova
+(`supabase/function-execute-grants.test.ts`) assume por padrão que toda função está **concedida**
+a `anon`/`authenticated` até prova em contrário no próprio texto da migration — o oposto da
+suposição que causou este ponto cego — e prova que um `REVOKE` que só nomeia `PUBLIC` não seria
+suficiente.
+
+**Consequência para o rollout:** a migration corretiva precisa ser aplicada em staging (e
+verificada ao vivo de novo) antes de prosseguir para o deploy do Worker de staging, e em produção
+antes do deploy de produção — nas mesmas janelas já documentadas em
+`docs/security/REMOTE-MIGRATION-PLAN-ONDA-3.md`, sem alterar a ordem/lógica do plano, só
+adicionando esta terceira migration à lista.
+
+## 6. Conclusão da Fase A (atualizada após o achado ao vivo do rollout)
+
+Nenhum bloqueio material impede o merge — já executado — após as correções deste checkpoint. O
+achado de maior severidade prática desta Onda (headers/CSP ausentes) já tinha correção direta e
+local. O achado que o PMO classificou como bloqueante (escrita pública nas três tabelas) foi
+fechado por migration não destrutiva; o ajuste seguinte do PMO (interface que sempre falha não é
+aceitável) foi resolvido removendo a renderização dos três controles nas rotas públicas. O achado
+mais severo de toda a Onda — escalação de privilégio via `approve_submission` (§5.3) — só foi
+descoberto durante o próprio rollout autorizado, e está corrigido por uma nova migration antes de
+qualquer aplicação em staging ou produção continuar. Não resta nenhum item de severidade Média ou
+superior sem correção ou sem
 `NOT VERIFIED` explicitamente aceito.

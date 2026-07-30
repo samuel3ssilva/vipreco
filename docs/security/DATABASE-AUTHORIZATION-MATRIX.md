@@ -38,15 +38,45 @@ não há GRANT de sequence a auditar.
 
 | Função                      | SECURITY          | `search_path`     | EXECUTE (antes)                                                 | EXECUTE (depois)      | Justificativa                                                                               |
 | --------------------------- | ----------------- | ----------------- | --------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------- |
-| `pa_normalize_text(text)`   | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito do Postgres)                        | apenas `service_role` | Usada só por trigger e índice funcional; nenhum caller externo precisa chamá-la diretamente |
-| `pa_set_updated_at()`       | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito)                                    | apenas `service_role` | Função de trigger, só toca `NEW`                                                            |
-| `pa_products_search_text()` | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito)                                    | apenas `service_role` | Função de trigger, só toca `NEW`                                                            |
-| `approve_submission(uuid)`  | **DEFINER**       | `public` (fixado) | `service_role` apenas (`REVOKE ALL FROM PUBLIC` já na Onda 1/2) | igual                 | Única escrita legítima de `price_submissions` → `prices`; já estava corretamente fechada    |
+| `pa_normalize_text(text)`   | INVOKER (default) | `public` (fixado) | `PUBLIC, anon, authenticated` (ver correção abaixo) | apenas `service_role` (após `20260730120000`) | Usada só por trigger e índice funcional; nenhum caller externo precisa chamá-la diretamente |
+| `pa_set_updated_at()`       | INVOKER (default) | `public` (fixado) | `PUBLIC, anon, authenticated` (ver correção abaixo) | apenas `service_role` (após `20260730120000`) | Função de trigger, só toca `NEW`                                                            |
+| `pa_products_search_text()` | INVOKER (default) | `public` (fixado) | `PUBLIC, anon, authenticated` (ver correção abaixo) | apenas `service_role` (após `20260730120000`) | Função de trigger, só toca `NEW`                                                            |
+| `approve_submission(uuid)`  | **DEFINER**       | `public` (fixado) | `PUBLIC, anon, authenticated` (ver correção abaixo) | apenas `service_role` (após `20260730120000`) | Única escrita legítima de `price_submissions` → `prices` — **correção crítica, ver abaixo**  |
+
+### Correção crítica (achado ao vivo no rollout de staging, 2026-07-30): `REVOKE ALL ... FROM PUBLIC` não bastava
+
+A coluna "Antes" da tabela acima estava **errada** nas quatro linhas até este achado. A hipótese
+original — de que `REVOKE ALL ... FROM PUBLIC` removia o `EXECUTE` para `anon`/`authenticated`,
+porque o default do Postgres é conceder `EXECUTE` a `PUBLIC` — nunca foi verificada contra um
+banco vivo (Docker indisponível durante toda a Onda 3; nenhuma revisão adversarial teve acesso a
+banco). Ao aplicar `20260729210000_harden_helper_function_grants.sql` em staging e rodar a
+verificação do passo 3 do plano de rollout, o resultado real mostrou `anon` e `authenticated` com
+`EXECUTE` direto nas três funções auxiliares, apesar da migration já aplicada.
+
+**Causa raiz:** o Supabase provisiona todo projeto com `ALTER DEFAULT PRIVILEGES` no nível de
+plataforma, concedendo `EXECUTE` explicitamente a `anon`, `authenticated` e `service_role` em toda
+função criada dali em diante no schema `public` — fora do nosso controle de versionamento. Esse
+grant é direto (papéis nomeados), não mediado pelo pseudo-role `PUBLIC`. `REVOKE ... FROM PUBLIC`
+só desfaz o default SQL-padrão (que também existe, mas é redundante aqui); não desfaz esse grant
+direto da plataforma.
+
+**Consequência mais grave — `approve_submission(uuid)` (Onda 1, `20260727155843`):** criada com o
+mesmo padrão `REVOKE ALL ... FROM PUBLIC`. Sendo `SECURITY DEFINER` e a única função que escreve
+em `prices` a partir de `price_submissions`, se `anon`/`authenticated` tiverem `EXECUTE` direto
+nela (mesmo mecanismo confirmado nas três funções auxiliares), **qualquer visitante anônimo
+poderia chamá-la via RPC (`POST /rest/v1/rpc/approve_submission`) e aprovar sua própria sugestão
+de preço, ignorando por completo o fluxo de moderação** — desde a Onda 1, em produção incluída.
+
+**Corrigido** em `supabase/migrations/20260730120000_fix_function_grants_explicit_revoke.sql`:
+`REVOKE ALL ... FROM PUBLIC, anon, authenticated` nas quatro funções (as três auxiliares +
+`approve_submission`), migration nova e não destrutiva (não edita as migrations já aplicadas, por
+`CLAUDE.md`). Regressão estática nova em `supabase/function-execute-grants.test.ts` assume, de
+propósito, o oposto do teste de `INSERT` em tabelas: estado inicial **concedido** (não revogado)
+por papel, refletindo o comportamento real do Supabase — não o default teórico do Postgres.
 
 `approve_submission`'s owner efetivo (necessário para avaliar o alcance real do
 `SECURITY DEFINER`) **não é verificável a partir do repositório** — `NOT VERIFIED`, requer
-`\df+ public.approve_submission` no banco vivo. Risco considerado baixo porque `EXECUTE` já é
-restrito a `service_role`, que teria acesso equivalente de qualquer forma via GRANT ALL direto.
+`\df+ public.approve_submission` no banco vivo.
 
 ## Views, triggers, extensões, Storage, Auth
 

@@ -186,10 +186,54 @@ risco que este checkpoint fecha.
 confirmado e corrigido. Nenhum bypass de RLS, nenhum caminho de escrita alternativo, nenhuma
 regressão de leitura.
 
-## Conclusão final
+## Correção retroativa à Revisão A — achado ao vivo no rollout de staging (2026-07-30)
 
-Cinco revisões adversariais no total (três rodadas), sete achados confirmados no total, todos
-corrigidos antes deste checkpoint ser reapresentado ao PMO. Nenhuma revisão, em nenhuma rodada,
-encontrou bypass de RLS, escalação de privilégio, XSS explorável ou vazamento de segredo.
-`bun run lint && bun run test` (77 testes) `&& bun run build` e `verify-env:staging`/
-`verify-env:production` seguem verdes.
+A Revisão A (primeira rodada, §"Banco e autorização") afirmou, com convicção: *"`approve_submission`
+corretamente restrita a `service_role`"* e concluiu 0 achados sobre os grants de função. **Essa
+conclusão estava errada**, e o motivo é o mesmo em toda a análise até este ponto: nenhuma revisão,
+em nenhuma rodada, teve acesso a um banco Postgres vivo (Docker indisponível durante toda a Onda 3)
+para checar `information_schema.role_routine_grants` de verdade. A hipótese de que
+`REVOKE ALL ... FROM PUBLIC` bastava foi validada só por leitura de SQL e por raciocínio sobre o
+comportamento padrão do Postgres — nunca contra o comportamento real de um projeto Supabase.
+
+Ao aplicar `20260729210000_harden_helper_function_grants.sql` em staging durante o rollout
+autorizado, a verificação do passo 3 do plano mostrou `anon` e `authenticated` ainda com `EXECUTE`
+direto nas três funções auxiliares — a migration não teve o efeito que toda a documentação (e a
+Revisão A) presumia. Investigando a causa: o Supabase concede `EXECUTE` a `anon`/`authenticated`
+de forma explícita e direta na criação de toda função (via `ALTER DEFAULT PRIVILEGES` de
+plataforma, fora do nosso versionamento) — um mecanismo diferente do default `PUBLIC` do SQL
+padrão, e que `REVOKE ... FROM PUBLIC` não desfaz.
+
+Isso significa que **`approve_submission(uuid)` — `SECURITY DEFINER`, criada na Onda 1 com o mesmo
+padrão `REVOKE ALL ... FROM PUBLIC` — muito provavelmente estava no mesmo estado em produção desde
+então**: `anon`/`authenticated` com `EXECUTE` direto, permitindo (em teoria) que qualquer visitante
+anônimo aprovasse sua própria sugestão de preço via RPC, sem passar pela moderação. Nenhum dado
+real existe em produção (confirmado vazio desde o fechamento da Onda 2), então o impacto prático
+até agora é baixo — mas o controle em si esteve ausente, sem que nenhuma das cinco revisões
+adversariais anteriores (incluindo a própria Revisão A) o detectasse.
+
+**Corrigido:** `supabase/migrations/20260730120000_fix_function_grants_explicit_revoke.sql` revoga
+explicitamente de `PUBLIC, anon, authenticated` nas quatro funções (as três auxiliares +
+`approve_submission`). Nova regressão estática (`supabase/function-execute-grants.test.ts`) assume
+por padrão que toda função está **concedida** a `anon`/`authenticated` até prova em contrário —
+invertendo a suposição otimista que causou este ponto cego — e prova que um `REVOKE` que só nomeia
+`PUBLIC` não seria suficiente. `docs/security/DATABASE-AUTHORIZATION-MATRIX.md` atualizada com a
+correção completa.
+
+**Lição estrutural, não só um bug pontual:** todas as afirmações de segurança deste projeto que
+dependem de estado de banco (grants, RLS, policies) e que **não foram verificadas contra um banco
+vivo** devem ser tratadas como hipóteses, não fatos — mesmo quando o raciocínio sobre o SQL parece
+correto. `THREAT-MODEL-ONDA-3.md` §5.1 e o plano de rollout já continham a verificação viva como
+prática — este achado é a prova de por que ela é indispensável, não apenas boa prática.
+
+## Conclusão final (atualizada após o achado ao vivo do rollout)
+
+Cinco revisões adversariais no total (três rodadas) mais um achado ao vivo durante o rollout
+autorizado de staging (não uma sexta revisão adversarial formal, mas uma verificação real contra
+banco vivo que nenhuma revisão anterior pôde fazer) — oito achados confirmados no total, todos
+corrigidos. A escalação de privilégio via `approve_submission` (ver seção acima) é o achado mais
+severo de toda a Onda 3, e só foi descoberto porque o rollout aplicou a migration em staging e
+verificou o resultado real, não porque uma revisão de código o previu. Nenhuma revisão encontrou
+bypass de RLS, XSS explorável ou vazamento de segredo; a escalação de privilégio encontrada foi via
+grant de função, não via RLS. `bun run lint && bun run test` (88 testes) `&& bun run build` e
+`verify-env:staging`/`verify-env:production` seguem verdes.

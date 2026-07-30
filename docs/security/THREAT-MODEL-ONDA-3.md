@@ -38,15 +38,15 @@ itens não verificáveis a partir do repositório estão marcados `NOT VERIFIED`
 
 ## 3. Superfícies públicas
 
-| Superfície                                                                      | Método                               | Protegida por                                                                                                                    |
-| ------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `GET` catálogo (`markets`, `products`, `prices`) via Data API                   | REST direto ou via app               | RLS `SELECT` (`is_active`/validade)                                                                                              |
-| `INSERT price_submissions` via Data API                                         | REST direto **ou** `SubmitPriceForm` | RLS `WITH CHECK` + honeypot/soft-cap **no frontend apenas**                                                                      |
-| `INSERT product_watch_requests` via Data API                                    | REST direto ou app                   | RLS `WITH CHECK` (produto ativo)                                                                                                 |
-| `INSERT decision_feedback` via Data API                                         | REST direto ou app                   | RLS `WITH CHECK` (produto ativo)                                                                                                 |
-| `EXECUTE approve_submission(uuid)`                                              | RPC                                  | `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE TO service_role` — **não chamável por `anon`/`authenticated`**                         |
-| Rotas do app (`/`, `/buscar`, `/produto/$id`, `/como-funciona`, `/sitemap.xml`) | HTTP via Worker                      | Nenhum header de segurança hoje (ver §7)                                                                                         |
-| `workers.dev` de staging e produção                                             | HTTP                                 | Sem autenticação — por design, ainda não são lançamento público, mas são publicamente alcançáveis e **indexáveis** hoje (ver §7) |
+| Superfície                                                                      | Método                                  | Protegida por                                                                                                                                                                          |
+| ------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET` catálogo (`markets`, `products`, `prices`) via Data API                   | REST direto ou via app                  | RLS `SELECT` (`is_active`/validade)                                                                                                                                                    |
+| `INSERT price_submissions` via Data API                                         | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy `WITH CHECK` preservada e dormente (ver §4.2). `SubmitPriceForm` ("Informar preço") continua na UI mas toda tentativa de envio falha |
+| `INSERT product_watch_requests` via Data API                                    | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy dormente. Botão "Quero acompanhar" continua na UI mas toda tentativa falha                                                           |
+| `INSERT decision_feedback` via Data API                                         | **Fechada** (checkpoint PMO 2026-07-29) | `REVOKE INSERT FROM anon, authenticated` — policy dormente. Widget de feedback de decisão continua na UI mas toda tentativa falha                                                      |
+| `EXECUTE approve_submission(uuid)`                                              | RPC                                     | `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE TO service_role` — **não chamável por `anon`/`authenticated`**                                                                               |
+| Rotas do app (`/`, `/buscar`, `/produto/$id`, `/como-funciona`, `/sitemap.xml`) | HTTP via Worker                         | Nenhum header de segurança hoje (ver §7)                                                                                                                                               |
+| `workers.dev` de staging e produção                                             | HTTP                                    | Sem autenticação — por design, ainda não são lançamento público, mas são publicamente alcançáveis e **indexáveis** hoje (ver §7)                                                       |
 
 ## 4. Atacantes e abusos plausíveis considerados
 
@@ -150,6 +150,20 @@ leitura pública de `prices` retorna `200` com array vazio; `INSERT` anônimo em
 três tabelas de submissão pública seguiam padrão diferente (INSERT liberado por design original,
 agora fechado). A confirmação de que o `INSERT` anônimo nas três tabelas passa a retornar `401`
 **depois** da migration aplicada é o passo 5 (staging) e 11 (produção) do plano de rollout.
+
+## 5.2 Consequência de produto do fechamento — não fica só na matriz de banco
+
+Achado de revisão adversarial: esta seção precisava dizer isto explicitamente, não só a matriz de
+banco. Três controles visíveis no app hoje **continuam na tela** e **sempre falham** depois do
+fechamento: botão "Informar preço" (`SubmitPriceForm`), botão "Quero acompanhar"
+(`registerWatchRequest`) e o widget de feedback de decisão (`DecisionFeedback`). Nenhum crash,
+nenhuma trava — os três já tinham tratamento de erro (`catch { setStatus("error") }`), que agora
+é o resultado permanente de qualquer tentativa. O texto de erro exibido ao usuário foi corrigido
+nesta mesma rodada para não implicar problema de conexão nem sugerir que tentar de novo vai
+funcionar (era "Verifique sua conexão e tente novamente" em um caso — corrigido para "Não estamos
+aceitando sugestões de preço no momento", e equivalente nos outros dois). Nenhuma remoção de UI
+foi feita — decisão de produto (remover os botões, ou reabrir a escrita com proteção server-side)
+fica para uma Onda/PR de produto separado.
 
 ## 6. Conclusão da Fase A (atualizada após checkpoint do PMO)
 

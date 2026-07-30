@@ -19,7 +19,22 @@ function migrationFilesInOrder(): string[] {
     .sort(); // nomes são prefixados por timestamp — ordem alfabética == ordem cronológica
 }
 
-/** Resolve, lendo todas as migrations em ordem, se `role` tem INSERT em `table` ao final. */
+/**
+ * Extrai só a lista de grantees de um GRANT ("... TO a, b") ou REVOKE ("... FROM a, b"),
+ * nunca o statement inteiro — senão o prefixo de schema "public.<tabela>" faria qualquer
+ * statement "mencionar" o pseudo-role PUBLIC por engano.
+ */
+function granteeClause(statement: string, upper: string): string {
+  const keyword = upper.startsWith("GRANT") ? "TO" : "FROM";
+  const match = new RegExp(`\\b${keyword}\\b([^;]+)$`, "i").exec(statement);
+  return match ? match[1] : "";
+}
+
+/**
+ * Resolve, lendo todas as migrations em ordem, se `role` tem INSERT em `table` ao final.
+ * Trata GRANT/REVOKE para o pseudo-role PUBLIC como aplicável a qualquer role nomeado
+ * (inclusive anon/authenticated) — é assim que o Postgres resolve PUBLIC de verdade.
+ */
 function resolveInsertGrant(table: string, role: string): boolean {
   let granted = false;
   for (const file of migrationFilesInOrder()) {
@@ -28,9 +43,14 @@ function resolveInsertGrant(table: string, role: string): boolean {
       const statement = rawStatement.replace(/--.*$/gm, "").trim();
       if (!statement) continue;
       const upper = statement.toUpperCase();
+      if (!upper.startsWith("GRANT") && !upper.startsWith("REVOKE")) continue;
+
       const mentionsTable = new RegExp(`\\b${table}\\b`, "i").test(statement);
-      const mentionsRole = new RegExp(`\\b${role}\\b`, "i").test(statement);
-      if (!mentionsTable || !mentionsRole) continue;
+      if (!mentionsTable) continue;
+
+      const grantees = granteeClause(statement, upper);
+      const mentionsRole = new RegExp(`\\b(${role}|PUBLIC)\\b`, "i").test(grantees);
+      if (!mentionsRole) continue;
 
       if (upper.startsWith("GRANT") && /\bINSERT\b|\bALL\b/i.test(statement)) {
         granted = true;
@@ -56,6 +76,18 @@ describe("superfícies de escrita pública fechadas na Onda 3", () => {
     for (const table of CLOSED_TABLES) {
       expect(resolveInsertGrant(table, "service_role")).toBe(true);
     }
+  });
+
+  it("resolveInsertGrant trataria um GRANT futuro para PUBLIC como reabertura (não passaria despercebido)", () => {
+    // Simula, sem tocar nos arquivos reais, o cenário que uma revisão adversarial apontou como
+    // ponto cego: uma migration futura hipotética que reabrisse a tabela via `TO PUBLIC` em vez
+    // de nomear anon/authenticated explicitamente. grantee só é extraído depois de "TO"/"FROM",
+    // então o prefixo de schema "public.price_submissions" não conta como grantee PUBLIC.
+    const hypotheticalStatement = "GRANT INSERT ON public.price_submissions TO PUBLIC";
+    const upper = hypotheticalStatement.toUpperCase();
+    const grantees = granteeClause(hypotheticalStatement, upper);
+    expect(grantees.toUpperCase()).toContain("PUBLIC");
+    expect(new RegExp(`\\b(anon|PUBLIC)\\b`, "i").test(grantees)).toBe(true);
   });
 
   it("a migration de fechamento existe e revoga exatamente as três tabelas", () => {

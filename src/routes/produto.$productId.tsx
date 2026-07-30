@@ -229,7 +229,7 @@ function ProductPage() {
           </div>
           {watchStatus === "error" ? (
             <p role="alert" className="mt-2 text-sm font-semibold text-destructive">
-              Não conseguimos registrar seu interesse agora. Tente novamente.
+              Não estamos registrando interesse em produtos no momento.
             </p>
           ) : null}
         </section>

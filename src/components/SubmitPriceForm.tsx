@@ -320,7 +320,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
 
             {status === "error" ? (
               <p role="alert" className="text-sm font-semibold text-destructive">
-                Não conseguimos enviar agora. Verifique sua conexão e tente novamente.
+                Não estamos aceitando sugestões de preço no momento.
               </p>
             ) : null}
 

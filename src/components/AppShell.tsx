@@ -33,8 +33,25 @@ export function AppShell({
         inert={isInert || undefined}
       >
         <PageContainer className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2">
-          <Link to="/" className="font-display truncate text-lg font-bold text-primary">
-            ViPreço
+          <Link to="/" className="flex min-w-0 items-center gap-1.5">
+            <img
+              src="/logo/vipreco-simbolo.svg"
+              alt=""
+              aria-hidden="true"
+              width={24}
+              height={24}
+              className="size-6 shrink-0"
+            />
+            {/* text-xl + font-extrabold garante par "texto grande" do WCAG (>=18.66px + peso >=700);
+                #4E8570 mede 4.27:1 contra branco — atende o mínimo de texto grande (3:1), não o de
+                texto normal (4.5:1). Não reutilizar essa cor abaixo deste tamanho/peso. */}
+            <span
+              className="font-display truncate text-xl font-extrabold"
+              style={{ letterSpacing: "-0.035em" }}
+            >
+              <span className="text-foreground">Vi</span>
+              <span style={{ color: "#4E8570" }}>Preço</span>
+            </span>
           </Link>
           <nav aria-label="Navegação principal" className="hidden gap-0.5 sm:flex">
             {NAV.map((item) => (

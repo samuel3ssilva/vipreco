@@ -1,0 +1,40 @@
+name: DB schema drill
+
+# Onda 4 - reconstroi o schema do zero a partir de supabase/migrations/ num Postgres
+# efemero (Docker) e confirma, contra banco vivo, as garantias de autorizacao que a
+# Onda 3 aprendeu (ao vivo, em staging) que texto de migration sozinho nao prova. Ver
+# docs/operations/ONDA-4-TECHNICAL-PLAN.md e scripts/db-drill/. Nao usa nenhum secret,
+# nao toca em nenhum projeto Supabase real.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/db-drill/**"
+      - ".github/workflows/db-schema-drill.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/db-drill/**"
+      - ".github/workflows/db-schema-drill.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-schema-drill-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    name: reconstruir schema e validar autorizacao
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Rodar drill de reconstrucao de schema
+        run: bash scripts/db-drill/run.sh

@@ -57,8 +57,8 @@ const DETAIL_GROUPS = [
         text: "Um produto só entra na mesma comparação quando marca, variante e tamanho são exatamente iguais. Café de 250 g e café de 500 g aparecem separados.",
       },
       {
-        title: "Sugestões passam por revisão",
-        text: "Quando alguém informa uma atualização pelo botão “Informar atualização”, o registro fica pendente e é conferido por uma pessoa antes de aparecer no comparador — ele não altera o preço publicado na hora.",
+        title: "Cada preço é conferido antes de publicar",
+        text: "Nesta fase de teste, a equipe confere cada preço diretamente com o mercado antes de publicar — ainda não existe formulário público de sugestão no site.",
       },
     ],
   },
@@ -146,12 +146,12 @@ function HowItWorksPage() {
             Você é dono de mercado?
           </h2>
           <p className="meta-text mt-0.5">
-            Os preços do seu mercado entram no comparador do mesmo jeito que os dos outros: por nota
-            fiscal, lista enviada por você, pesquisa em loja, foto de etiqueta ou informação da
-            comunidade. Se algum preço mostrado sobre a sua loja estiver errado, use o botão
-            “Informar atualização” na página do produto para reportar — a sugestão fica pendente e é
-            conferida antes de substituir o preço publicado.
+            O ViPreço também é um canal para o seu mercado aparecer para quem está comparando preço
+            na região — sem precisar de integração com o caixa.
           </p>
+          <Link to="/para-mercados" className="btn-base btn-secondary btn-sm mt-2">
+            Conhecer a proposta para mercados
+          </Link>
         </section>
 
         <AlertBanner tone="atencao">

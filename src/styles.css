@@ -17,8 +17,8 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 3px);
   --radius-2xl: calc(var(--radius) + 8px);
-  --font-display: "Fraunces", Georgia, serif;
-  --font-sans: "Karla", system-ui, sans-serif;
+  --font-display: var(--vp-font-display);
+  --font-sans: var(--vp-font-body);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -48,46 +48,63 @@
   --color-ring: var(--ring);
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
-  --shadow-card: 0 1px 2px oklch(0.24 0.03 195 / 0.06);
-  --shadow-raised: 0 6px 20px -12px oklch(0.24 0.03 195 / 0.35);
+  --shadow-card: var(--vp-shadow-1);
+  --shadow-raised: var(--vp-shadow-2);
 }
 
+/*
+ * Teste MVP asset-light (2026-07-30): tema "Preço Artemis" substituído pelo
+ * Brand System v2 "Visto", já instalado e com contraste WCAG recalculado em
+ * docs/design/BRAND-V2-CONTRAST-RECALC.md. Nenhum componente muda — todos já
+ * consomem estas variáveis via @theme inline acima; só o valor por trás de
+ * cada uma muda, de oklch "Preço Artemis" para var(--vp-*) "Visto".
+ * Pares que não estavam no recálculo original foram conferidos à parte pela
+ * fórmula de luminância relativa do WCAG 2.x — todos ≥ 4.5:1 (texto normal)
+ * ou ≥ 3:1 (borda de campo, SC 1.4.11):
+ *   secondary-fg/secondary   10.35:1   accent-fg/accent   4.86:1
+ *   warning-fg/warning        5.01:1   caution-fg/caution  4.82:1
+ *   destructive-fg/destructive 5.81:1  success-fg/success  5.27:1
+ *   info-fg/info               6.04:1  input (vp-text-muted) vs card 5.63:1
+ */
 :root {
   --radius: 0.75rem;
   --page-max: 1120px;
-  --background: oklch(0.985 0.008 106);
-  --foreground: oklch(0.24 0.03 195);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.03 195);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.03 195);
-  --primary: oklch(0.42 0.095 176);
-  --primary-foreground: oklch(0.985 0.008 106);
-  --secondary: oklch(0.94 0.03 160);
-  --secondary-foreground: oklch(0.3 0.06 176);
-  --muted: oklch(0.955 0.012 106);
-  --muted-foreground: oklch(0.45 0.02 195);
-  --accent: oklch(0.53 0.13 152);
-  --accent-foreground: oklch(0.985 0.008 106);
-  --destructive: oklch(0.48 0.17 27);
-  --destructive-foreground: oklch(0.985 0.008 106);
-  --success: oklch(0.44 0.12 152);
-  --success-foreground: oklch(0.985 0.008 106);
-  --warning: oklch(0.48 0.1 75);
-  --warning-foreground: oklch(0.985 0.008 106);
-  /* Caixa de atenção discreta: amarelo muito suave, nunca verde de destaque. */
-  --caution: oklch(0.965 0.04 95);
-  --caution-foreground: oklch(0.35 0.06 75);
-  --info: oklch(0.955 0.014 230);
-  --info-foreground: oklch(0.36 0.04 230);
-  --border: oklch(0.9 0.012 165);
-  /* Onda 3: escurecido de 0.86 para 0.60 (mesmo hue) — o valor anterior media
-     ~1.5:1 contra --card/--background, abaixo do 3:1 exigido pela SC 1.4.11
-     para o contorno de campos de formulário em repouso. */
-  --input: oklch(0.6 0.02 165);
-  --ring: oklch(0.42 0.095 176);
-  --surface: oklch(0.968 0.014 165);
-  --surface-foreground: oklch(0.28 0.04 195);
+  --background: var(--vp-bg-page);
+  --foreground: var(--vp-text-strong);
+  --card: var(--vp-bg-surface);
+  --card-foreground: var(--vp-text-strong);
+  --popover: var(--vp-bg-surface);
+  --popover-foreground: var(--vp-text-strong);
+  --primary: var(--vp-action);
+  --primary-foreground: var(--vp-text-inverse);
+  --secondary: var(--vp-green-surface);
+  --secondary-foreground: var(--vp-green-hover);
+  --muted: var(--vp-bg-subtle);
+  --muted-foreground: var(--vp-text-muted);
+  --accent: var(--vp-green-soft);
+  --accent-foreground: var(--vp-text-inverse);
+  --destructive: var(--vp-danger);
+  --destructive-foreground: var(--vp-text-inverse);
+  --success: var(--vp-success);
+  --success-foreground: var(--vp-text-inverse);
+  --warning: var(--vp-warning);
+  --warning-foreground: var(--vp-text-inverse);
+  /* Caixa de atenção discreta: usa a família âmbar de --vp-warning, nunca o
+     amarelo --vp-yellow/--vp-contribute, reservado exclusivamente para
+     contribuição (ver CLAUDE.md e o mandato do Teste MVP — sem contribuição
+     pública ativa nesta fase, o amarelo de marca fica sem uso decorativo). */
+  --caution: var(--vp-warning-bg);
+  --caution-foreground: var(--vp-warning);
+  --info: var(--vp-info-bg);
+  --info-foreground: var(--vp-info);
+  --border: var(--vp-border);
+  /* Mesmo cuidado da Onda 3: precisa de >=3:1 contra --card/--background para
+     o contorno de campo em repouso (SC 1.4.11). --vp-border-strong sozinho
+     mede só ~1.75:1 aqui, então reaproveita --vp-text-muted (5.63:1). */
+  --input: var(--vp-text-muted);
+  --ring: var(--vp-focus);
+  --surface: var(--vp-bg-subtle);
+  --surface-foreground: var(--vp-text-strong);
 }
 
 /*
@@ -285,6 +302,12 @@
   /* Serifada só onde a marca precisa aparecer. */
   .font-display {
     font-family: var(--font-display);
+  }
+
+  /* Mono só em dado tabular de fato (preço, contagem) — nunca em texto corrido. */
+  .font-data {
+    font-family: var(--vp-font-data);
+    font-feature-settings: "tnum" 1;
   }
 
   h1,

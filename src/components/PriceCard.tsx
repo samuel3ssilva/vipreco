@@ -39,7 +39,7 @@ export function PriceCard({ entry, isLowest, isUsualMarket, differenceToLowest }
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="text-xl font-bold tabular-nums text-foreground">
+          <p className="font-data text-xl font-bold tabular-nums text-foreground">
             {formatPrice(entry.price)}
           </p>
           {!isLowest && differenceToLowest && differenceToLowest > 0 ? (

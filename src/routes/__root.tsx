@@ -86,14 +86,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "theme-color", content: "#0f5c4e" },
+      { name: "theme-color", content: "#0e5c3c" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
+        // Brand System v2 "Visto" (docs/design/BRAND-V2-CONTRAST-RECALC.md): Bricolage
+        // Grotesque na marca/títulos, Public Sans no corpo, IBM Plex Mono em dado
+        // tabular (preço, contagem) via .font-mono onde já usado.
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap",
       },
       {
         rel: "stylesheet",

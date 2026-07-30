@@ -124,7 +124,7 @@ function HomePage() {
                       </h3>
                       <p className="meta-text truncate">{entry.market.name}</p>
                     </div>
-                    <p className="shrink-0 text-xl font-bold tabular-nums text-primary">
+                    <p className="font-data shrink-0 text-xl font-bold tabular-nums text-primary">
                       {formatPrice(entry.price)}
                     </p>
                   </div>
@@ -192,7 +192,7 @@ function HomePage() {
                         {stat?.lowest != null ? (
                           <>
                             <span className="meta-text block">a partir de</span>
-                            <span className="block font-bold tabular-nums">
+                            <span className="font-data block font-bold tabular-nums">
                               {formatPrice(stat.lowest)}
                             </span>
                           </>

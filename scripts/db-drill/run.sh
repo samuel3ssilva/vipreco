@@ -32,14 +32,31 @@ docker run -d --rm \
   "$POSTGRES_IMAGE" >/dev/null
 
 echo "==> Aguardando o banco aceitar conexoes..."
-for _ in $(seq 1 30); do
-  if docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
+# A imagem oficial do Postgres faz initdb e sobe um servidor TEMPORARIO (so pra rodar
+# scripts de inicializacao), derruba esse servidor temporario, e so entao sobe o
+# servidor FINAL. "database system is ready to accept connections" aparece duas vezes
+# no log -- uma por servidor. pg_isready sozinho pode responder OK contra o servidor
+# temporario, que fecha a conexao logo em seguida (FATAL: terminating connection due
+# to administrator command) -- foi exatamente o que aconteceu na primeira tentativa de
+# endurecimento deste script (ver commit desta mudanca). Esperar a segunda ocorrencia
+# do log e o sinal correto e documentado para esse gotcha conhecido da imagem oficial.
+MAX_ATTEMPTS=60
+ready=""
+for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+  ready_count=$(docker logs "$CONTAINER_NAME" 2>&1 | grep -c "database system is ready to accept connections" || true)
+  if [ "${ready_count:-0}" -ge 2 ] && docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
+    ready=1
+    echo "==> Banco pronto (tentativa $attempt/$MAX_ATTEMPTS, servidor final)."
+    break
+  fi
+  if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
     break
   fi
   sleep 1
 done
-if ! docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
-  echo "::error::Postgres nao ficou pronto a tempo." >&2
+if [ -z "$ready" ]; then
+  echo "::error::Postgres nao ficou pronto a tempo apos $MAX_ATTEMPTS tentativas (~${MAX_ATTEMPTS}s)." >&2
+  docker logs "$CONTAINER_NAME" 2>&1 | tail -n 50 || true
   exit 1
 fi
 

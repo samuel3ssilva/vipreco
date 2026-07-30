@@ -50,7 +50,7 @@ const DETAIL_GROUPS = [
     items: [
       {
         title: "De onde vêm os preços",
-        text: "Os preços vêm de notas fiscais, listas enviadas pelos mercados, pesquisa semanal em loja, fotos de etiqueta, informações da comunidade e ofertas anunciadas. Cada preço mostra a sua origem.",
+        text: "Nesta demonstração, todos os preços são fictícios e não vêm de nenhuma coleta real. Quando o teste com mercados de verdade começar, cada preço mostrará data e origem — nota fiscal, lista do mercado ou pesquisa em loja, por exemplo — mas as fontes exatas ainda dependem da fase de validação. Os preços podem mudar; confirme sempre antes de comprar.",
       },
       {
         title: "Só comparamos produtos iguais",
@@ -58,7 +58,7 @@ const DETAIL_GROUPS = [
       },
       {
         title: "Cada preço é conferido antes de publicar",
-        text: "Nesta fase de teste, a equipe confere cada preço diretamente com o mercado antes de publicar — ainda não existe formulário público de sugestão no site.",
+        text: "Nesta demonstração, os preços são exemplos fictícios pré-carregados — não passaram por conferência com nenhum mercado real. Quando o teste começar, a equipe vai conferir cada preço diretamente com o mercado antes de publicar; ainda não existe formulário público de sugestão no site.",
       },
     ],
   },

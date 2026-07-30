@@ -77,10 +77,14 @@ adicional condicionada a `is_demo`, uma decisão de produto fora do escopo desta
    policies de INSERT continuam definidas no catálogo, agora dormentes (sem o `GRANT`
    correspondente, o Postgres nunca chega a avaliar a `USING`/`WITH CHECK` da policy — o
    privilégio de tabela é checado antes da RLS). `service_role` inalterado em todas as três.
-   **Efeito colateral conhecido:** os três fluxos de UI que hoje escrevem nessas tabelas
-   (`SubmitPriceForm`, `registerWatchRequest`, `DecisionFeedback`) degradam para o estado de erro
-   genérico já existente no código — sem crash, mas as três ações passam a falhar de forma
-   consistente até uma decisão de produto sobre a UI, fora do escopo desta migration.
+   **Efeito de produto (resolvido no segundo ajuste do PMO):** os três fluxos de UI que escreviam
+   nessas tabelas (`SubmitPriceForm`, `registerWatchRequest`, `DecisionFeedback`) não são mais
+   renderizados em nenhuma rota pública — estrutura preservada e interface pública não renderizada
+   enquanto a superfície de escrita permanecer fechada. Os componentes e a função continuam no
+   repositório, sem exclusão destrutiva; `src/routes/produto.$productId.tsx` simplesmente não os
+   importa nem os monta, e `PriceCard` não expõe mais o callback (`onReport`) que abria o
+   formulário a partir de cada card. Ver `docs/security/THREAT-MODEL-ONDA-3.md` §5.2 e
+   `src/routes/produto.$productId.public-surfaces.test.ts`.
 
 Nenhuma outra tabela, policy ou RLS foi alterada — a auditoria não encontrou nenhuma policy
 permissiva demais, nenhum `GRANT ALL` desnecessário e nenhuma tabela sem RLS. Ambas as migrations

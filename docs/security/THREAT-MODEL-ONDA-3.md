@@ -153,22 +153,39 @@ agora fechado). A confirmação de que o `INSERT` anônimo nas três tabelas pas
 
 ## 5.2 Consequência de produto do fechamento — não fica só na matriz de banco
 
-Achado de revisão adversarial: esta seção precisava dizer isto explicitamente, não só a matriz de
-banco. Três controles visíveis no app hoje **continuam na tela** e **sempre falham** depois do
-fechamento: botão "Informar preço" (`SubmitPriceForm`), botão "Quero acompanhar"
-(`registerWatchRequest`) e o widget de feedback de decisão (`DecisionFeedback`). Nenhum crash,
-nenhuma trava — os três já tinham tratamento de erro (`catch { setStatus("error") }`), que agora
-é o resultado permanente de qualquer tentativa. O texto de erro exibido ao usuário foi corrigido
-nesta mesma rodada para não implicar problema de conexão nem sugerir que tentar de novo vai
-funcionar (era "Verifique sua conexão e tente novamente" em um caso — corrigido para "Não estamos
-aceitando sugestões de preço no momento", e equivalente nos outros dois). Nenhuma remoção de UI
-foi feita — decisão de produto (remover os botões, ou reabrir a escrita com proteção server-side)
-fica para uma Onda/PR de produto separado.
+**Atualizado no segundo ajuste do PMO (2026-07-29):** a primeira resposta a este achado (fechar o
+banco e apenas corrigir o texto de erro dos três controles) foi avaliada pelo PMO como insuficiente
+— uma interface que sempre falha não é um estado final aceitável. Os três controles públicos
+ligados às tabelas fechadas deixaram de ser renderizados nas rotas públicas, em staging e em
+produção:
 
-## 6. Conclusão da Fase A (atualizada após checkpoint do PMO)
+- botão "Informar preço" e botão "Informar atualização" por mercado (abriam `SubmitPriceForm`,
+  escreve em `price_submissions`);
+- botão "Quero acompanhar" (chamava `registerWatchRequest`, escreve em `product_watch_requests`);
+- widget de feedback de decisão `DecisionFeedback` (escreve em `decision_feedback`).
+
+`src/routes/produto.$productId.tsx` não importa mais `SubmitPriceForm` nem `DecisionFeedback`, não
+chama mais `registerWatchRequest`, e `PriceCard` não expõe mais a prop `onReport` que abria o
+formulário a partir de cada card de preço — não há caminho alternativo no frontend para essas três
+ações. **Estrutura preservada e interface pública não renderizada enquanto a superfície de escrita
+permanecer fechada**: os três componentes (`SubmitPriceForm.tsx`, `DecisionFeedback.tsx`) e a
+função `registerWatchRequest` continuam no repositório, sem exclusão destrutiva, prontos para
+religar quando a escrita for reaberta com proteção server-side (Turnstile/rate limit, ver §4.2).
+Nenhum botão desabilitado, mensagem "em breve", feature flag remota, credencial ou infraestrutura
+nova foi introduzida — a remoção é de renderização, resolvida em código, no mesmo PR. Regressão
+estática em `src/routes/produto.$productId.public-surfaces.test.ts` garante que os três controles
+não voltem a aparecer sem que o teste falhe primeiro.
+
+O texto de erro dos três componentes (corrigido na rodada anterior para não implicar problema de
+conexão) permanece no código-fonte como parte do estado dormente dos componentes — deixou de ser
+alcançável por qualquer usuário, já que nada os renderiza mais nas rotas públicas.
+
+## 6. Conclusão da Fase A (atualizada após o segundo ajuste do PMO)
 
 Nenhum bloqueio material impede o merge após as correções deste checkpoint. O achado de maior
 severidade prática (headers/CSP ausentes) já tinha correção direta e local. O achado que o PMO
 classificou como bloqueante (escrita pública nas três tabelas) foi fechado por migration não
-destrutiva nesta mesma rodada — não resta nenhum item de severidade Média ou superior sem
-correção ou sem `NOT VERIFIED` explicitamente aceito.
+destrutiva; o ajuste seguinte do PMO (interface que sempre falha não é aceitável) foi resolvido
+removendo a renderização dos três controles nas rotas públicas, sem excluir estrutura nem criar
+infraestrutura nova — não resta nenhum item de severidade Média ou superior sem correção ou sem
+`NOT VERIFIED` explicitamente aceito.

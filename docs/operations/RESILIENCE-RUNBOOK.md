@@ -192,3 +192,22 @@ parte da checklist do Gate R0, não nesta Onda.
 
 **Nenhuma das alternativas foi executada.** Nenhum restore, criação de projeto, upgrade
 de plano ou custo foi gerado por este CTO.
+
+### 6.4 Decisão do Founder/PMO (2026-07-30) — encerra esta nota de decisão
+
+**Escolhida a alternativa D — adiar restore real até o Gate R0.** Até lá, mantidos
+exatamente como estão:
+
+- restore continua `NOT VERIFIED`;
+- o procedimento de dump/restore manual permanece documentado (§3.2), não executado;
+- nenhuma mudança de plano;
+- nenhum custo gerado;
+- nenhum projeto temporário criado;
+- nenhum backup restaurado;
+- nenhum dado copiado entre projetos.
+
+No Gate R0, a checklist a reavaliar (não decidida agora) é: dump lógico manual com
+restore controlado, upgrade para o plano Pro com backup diário, ou PITR — este último
+somente se o RPO real exigido pelo piloto justificar o custo adicional. Esta seção fica
+fechada com essa decisão registrada; qualquer reabertura exige um novo ciclo de decisão
+explícito do PMO/Founder, não uma retomada silenciosa por este CTO.

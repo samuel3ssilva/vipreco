@@ -1,7 +1,7 @@
 # ViPreço — Plano Mestre v2.1
 
 **Status:** aprovado pelo PMO para uso como referência estratégica e operacional, condicionado aos gates humanos definidos neste documento.
-**Revisão:** 2026-07-29.
+**Revisão:** 2026-07-30.
 **Substitui:** `PLANO-MESTRE_ViPreco-v2.md`.
 **Não substitui:** `CLAUDE.md`, que continua governando como trabalhar no código, nem o histórico oficial das Ondas 0–6.
 
@@ -54,17 +54,17 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 
 ### Trilha de Fundação e Segurança
 
-| Onda                                           | Estado | Observação   |
-| ---------------------------------------------- | -----: | ------------ |
-| Onda 0 — Baseline                              |     ✅ | Concluída    |
-| Onda 1A — GitHub, CI e scans                   |     ✅ | Concluída    |
-| Onda 1B — Saída da Lovable                     |     ✅ | Concluída    |
-| Onda 1C — Contas, MFA e credenciais            |     ✅ | Concluída    |
-| Onda 2 — Staging e produção separados          |     ✅ | Concluída    |
-| Onda 3 — Segurança da aplicação, banco e borda |     ✅ | Concluída    |
-| Onda 4 — Resiliência operacional               |     ⬜ | Pendente     |
-| Onda 5 — Dados reais e piloto Artemis          |     ⛔ | Bloqueada    |
-| Onda 6 — Revisão externa e expansão            |     ⬜ | Pendente     |
+| Onda                                           | Estado | Observação          |
+| ---------------------------------------------- | -----: | ------------------- |
+| Onda 0 — Baseline                              |     ✅ | Concluída           |
+| Onda 1A — GitHub, CI e scans                   |     ✅ | Concluída           |
+| Onda 1B — Saída da Lovable                     |     ✅ | Concluída           |
+| Onda 1C — Contas, MFA e credenciais            |     ✅ | Concluída           |
+| Onda 2 — Staging e produção separados          |     ✅ | Concluída           |
+| Onda 3 — Segurança da aplicação, banco e borda |     ✅ | Concluída           |
+| Onda 4 — Resiliência operacional               |     ✅ | Concluída           |
+| Onda 5 — Dados reais e piloto Artemis          |     ⛔ | Bloqueada — Gate R0 |
+| Onda 6 — Revisão externa e expansão            |     ⬜ | Pendente            |
 
 ### Estado confirmado do fechamento da Onda 2
 
@@ -87,6 +87,36 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 - risco de governança registrado, não corrigido nesta Onda: GitHub Environment `production` tem `can_admins_bypass: true` — required reviewer não é um controle absoluto contra um admin do repositório (ver `docs/security/THREAT-MODEL-ONDA-3.md`, tabela de achados);
 - nenhum dado real foi cadastrado; MVP não iniciado.
 
+### Estado confirmado do fechamento da Onda 4
+
+- mandato registrado em `docs/governance/PROMPT-CTO_ONDA-4.md`; plano técnico em
+  `docs/operations/ONDA-4-TECHNICAL-PLAN.md`;
+- PR #15 (drill de schema, uptime/alerta, runbooks), PR #16 (correção da causa raiz de
+  flakiness do drill em CI) e PR #17 (registro final de evidências) mergeados em `main`
+  (HEAD `6307440`), CI e CodeQL verdes;
+- drill de reconstrução de schema (`scripts/db-drill/`, workflow
+  `.github/workflows/db-schema-drill.yml`) prova reprodutibilidade do schema a partir das
+  migrations versionadas contra um Postgres efêmero, incluindo as garantias de
+  autorização da Onda 3 — validado ao vivo em `main` (`2c6385a`);
+- monitoramento de uptime com alerta (`.github/workflows/uptime-check.yml`,
+  `scripts/check-uptime.ts`) cobre staging e produção, deduplica e fecha issue na
+  recuperação — validado ao vivo pós-merge;
+- `docs/operations/RESILIENCE-RUNBOOK.md` e `docs/operations/INCIDENT-RESPONSE-PLAN.md`
+  publicados;
+- risco de governança registrado na Onda 3 corrigido: `can_admins_bypass` do Environment
+  `production` alterado de `true` para `false` pelo Founder na UI do GitHub em
+  2026-07-30; verificado ao vivo via `gh api` (`can_admins_bypass: false`,
+  `updated_at: 2026-07-30T17:27:59Z`), com o restante da configuração do Environment
+  (required reviewer, `prevent_self_review: false`, branch policy restrita a `main`,
+  4 secrets, 0 variables) confirmado inalterado — ver
+  `docs/security/GOVERNANCE-RECOMMENDATION-ADMIN-BYPASS.md`;
+- restore real de dado (não apenas schema) permanece **NOT VERIFIED**: Supabase Free não
+  tem backup automático; restaurar de fato exigiria upgrade pago (Pro, backup diário ou
+  PITR). Decisão registrada: **alternativa D — adiar restore real e a decisão de plano
+  até o Gate R0**, nada executado (sem custo, sem mudança de plano, sem projeto
+  temporário, sem cópia de dado) — ver `docs/operations/RESILIENCE-RUNBOOK.md` §6;
+- nenhum dado real foi cadastrado; nenhum deploy adicional disparado; DNS inalterado.
+
 ### Regras imediatas
 
 - não alterar DNS;
@@ -94,8 +124,13 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 - não remover aviso de teste do staging;
 - não remover `approve_submission()` sem migration nova, plano de reversão e apresentação no checkpoint humano;
 - não mexer nos PRs do Dependabot;
-- não fazer merge automático do PR da Onda 3;
-- não iniciar Onda 4 ou trilha de produto dentro desta branch.
+- não fazer merge automático de PR;
+- não iniciar Onda 5, piloto ou coleta real sem aprovação explícita do Gate R0 pelo
+  Founder/PMO;
+- preparação do Gate R0 (documentação, mapeamento de dados, arquitetura, testes com
+  dados sintéticos, PRs pequenos e revisáveis) pode prosseguir sem dado real, deploy,
+  DNS, custo ou credencial nova, mas nenhum PR de preparação do Gate R0 é mergeado sem
+  autorização humana específica.
 
 ---
 
@@ -683,23 +718,23 @@ O stack local completo do Supabase permanece **NOT VERIFIED por limitação de m
 
 ## 16. Os 15 passos originais no quadro
 
-| #   | Passo                                         |                              Estado |
-| --- | --------------------------------------------- | ----------------------------------: |
-| 1   | Comprar `vipreco.com.br`                      |                                  ✅ |
-| 2   | Desconectar e revogar Lovable                 |                                  ✅ |
-| 3   | Rotacionar credenciais                        |                                  ✅ |
-| 4   | Transformar ambiente atual em staging         |                           🟡 Onda 2 |
-| 5   | Criar Supabase e Worker novos para produção   | 🟡 Supabase criado; Worker pendente |
-| 6   | Migrations e seeds reproduzíveis              |    🟡 avançado; fechamento pendente |
-| 7   | Auditar grants, RLS, funções, views e Storage |                           ⬜ Onda 3 |
-| 8   | MFA e GitHub protegido                        |                                  ✅ |
-| 9   | CI, scans e aprovação humana                  |                     ✅ gate mantido |
-| 10  | Headers, CSP, Turnstile e rate limits         |                           ⬜ Onda 3 |
-| 11  | Backup e restore real                         |                           ⬜ Onda 4 |
-| 12  | Logs, alertas e plano de incidente            |                           ⬜ Onda 4 |
-| 13  | Só então dados reais                          |                          ⛔ Gate R0 |
-| 14  | Piloto pequeno em Artemis                     |                           ⛔ Onda 5 |
-| 15  | Revisão externa antes da expansão             |                           ⬜ Onda 6 |
+| #   | Passo                                         |                                                                      Estado |
+| --- | --------------------------------------------- | --------------------------------------------------------------------------: |
+| 1   | Comprar `vipreco.com.br`                      |                                                                          ✅ |
+| 2   | Desconectar e revogar Lovable                 |                                                                          ✅ |
+| 3   | Rotacionar credenciais                        |                                                                          ✅ |
+| 4   | Transformar ambiente atual em staging         |                                                                   🟡 Onda 2 |
+| 5   | Criar Supabase e Worker novos para produção   |                                         🟡 Supabase criado; Worker pendente |
+| 6   | Migrations e seeds reproduzíveis              |                                            🟡 avançado; fechamento pendente |
+| 7   | Auditar grants, RLS, funções, views e Storage |                                                                   ⬜ Onda 3 |
+| 8   | MFA e GitHub protegido                        |                                                                          ✅ |
+| 9   | CI, scans e aprovação humana                  |                                                             ✅ gate mantido |
+| 10  | Headers, CSP, Turnstile e rate limits         |                                                                   ⬜ Onda 3 |
+| 11  | Backup e restore real                         | 🟡 drill de schema ✅; restore real de dado NOT VERIFIED, adiado ao Gate R0 |
+| 12  | Logs, alertas e plano de incidente            |                                                                          ✅ |
+| 13  | Só então dados reais                          |                                                                  ⛔ Gate R0 |
+| 14  | Piloto pequeno em Artemis                     |                                                                   ⛔ Onda 5 |
+| 15  | Revisão externa antes da expansão             |                                                                   ⬜ Onda 6 |
 
 ---
 
@@ -707,7 +742,8 @@ O stack local completo do Supabase permanece **NOT VERIFIED por limitação de m
 
 1. O CTO recebe este plano como nova referência.
 2. A Onda 2 foi encerrada: PR #11 mergeado em `main`, ambientes de staging e produção separados e comprovadamente isolados.
-3. A única missão executável agora é a Onda 3 (segurança da aplicação, banco e borda), sob mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`.
-4. O CTO não inicia Onda 4 ou trilha de produto sem autorização específica do PMO/Founder.
-5. Dados reais permanecem bloqueados pelo Gate R0, que depende também do fechamento da Onda 3.
-6. Ao final da Onda 3, o CTO entrega um checkpoint humano único; o PMO decide os próximos passos.
+3. A Onda 3 (segurança da aplicação, banco e borda) foi encerrada, sob mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`.
+4. A Onda 4 (resiliência operacional) foi encerrada, sob mandato registrado em `docs/governance/PROMPT-CTO_ONDA-4.md` — ver "Estado confirmado do fechamento da Onda 4" em §1.
+5. Dados reais permanecem bloqueados pelo Gate R0 (§10). O CTO está autorizado a preparar a documentação, o mapeamento de dados, a proposta de arquitetura segura e os testes com dados sintéticos do Gate R0 em PRs pequenos e revisáveis, sem mergeá-los e sem que isso constitua autorização da Onda 5, do piloto ou de qualquer dado real.
+6. O CTO não inicia Onda 5, piloto ou coleta real sem aprovação explícita do Gate R0 pelo Founder/PMO.
+7. Ao final de cada Onda ou da preparação do Gate R0, o CTO entrega um checkpoint humano único; o PMO decide os próximos passos.

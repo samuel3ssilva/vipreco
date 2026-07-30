@@ -5,28 +5,51 @@
 "GitHub Environment `production` — `can_admins_bypass: true`". Investigado nesta Onda
 por mandato explícito (`docs/governance/PROMPT-CTO_ONDA-4.md`, item 5).
 **Ação tomada nesta Onda:** nenhuma alteração de configuração — apenas leitura (`gh api`,
-permitido pela autonomia do CTO) e esta recomendação. Qualquer mudança real requer novo
-gate humano, conforme o mandato.
+permitido pela autonomia do CTO), esta recomendação, e a confirmação de que a mudança em
+si **não é executável por API/CLI** (ver §3.1 atualizado). Autorização do PMO/Founder
+recebida em 2026-07-30 para aplicar exclusivamente `can_admins_bypass: false` — não
+aplicada porque o mecanismo autorizado (leitura + escrita mínima e verificável via `gh
+api`) não existe para este campo. Bloqueio material reportado, conforme instruído.
 
 ---
 
-## 1. Estado real confirmado ao vivo (2026-07-30, somente leitura)
+## 1. Snapshot completo do Environment `production` — ANTES de qualquer mudança
+
+Capturado às 2026-07-30 14:2x UTC (mesma sessão, imediatamente antes da tentativa de
+mudança), via `gh api`, somente leitura:
 
 ```text
 GET /repos/samuel3ssilva/vipreco/environments/production
+  id: 18966445813
+  created_at: 2026-07-29T18:03:53Z
+  updated_at: 2026-07-29T18:03:53Z
   can_admins_bypass: true
   protection_rules:
-    - branch_policy (deployment_branch_policy.custom_branch_policies = true)
-    - required_reviewers:
-        prevent_self_review: false
-        reviewers: [samuel3ssilva]
+    - { id: 61244214, type: "branch_policy" }
+    - { id: 61244246, type: "required_reviewers",
+        prevent_self_review: false,
+        reviewers: [{ type: "User", login: "samuel3ssilva" }] }
+  deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }
 
 GET /repos/samuel3ssilva/vipreco/environments/production/deployment-branch-policies
-  branch_policies: [{ name: "main", type: "branch" }]
+  total_count: 1
+  branch_policies: [{ id: 55957936, name: "main", type: "branch" }]
+
+GET /repos/samuel3ssilva/vipreco/environments/production/secrets
+  total_count: 4
+  names: [CLOUDFLARE_API_TOKEN, SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL]
+  (nomes apenas — nenhum valor lido ou exposto)
+
+GET /repos/samuel3ssilva/vipreco/environments/production/variables
+  total_count: 0
 
 GET /repos/samuel3ssilva/vipreco/collaborators
   samuel3ssilva — admin: true (único colaborador do repositório)
 ```
+
+Este snapshot é idêntico ao capturado na primeira leitura desta Onda (registrado em §2
+abaixo) — nada mudou entre as duas leituras, confirmando que nenhuma ação nesta sessão
+alterou o Environment antes da tentativa de escrita descrita em §3.1.
 
 ## 2. Impacto real, não hipotético
 
@@ -64,27 +87,30 @@ pipeline (não há como ficar esperando uma aprovação que nunca chega). O úni
 que o deploy de produção passa a **pausar e esperar um clique explícito de aprovação**
 em vez de prosseguir direto.
 
-**Procedimento:**
+**Procedimento — BLOQUEIO CONFIRMADO, não executável por este CTO:**
 
-- Via UI (caminho confirmado disponível, já que o campo aparece no retorno da API):
-  `Settings → Environments → production → Deployment protection rules → desmarcar
-"Allow administrators to bypass configured protection rules"`.
-- Via API — **NOT VERIFIED nesta Onda** (não testado ao vivo porque seria uma escrita
-  em configuração protegida, fora do mandato autônomo): a documentação pública da API
-  de Environments do GitHub não confirma, no momento desta análise, que
-  `can_admins_bypass` seja um campo aceito pelo corpo de
-  `PUT /repos/{owner}/{repo}/environments/{environment_name}` — pode ser um campo
-  somente-leitura nessa API, ajustável apenas pela UI. **Antes de tentar via API,
-  confirmar na documentação vigente do GitHub ou tentar num ambiente de teste** — não
-  presumir que o `PUT` abaixo funciona sem essa checagem:
+Autorização recebida do PMO/Founder em 2026-07-30 para aplicar exatamente esta mudança,
+preservando todo o resto do Environment. Antes de qualquer escrita, confirmei na
+documentação oficial da API de Environments do GitHub
+(`PUT /repos/{owner}/{repo}/environments/{environment_name}`) quais campos o corpo da
+requisição aceita: **apenas `wait_timer`, `prevent_self_review`, `reviewers` e
+`deployment_branch_policy`. `can_admins_bypass` não está entre eles — não é um campo
+aceito por essa API, em nenhuma forma (nem isoladamente, nem como parte de um objeto
+substituído por inteiro).** Não existe, portanto, nenhuma chamada seguro-de-verificar
+(`gh api`, REST, GraphQL documentado) que eu possa emitir para alternar esse campo —
+não é uma questão de risco de sobrescrever outras propriedades por engano (o que o
+mandato pediu para eu evitar), é a ausência total de um mecanismo programático.
 
-  ```bash
-  # NOT VERIFIED — confirmar suporte do campo antes de executar
-  gh api --method PUT repos/samuel3ssilva/vipreco/environments/production \
-    -f can_admins_bypass=false
-  ```
+O único caminho existente é a **UI web do GitHub**, autenticada como o Founder:
+`Settings → Environments → production → Deployment protection rules → desmarcar
+"Allow administrators to bypass configured protection rules"`. Isso exige um clique
+humano — nenhuma sessão de CLI/API que este CTO tem acesso realiza essa ação.
 
-**Validação após a mudança (qualquer que seja o caminho usado):**
+**Reportado como bloqueio material, conforme instruído.** Nenhuma tentativa de escrita
+foi feita. O snapshot de §1 permanece válido como o estado atual, inalterado.
+
+**Validação após a mudança (a ser feita pelo Founder, ou por este CTO em sessão
+seguinte, por leitura apenas):**
 
 ```bash
 gh api repos/samuel3ssilva/vipreco/environments/production --jq '.can_admins_bypass'
@@ -111,10 +137,13 @@ uma segunda pessoa com acesso ao repositório que possa exercer o papel de revie
 
 ## 4. Resumo para o checkpoint
 
-| Mudança                     | Recomendação    | Risco de travar o pipeline                                 | Quando revisitar                          |
-| --------------------------- | --------------- | ---------------------------------------------------------- | ----------------------------------------- |
-| `can_admins_bypass: false`  | Fazer           | Nenhum (`prevent_self_review` continua `false`)            | Já pode ser feito                         |
-| `prevent_self_review: true` | Não fazer agora | Alto — travaria todo deploy de produção com a equipe atual | Quando houver 2º colaborador de confiança |
+| Mudança                     | Recomendação    | Risco de travar o pipeline                                 | Executável por API/CLI?                                        |
+| --------------------------- | --------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| `can_admins_bypass: false`  | Fazer           | Nenhum (`prevent_self_review` continua `false`)            | **Não — confirmado.** Só pela UI web, requer clique do Founder |
+| `prevent_self_review: true` | Não fazer agora | Alto — travaria todo deploy de produção com a equipe atual | Sim, via API — mas não recomendado agora                       |
 
-Nenhuma das duas mudanças foi executada por este CTO — ambas dependem de decisão e
-execução do Founder/PMO, conforme o mandato desta Onda.
+Nenhuma das duas mudanças foi executada por este CTO. A primeira foi autorizada pelo
+Founder/PMO nesta Onda, mas não pôde ser aplicada por este CTO — não por falta de
+autorização, e sim porque o mecanismo que a aplicaria (API/CLI) não expõe esse campo.
+Requer o Founder acessar `Settings → Environments → production` e desmarcar a opção
+manualmente. A segunda continua não recomendada, independentemente de quem execute.

@@ -81,7 +81,10 @@
   --info: oklch(0.955 0.014 230);
   --info-foreground: oklch(0.36 0.04 230);
   --border: oklch(0.9 0.012 165);
-  --input: oklch(0.86 0.014 165);
+  /* Onda 3: escurecido de 0.86 para 0.60 (mesmo hue) — o valor anterior media
+     ~1.5:1 contra --card/--background, abaixo do 3:1 exigido pela SC 1.4.11
+     para o contorno de campos de formulário em repouso. */
+  --input: oklch(0.6 0.02 165);
   --ring: oklch(0.42 0.095 176);
   --surface: oklch(0.968 0.014 165);
   --surface-foreground: oklch(0.28 0.04 195);

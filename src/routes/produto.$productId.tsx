@@ -138,8 +138,8 @@ function ProductPage() {
   const lowest = entries[0]?.price ?? 0;
 
   return (
-    <AppShell>
-      <div className="space-y-5">
+    <AppShell inert={showForm}>
+      <div className="space-y-5" inert={showForm || undefined}>
         <header className="space-y-1">
           <p className="eyebrow">{product.category ?? "Produto"}</p>
           <h1 className="text-xl font-bold sm:text-2xl">{product.name}</h1>

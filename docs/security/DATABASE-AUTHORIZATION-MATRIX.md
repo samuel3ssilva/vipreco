@@ -12,20 +12,20 @@ Onda, após a migration `20260729210000_harden_helper_function_grants.sql`.
 
 ## Tabelas
 
-| Recurso | Role | SELECT | INSERT | UPDATE | DELETE | Policy aplicável | Justificativa | Antes | Depois |
-|---|---|:--:|:--:|:--:|:--:|---|---|---|---|
-| `markets` | `anon`, `authenticated` | ✅ (`is_active=true`) | ❌ | ❌ | ❌ | `"Mercados ativos sao publicos"` | Catálogo público, editorial (não escrito pela comunidade) | igual | igual |
-| `markets` | `service_role` | ✅ | ✅ | ✅ | ✅ | GRANT ALL | CI/migrations/backoffice | igual | igual |
-| `products` | `anon`, `authenticated` | ✅ (`is_active=true`) | ❌ | ❌ | ❌ | `"Produtos ativos sao publicos"` | Catálogo público | igual | igual |
-| `products` | `service_role` | ✅ | ✅ | ✅ | ✅ | GRANT ALL | CI/migrations/backoffice | igual | igual |
-| `prices` | `anon`, `authenticated` | ✅ (ativo + válido + produto/mercado ativos) | ❌ | ❌ | ❌ | `"Precos validos sao publicos"` | Só o preço válido mais recente é público (principle #2 do CLAUDE.md) | igual | igual |
-| `prices` | `service_role` | ✅ | ✅ | ✅ | ✅ | GRANT ALL | Única escrita real é via `approve_submission()` (SECURITY DEFINER, ver abaixo) | igual | igual |
-| `price_submissions` | `anon`, `authenticated` | ❌ | ✅ (`status='pending'`, produto/mercado ativos, `comment`≤280) | ❌ | ❌ | `"Visitantes podem enviar sugestoes pendentes"` | Comunidade não lê nem escreve em `prices` diretamente (principle #7) | igual | igual |
-| `price_submissions` | `service_role` | ✅ | ✅ | ✅ | ✅ | GRANT ALL | Moderação server-side | igual | igual |
-| `product_watch_requests` | `anon`, `authenticated` | ❌ | ✅ (produto ativo) | ❌ | ❌ | `"Visitantes podem registrar interesse"` | Instrumentação anônima, write-only | igual | igual |
-| `product_watch_requests` | `service_role` | ✅ | ✅ | ✅ | ✅ | GRANT ALL | Backoffice | igual | igual |
-| `decision_feedback` | `anon`, `authenticated` | ❌ | ✅ (produto ativo) | ❌ | ❌ | `"Visitantes podem enviar feedback"` | Instrumentação anônima, write-only | igual | igual |
-| `decision_feedback` | `service_role` | ✅ | ✅ | ✅ | ✅ | GRANT ALL | Backoffice | igual | igual |
+| Recurso                  | Role                    |                    SELECT                    |                             INSERT                             | UPDATE | DELETE | Policy aplicável                                | Justificativa                                                                  | Antes | Depois |
+| ------------------------ | ----------------------- | :------------------------------------------: | :------------------------------------------------------------: | :----: | :----: | ----------------------------------------------- | ------------------------------------------------------------------------------ | ----- | ------ |
+| `markets`                | `anon`, `authenticated` |            ✅ (`is_active=true`)             |                               ❌                               |   ❌   |   ❌   | `"Mercados ativos sao publicos"`                | Catálogo público, editorial (não escrito pela comunidade)                      | igual | igual  |
+| `markets`                | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | CI/migrations/backoffice                                                       | igual | igual  |
+| `products`               | `anon`, `authenticated` |            ✅ (`is_active=true`)             |                               ❌                               |   ❌   |   ❌   | `"Produtos ativos sao publicos"`                | Catálogo público                                                               | igual | igual  |
+| `products`               | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | CI/migrations/backoffice                                                       | igual | igual  |
+| `prices`                 | `anon`, `authenticated` | ✅ (ativo + válido + produto/mercado ativos) |                               ❌                               |   ❌   |   ❌   | `"Precos validos sao publicos"`                 | Só o preço válido mais recente é público (principle #2 do CLAUDE.md)           | igual | igual  |
+| `prices`                 | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Única escrita real é via `approve_submission()` (SECURITY DEFINER, ver abaixo) | igual | igual  |
+| `price_submissions`      | `anon`, `authenticated` |                      ❌                      | ✅ (`status='pending'`, produto/mercado ativos, `comment`≤280) |   ❌   |   ❌   | `"Visitantes podem enviar sugestoes pendentes"` | Comunidade não lê nem escreve em `prices` diretamente (principle #7)           | igual | igual  |
+| `price_submissions`      | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Moderação server-side                                                          | igual | igual  |
+| `product_watch_requests` | `anon`, `authenticated` |                      ❌                      |                       ✅ (produto ativo)                       |   ❌   |   ❌   | `"Visitantes podem registrar interesse"`        | Instrumentação anônima, write-only                                             | igual | igual  |
+| `product_watch_requests` | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Backoffice                                                                     | igual | igual  |
+| `decision_feedback`      | `anon`, `authenticated` |                      ❌                      |                       ✅ (produto ativo)                       |   ❌   |   ❌   | `"Visitantes podem enviar feedback"`            | Instrumentação anônima, write-only                                             | igual | igual  |
+| `decision_feedback`      | `service_role`          |                      ✅                      |                               ✅                               |   ✅   |   ✅   | GRANT ALL                                       | Backoffice                                                                     | igual | igual  |
 
 Todas as seis tabelas têm `ENABLE ROW LEVEL SECURITY` — nenhuma tabela exposta pela Data API
 está sem RLS. Nenhuma sequence explícita existe (todas as PKs usam `gen_random_uuid()`), então
@@ -33,12 +33,12 @@ não há GRANT de sequence a auditar.
 
 ## Funções
 
-| Função | SECURITY | `search_path` | EXECUTE (antes) | EXECUTE (depois) | Justificativa |
-|---|---|---|---|---|---|
-| `pa_normalize_text(text)` | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito do Postgres) | apenas `service_role` | Usada só por trigger e índice funcional; nenhum caller externo precisa chamá-la diretamente |
-| `pa_set_updated_at()` | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito) | apenas `service_role` | Função de trigger, só toca `NEW` |
-| `pa_products_search_text()` | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito) | apenas `service_role` | Função de trigger, só toca `NEW` |
-| `approve_submission(uuid)` | **DEFINER** | `public` (fixado) | `service_role` apenas (`REVOKE ALL FROM PUBLIC` já na Onda 1/2) | igual | Única escrita legítima de `price_submissions` → `prices`; já estava corretamente fechada |
+| Função                      | SECURITY          | `search_path`     | EXECUTE (antes)                                                 | EXECUTE (depois)      | Justificativa                                                                               |
+| --------------------------- | ----------------- | ----------------- | --------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------- |
+| `pa_normalize_text(text)`   | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito do Postgres)                        | apenas `service_role` | Usada só por trigger e índice funcional; nenhum caller externo precisa chamá-la diretamente |
+| `pa_set_updated_at()`       | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito)                                    | apenas `service_role` | Função de trigger, só toca `NEW`                                                            |
+| `pa_products_search_text()` | INVOKER (default) | `public` (fixado) | `PUBLIC` (default implícito)                                    | apenas `service_role` | Função de trigger, só toca `NEW`                                                            |
+| `approve_submission(uuid)`  | **DEFINER**       | `public` (fixado) | `service_role` apenas (`REVOKE ALL FROM PUBLIC` já na Onda 1/2) | igual                 | Única escrita legítima de `price_submissions` → `prices`; já estava corretamente fechada    |
 
 `approve_submission`'s owner efetivo (necessário para avaliar o alcance real do
 `SECURITY DEFINER`) **não é verificável a partir do repositório** — `NOT VERIFIED`, requer
@@ -47,13 +47,13 @@ restrito a `service_role`, que teria acesso equivalente de qualquer forma via GR
 
 ## Views, triggers, extensões, Storage, Auth
 
-| Item | Achado |
-|---|---|
-| Views | Nenhuma view definida |
-| Triggers | `markets_updated_at`, `products_search_text`, `prices_updated_at` — todos disparam funções já auditadas acima, sem escrita fora do registro sendo processado |
-| Extensões | `pg_trgm`, instalada em schema `extensions` (não polui `public`) |
-| Storage | Nenhum bucket ou policy de Storage definido em migration versionada. **NOT VERIFIED** se existe bucket criado fora de versionamento — checagem read-only do painel recomendada no checkpoint |
-| Auth | `supabase/config.toml` não tem seção `[auth]` — configuração de signup/redirect/confirmação vive só no painel hospedado, fora de controle de versão. **NOT VERIFIED** — nenhuma interface de login existe no app (confirmado por grep, Fase C), mas o estado exato do Auth do projeto hospedado não é auditável pelo repositório |
+| Item      | Achado                                                                                                                                                                                                                                                                                                                           |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Views     | Nenhuma view definida                                                                                                                                                                                                                                                                                                            |
+| Triggers  | `markets_updated_at`, `products_search_text`, `prices_updated_at` — todos disparam funções já auditadas acima, sem escrita fora do registro sendo processado                                                                                                                                                                     |
+| Extensões | `pg_trgm`, instalada em schema `extensions` (não polui `public`)                                                                                                                                                                                                                                                                 |
+| Storage   | Nenhum bucket ou policy de Storage definido em migration versionada. **NOT VERIFIED** se existe bucket criado fora de versionamento — checagem read-only do painel recomendada no checkpoint                                                                                                                                     |
+| Auth      | `supabase/config.toml` não tem seção `[auth]` — configuração de signup/redirect/confirmação vive só no painel hospedado, fora de controle de versão. **NOT VERIFIED** — nenhuma interface de login existe no app (confirmado por grep, Fase C), mas o estado exato do Auth do projeto hospedado não é auditável pelo repositório |
 
 ## `is_demo` — não é fronteira de RLS
 

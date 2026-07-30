@@ -264,7 +264,7 @@ export function SubmitPriceForm({ product, defaultMarketId, onClose }: SubmitPri
               ) : null}
             </div>
 
-            <fieldset>
+            <fieldset aria-describedby={errors.sourceType ? `${ids.source}-erro` : undefined}>
               <legend className="mb-1 text-sm font-semibold">Fonte da informação</legend>
               <div className="space-y-2">
                 {SOURCE_OPTIONS.map((option) => (

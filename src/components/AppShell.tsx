@@ -9,7 +9,15 @@ const NAV = [
   { to: "/como-funciona", label: "Como funciona", short: "Ajuda", icon: HelpCircle },
 ] as const;
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  inert: isInert,
+}: {
+  children: ReactNode;
+  /** Verdadeiro enquanto um diálogo modal (ex.: SubmitPriceForm) está aberto por cima —
+   * oculta o restante da página da árvore de acessibilidade e do teclado. */
+  inert?: boolean;
+}) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <a
@@ -19,7 +27,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         Pular para o conteúdo
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
+        inert={isInert || undefined}
+      >
         <PageContainer className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2">
           <Link to="/" className="font-display truncate text-lg font-bold text-primary">
             ViPreço
@@ -29,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface"
+                className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface"
                 activeProps={{ className: "bg-surface text-surface-foreground" }}
                 activeOptions={{ exact: item.to === "/" }}
               >
@@ -55,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <nav
         aria-label="Navegação principal"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card sm:hidden"
+        inert={isInert || undefined}
       >
         <ul className="mx-auto flex max-w-md">
           {NAV.map((item) => {

@@ -24,6 +24,7 @@ jobs:
   check:
     name: checar staging e produção
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -50,7 +51,7 @@ jobs:
           BODY="Uptime check falhou em $(date -u +"%Y-%m-%dT%H:%M:%SZ"). Detalhes: $RUN_URL"
           gh label create incidente --repo "${{ github.repository }}" --color "d93f0b" \
             --description "Falha detectada pelo uptime-check.yml" --force
-          EXISTING=$(gh issue list --repo "${{ github.repository }}" --label incidente --state open --json number --jq '.[0].number' || echo "")
+          EXISTING=$(gh issue list --repo "${{ github.repository }}" --label incidente --state open --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --repo "${{ github.repository }}" --body "$BODY"
           else
@@ -66,7 +67,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          EXISTING=$(gh issue list --repo "${{ github.repository }}" --label incidente --state open --json number --jq '.[0].number' || echo "")
+          EXISTING=$(gh issue list --repo "${{ github.repository }}" --label incidente --state open --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --repo "${{ github.repository }}" \
               --body "Uptime check voltou a passar em $(date -u +"%Y-%m-%dT%H:%M:%SZ")."

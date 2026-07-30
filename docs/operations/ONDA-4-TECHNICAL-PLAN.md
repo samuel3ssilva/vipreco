@@ -49,7 +49,31 @@ merge — mesma regra aplicada às Ondas 2 e 3.
 | Workflow de uptime falhar por instabilidade transitória de rede, gerando alerta falso                                           | Timeout de 10s por host, sem retry automático — aceito como risco residual de baixo custo; retry adicionaria complexidade não pedida pelo escopo desta Onda. Se gerar ruído na prática, ajustar é tarefa de manutenção, não bloqueio                                                                                                                                                                                                                                     |
 | Restore real de backup do Supabase não pode ser testado sem acesso ao painel (Founder) ou sem criar infraestrutura nova (custo) | Documentado como bloqueio humano explícito em `RESILIENCE-RUNBOOK.md` §3, com o procedimento exato a seguir quando autorizado — não simulado, não declarado concluído                                                                                                                                                                                                                                                                                                    |
 | `can_admins_bypass` — qualquer mudança de Environment é gate humano                                                             | Nenhuma alteração feita; documento de recomendação inclui comando exato (`gh api`), impacto e rollback, mas a execução fica para o PMO/Founder                                                                                                                                                                                                                                                                                                                           |
-| Novo workflow agendado consumir minutos de GitHub Actions                                                                       | Cron de 6 em 6 horas (4 execuções/dia, cada uma < 1 min) — dentro do free tier de Actions para repositório privado/público já em uso pelas Ondas anteriores; nenhum custo novo                                                                                                                                                                                                                                                                                           |
+| Novo workflow agendado consumir minutos de GitHub Actions                                                                       | Ver estimativa de consumo mensal no §3.1 abaixo — nenhum custo novo                                                                                                                                                                                                                                                                                           |
+
+### 3.1 Estimativa de consumo mensal do `uptime-check.yml`
+
+`samuel3ssilva/vipreco` é um **repositório público** (confirmado via
+`gh repo view --json visibility` nesta Onda) — GitHub Actions em runners hospedados pela
+GitHub são **gratuitos e ilimitados para repositórios públicos**, independente do
+consumo. O custo mensal real de rodar este workflow é **zero**, hoje.
+
+Estimativa de tempo de execução, registrada para o caso de o repositório se tornar
+privado no futuro (aí sim entraria na cota paga de minutos/mês da conta):
+
+| Etapa | Tempo observado/estimado |
+| ----- | ------------------------- |
+| Checkout + Setup Bun | ~5-10s (observado em `ci.yml`/`db-schema-drill.yml`) |
+| `bun install --frozen-lockfile` | ~1-2s (observado no job `lint, test, build` do PR #15) |
+| `bun scripts/check-uptime.ts` (2 requisições HTTP, timeout de 10s cada) | 1-10s, tipicamente < 2s |
+| **Total por execução** | **~30s** (estimativa conservadora, com margem para cold start do runner) |
+| Execuções por mês (cron `0 */6 * * *`, 30 dias) | 120 |
+| **Minutos de Actions por mês** | **~60 min/mês** (arredondado para cima — GitHub Actions cobra em minutos inteiros por execução) |
+
+Mesmo se o repositório virasse privado, 60 min/mês fica muito abaixo da cota gratuita
+mensal do plano Free de contas pessoais do GitHub (2.000 min/mês). O ponto central,
+porém, é que hoje **este consumo não é cobrado de forma alguma**, por o repositório ser
+público.
 
 ## 4. Testes
 

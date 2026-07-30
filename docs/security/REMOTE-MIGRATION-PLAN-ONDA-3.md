@@ -43,21 +43,31 @@ vez, com acompanhamento).
    `EXECUTE` em 3 funções auxiliares.
 2. `supabase/migrations/20260729223000_close_public_write_surfaces.sql` — `REVOKE INSERT` de
    `anon, authenticated` em 3 tabelas.
+3. `supabase/migrations/20260730120000_fix_function_grants_explicit_revoke.sql` — **corretiva,
+   adicionada após um achado ao vivo durante a aplicação da migration 1 em staging:** `REVOKE ALL
+   ... FROM PUBLIC` não remove o `EXECUTE` que o Supabase concede diretamente a
+   `anon`/`authenticated` na criação de toda função (`ALTER DEFAULT PRIVILEGES` de plataforma, fora
+   do nosso versionamento). Revoga explicitamente de `PUBLIC, anon, authenticated` nas 3 funções
+   auxiliares **e em `approve_submission(uuid)`** (Onda 1, mesmo padrão insuficiente, achado mais
+   severo desta Onda — ver `docs/security/THREAT-MODEL-ONDA-3.md` §5.3). Se staging já aplicou
+   só as migrations 1 e 2, aplicar a 3 antes de prosseguir para qualquer outro passo.
 
-Ambas puramente `REVOKE`/`GRANT`/`COMMENT ON TABLE` — nenhum `ALTER TABLE` estrutural, nenhum
+Todas puramente `REVOKE`/`GRANT`/`COMMENT ON TABLE` — nenhum `ALTER TABLE` estrutural, nenhum
 `DROP`, nenhuma migration de dado.
 
 ## Sequência exata
 
-1. **Merge do PR #12** em `main` (ação humana — Founder/PMO).
-2. **Aplicar as duas migrations novas primeiro em staging** (`wjurqpclauwtbjhhvigy`), na ordem
-   acima, via SQL Editor ou CLI — mesmo procedimento manual acompanhado usado nas Ondas 1/2.
+1. **Merge do PR #12** em `main` (ação humana — Founder/PMO). ✅ Executado (`8623a55`).
+2. **Aplicar as três migrations novas em staging** (`wjurqpclauwtbjhhvigy`), na ordem acima, via
+   SQL Editor ou CLI — mesmo procedimento manual acompanhado usado nas Ondas 1/2. ✅ Migrations 1
+   e 2 já aplicadas; migration 3 (corretiva) pendente — aplicar antes do passo 3.
 3. **Confirmar grants e EXECUTE no banco vivo de staging:**
    ```sql
-   -- EXECUTE das 3 funções auxiliares: só service_role
-   select grantee, privilege_type
+   -- EXECUTE das 3 funções auxiliares + approve_submission: só service_role
+   select grantee, routine_name, privilege_type
    from information_schema.role_routine_grants
-   where routine_name in ('pa_normalize_text','pa_set_updated_at','pa_products_search_text');
+   where routine_name in
+     ('pa_normalize_text','pa_set_updated_at','pa_products_search_text','approve_submission');
 
    -- INSERT nas 3 tabelas fechadas: só service_role
    select grantee, table_name, privilege_type
@@ -66,6 +76,8 @@ Ambas puramente `REVOKE`/`GRANT`/`COMMENT ON TABLE` — nenhum `ALTER TABLE` est
      and privilege_type = 'INSERT';
    ```
    Esperado: nenhuma linha com `grantee` = `anon` ou `authenticated` em nenhuma das duas queries.
+   **Se `anon`/`authenticated` ainda aparecerem na primeira query mesmo após a migration 3, parar
+   e reportar — não prosseguir para o passo 4.**
 4. **Testar leitura pública preservada em staging** (chave publishable, sem alterar nada):
    ```bash
    curl -s -o /dev/null -w "%{http_code}\n" "$SUPABASE_URL/rest/v1/prices?select=id&limit=1" \
@@ -105,8 +117,11 @@ Ambas puramente `REVOKE`/`GRANT`/`COMMENT ON TABLE` — nenhum `ALTER TABLE` est
     arquivo do workflow, não presumido. Neste ponto o job está na fila, pronto para rodar
     checkout → install → build → deploy → smoke test assim que for aprovado — mas nada disso
     rodou ainda.
-11. **Com o deploy pausado, aplicar as mesmas duas migrations em produção**
-    (`wpgglxgddnekzojozqlm`), mesma ordem, mesmo procedimento manual acompanhado.
+11. **Com o deploy pausado, aplicar as mesmas três migrations em produção**
+    (`wpgglxgddnekzojozqlm`), mesma ordem (incluindo a migration 3, corretiva do achado de
+    `EXECUTE` direto — ver seção "Migrations novas" acima), mesmo procedimento manual
+    acompanhado. Confirmar grants com a mesma query do passo 3 (incluindo `approve_submission`)
+    antes de prosseguir ao passo 12.
 12. **Confirmar produção ainda vazia:**
     ```sql
     select count(*) from markets; select count(*) from products; select count(*) from prices;
@@ -160,7 +175,7 @@ o código novo ainda não foi implantado durante a janela.
 
 ## Rollback / compensating migration
 
-Ambas as migrations desta Onda são puramente `REVOKE`/`GRANT`/`COMMENT` — reversíveis sem perda
+As três migrations desta Onda são puramente `REVOKE`/`GRANT`/`COMMENT` — reversíveis sem perda
 de dado. Nenhuma delas precisa de uma "migration de compensação" separada; o rollback é o inverso
 exato da própria migration, documentado dentro de cada arquivo:
 
@@ -173,7 +188,21 @@ GRANT EXECUTE ON FUNCTION public.pa_products_search_text() TO PUBLIC;
 ```
 
 (volta ao estado implícito anterior — nenhum efeito funcional esperado, já que nenhum caller
-externo usa essas funções via RPC).
+externo usa essas funções via RPC). **Nota:** reverter só esta migration não reabre `EXECUTE` para
+`anon`/`authenticated` nas quatro funções — isso nunca dependeu dela (é exatamente o bug que a
+migration 3 corrigiu). Para reabrir de verdade, reverter a migration 3 abaixo.
+
+**Reverter `20260730120000_fix_function_grants_explicit_revoke.sql`** (só deve ser executado se
+houver um motivo concreto para reabrir `EXECUTE` a `anon`/`authenticated` nessas quatro funções —
+para `approve_submission` especificamente, isso reabre a escalação de privilégio descrita em
+`docs/security/THREAT-MODEL-ONDA-3.md` §5.3; não reverter sem entender essa consequência):
+
+```sql
+GRANT EXECUTE ON FUNCTION public.pa_normalize_text(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.pa_set_updated_at() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.pa_products_search_text() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_submission(uuid) TO anon, authenticated;
+```
 
 **Reverter `20260729223000_close_public_write_surfaces.sql`** (só deve ser executado junto com a
 proteção server-side exigida pela seção "Turnstile e rate limiting" do threat model — nunca

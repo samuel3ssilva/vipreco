@@ -32,14 +32,22 @@ docker run -d --rm \
   "$POSTGRES_IMAGE" >/dev/null
 
 echo "==> Aguardando o banco aceitar conexoes..."
-for _ in $(seq 1 30); do
+MAX_ATTEMPTS=60
+ready=""
+for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
   if docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
+    ready=1
+    echo "==> Banco pronto (tentativa $attempt/$MAX_ATTEMPTS)."
+    break
+  fi
+  if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
     break
   fi
   sleep 1
 done
-if ! docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
-  echo "::error::Postgres nao ficou pronto a tempo." >&2
+if [ -z "$ready" ]; then
+  echo "::error::Postgres nao ficou pronto a tempo apos $MAX_ATTEMPTS tentativas (~${MAX_ATTEMPTS}s)." >&2
+  docker logs "$CONTAINER_NAME" 2>&1 | tail -n 50 || true
   exit 1
 fi
 

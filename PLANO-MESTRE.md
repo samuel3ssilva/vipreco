@@ -54,17 +54,17 @@ O CTO deve agrupar ações humanas em um único checkpoint sempre que possível.
 
 ### Trilha de Fundação e Segurança
 
-| Onda | Estado | Observação |
-|---|---:|---|
-| Onda 0 — Baseline | ✅ | Concluída |
-| Onda 1A — GitHub, CI e scans | ✅ | Concluída |
-| Onda 1B — Saída da Lovable | ✅ | Concluída |
-| Onda 1C — Contas, MFA e credenciais | ✅ | Concluída |
-| Onda 2 — Staging e produção separados | ✅ | Concluída |
-| Onda 3 — Segurança da aplicação, banco e borda | 🟡 | Em andamento |
-| Onda 4 — Resiliência operacional | ⬜ | Pendente |
-| Onda 5 — Dados reais e piloto Artemis | ⛔ | Bloqueada |
-| Onda 6 — Revisão externa e expansão | ⬜ | Pendente |
+| Onda                                           | Estado | Observação   |
+| ---------------------------------------------- | -----: | ------------ |
+| Onda 0 — Baseline                              |     ✅ | Concluída    |
+| Onda 1A — GitHub, CI e scans                   |     ✅ | Concluída    |
+| Onda 1B — Saída da Lovable                     |     ✅ | Concluída    |
+| Onda 1C — Contas, MFA e credenciais            |     ✅ | Concluída    |
+| Onda 2 — Staging e produção separados          |     ✅ | Concluída    |
+| Onda 3 — Segurança da aplicação, banco e borda |     🟡 | Em andamento |
+| Onda 4 — Resiliência operacional               |     ⬜ | Pendente     |
+| Onda 5 — Dados reais e piloto Artemis          |     ⛔ | Bloqueada    |
+| Onda 6 — Revisão externa e expansão            |     ⬜ | Pendente     |
 
 ### Estado confirmado do fechamento da Onda 2
 
@@ -103,15 +103,15 @@ A comparação de preço não é o produto; é o custo de aquisição de audiên
 
 ### Moat — o que resiste a quem
 
-| Camada | SEFAZ | Fornecedor de PDV |
-|---|:--:|:--:|
-| Base histórica de preços | mata | — |
-| Canal prospectivo: remarcação, ruptura e horário morto | **resiste** | copiável |
-| Relação e rotina operacional do comerciante | **resiste** | ameaça |
-| Cashback com atribuição fiscal | **resiste** | copiável |
-| **Neutralidade entre varejistas concorrentes** | resiste | **resiste estruturalmente** |
-| **Um contrato da indústria para centenas de lojas** | resiste | **resiste estruturalmente** |
-| **Cesta completa do domicílio, cross-varejista** | resiste | **resiste estruturalmente** |
+| Camada                                                 |    SEFAZ    |      Fornecedor de PDV      |
+| ------------------------------------------------------ | :---------: | :-------------------------: |
+| Base histórica de preços                               |    mata     |              —              |
+| Canal prospectivo: remarcação, ruptura e horário morto | **resiste** |          copiável           |
+| Relação e rotina operacional do comerciante            | **resiste** |           ameaça            |
+| Cashback com atribuição fiscal                         | **resiste** |          copiável           |
+| **Neutralidade entre varejistas concorrentes**         |   resiste   | **resiste estruturalmente** |
+| **Um contrato da indústria para centenas de lojas**    |   resiste   | **resiste estruturalmente** |
+| **Cesta completa do domicílio, cross-varejista**       |   resiste   | **resiste estruturalmente** |
 
 As defesas estruturais são neutralidade, agregação comercial da cauda longa e visão cross-varejista. Um fornecedor de PDV não tem incentivo para mostrar que uma loja concorrente está mais barata e sua audiência é fragmentada por cliente e software.
 
@@ -199,18 +199,18 @@ Uma pessoa local percorre os mercados conforme rota definida e documenta preços
 
 ## 5. Escopo do MVP
 
-| Entra | Não entra |
-|---|---|
-| Achados do dia | Cesta da semana |
-| Ingestão por WhatsApp com apoio de LLM | Login obrigatório |
-| Spike técnico de NFC-e após Gate R0 | Scanner de QR no app |
-| Piloto concierge de cupom após Gate R0 | Cashback dentro do app |
-| Coletor pago | Geolocalização |
-| Card em imagem para distribuição manual | Perfil completo de mercado |
-| Relatório competitivo para o comerciante | Moderação pública de submissão da comunidade |
-| Busca de produtos já existente | SEO como frente principal |
-| Página "Como funciona" | Carteira própria |
-| Crawler apenas como pesquisa comercial separada | Central de compras como produto |
+| Entra                                           | Não entra                                    |
+| ----------------------------------------------- | -------------------------------------------- |
+| Achados do dia                                  | Cesta da semana                              |
+| Ingestão por WhatsApp com apoio de LLM          | Login obrigatório                            |
+| Spike técnico de NFC-e após Gate R0             | Scanner de QR no app                         |
+| Piloto concierge de cupom após Gate R0          | Cashback dentro do app                       |
+| Coletor pago                                    | Geolocalização                               |
+| Card em imagem para distribuição manual         | Perfil completo de mercado                   |
+| Relatório competitivo para o comerciante        | Moderação pública de submissão da comunidade |
+| Busca de produtos já existente                  | SEO como frente principal                    |
+| Página "Como funciona"                          | Carteira própria                             |
+| Crawler apenas como pesquisa comercial separada | Central de compras como produto              |
 
 ### Opcional — placar por item
 
@@ -232,42 +232,42 @@ O primeiro comerciante é design partner, com desconto explícito, e não conta 
 
 ### G1 — Merchant Pull
 
-| Métrica | Meta | Definição operacional |
-|---|---:|---|
-| Mercados pagando preço cheio, pré-pago | ≥ 3 | Exclui design partner e permutas |
-| Renovação após primeiro resultado | ≥ 1 | Pagamento efetivamente recebido |
-| Remarcações sem cobrança manual | ≥ 70% | Recebidas até o horário combinado usando no máximo o lembrete padrão; sem ligação, visita ou mensagem manual adicional |
-| Benefício econômico documentado | ≥ 3× mensalidade em ≥1 mercado | Benefício conservador, líquido de custo variável direto, baseado em margem ou descarte evitado; não usar receita bruta como benefício |
+| Métrica                                |                           Meta | Definição operacional                                                                                                                 |
+| -------------------------------------- | -----------------------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Mercados pagando preço cheio, pré-pago |                            ≥ 3 | Exclui design partner e permutas                                                                                                      |
+| Renovação após primeiro resultado      |                            ≥ 1 | Pagamento efetivamente recebido                                                                                                       |
+| Remarcações sem cobrança manual        |                          ≥ 70% | Recebidas até o horário combinado usando no máximo o lembrete padrão; sem ligação, visita ou mensagem manual adicional                |
+| Benefício econômico documentado        | ≥ 3× mensalidade em ≥1 mercado | Benefício conservador, líquido de custo variável direto, baseado em margem ou descarte evitado; não usar receita bruta como benefício |
 
 ### G2 — Receipt Flywheel
 
-| Métrica | Meta | Definição operacional |
-|---|---:|---|
-| Domicílios adultos na coorte | 20–25 | Um registro por domicílio; equipe, lojistas e funcionários das lojas fora da coorte paga |
-| Janela | 8 semanas | Mesma coorte e regras registradas |
-| Taxa de segunda submissão | ≥ 60% | Domicílios com pelo menos dois cupons válidos e distintos ÷ domicílios com primeiro cupom válido |
-| Atividade na 4ª semana após redução | ≥ 40% | Domicílios elegíveis com ao menos um cupom válido no período ÷ coorte exposta à redução |
-| Parsing automático correto | ≥ 95% | Medido em amostra auditada e com critério de acerto previamente definido |
-| Chaves duplicadas aceitas | 0 | Duplicidade bloqueada antes do pagamento |
-| Custo técnico por nota | < R$ 0,50 | Compute, APIs e terceiros; benefício e mão de obra humana reportados separadamente |
+| Métrica                             |      Meta | Definição operacional                                                                            |
+| ----------------------------------- | --------: | ------------------------------------------------------------------------------------------------ |
+| Domicílios adultos na coorte        |     20–25 | Um registro por domicílio; equipe, lojistas e funcionários das lojas fora da coorte paga         |
+| Janela                              | 8 semanas | Mesma coorte e regras registradas                                                                |
+| Taxa de segunda submissão           |     ≥ 60% | Domicílios com pelo menos dois cupons válidos e distintos ÷ domicílios com primeiro cupom válido |
+| Atividade na 4ª semana após redução |     ≥ 40% | Domicílios elegíveis com ao menos um cupom válido no período ÷ coorte exposta à redução          |
+| Parsing automático correto          |     ≥ 95% | Medido em amostra auditada e com critério de acerto previamente definido                         |
+| Chaves duplicadas aceitas           |         0 | Duplicidade bloqueada antes do pagamento                                                         |
+| Custo técnico por nota              | < R$ 0,50 | Compute, APIs e terceiros; benefício e mão de obra humana reportados separadamente               |
 
 ### G3 — Operating Leverage
 
-| Métrica | Meta | Definição operacional |
-|---|---:|---|
-| Semanas sem hora de campo do Founder | ≥ 4 | Founder pode atuar em gestão, mas não coleta presencial |
-| Minutos por loja por semana | ≤ 45 min | Soma de coleta, revisão, matching, correção, atendimento, pagamento e reprocessamento de todas as pessoas |
-| Preços dentro da validade | ≥ 95% | Publicações ativas auditadas |
-| Exceções especializadas | < 10% | Casos que exigem intervenção além do playbook |
-| Custo variável por loja/mês | < R$ 150 | Mão de obra variável, APIs, deslocamento e processamento |
+| Métrica                              |     Meta | Definição operacional                                                                                     |
+| ------------------------------------ | -------: | --------------------------------------------------------------------------------------------------------- |
+| Semanas sem hora de campo do Founder |      ≥ 4 | Founder pode atuar em gestão, mas não coleta presencial                                                   |
+| Minutos por loja por semana          | ≤ 45 min | Soma de coleta, revisão, matching, correção, atendimento, pagamento e reprocessamento de todas as pessoas |
+| Preços dentro da validade            |    ≥ 95% | Publicações ativas auditadas                                                                              |
+| Exceções especializadas              |    < 10% | Casos que exigem intervenção além do playbook                                                             |
+| Custo variável por loja/mês          | < R$ 150 | Mão de obra variável, APIs, deslocamento e processamento                                                  |
 
 ### G4 — Unit Economics
 
-| Métrica | Meta | Definição operacional |
-|---|---:|---|
-| Campanha fechada de ponta a ponta | ≥ 1 | Contratada, pré-financiada, executada, validada e reconciliada |
-| Capital próprio financiando benefício | R$ 0 | Exceto orçamento formal de pesquisa do MVP |
-| Margem de contribuição | > 15% do orçamento bruto | Receita menos benefícios, tarifas, impostos, fraude realizada e mão de obra variável direta |
+| Métrica                               |                     Meta | Definição operacional                                                                       |
+| ------------------------------------- | -----------------------: | ------------------------------------------------------------------------------------------- |
+| Campanha fechada de ponta a ponta     |                      ≥ 1 | Contratada, pré-financiada, executada, validada e reconciliada                              |
+| Capital próprio financiando benefício |                     R$ 0 | Exceto orçamento formal de pesquisa do MVP                                                  |
+| Margem de contribuição                | > 15% do orçamento bruto | Receita menos benefícios, tarifas, impostos, fraude realizada e mão de obra variável direta |
 
 Exemplo de campanha de R$ 1.000: R$ 700 em benefício, R$ 200 de fee ViPreço, R$ 50 de processamento e R$ 50 de reserva de fraude. Reserva não utilizada não vira margem automaticamente; deve ser devolvida, carregada ou tratada conforme contrato.
 
@@ -337,16 +337,16 @@ Estudar mercados com dados públicos de preço antes da expansão, usando-os com
 
 ### Escada de receita
 
-| Receita | Fase | Modelo |
-|---|---|---|
-| Gestão de remarcação | MVP | Mensalidade |
-| Inteligência competitiva | MVP | Mensalidade |
-| Cotação agregada de fornecedores | Fase 1 | Fee ou take rate |
-| CRM e reativação por WhatsApp | Fase 1 | Mensalidade + campanha |
-| Cashback patrocinado / retail media | Fase 1–2 | Fee de mídia + medição |
-| Relatório para distribuidores | Fase 2 | Assinatura B2B |
-| Insight agregado de sell-out | Fase 2–3 | Licença sob governança |
-| Originação de crédito com parceiro | Fase 3 | Comissão, sem risco no balanço |
+| Receita                             | Fase     | Modelo                         |
+| ----------------------------------- | -------- | ------------------------------ |
+| Gestão de remarcação                | MVP      | Mensalidade                    |
+| Inteligência competitiva            | MVP      | Mensalidade                    |
+| Cotação agregada de fornecedores    | Fase 1   | Fee ou take rate               |
+| CRM e reativação por WhatsApp       | Fase 1   | Mensalidade + campanha         |
+| Cashback patrocinado / retail media | Fase 1–2 | Fee de mídia + medição         |
+| Relatório para distribuidores       | Fase 2   | Assinatura B2B                 |
+| Insight agregado de sell-out        | Fase 2–3 | Licença sob governança         |
+| Originação de crédito com parceiro  | Fase 3   | Comissão, sem risco no balanço |
 
 **Nunca:** crédito no balanço, estoque próprio, operação logística, carteira proprietária ou ViPreço como merchant of record.
 
@@ -398,11 +398,11 @@ A implementação final depende de revisão técnica e de privacidade.
 
 ### Contrato do comerciante
 
-| Camada | Uso | Regra |
-|---|---|---|
-| Publicada | Achado e oferta exibidos ao consumidor | Autorização dentro do serviço |
-| Operacional confidencial | Estoque, remarcação, ruptura, custo | Nunca vira relatório para concorrente |
-| Agregada | Insight para indústria ou distribuidor | Cláusula específica e opt-in |
+| Camada                   | Uso                                    | Regra                                 |
+| ------------------------ | -------------------------------------- | ------------------------------------- |
+| Publicada                | Achado e oferta exibidos ao consumidor | Autorização dentro do serviço         |
+| Operacional confidencial | Estoque, remarcação, ruptura, custo    | Nunca vira relatório para concorrente |
+| Agregada                 | Insight para indústria ou distribuidor | Cláusula específica e opt-in          |
 
 Contrato simples, mensal, pré-pago, cancelável e sem fidelidade obrigatória.
 
@@ -679,23 +679,23 @@ O stack local completo do Supabase permanece **NOT VERIFIED por limitação de m
 
 ## 16. Os 15 passos originais no quadro
 
-| # | Passo | Estado |
-|---|---|---:|
-| 1 | Comprar `vipreco.com.br` | ✅ |
-| 2 | Desconectar e revogar Lovable | ✅ |
-| 3 | Rotacionar credenciais | ✅ |
-| 4 | Transformar ambiente atual em staging | 🟡 Onda 2 |
-| 5 | Criar Supabase e Worker novos para produção | 🟡 Supabase criado; Worker pendente |
-| 6 | Migrations e seeds reproduzíveis | 🟡 avançado; fechamento pendente |
-| 7 | Auditar grants, RLS, funções, views e Storage | ⬜ Onda 3 |
-| 8 | MFA e GitHub protegido | ✅ |
-| 9 | CI, scans e aprovação humana | ✅ gate mantido |
-| 10 | Headers, CSP, Turnstile e rate limits | ⬜ Onda 3 |
-| 11 | Backup e restore real | ⬜ Onda 4 |
-| 12 | Logs, alertas e plano de incidente | ⬜ Onda 4 |
-| 13 | Só então dados reais | ⛔ Gate R0 |
-| 14 | Piloto pequeno em Artemis | ⛔ Onda 5 |
-| 15 | Revisão externa antes da expansão | ⬜ Onda 6 |
+| #   | Passo                                         |                              Estado |
+| --- | --------------------------------------------- | ----------------------------------: |
+| 1   | Comprar `vipreco.com.br`                      |                                  ✅ |
+| 2   | Desconectar e revogar Lovable                 |                                  ✅ |
+| 3   | Rotacionar credenciais                        |                                  ✅ |
+| 4   | Transformar ambiente atual em staging         |                           🟡 Onda 2 |
+| 5   | Criar Supabase e Worker novos para produção   | 🟡 Supabase criado; Worker pendente |
+| 6   | Migrations e seeds reproduzíveis              |    🟡 avançado; fechamento pendente |
+| 7   | Auditar grants, RLS, funções, views e Storage |                           ⬜ Onda 3 |
+| 8   | MFA e GitHub protegido                        |                                  ✅ |
+| 9   | CI, scans e aprovação humana                  |                     ✅ gate mantido |
+| 10  | Headers, CSP, Turnstile e rate limits         |                           ⬜ Onda 3 |
+| 11  | Backup e restore real                         |                           ⬜ Onda 4 |
+| 12  | Logs, alertas e plano de incidente            |                           ⬜ Onda 4 |
+| 13  | Só então dados reais                          |                          ⛔ Gate R0 |
+| 14  | Piloto pequeno em Artemis                     |                           ⛔ Onda 5 |
+| 15  | Revisão externa antes da expansão             |                           ⬜ Onda 6 |
 
 ---
 

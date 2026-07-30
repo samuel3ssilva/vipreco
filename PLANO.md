@@ -8,7 +8,7 @@
 > `CLAUDE.md` continua governando **como** trabalhar no código.
 >
 > **Atenção à numeração:** a "Onda 2 — Mercado Parceiro" da §4 abaixo pertence à trilha de
-> *produto* antiga deste documento. **Não é** a Onda 2 de infraestrutura (separação
+> _produto_ antiga deste documento. **Não é** a Onda 2 de infraestrutura (separação
 > staging/produção) do `PLANO-MESTRE.md`, já em andamento e associada ao PR #11. Não
 > confundir nem executar uma pelo nome da outra.
 >

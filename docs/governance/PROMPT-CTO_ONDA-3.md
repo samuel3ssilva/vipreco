@@ -34,8 +34,9 @@ Não inicie Onda 4, trilha de produto, MVP, spike de NFC-e ou uso de dados
 reais.
 
 ======================================================================
+
 1. FONTES DE VERDADE
-======================================================================
+   \======================================================================
 
 Use esta hierarquia:
 
@@ -52,8 +53,7 @@ Use esta hierarquia:
 Não presuma que uma configuração continua igual apenas porque foi reportada.
 Verifique o estado real.
 
-======================================================================
-2. ESTADO INICIAL CONFIRMADO
+====================================================================== 2. ESTADO INICIAL CONFIRMADO
 ======================================================================
 
 Estado de referência ao encerrar a Onda 2:
@@ -94,8 +94,7 @@ Essas URLs não são lançamento público.
 Antes de trabalhar, confirme o estado atual e use o estado real caso algum
 item tenha mudado.
 
-======================================================================
-3. GOVERNANÇA DA BRANCH E DO PR
+====================================================================== 3. GOVERNANÇA DA BRANCH E DO PR
 ======================================================================
 
 1. Faça `git fetch --prune`.
@@ -116,8 +115,7 @@ item tenha mudado.
     corrigida dentro do PR da Onda 3, com justificativa e atualização mínima.
     Não use isso para atualizar dependências sem relação com o risco.
 
-======================================================================
-4. ATUALIZAÇÃO DOCUMENTAL INICIAL
+====================================================================== 4. ATUALIZAÇÃO DOCUMENTAL INICIAL
 ======================================================================
 
 No início da branch:
@@ -145,8 +143,7 @@ No início da branch:
 Não marque a Onda 3 como concluída antes da implantação e das verificações
 finais.
 
-======================================================================
-5. MODELO DE AUTONOMIA
+====================================================================== 5. MODELO DE AUTONOMIA
 ======================================================================
 
 Você está autorizado a executar autonomamente:
@@ -193,8 +190,7 @@ Pare somente diante de:
 
 Agrupe todas as ações humanas em um único checkpoint sempre que possível.
 
-======================================================================
-6. PRINCÍPIOS DE SEGURANÇA
+====================================================================== 6. PRINCÍPIOS DE SEGURANÇA
 ======================================================================
 
 - Nenhum secret em código, Git, logs, relatórios, argumentos visíveis ou
@@ -216,8 +212,7 @@ Agrupe todas as ações humanas em um único checkpoint sempre que possível.
 - Não enfraquecer staging ou produção para facilitar testes.
 - Usar `NOT VERIFIED` quando a evidência não for possível.
 
-======================================================================
-7. FASE A — RECUPERAÇÃO E THREAT MODEL
+====================================================================== 7. FASE A — RECUPERAÇÃO E THREAT MODEL
 ======================================================================
 
 Faça primeiro uma recuperação read-only completa.
@@ -280,8 +275,7 @@ Use uma tabela com:
 Não pare para apresentar o plano. Continue para implementação, salvo bloqueio
 material.
 
-======================================================================
-8. FASE B — AUDITORIA DE BANCO E SUPABASE
+====================================================================== 8. FASE B — AUDITORIA DE BANCO E SUPABASE
 ======================================================================
 
 Audite o estado versionado e, quando a sessão permitir, o estado ao vivo de
@@ -337,8 +331,7 @@ A matriz deve mostrar, sem valores sensíveis:
 - estado antes;
 - estado depois.
 
-======================================================================
-9. REGRAS ESPECÍFICAS DE RLS E GRANTS
+====================================================================== 9. REGRAS ESPECÍFICAS DE RLS E GRANTS
 ======================================================================
 
 Critérios mínimos:
@@ -370,8 +363,7 @@ Caso a stack Supabase completa continue inviável no host por memória:
 - mantenha `supabase start` como `NOT VERIFIED`;
 - não trate isso como sucesso completo da stack.
 
-======================================================================
-10. `approve_submission()` E RECURSOS DORMENTES
+====================================================================== 10. `approve_submission()` E RECURSOS DORMENTES
 ======================================================================
 
 A moderação pública saiu do MVP.
@@ -409,8 +401,7 @@ Só prepare remoção destrutiva caso:
 
 Não execute remoção destrutiva autonomamente.
 
-======================================================================
-11. STORAGE E AUTENTICAÇÃO
+====================================================================== 11. STORAGE E AUTENTICAÇÃO
 ======================================================================
 
 O MVP não usa login nem upload público no app.
@@ -440,8 +431,7 @@ Caso Auth esteja tecnicamente habilitado por padrão:
 - documente o risco residual;
 - não altere configurações que possam afetar terceiros sem necessidade.
 
-======================================================================
-12. FASE C — APLICAÇÃO E FRONTEND
+====================================================================== 12. FASE C — APLICAÇÃO E FRONTEND
 ======================================================================
 
 Audite:
@@ -494,8 +484,7 @@ Registre apenas:
 - severidade;
 - correção.
 
-======================================================================
-13. HEADERS E CSP
+====================================================================== 13. HEADERS E CSP
 ======================================================================
 
 Implemente headers no Worker, adequados à arquitetura real.
@@ -539,8 +528,7 @@ Produza:
 
 Inclua matriz por ambiente e justificativa de cada origem autorizada.
 
-======================================================================
-14. TURNSTILE, RATE LIMITS E ANTI-SPAM
+====================================================================== 14. TURNSTILE, RATE LIMITS E ANTI-SPAM
 ======================================================================
 
 A implementação deve ser orientada pela superfície real.
@@ -578,8 +566,7 @@ Caso exista superfície pública real:
 
 Nunca criar proteção apenas no frontend.
 
-======================================================================
-15. COMPORTAMENTO DE STAGING E PRODUÇÃO
+====================================================================== 15. COMPORTAMENTO DE STAGING E PRODUÇÃO
 ======================================================================
 
 Confirme e fortaleça:
@@ -616,8 +603,7 @@ Adicione testes que falhem quando:
 
 Não renomeie o Worker de staging nesta Onda.
 
-======================================================================
-16. ACESSIBILIDADE
+====================================================================== 16. ACESSIBILIDADE
 ======================================================================
 
 Faça auditoria técnica de acessibilidade compatível com WCAG 2.2 AA:
@@ -673,8 +659,7 @@ Produza:
 
 `docs/accessibility/ACCESSIBILITY-AUDIT-ONDA-3.md`
 
-======================================================================
-17. SUPPLY CHAIN E DEPENDÊNCIAS
+====================================================================== 17. SUPPLY CHAIN E DEPENDÊNCIAS
 ======================================================================
 
 Audite:
@@ -705,8 +690,7 @@ Mantenha Dependabot e CodeQL ativos.
 
 Workflows devem utilizar o menor conjunto possível de permissões.
 
-======================================================================
-18. TESTES DE SEGURANÇA OBRIGATÓRIOS
+====================================================================== 18. TESTES DE SEGURANÇA OBRIGATÓRIOS
 ======================================================================
 
 Crie testes para os controles implementados.
@@ -752,8 +736,7 @@ Execute também as novas suítes de segurança.
 Nenhuma tarefa pode ser marcada como concluída apenas porque o código
 "parece correto".
 
-======================================================================
-19. REVISÃO INDEPENDENTE
+====================================================================== 19. REVISÃO INDEPENDENTE
 ======================================================================
 
 Antes do checkpoint humano, faça pelo menos duas revisões isoladas:
@@ -805,8 +788,7 @@ Produza:
 
 `docs/security/ADVERSARIAL-REVIEW-ONDA-3.md`
 
-======================================================================
-20. COMMITS E DOCUMENTAÇÃO
+====================================================================== 20. COMMITS E DOCUMENTAÇÃO
 ======================================================================
 
 Prefira commits pequenos e coerentes, por exemplo:
@@ -834,8 +816,7 @@ Atualize:
 Não colocar valores de secrets, chaves, IDs sensíveis completos ou dados
 pessoais.
 
-======================================================================
-21. VALIDAÇÃO REMOTA ANTES DO GATE
+====================================================================== 21. VALIDAÇÃO REMOTA ANTES DO GATE
 ======================================================================
 
 Antes do checkpoint final, faça tudo que for possível sem escrita remota:
@@ -857,8 +838,7 @@ Antes do checkpoint final, faça tudo que for possível sem escrita remota:
 
 Não aplique migration, não faça deploy e não faça merge.
 
-======================================================================
-22. ÚNICO CHECKPOINT HUMANO FINAL
+====================================================================== 22. ÚNICO CHECKPOINT HUMANO FINAL
 ======================================================================
 
 Pare somente quando:
@@ -925,8 +905,7 @@ Depois do merge:
 8. não inserir dados;
 9. entregue o relatório final da Onda 3.
 
-======================================================================
-23. BLOQUEIOS EXCEPCIONAIS
+====================================================================== 23. BLOQUEIOS EXCEPCIONAIS
 ======================================================================
 
 Só interrompa antes do checkpoint final se houver:
@@ -954,8 +933,7 @@ Entregue:
 6. comando ou passo único;
 7. ponto exato em que retomará.
 
-======================================================================
-24. FORA DE ESCOPO
+====================================================================== 24. FORA DE ESCOPO
 ======================================================================
 
 Não iniciar:
@@ -987,8 +965,7 @@ Não iniciar:
 
 Não misture segurança com desenvolvimento de features.
 
-======================================================================
-25. CRITÉRIOS DE ENCERRAMENTO
+====================================================================== 25. CRITÉRIOS DE ENCERRAMENTO
 ======================================================================
 
 A Onda 3 só pode ser recomendada como concluída quando:

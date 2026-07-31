@@ -93,6 +93,14 @@ desktop o botão está oculto por `display: none`, e sem essa guarda o CTA da p�
 de foco sem nada para substituí-lo. Rolagem, redimensionamento, rotação e mudança de faixa
 remedem; sair da página devolve o comando ao CTA do fluxo.
 
+Um caso de borda conhecido, e deliberadamente não tratado: se o CTA da página estiver **com o
+foco** e a pessoa rolar a página com o dedo ou com o mouse até ele sair da tela, ele fica inerte
+enquanto focado e o foco volta para o começo do documento. Chegar nesse estado exige rolar por um
+meio que não é o teclado logo depois de focar pelo teclado — navegador e leitor de tela rolam o
+elemento focado para dentro da tela sozinhos, e nesse caso a medida já o considera visível e o
+fixo nem aparece. Mover o foco por conta própria para o botão fixo resolveria o caso raro criando
+um problema pior: foco que se desloca sem a pessoa ter pedido.
+
 ## Compartilhamento
 
 Web Share API → WhatsApp → copiar o link. Em DEMO o texto começa obrigatoriamente pelo aviso de

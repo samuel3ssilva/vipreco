@@ -45,7 +45,7 @@ export function HomeHero({ opportunities, now, seal, fallback, shareSlot }: Home
           navegador divide a altura dela entre elas, e o par promessa+ação acaba no centro
           vertical — sem o vão morto que apareceria se o texto ficasse colado no topo. O `gap-y`
           da grade é a distância entre subtexto e CTA (24 px). */}
-      <div className="order-1 lg:col-start-1 lg:row-start-1 lg:self-end">
+      <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
         <p className="eyebrow">{PILOT_REGION_LABEL}</p>
         <h1
           id="titulo-principal"
@@ -58,13 +58,7 @@ export function HomeHero({ opportunities, now, seal, fallback, shareSlot }: Home
         </p>
       </div>
 
-      {/* No desktop este bloco cai imediatamente abaixo do subtexto; no mobile, depois dos
-          cards. Um só CTA no DOM, nas duas leituras. */}
-      <div className="order-3 lg:order-2 lg:col-start-1 lg:row-start-2 lg:self-start">
-        <WhatsAppCta />
-      </div>
-
-      <div className="order-2 space-y-3 lg:order-3 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+      <div className="space-y-3 lg:col-start-2 lg:row-span-2 lg:row-start-1">
         {destaque ? (
           <>
             <AchadoCard entry={destaque} now={now} variant="destaque" shareSlot={shareSlot} />
@@ -90,6 +84,14 @@ export function HomeHero({ opportunities, now, seal, fallback, shareSlot }: Home
         )}
 
         {seal}
+      </div>
+
+      {/* Fica por último no DOM porque essa é a ordem visual do mobile — o alvo primário. Assim
+          o teclado e o leitor de tela percorrem promessa → Achados → ação, exatamente como o
+          olho. No desktop a grade recoloca o bloco na coluna da esquerda, logo abaixo do
+          subtexto; o `gap-y` da grade é a distância de 24 px entre os dois. */}
+      <div className="lg:col-start-1 lg:row-start-2 lg:self-start">
+        <WhatsAppCta />
       </div>
     </section>
   );

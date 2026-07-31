@@ -1,18 +1,13 @@
-// Prova de que os Achados da Home chegam no HTML renderizado no servidor, antes de qualquer
+// Prova de que o conteúdo da Home chega no HTML renderizado no servidor, antes de qualquer
 // hidratação: o router é montado em memória, o loader da rota "/" é executado e a árvore é
 // renderizada com `renderToString` (nenhum navegador, nenhum JavaScript de cliente envolvido).
-//
-// Limite conhecido e deliberado deste PR: o `UsualMarketPicker` continua buscando os mercados no
-// cliente e ainda emite "Carregando mercados…" no HTML inicial. Ele não faz parte dos três
-// Achados e migrá-lo está fora do escopo do PR 1A — por isso a asserção abaixo é específica do
-// carregamento dos Achados, e não uma proibição cega da palavra "Carregando".
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { QueryClient } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
 import { beforeAll, describe, expect, it } from "vitest";
 import { routeTree } from "@/routeTree.gen";
-import { buildDemoOpportunities } from "@/lib/demo-opportunities";
+import { DEMO_MARKETS, buildDemoOpportunities } from "@/lib/demo-opportunities";
 
 async function renderRoute(path: string): Promise<string> {
   const router = createRouter({
@@ -52,10 +47,18 @@ describe("HTML inicial da Home (SSR)", () => {
     }
   });
 
-  it("não contém o carregamento, o vazio nem o erro dos Achados", () => {
-    expect(html).not.toContain("Carregando oportunidades");
+  it("traz o seletor de mercado habitual já preenchido", () => {
+    for (const market of DEMO_MARKETS) {
+      expect(html).toContain(market.name);
+    }
+    expect(html).toContain("Seu mercado habitual");
+  });
+
+  it("não tem nenhum carregamento visível — nem dos Achados, nem dos mercados", () => {
+    expect(html).not.toContain("Carregando");
     expect(html).not.toContain("Estamos começando a mapear preços");
     expect(html).not.toContain("Não conseguimos carregar as oportunidades");
+    expect(html).not.toContain("Não conseguimos carregar a lista de mercados");
   });
 
   it("mantém o aviso de dados fictícios", () => {

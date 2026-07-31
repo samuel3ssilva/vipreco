@@ -9,8 +9,18 @@ const HOME_ROUTE = join(process.cwd(), "src", "routes", "index.tsx");
 const home = readFileSync(HOME_ROUTE, "utf-8");
 
 describe("Home servida pelo loader (SSR)", () => {
-  it("declara um loader na rota", () => {
-    expect(home).toMatch(/loader:\s*\(\)\s*=>\s*loadHomeOpportunities\(\)/);
+  it("resolve Achados e mercados no loader da rota", () => {
+    expect(home).toMatch(/loader:\s*async\s*\(\)\s*=>/);
+    expect(home).toContain("loadHomeOpportunities(source)");
+    expect(home).toContain("loadHomeMarkets(source)");
+  });
+
+  it("usa uma única resolução de modo para as duas fontes", () => {
+    expect(home.match(/resolveHomeOpportunitySource\(\)/g) ?? []).toHaveLength(1);
+  });
+
+  it("entrega os mercados já resolvidos ao seletor", () => {
+    expect(home).toContain("<UsualMarketPicker initialMarkets={markets} />");
   });
 
   it("lê os Achados do loader, não de um useQuery no cliente", () => {
@@ -19,8 +29,9 @@ describe("Home servida pelo loader (SSR)", () => {
     expect(home).not.toContain("@tanstack/react-query");
   });
 
-  it("não busca as oportunidades direto no catálogo", () => {
+  it("não busca as oportunidades nem os mercados direto no catálogo", () => {
     expect(home).not.toContain("getWeeklyOpportunities");
+    expect(home).not.toContain("getMarkets");
     expect(home).not.toContain("@/services/catalog");
   });
 

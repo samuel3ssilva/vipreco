@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, FileCheck2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProductSearch } from "@/components/ProductSearch";
@@ -8,11 +7,15 @@ import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
-import { getWeeklyOpportunities } from "@/services/catalog";
+import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
+// Os Achados chegam pelo loader da rota (mesmo padrão de `/produto/$productId`), não mais por
+// `useQuery` no cliente: os três itens já vêm no HTML inicial, sem estado de carregamento e sem
+// depender de JavaScript no navegador para aparecer.
 export const Route = createFileRoute("/")({
+  loader: () => loadHomeOpportunities(),
   head: () => ({
     meta: [
       { title: "ViPreço — onde está mais barato hoje" },
@@ -32,18 +35,28 @@ export const Route = createFileRoute("/")({
     ],
   }),
   component: HomePage,
+  errorComponent: () => (
+    <AppShell>
+      <StateMessage
+        variant="error"
+        title="Não conseguimos carregar as oportunidades."
+        description="Verifique sua conexão e tente novamente."
+        onRetry={() => window.location.reload()}
+      />
+    </AppShell>
+  ),
 });
 
 const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
 
 function HomePage() {
-  const opportunities = useQuery({
-    queryKey: ["weekly-opportunities"],
-    queryFn: () => getWeeklyOpportunities(),
-    staleTime: 60_000,
-  });
-  const validOpportunities = (opportunities.data ?? []).filter((entry) => isValidPrice(entry));
+  const { source, opportunities, generatedAt } = Route.useLoaderData();
+  // Referência única de tempo, vinda do servidor: mantém "ontem"/"há 2 dias" idêntico no HTML
+  // inicial e depois da hidratação, mesmo se o relógio do aparelho estiver adiantado.
+  const renderedAt = new Date(generatedAt);
+  const validOpportunities = opportunities.filter((entry) => isValidPrice(entry, renderedAt));
   const isDemo =
+    source === "demo" ||
     import.meta.env.VITE_DEMO_MODE === "true" ||
     validOpportunities.some((entry) => entry.is_demo || entry.market?.is_demo);
 
@@ -80,16 +93,7 @@ function HomePage() {
             title="Achados da semana"
             description="Exemplos fictícios para mostrar como produtos iguais podem aparecer em diferentes mercados."
           />
-          {opportunities.isPending ? (
-            <StateMessage variant="loading" title="Carregando oportunidades…" />
-          ) : opportunities.isError ? (
-            <StateMessage
-              variant="error"
-              title="Não conseguimos carregar as oportunidades."
-              description="Verifique sua conexão e tente novamente."
-              onRetry={() => opportunities.refetch()}
-            />
-          ) : validOpportunities.length === 0 ? (
+          {validOpportunities.length === 0 ? (
             <StateMessage
               variant="empty"
               title="Estamos começando a mapear preços na sua região."
@@ -112,7 +116,7 @@ function HomePage() {
                   </div>
                   <p className="meta-text mt-1.5">
                     Observado em {formatDate(entry.observed_at)} (
-                    {formatRelativeDay(entry.observed_at)})
+                    {formatRelativeDay(entry.observed_at, renderedAt)})
                   </p>
                   {entry.special_condition ? (
                     <p className="meta-text">Condição: {entry.special_condition}</p>

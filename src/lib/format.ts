@@ -22,9 +22,20 @@ export function formatProductName(
     .join(" ");
 }
 
+/**
+ * Data no fuso do piloto (Artemis/Piracicaba-SP), não no fuso do dispositivo.
+ *
+ * O fuso é fixado de propósito: as datas passaram a ser renderizadas no servidor (Worker, em
+ * UTC) e reidratadas no navegador (normalmente em America/Sao_Paulo). Sem fixar, o mesmo
+ * instante vira dois dias diferentes nos dois lados sempre que a hora UTC for menor que 3h —
+ * divergência de hidratação e, para o visitante, uma data que não é a do mercado.
+ */
 export function formatDate(value: string | Date): string {
   const date = typeof value === "string" ? new Date(value) : value;
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
 }
 
 /** Texto relativo simples: "hoje", "ontem", "há 3 dias". */

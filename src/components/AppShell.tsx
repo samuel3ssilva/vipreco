@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Home, Search, HelpCircle, Store } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
+import { StagingBanner } from "@/components/StagingBanner";
 
 const NAV = [
-  { to: "/", label: "Início", short: "Início", icon: Home },
+  // "Achados" é o rótulo oficial da entrada principal (North Star v1.2.2). A rota continua "/".
+  { to: "/", label: "Achados", short: "Achados", icon: Home },
   { to: "/buscar", label: "Buscar produto", short: "Buscar", icon: Search },
   { to: "/como-funciona", label: "Como funciona", short: "Ajuda", icon: HelpCircle },
   { to: "/para-mercados", label: "Para mercados", short: "Mercados", icon: Store },
@@ -27,6 +29,8 @@ export function AppShell({
       >
         Pular para o conteúdo
       </a>
+
+      <StagingBanner />
 
       <header
         className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur"
@@ -53,19 +57,32 @@ export function AppShell({
               <span style={{ color: "#4E8570" }}>Preço</span>
             </span>
           </Link>
-          <nav aria-label="Navegação principal" className="hidden gap-0.5 sm:flex">
-            {NAV.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface"
-                activeProps={{ className: "bg-surface text-surface-foreground" }}
-                activeOptions={{ exact: item.to === "/" }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <div className="hidden items-center gap-2 sm:flex">
+            <nav aria-label="Navegação principal" className="flex gap-0.5">
+              {NAV.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="flex min-h-12 items-center rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface"
+                  activeProps={{ className: "bg-surface text-surface-foreground" }}
+                  activeOptions={{ exact: item.to === "/" }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            {/* Entrada B2B do header (North Star v1.2.2): pill contornada no verde da ação.
+                Só a partir de `lg`: entre 640 e 1024 px ela espremia a marca a ponto de o
+                logotipo virar "Vi…". Abaixo disso, "Para mercados" na navegação (desktop) e a
+                barra inferior (mobile) já levam ao mesmo lugar. */}
+            <Link
+              to="/para-mercados"
+              className="btn-base btn-sm btn-touch-48 hidden shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary lg:inline-flex"
+            >
+              Tenho um mercado
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
           <Link
             to="/buscar"
             aria-label="Buscar produto"

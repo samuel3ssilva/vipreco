@@ -7,8 +7,10 @@ import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
-import { loadHomeOpportunities, resolveHomeOpportunitySource } from "@/services/home-opportunities";
+import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { loadHomeMarkets } from "@/services/home-markets";
+import { appMode } from "@/lib/app-mode";
+import { ogImageMeta } from "@/lib/og";
 import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
@@ -20,7 +22,7 @@ export const Route = createFileRoute("/")({
   loader: async () => {
     // Uma única resolução de modo para as duas fontes: Achados e mercados nunca podem divergir
     // entre demonstração e piloto.
-    const source = resolveHomeOpportunitySource();
+    const source = appMode();
     const [opportunities, markets] = await Promise.all([
       loadHomeOpportunities(source),
       loadHomeMarkets(source),
@@ -42,7 +44,7 @@ export const Route = createFileRoute("/")({
           "Compare produtos iguais entre mercados da sua região com data e fonte de cada preço.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      ...ogImageMeta(),
     ],
   }),
   component: HomePage,
@@ -66,10 +68,10 @@ function HomePage() {
   // inicial e depois da hidratação, mesmo se o relógio do aparelho estiver adiantado.
   const renderedAt = new Date(generatedAt);
   const validOpportunities = opportunities.filter((entry) => isValidPrice(entry, renderedAt));
+  // O modo do ambiente decide; a origem do dado é uma trava a mais, para o caso de um dado
+  // fictício aparecer num ambiente que se declara piloto.
   const isDemo =
-    source === "demo" ||
-    import.meta.env.VITE_DEMO_MODE === "true" ||
-    validOpportunities.some((entry) => entry.is_demo || entry.market?.is_demo);
+    source === "demo" || validOpportunities.some((entry) => entry.is_demo || entry.market?.is_demo);
 
   return (
     <AppShell>
@@ -95,7 +97,9 @@ function HomePage() {
               </Link>
             ))}
           </div>
-          <PriceDisclaimer showDemoNotice={isDemo} />
+          {/* O aviso de ambiente saiu daqui: a faixa acima do header já diz, em toda página, que
+              esta não é a versão pública. Aqui fica só o que é sobre preço. */}
+          <PriceDisclaimer />
         </section>
 
         <section aria-labelledby="oportunidades-titulo" className="space-y-3">
@@ -147,6 +151,16 @@ function HomePage() {
               ))}
             </ul>
           )}
+          {/* Selo de dados fictícios (North Star v1.2.2): marca os Achados, logo abaixo deles. */}
+          {isDemo ? (
+            <p
+              className="font-data inline-flex items-center gap-2 rounded-md border border-dashed bg-surface px-3 py-1.5 text-xs text-muted-foreground"
+              style={{ borderColor: "var(--vp-border-strong)" }}
+            >
+              <span aria-hidden="true">◌</span>
+              dados fictícios · exemplos para demonstrar o formato
+            </p>
+          ) : null}
         </section>
 
         <UsualMarketPicker initialMarkets={markets} />

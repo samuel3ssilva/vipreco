@@ -5,7 +5,7 @@
  * saía com "Carregando mercados…" — o último carregamento visível da primeira dobra depois do
  * PR #31. Resolvendo no loader, a lista já chega renderizada.
  *
- * A fonte segue o mesmo modo dos Achados (`@/services/home-opportunities`):
+ * A fonte segue o modo do ambiente (`@/lib/app-mode`), o mesmo dos Achados:
  * - `demo`   — **fonte ativa hoje**: fixture versionado, sem nenhuma consulta ao Supabase.
  * - `piloto` — dormente: consulta o catálogo.
  *
@@ -14,16 +14,11 @@
  * "o servidor não resolveu" e devolve ao componente o seu comportamento próprio de cliente —
  * carregar, e oferecer "Tentar novamente" se também falhar lá. Nenhuma tela vazia.
  */
+import { appMode, type AppMode } from "@/lib/app-mode";
 import { DEMO_MARKETS } from "@/lib/demo-opportunities";
-import {
-  resolveHomeOpportunitySource,
-  type HomeOpportunitySource,
-} from "@/services/home-opportunities";
 import type { Market } from "@/types/domain";
 
-export async function loadHomeMarkets(
-  source: HomeOpportunitySource = resolveHomeOpportunitySource(),
-): Promise<Market[] | null> {
+export async function loadHomeMarkets(source: AppMode = appMode()): Promise<Market[] | null> {
   if (source === "demo") {
     // Cópia rasa: o fixture é um módulo compartilhado entre requisições e nunca deve ser
     // entregue por referência a algo que possa mutá-lo.

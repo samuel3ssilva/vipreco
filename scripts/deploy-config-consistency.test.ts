@@ -38,19 +38,19 @@ describe("deploy-staging.yml", () => {
 
   // `VITE_*` é resolvida em tempo de build: se o valor não entrar no `.env` antes de
   // `bun run build`, o CTA do WhatsApp simplesmente não é renderizado no Worker.
-  it("injeta VITE_WHATSAPP_NUMBER no .env a partir da variável do Environment", () => {
-    expect(workflow).toContain("WHATSAPP_NUMBER: ${{ vars.VITE_WHATSAPP_NUMBER }}");
-    expect(workflow).toContain("VITE_WHATSAPP_NUMBER=$VITE_WHATSAPP_NUMBER");
+  it("injeta VITE_WHATSAPP_NUMBER no .env antes do build", () => {
+    expect(workflow).toContain("VITE_WHATSAPP_NUMBER=${{ secrets.VITE_WHATSAPP_NUMBER }}");
     const escreveEnv = workflow.indexOf("Write .env for staging");
     const build = workflow.indexOf("run: bun run build");
     expect(escreveEnv).toBeGreaterThan(-1);
     expect(build).toBeGreaterThan(escreveEnv);
   });
 
-  it("mascara o número antes de qualquer etapa que possa ecoá-lo", () => {
-    expect(workflow).toContain('echo "::add-mask::$WHATSAPP_NUMBER"');
-    const mascara = workflow.indexOf("add-mask");
-    expect(mascara).toBeLessThan(workflow.indexOf("Write .env for staging"));
+  // O valor é público por construção, mas só como *secret* o GitHub o mascara sozinho em todo o
+  // log — inclusive nos blocos `env:`, que `vars.*` não mascara. Ler de `vars` seria uma
+  // regressão silenciosa: o deploy continuaria funcionando, o número voltaria a aparecer no log.
+  it("lê o número de secrets, nunca de vars", () => {
+    expect(workflow).not.toContain("vars.VITE_WHATSAPP_NUMBER");
   });
 
   it("não carrega nenhum número de telefone escrito no arquivo", () => {

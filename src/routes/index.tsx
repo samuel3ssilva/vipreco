@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, FileCheck2 } from "lucide-react";
+import { FileCheck2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { AchadoCard } from "@/components/AchadoCard";
 import { ProductSearch } from "@/components/ProductSearch";
 import { UsualMarketPicker } from "@/components/UsualMarketPicker";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
-import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
@@ -12,7 +12,6 @@ import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { loadHomeMarkets } from "@/services/home-markets";
 import { appMode } from "@/lib/app-mode";
 import { ogImageMeta } from "@/lib/og";
-import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
 // Tudo o que a Home mostra de primeira — os Achados e a lista de mercados do seletor — chega pelo
@@ -119,36 +118,8 @@ function HomePage() {
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {validOpportunities.map((entry) => (
-                <li key={entry.id} className="card-base flex flex-col">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-                    <div className="min-w-0">
-                      <h3 className="clamp-2 text-base font-bold">
-                        {formatProductName(entry.product)}
-                      </h3>
-                      <p className="meta-text truncate">{entry.market.name}</p>
-                    </div>
-                    <p className="font-data shrink-0 text-xl font-bold tabular-nums text-primary">
-                      {formatPrice(entry.price)}
-                    </p>
-                  </div>
-                  <p className="meta-text mt-1.5">
-                    Observado em {formatDate(entry.observed_at)} (
-                    {formatRelativeDay(entry.observed_at, renderedAt)})
-                  </p>
-                  {entry.special_condition ? (
-                    <p className="meta-text">Condição: {entry.special_condition}</p>
-                  ) : null}
-                  <div className="mt-1.5">
-                    <SourceBadge source={entry.source_type} />
-                  </div>
-                  <Link
-                    to="/produto/$productId"
-                    params={{ productId: entry.product.id }}
-                    className="btn-base btn-secondary btn-sm mt-3 w-full"
-                  >
-                    Ver preços por mercado
-                    <ArrowRight aria-hidden="true" className="size-4" />
-                  </Link>
+                <li key={entry.id} className="flex">
+                  <AchadoCard entry={entry} now={renderedAt} className="w-full" />
                 </li>
               ))}
             </ul>

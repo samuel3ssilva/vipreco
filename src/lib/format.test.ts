@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
+import {
+  formatDate,
+  formatPrice,
+  formatPriceParts,
+  formatProductName,
+  formatRelativeDay,
+  spokenPrice,
+} from "@/lib/format";
 
 describe("formatDate", () => {
   // O Worker roda em UTC e o navegador do visitante normalmente em America/Sao_Paulo (UTC-3).
@@ -37,5 +44,41 @@ describe("formatPrice e formatProductName", () => {
     expect(
       formatProductName({ name: "Arroz", brand: "Camil", variant: "Tipo 1", size_text: "5 kg" }),
     ).toBe("Arroz Camil Tipo 1 5 kg");
+  });
+});
+
+describe("formatPriceParts (tipografia do card oficial)", () => {
+  it("separa o símbolo do valor, sem perder nada do preço", () => {
+    expect(formatPriceParts(26.49)).toEqual({ currency: "R$", amount: "26,49" });
+    expect(formatPriceParts(5.29)).toEqual({ currency: "R$", amount: "5,29" });
+  });
+
+  it("mantém os centavos mesmo quando são zero", () => {
+    expect(formatPriceParts(7).amount).toBe("7,00");
+  });
+
+  it("recompõe exatamente o mesmo texto de formatPrice", () => {
+    for (const valor of [0.99, 5.29, 17.49, 26.49, 1234.5]) {
+      const { currency, amount } = formatPriceParts(valor);
+      expect(`${currency} ${amount}`.replace(/\s/g, "")).toBe(
+        formatPrice(valor).replace(/\s/g, ""),
+      );
+    }
+  });
+});
+
+describe("spokenPrice (preço para leitor de tela)", () => {
+  it("diz reais e centavos por extenso", () => {
+    expect(spokenPrice(26.49)).toBe("26 reais e 49 centavos");
+    expect(spokenPrice(5.29)).toBe("5 reais e 29 centavos");
+  });
+
+  it("omite os centavos quando são zero", () => {
+    expect(spokenPrice(7)).toBe("7 reais");
+  });
+
+  it("usa o singular onde cabe", () => {
+    expect(spokenPrice(1)).toBe("1 real");
+    expect(spokenPrice(2.01)).toBe("2 reais e 1 centavo");
   });
 });

@@ -8,6 +8,39 @@ export function formatPrice(value: number): string {
   }).format(value);
 }
 
+/**
+ * Preço partido em símbolo e valor, para o card oficial da North Star: o "R$" é composto num
+ * tamanho menor que o número (≈62%), enquanto reais e centavos ficam do mesmo tamanho.
+ *
+ * A separação é feita aqui, e não no componente, porque é regra de formatação — o componente só
+ * decide o tamanho de cada parte. `amount` já vem no padrão brasileiro, com vírgula decimal.
+ */
+export function formatPriceParts(value: number): { currency: string; amount: string } {
+  const formatted = formatPrice(value);
+  // `Intl` produz "R$ 26,49" com espaço não separável (U+00A0) entre símbolo e valor.
+  const separator = formatted.search(/[\d]/);
+  return {
+    currency: formatted.slice(0, separator).trim(),
+    amount: formatted.slice(separator).trim(),
+  };
+}
+
+/**
+ * Preço por extenso, para leitores de tela.
+ *
+ * "R$ 26,49" composto em dois tamanhos diferentes é lido de forma imprevisível — de "erre cifrão"
+ * a "26 vírgula 49". O card esconde a composição visual da árvore de acessibilidade e oferece
+ * esta frase no lugar.
+ */
+export function spokenPrice(value: number): string {
+  const total = Math.round(value * 100);
+  const reais = Math.trunc(total / 100);
+  const centavos = total % 100;
+  const parteReais = `${reais} ${reais === 1 ? "real" : "reais"}`;
+  if (centavos === 0) return parteReais;
+  return `${parteReais} e ${centavos} ${centavos === 1 ? "centavo" : "centavos"}`;
+}
+
 /** Diferença absoluta formatada, sem sinal. */
 export function formatPriceDifference(value: number): string {
   return formatPrice(Math.abs(value));

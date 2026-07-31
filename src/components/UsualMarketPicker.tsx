@@ -3,14 +3,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Store, Check, Pencil } from "lucide-react";
 import { getMarkets } from "@/services/catalog";
 import { getUsualMarketId, setUsualMarketId } from "@/lib/local-preferences";
+import type { Market } from "@/types/domain";
 
 interface UsualMarketPickerProps {
   onChange?: (marketId: string | null) => void;
   /** Variante enxuta usada dentro da página de produto. */
   compact?: boolean;
+  /**
+   * Mercados já resolvidos no servidor (loader da Home). Quando presentes, a lista é renderizada
+   * no HTML inicial e nenhum carregamento aparece. Quando ausentes — página do produto, ou falha
+   * do servidor no modo piloto —, o componente mantém o comportamento anterior de buscar no
+   * cliente, com estado de carregamento e "Tentar novamente".
+   */
+  initialMarkets?: Market[] | null;
 }
 
-export function UsualMarketPicker({ onChange, compact = false }: UsualMarketPickerProps) {
+export function UsualMarketPicker({
+  onChange,
+  compact = false,
+  initialMarkets,
+}: UsualMarketPickerProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
 
@@ -22,6 +34,7 @@ export function UsualMarketPicker({ onChange, compact = false }: UsualMarketPick
     queryKey: ["markets"],
     queryFn: getMarkets,
     staleTime: 5 * 60_000,
+    initialData: initialMarkets ?? undefined,
   });
 
   function update(value: string | null) {

@@ -7,15 +7,26 @@ import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
-import { loadHomeOpportunities } from "@/services/home-opportunities";
+import { loadHomeOpportunities, resolveHomeOpportunitySource } from "@/services/home-opportunities";
+import { loadHomeMarkets } from "@/services/home-markets";
 import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
-// Os Achados chegam pelo loader da rota (mesmo padrão de `/produto/$productId`), não mais por
-// `useQuery` no cliente: os três itens já vêm no HTML inicial, sem estado de carregamento e sem
-// depender de JavaScript no navegador para aparecer.
+// Tudo o que a Home mostra de primeira — os Achados e a lista de mercados do seletor — chega pelo
+// loader da rota (mesmo padrão de `/produto/$productId`), não por `useQuery` no cliente: o HTML
+// inicial já vem completo, sem nenhum estado de carregamento e sem depender de JavaScript no
+// navegador para aparecer.
 export const Route = createFileRoute("/")({
-  loader: () => loadHomeOpportunities(),
+  loader: async () => {
+    // Uma única resolução de modo para as duas fontes: Achados e mercados nunca podem divergir
+    // entre demonstração e piloto.
+    const source = resolveHomeOpportunitySource();
+    const [opportunities, markets] = await Promise.all([
+      loadHomeOpportunities(source),
+      loadHomeMarkets(source),
+    ]);
+    return { ...opportunities, markets };
+  },
   head: () => ({
     meta: [
       { title: "ViPreço — onde está mais barato hoje" },
@@ -50,7 +61,7 @@ export const Route = createFileRoute("/")({
 const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
 
 function HomePage() {
-  const { source, opportunities, generatedAt } = Route.useLoaderData();
+  const { source, opportunities, generatedAt, markets } = Route.useLoaderData();
   // Referência única de tempo, vinda do servidor: mantém "ontem"/"há 2 dias" idêntico no HTML
   // inicial e depois da hidratação, mesmo se o relógio do aparelho estiver adiantado.
   const renderedAt = new Date(generatedAt);
@@ -138,7 +149,7 @@ function HomePage() {
           )}
         </section>
 
-        <UsualMarketPicker />
+        <UsualMarketPicker initialMarkets={markets} />
 
         <section className="card-compact bg-surface">
           <h2 className="flex items-center gap-1.5 text-base font-bold">

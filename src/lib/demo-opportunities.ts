@@ -1,5 +1,6 @@
 /**
- * Fixture versionado dos Achados da Home no modo DEMO (Teste MVP).
+ * Fixture versionado da Home no modo DEMO (Teste MVP): os três Achados e a lista de mercados
+ * do seletor "Seu mercado habitual".
  *
  * Por que existe: até este PR os três primeiros Achados eram buscados no cliente
  * (`useQuery` + Supabase), o que produzia um HTML inicial sem conteúdo e o texto
@@ -66,6 +67,30 @@ const MARKET_LOCAL_3: Market = {
   is_active: true,
   is_demo: true,
 };
+
+const MARKET_LOCAL_4: Market = {
+  id: "11111111-1111-1111-1111-000000000004",
+  name: "Mercado local 4",
+  neighborhood: "Beira Rio",
+  address: "Rua Exemplo, 400 - Artemis",
+  maps_url: "https://maps.google.com/?q=-22.52,-47.52",
+  is_active: true,
+  is_demo: true,
+};
+
+/**
+ * Mercados fictícios oferecidos no seletor "Seu mercado habitual" em modo DEMO.
+ *
+ * São os mesmos quatro do seed fictício de staging, na mesma ordem alfabética que
+ * `getMarkets()` devolveria: assim a escolha feita aqui continua válida na página do produto,
+ * que lê o preço por mercado do banco. Nenhum mercado real aparece como participante.
+ */
+export const DEMO_MARKETS: readonly Market[] = [
+  MARKET_LOCAL_2,
+  MARKET_LOCAL_3,
+  MARKET_LOCAL_4,
+  MARKET_PRINCIPAL,
+];
 
 const PRODUCT_ARROZ: Product = {
   id: "22222222-2222-2222-2222-000000000001",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEMO_FIXTURE_REFERENCE,
+  DEMO_MARKETS,
   HOME_OPPORTUNITY_COUNT,
   buildDemoOpportunities,
 } from "@/lib/demo-opportunities";
@@ -78,6 +79,27 @@ describe("fixture de demonstração da Home", () => {
     );
     expect(comPrecoAnterior).toHaveLength(1);
     expect(comPrecoAnterior[0].previous_price).toBeGreaterThan(comPrecoAnterior[0].price);
+  });
+
+  it("oferece os mesmos mercados fictícios do seed, em ordem alfabética como o catálogo", () => {
+    expect(DEMO_MARKETS.map((market) => market.name)).toEqual([
+      "Mercado local 2",
+      "Mercado local 3",
+      "Mercado local 4",
+      "Mercado principal",
+    ]);
+    for (const market of DEMO_MARKETS) {
+      expect(market.is_demo).toBe(true);
+      expect(market.is_active).toBe(true);
+      expect(market.name).toMatch(/^Mercado (principal|local \d)$/);
+    }
+  });
+
+  it("todo mercado de um Achado também está no seletor", () => {
+    const idsNoSeletor = new Set(DEMO_MARKETS.map((market) => market.id));
+    for (const entry of buildDemoOpportunities(NOW)) {
+      expect(idsNoSeletor.has(entry.market.id)).toBe(true);
+    }
   });
 
   it("é reconstruído a cada chamada, sem estado compartilhado entre requisições", () => {

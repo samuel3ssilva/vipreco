@@ -35,7 +35,7 @@ export function ShareAchadoButton({ payload }: { payload: ShareAchadoPayload }) 
       <button
         type="button"
         onClick={compartilhar}
-        className="btn-base btn-quiet btn-sm btn-touch-48 w-full border-border"
+        className="btn-base btn-quiet btn-quiet-bordered btn-sm btn-touch-48 w-full"
       >
         <Share2 aria-hidden="true" className="size-4" />
         Compartilhar este achado

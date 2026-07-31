@@ -26,12 +26,21 @@ export interface ShareAchadoPayload {
   isDemo: boolean;
 }
 
-/** Resultado de uma tentativa de compartilhamento. */
-export type ShareOutcome = "compartilhado" | "link-copiado" | "cancelado" | "erro";
+/**
+ * Resultado de uma tentativa de compartilhamento.
+ *
+ * `compartilhado` e `whatsapp-aberto` são estados diferentes de propósito. A Web Share API só
+ * resolve depois que o sistema aceitou o compartilhamento; abrir o WhatsApp apenas leva o
+ * visitante até a tela de envio — ele ainda pode escolher ninguém e fechar. Anunciar
+ * "Achado compartilhado" nos dois casos afirmaria um envio que não aconteceu.
+ */
+export type ShareOutcome =
+  "compartilhado" | "whatsapp-aberto" | "link-copiado" | "cancelado" | "erro";
 
 /** Mensagem mostrada ao visitante depois da tentativa. Cancelar é silencioso, de propósito. */
 export const SHARE_MESSAGE: Record<ShareOutcome, string | null> = {
   compartilhado: "Achado compartilhado",
+  "whatsapp-aberto": "WhatsApp aberto para compartilhar",
   "link-copiado": "Link copiado",
   cancelado: null,
   erro: "Não foi possível compartilhar. Link copiado como alternativa.",
@@ -93,8 +102,10 @@ export async function shareAchado(
   }
 
   if (deps.openWhatsapp) {
+    // Abrir o WhatsApp não é prova de envio: daqui em diante quem decide é o visitante, dentro
+    // do aplicativo, e a página não tem como saber o desfecho.
     deps.openWhatsapp(whatsappShareUrl(text));
-    return "compartilhado";
+    return "whatsapp-aberto";
   }
 
   if (deps.copy) {

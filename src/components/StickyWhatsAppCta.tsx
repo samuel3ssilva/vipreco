@@ -1,13 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { WHATSAPP_CTA_LABEL, WHATSAPP_CTA_MARKER, WhatsAppGlyph } from "@/components/WhatsAppCta";
 import { consumerWhatsappLink } from "@/lib/whatsapp";
+import {
+  getStickyCtaVisible,
+  getStickyCtaVisibleOnServer,
+  setStickyCtaVisible,
+  subscribeStickyCta,
+} from "@/lib/cta-visibility";
 import { shouldShowStickyCta } from "@/lib/sticky-cta";
 
 /**
  * CTA fixo do mobile (North Star v1.2.2, seção F do mandato da Parte 2).
  *
  * Some assim que um CTA equivalente entra na tela — o da primeira dobra, o da última, qualquer
- * um marcado com `data-whatsapp-cta`. Nunca dois botões idênticos disputando a mesma tela.
+ * um marcado com `data-whatsapp-cta`. Nunca dois botões idênticos disputando a mesma tela. E
+ * enquanto ele está no ar, o CTA equivalente sai da ordem de foco e da árvore acessível: fora
+ * da tela não é o mesmo que fora do caminho de quem navega por teclado ou leitor de tela.
  *
  * Fica **acima** da barra de navegação do mobile, nunca por cima dela: a barra é o caminho para
  * as outras rotas e não pode ser encoberta. O respiro final da página é reservado pelo espaçador
@@ -20,6 +28,15 @@ import { shouldShowStickyCta } from "@/lib/sticky-cta";
 /** Altura reservada no fim da página para o botão não cobrir o último conteúdo. */
 const RESERVA_INFERIOR = "5.5rem";
 
+/**
+ * A faixa em que o CTA fixo existe: abaixo de `sm` (640 px), o mesmo recorte do `sm:hidden`.
+ *
+ * A medição precisa conhecer esse limite, não só o CSS. Sem ele, no desktop o estado
+ * compartilhado diria "o fixo está no ar" enquanto o botão está oculto por `display: none` — e
+ * o CTA da página sairia da ordem de foco sem nada para substituí-lo.
+ */
+const FAIXA_DO_CTA_FIXO = "(max-width: 639.98px)";
+
 /** O elemento está, neste instante, dentro da janela? Mesma pergunta que o observer responde. */
 function naTela(elemento: Element): boolean {
   const rect = elemento.getBoundingClientRect();
@@ -28,20 +45,24 @@ function naTela(elemento: Element): boolean {
 
 export function StickyWhatsAppCta() {
   const href = consumerWhatsappLink();
-  const [visivel, setVisivel] = useState(false);
+  // A visibilidade é estado compartilhado, não estado deste componente: o CTA da página precisa
+  // saber quando sair da ordem de foco. Ver `@/lib/cta-visibility`.
+  const visivel = useSyncExternalStore(
+    subscribeStickyCta,
+    getStickyCtaVisible,
+    getStickyCtaVisibleOnServer,
+  );
   const [montado, setMontado] = useState(false);
 
   useEffect(() => {
     setMontado(true);
     if (!href) return;
 
+    // Sem nenhum CTA no fluxo (uma rota que não tem a primeira dobra, por exemplo), a lista
+    // fica vazia e `shouldShowStickyCta` responde "aparece" — o fixo passa a ser a única
+    // entrada. Nenhum caminho especial é preciso para isso.
     const equivalentes = Array.from(document.querySelectorAll(`[${WHATSAPP_CTA_MARKER}]`));
-    if (equivalentes.length === 0) {
-      // Sem CTA no fluxo (por exemplo, uma rota que não tem a primeira dobra), o fixo é a
-      // única entrada — e aí ele fica.
-      setVisivel(true);
-      return;
-    }
+    const faixa = window.matchMedia(FAIXA_DO_CTA_FIXO);
 
     // Uma fonte de verdade só: a medida de cada CTA equivalente contra a janela. O
     // `IntersectionObserver` é o gatilho barato e preciso; rolagem e redimensionamento são a
@@ -49,7 +70,10 @@ export function StickyWhatsAppCta() {
     // inicial nem as mudanças em alguns motores — sem a rede de segurança, o botão fixo
     // apareceria ao lado do CTA da primeira dobra, que é exatamente o que não pode acontecer.
     const medir = () =>
-      setVisivel(shouldShowStickyCta(equivalentes.map((el) => ({ isIntersecting: naTela(el) }))));
+      setStickyCtaVisible(
+        faixa.matches &&
+          shouldShowStickyCta(equivalentes.map((el) => ({ isIntersecting: naTela(el) }))),
+      );
 
     medir();
 
@@ -60,11 +84,20 @@ export function StickyWhatsAppCta() {
     // animação deixa de existir exatamente onde ela seria necessária.
     window.addEventListener("scroll", medir, { passive: true });
     window.addEventListener("resize", medir);
+    // Girar o aparelho muda as duas coisas que a medida usa: a faixa e a altura da janela. Nem
+    // todo motor dispara `resize` a tempo aí, então o evento próprio da rotação entra junto.
+    window.addEventListener("orientationchange", medir);
+    faixa.addEventListener("change", medir);
 
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", medir);
       window.removeEventListener("resize", medir);
+      window.removeEventListener("orientationchange", medir);
+      faixa.removeEventListener("change", medir);
+      // Sair da página devolve o comando ao CTA do fluxo. Sem isto, uma rota seguinte herdaria
+      // um CTA silenciado por um botão fixo que não existe mais.
+      setStickyCtaVisible(false);
     };
   }, [href]);
 

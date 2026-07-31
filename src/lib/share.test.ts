@@ -73,7 +73,7 @@ describe("fluxo de compartilhamento", () => {
   it("cai no WhatsApp quando não há Web Share API", async () => {
     const openWhatsapp = vi.fn();
     const resultado = await shareAchado(ACHADO, { openWhatsapp, copy: vi.fn() });
-    expect(resultado).toBe("compartilhado");
+    expect(resultado).toBe("whatsapp-aberto");
     expect(openWhatsapp).toHaveBeenCalledTimes(1);
     expect(openWhatsapp.mock.calls[0][0]).toContain("wa.me/?text=");
   });
@@ -113,6 +113,47 @@ describe("fluxo de compartilhamento", () => {
 
   it("as mensagens de sucesso e de cópia são as aprovadas", () => {
     expect(SHARE_MESSAGE.compartilhado).toBe("Achado compartilhado");
+    expect(SHARE_MESSAGE["whatsapp-aberto"]).toBe("WhatsApp aberto para compartilhar");
     expect(SHARE_MESSAGE["link-copiado"]).toBe("Link copiado");
+  });
+});
+
+// Estes testes existem para impedir uma regressão *semântica*, não visual: a tentação natural, ao
+// mexer no fluxo, é reunir os dois caminhos de sucesso numa mensagem só. Abrir o WhatsApp não é
+// enviar; a página não fica sabendo o desfecho e não pode afirmar que ficou.
+describe("o que cada mensagem afirma", () => {
+  it("só a Web Share API resolvida afirma que o Achado foi compartilhado", async () => {
+    const porWebShare = await shareAchado(ACHADO, { share: vi.fn().mockResolvedValue(undefined) });
+    const porWhatsapp = await shareAchado(ACHADO, { openWhatsapp: vi.fn() });
+
+    expect(SHARE_MESSAGE[porWebShare]).toBe("Achado compartilhado");
+    expect(SHARE_MESSAGE[porWhatsapp]).not.toBe("Achado compartilhado");
+  });
+
+  it("o fallback do WhatsApp descreve a abertura, nunca o envio", async () => {
+    const resultado = await shareAchado(ACHADO, { openWhatsapp: vi.fn() });
+    const mensagem = SHARE_MESSAGE[resultado] ?? "";
+
+    expect(mensagem).toBe("WhatsApp aberto para compartilhar");
+    for (const afirmacao of ["compartilhado", "enviado", "enviamos", "sucesso"]) {
+      expect(
+        mensagem.toLowerCase(),
+        `"${afirmacao}" afirma um envio que não aconteceu`,
+      ).not.toContain(afirmacao);
+    }
+  });
+
+  it("nenhum desfecho tem mensagem repetida — cada um diz uma coisa diferente", () => {
+    const mensagens = Object.values(SHARE_MESSAGE).filter(
+      (mensagem): mensagem is string => mensagem !== null,
+    );
+    expect(new Set(mensagens).size).toBe(mensagens.length);
+  });
+
+  it("só o cancelamento é silencioso", () => {
+    for (const [desfecho, mensagem] of Object.entries(SHARE_MESSAGE)) {
+      if (desfecho === "cancelado") expect(mensagem).toBeNull();
+      else expect(mensagem, `"${desfecho}" precisa de mensagem`).toBeTruthy();
+    }
   });
 });

@@ -1,4 +1,11 @@
+import { useSyncExternalStore } from "react";
 import { consumerWhatsappLink } from "@/lib/whatsapp";
+import {
+  getStickyCtaVisible,
+  getStickyCtaVisibleOnServer,
+  hiddenCtaAttributes,
+  subscribeStickyCta,
+} from "@/lib/cta-visibility";
 
 /**
  * CTA único de entrada no WhatsApp (North Star v1.2.2, Assets §4 e §6).
@@ -29,15 +36,26 @@ export function WhatsAppGlyph({ className = "size-5" }: { className?: string }) 
 
 export function WhatsAppCta() {
   const href = consumerWhatsappLink();
+  // Enquanto o CTA fixo estiver no ar, este aqui está fora da tela e não pode continuar sendo
+  // uma segunda ação idêntica para o teclado e para o leitor de tela. O bloco inteiro sai —
+  // botão e microcopy —, porque anunciar a explicação de um botão que não existe é pior.
+  const duplicado = useSyncExternalStore(
+    subscribeStickyCta,
+    getStickyCtaVisible,
+    getStickyCtaVisibleOnServer,
+  );
   if (!href) return null;
 
+  const { container, link } = hiddenCtaAttributes(duplicado);
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" {...container}>
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
         {...{ [WHATSAPP_CTA_MARKER]: "" }}
+        {...link}
         className="btn-base btn-primary btn-touch-48 w-full rounded-full sm:w-auto"
       >
         <WhatsAppGlyph />

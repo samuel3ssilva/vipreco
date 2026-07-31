@@ -59,6 +59,47 @@ describe("CTA fixo do mobile", () => {
   });
 });
 
+describe("nunca duas ações idênticas na mesma travessia de teclado", () => {
+  it("a visibilidade do fixo é estado compartilhado, não estado privado do componente", () => {
+    // Se voltar a ser `useState` local, o CTA do fluxo não tem como saber que precisa sair.
+    expect(fixo).toContain("setStickyCtaVisible(");
+    expect(fixo).not.toContain("setVisivel");
+    expect(cta).toContain("useSyncExternalStore(");
+  });
+
+  it("o CTA do fluxo se apaga por inteiro enquanto o fixo está no ar", () => {
+    expect(cta).toContain("hiddenCtaAttributes(duplicado)");
+    expect(cta).toContain("{...container}");
+    expect(cta).toContain("{...link}");
+  });
+
+  it("o fixo só assume o comando na faixa em que ele de fato aparece", () => {
+    // No desktop o botão está oculto por `sm:hidden`. Sem esta guarda, o CTA do fluxo sairia da
+    // ordem de foco sem nada para substituí-lo.
+    expect(fixo).toContain("FAIXA_DO_CTA_FIXO");
+    expect(fixo).toContain("(max-width: 639.98px)");
+    expect(fixo).toContain("faixa.matches &&");
+  });
+
+  it("remede em rolagem, redimensionamento, rotação e mudança de faixa", () => {
+    for (const gatilho of ["scroll", "resize", "orientationchange"]) {
+      expect(fixo, `falta o gatilho "${gatilho}"`).toContain(
+        `window.addEventListener("${gatilho}", medir`,
+      );
+      expect(fixo, `"${gatilho}" fica pendurado`).toContain(
+        `window.removeEventListener("${gatilho}", medir)`,
+      );
+    }
+    expect(fixo).toContain('faixa.addEventListener("change", medir)');
+    expect(fixo).toContain('faixa.removeEventListener("change", medir)');
+  });
+
+  it("ao sair da página, devolve o comando ao CTA do fluxo", () => {
+    const limpeza = fixo.slice(fixo.indexOf("observer.disconnect()"));
+    expect(limpeza).toContain("setStickyCtaVisible(false)");
+  });
+});
+
 describe("compartilhamento do Achado", () => {
   it("só aparece no card de destaque", () => {
     expect(card).toContain("{destaque ? shareSlot : null}");

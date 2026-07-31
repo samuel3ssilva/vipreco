@@ -74,11 +74,35 @@ uma rede de segurança que depende de quadros de animação some justamente onde
 O botão fica acima da barra de navegação, respeita `safe-area-inset-bottom` e reserva no fluxo o
 espaço que ocupa.
 
+O contrato é de **visibilidade, não de posição de rolagem**. Em telas curtas o CTA da hero pode
+nascer abaixo da dobra, e aí é correto o fixo já aparecer no topo — foi o que o QA observou em
+375×812 e o PMO aceitou. A altura do hero não foi mexida para forçar o CTA para dentro da
+primeira dobra.
+
+### Quem está no comando
+
+`shouldShowStickyCta` resolve o lado visual. O lado de acessibilidade mora em
+`src/lib/cta-visibility.ts`: enquanto o fixo está no ar, o CTA equivalente da página sai da ordem
+de tabulação e da árvore acessível (`inert` + `aria-hidden`, com `tabIndex={-1}` no link como rede
+para motores sem `inert`). Fora da tela não é o mesmo que fora do caminho de quem navega por
+teclado ou leitor de tela — sem isso, tabular pela página encontrava duas ações idênticas.
+
+O estado é compartilhado porque nenhum dos dois componentes é ancestral do outro. A medida também
+consulta a faixa em que o fixo existe (`max-width: 639.98px`, o mesmo recorte do `sm:hidden`): no
+desktop o botão está oculto por `display: none`, e sem essa guarda o CTA da página sairia da ordem
+de foco sem nada para substituí-lo. Rolagem, redimensionamento, rotação e mudança de faixa
+remedem; sair da página devolve o comando ao CTA do fluxo.
+
 ## Compartilhamento
 
 Web Share API → WhatsApp → copiar o link. Em DEMO o texto começa obrigatoriamente pelo aviso de
 exemplo fictício; nenhum preço fictício circula sem ele. Nada de dado pessoal, nenhum SDK,
 nenhuma imagem gerada por Achado. Fechar a folha é cancelamento, não erro.
+
+Cada desfecho diz uma coisa diferente, e nenhum afirma mais do que aconteceu. A Web Share API só
+resolve depois que o sistema aceitou o compartilhamento — essa é a única que anuncia "Achado
+compartilhado". Abrir o WhatsApp apenas leva o visitante até a tela de envio, onde ele ainda pode
+fechar sem mandar nada: o anúncio é "WhatsApp aberto para compartilhar".
 
 O endereço de compartilhamento (`wa.me/?text=`) não leva número: quem recebe é escolhido na hora.
 Ele não é, e não deve virar, o destino operacional do CTA — esse continua vindo do secret.
@@ -86,8 +110,25 @@ Ele não é, e não deve virar, o destino operacional do CTA — esse continua v
 ## Alvo de toque
 
 Todo controle interativo da Home mede pelo menos 48×48 px, medido no navegador com
-`getBoundingClientRect`. A utilitária `btn-touch-48` é declarada depois de `btn-base`/`btn-sm`
-porque as três definem `min-height` e é a ordem no arquivo que decide qual vence.
+`getBoundingClientRect`. A utilitária `btn-touch-48` vence `btn-base`/`btn-sm` porque as três
+definem `min-height` e ela sai depois no CSS gerado — verificado no artefato de build por
+`src/styles.cascade.test.ts`, não presumido da ordem do arquivo fonte.
+
+## Cascata das utilities
+
+O Tailwind v4 **reordena** as utilities no build pelo conjunto de propriedades que cada uma
+declara. A ordem escrita em `src/styles.css` não sobrevive, e chega a mudar conforme o conjunto de
+classes compilado.
+
+Foi assim que o botão de compartilhar ficou sem borda no staging: `.btn-quiet` saiu depois de
+`.border-border` e o atalho `border: 1px solid transparent` apagou a cor. Trocar o atalho por
+longhands não resolveria — continuariam dois `border-color` disputando por uma ordem que ninguém
+controla daqui.
+
+A regra que ficou: **onde a diferença é visível ao visitante, não dependa de ordem.** `btn-quiet`
+lê `--btn-quiet-border` (transparente por omissão) e `btn-quiet-bordered` define a variável. Duas
+propriedades diferentes nunca disputam a cascata. `src/styles.cascade.test.ts` compila o CSS de
+verdade e prova que a disputa deixou de existir.
 
 ## Rollback
 

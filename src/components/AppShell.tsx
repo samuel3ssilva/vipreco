@@ -71,11 +71,13 @@ export function AppShell({
                 </Link>
               ))}
             </nav>
-            {/* Entrada B2B do header (North Star v1.2.2): pill contornada no verde da ação,
-                só no desktop — no mobile a barra inferior já leva a "Mercados". */}
+            {/* Entrada B2B do header (North Star v1.2.2): pill contornada no verde da ação.
+                Só a partir de `lg`: entre 640 e 1024 px ela espremia a marca a ponto de o
+                logotipo virar "Vi…". Abaixo disso, "Para mercados" na navegação (desktop) e a
+                barra inferior (mobile) já levam ao mesmo lugar. */}
             <Link
               to="/para-mercados"
-              className="btn-base btn-sm shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary"
+              className="btn-base btn-sm hidden shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary lg:inline-flex"
             >
               Tenho um mercado
               <span aria-hidden="true">→</span>

@@ -61,9 +61,25 @@ describe("HTML inicial da Home (SSR)", () => {
     expect(html).not.toContain("Não conseguimos carregar a lista de mercados");
   });
 
-  it("mantém o aviso de dados fictícios", () => {
-    expect(html).toContain("Ambiente de teste com preços fictícios");
+  it("abre com a faixa de ambiente, antes de qualquer outro conteúdo", () => {
+    expect(html).toContain("AMBIENTE DE TESTE");
+    expect(html).toContain("esta não é a versão pública do ViPreço");
+    expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(html.indexOf("Achados da semana"));
+  });
+
+  it("marca os Achados com o selo de dados fictícios", () => {
+    expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
     expect(html).toContain("Exemplos fictícios");
+  });
+
+  it("não repete o aviso de ambiente dentro da página — a faixa é o único lugar", () => {
+    expect(html).not.toContain("Ambiente de teste com preços fictícios");
+  });
+
+  it("traz a navegação 'Achados' e a entrada de mercado no header", () => {
+    expect(html).toContain(">Achados<");
+    expect(html).toContain("Tenho um mercado");
+    expect(html).not.toContain(">Início<");
   });
 
   it("não contém copy operacional do piloto (guardrails da North Star)", () => {

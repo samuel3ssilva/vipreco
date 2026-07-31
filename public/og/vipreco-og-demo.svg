@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ViPreço — Achados de Artemis, exemplo fictício de demonstração">
+  <title>ViPreço — Achados de Artemis (exemplo fictício)</title>
+
+  <!-- Fundo: creme à esquerda, verde da marca à direita (North Star v1.2.2, Assets §3). -->
+  <rect width="1200" height="630" fill="#FBF7EC"/>
+  <rect x="700" width="500" height="630" fill="#0E5C3C"/>
+
+  <!-- Marca -->
+  <g transform="translate(64 64)">
+    <g transform="scale(1.05)">
+      <polyline points="9,26 20,38 39,17" fill="none" stroke="#0E5C3C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="39" cy="6.5" r="4.6" fill="#F5C24B"/>
+    </g>
+    <text x="62" y="40" font-family="Bricolage Grotesque" font-weight="800" font-size="40" letter-spacing="-1.4" fill="#10231C">Vi<tspan fill="#4E8570">Preço</tspan></text>
+  </g>
+
+  <!-- Título e subtítulo -->
+  <text x="64" y="290" font-family="Bricolage Grotesque" font-weight="800" font-size="58" letter-spacing="-1.6" fill="#10231C">Achados de Artemis</text>
+  <text x="64" y="348" font-family="Public Sans" font-weight="400" font-size="27" fill="#5B6B63">Ofertas dos mercados do bairro, com</text>
+  <text x="64" y="386" font-family="Public Sans" font-weight="400" font-size="27" fill="#5B6B63">preço, data e fonte de cada preço.</text>
+
+  <!-- Recorte do formato do Achado — dado inteiramente fictício -->
+  <g transform="translate(748 158) rotate(-4)">
+    <rect x="0" y="0" width="392" height="272" rx="18" fill="#FFFFFF" stroke="#E2DED2" stroke-width="1.5"/>
+    <rect x="0" y="0" width="392" height="5" rx="2.5" fill="#0E5C3C"/>
+    <text x="28" y="62" font-family="Public Sans" font-weight="600" font-size="21" fill="#10231C">Café torrado e moído · 500 g</text>
+    <text x="28" y="140" font-family="Bricolage Grotesque" font-weight="800" font-size="62" letter-spacing="-1.2" fill="#10231C"><tspan font-size="38">R$ </tspan>14,90</text>
+    <text x="28" y="180" font-family="Public Sans" font-weight="600" font-size="19" fill="#10231C">Mercado local 2 · Artemis</text>
+    <line x1="28" y1="204" x2="364" y2="204" stroke="#E2DED2" stroke-width="1.5"/>
+    <text x="28" y="232" font-family="Public Sans" font-weight="400" font-size="17" fill="#5B6B63">informado pelo mercado · exemplo fictício</text>
+  </g>
+
+  <!-- Faixa inferior obrigatória: nenhum preço de demonstração circula sem esta marcação -->
+  <rect x="0" y="546" width="1200" height="84" fill="#10231C"/>
+  <text x="64" y="596" font-family="Public Sans" font-weight="700" font-size="24" letter-spacing="0.6" fill="#FBF7EC">EXEMPLO FICTÍCIO <tspan font-weight="400">— demonstração do formato do ViPreço, sem preço real</tspan></text>
+</svg>

@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { ogImageMeta } from "@/lib/og";
 
 function NotFoundComponent() {
   return (
@@ -85,7 +86,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Compare preços recentes e verificados de supermercados da sua região.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:site_name", content: "ViPreço" },
+      { property: "og:locale", content: "pt_BR" },
+      ...ogImageMeta(),
       { name: "theme-color", content: "#0e5c3c" },
     ],
     links: [

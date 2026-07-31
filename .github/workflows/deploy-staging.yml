@@ -36,6 +36,7 @@ jobs:
           VITE_SUPABASE_PROJECT_ID=${{ secrets.SUPABASE_PROJECT_ID }}
           VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          VITE_PUBLIC_SITE_URL=https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev
           EOF
 
       - name: Verify environment (falha segura se o ambiente estiver trocado)

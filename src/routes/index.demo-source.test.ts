@@ -16,7 +16,7 @@ describe("Home servida pelo loader (SSR)", () => {
   });
 
   it("usa uma única resolução de modo para as duas fontes", () => {
-    expect(home.match(/resolveHomeOpportunitySource\(\)/g) ?? []).toHaveLength(1);
+    expect(home.match(/\bappMode\(\)/g) ?? []).toHaveLength(1);
   });
 
   it("entrega os mercados já resolvidos ao seletor", () => {

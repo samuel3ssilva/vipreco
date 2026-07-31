@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadHomeOpportunities, resolveHomeOpportunitySource } from "@/services/home-opportunities";
+import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { HOME_OPPORTUNITY_COUNT } from "@/lib/demo-opportunities";
 
 const getWeeklyOpportunities = vi.fn();
@@ -12,16 +12,8 @@ afterEach(() => {
 });
 
 describe("fonte dos Achados da Home", () => {
-  it("usa DEMO por padrão, inclusive sem variável configurada", () => {
-    expect(resolveHomeOpportunitySource(undefined)).toBe("demo");
-    expect(resolveHomeOpportunitySource("")).toBe("demo");
-    expect(resolveHomeOpportunitySource("qualquer-coisa")).toBe("demo");
-  });
-
-  it("só entra no modo PILOTO com opt-in explícito", () => {
-    expect(resolveHomeOpportunitySource("piloto")).toBe("piloto");
-  });
-
+  // A resolução do modo em si é testada em `src/lib/app-mode.test.ts` — aqui interessa só o que
+  // cada modo faz com a fonte dos Achados.
   it("no modo DEMO entrega três Achados do fixture", async () => {
     const resultado = await loadHomeOpportunities("demo");
     expect(resultado.source).toBe("demo");

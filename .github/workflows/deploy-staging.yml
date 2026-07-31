@@ -27,17 +27,10 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: bun install --frozen-lockfile
 
-      # `VITE_WHATSAPP_NUMBER` é uma *variável* do Environment (não um segredo): o valor acaba no
-      # bundle do cliente de propósito — é o destino público do CTA. Ainda assim ele é
-      # registrado em `add-mask` logo na entrada, para que não apareça em texto claro no log de
-      # nenhuma etapa seguinte, e é repassado adiante por `$GITHUB_ENV` (que não ecoa valores).
-      - name: Ler e mascarar o número do WhatsApp
-        env:
-          WHATSAPP_NUMBER: ${{ vars.VITE_WHATSAPP_NUMBER }}
-        run: |
-          echo "::add-mask::$WHATSAPP_NUMBER"
-          echo "VITE_WHATSAPP_NUMBER=$WHATSAPP_NUMBER" >> "$GITHUB_ENV"
-
+      # `VITE_WHATSAPP_NUMBER` é *secret* do Environment, não *variable*. O valor em si é público
+      # por construção — vai no bundle do cliente e no link que qualquer visitante enxerga —, mas
+      # só como secret o GitHub o mascara sozinho em todo o log, inclusive nos blocos `env:`.
+      # Com isso o workflow não precisa de nenhuma etapa de `add-mask`.
       - name: Write .env for staging
         run: |
           cat <<EOF > .env
@@ -48,7 +41,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           VITE_PUBLIC_SITE_URL=https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev
-          VITE_WHATSAPP_NUMBER=$VITE_WHATSAPP_NUMBER
+          VITE_WHATSAPP_NUMBER=${{ secrets.VITE_WHATSAPP_NUMBER }}
           EOF
 
       - name: Verify environment (falha segura se o ambiente estiver trocado)

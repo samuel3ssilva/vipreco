@@ -63,7 +63,7 @@ export function AppShell({
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface"
+                  className="flex min-h-12 items-center rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-surface"
                   activeProps={{ className: "bg-surface text-surface-foreground" }}
                   activeOptions={{ exact: item.to === "/" }}
                 >
@@ -77,7 +77,7 @@ export function AppShell({
                 barra inferior (mobile) já levam ao mesmo lugar. */}
             <Link
               to="/para-mercados"
-              className="btn-base btn-sm hidden shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary lg:inline-flex"
+              className="btn-base btn-sm btn-touch-48 hidden shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary lg:inline-flex"
             >
               Tenho um mercado
               <span aria-hidden="true">→</span>

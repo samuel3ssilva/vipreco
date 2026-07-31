@@ -367,6 +367,14 @@
   font-size: 0.875rem;
 }
 
+/* Alvo de toque de 48 px. Padrão para todo elemento interativo novo ou alterado a partir da
+   North Star v1.2.2 — o mínimo histórico de 44 px de `btn-base`/`btn-sm` continua valendo para
+   os controles que já existiam. Declarada **depois** de `btn-base` e `btn-sm` de propósito: as
+   três definem `min-height`, e é a ordem no arquivo que decide qual vence. */
+@utility btn-touch-48 {
+  min-height: 3rem;
+}
+
 @utility btn-primary {
   background-color: var(--color-primary);
   color: var(--color-primary-foreground);

@@ -1,5 +1,6 @@
 import "./lib/error-capture";
 
+import { withCacheHeaders } from "./lib/cache-headers";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { withSecurityHeaders } from "./lib/security-headers";
@@ -50,15 +51,19 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response), request.url);
+      return withCacheHeaders(
+        withSecurityHeaders(await normalizeCatastrophicSsrResponse(response), request.url),
+      );
     } catch (error) {
       console.error(error);
-      return withSecurityHeaders(
-        new Response(renderErrorPage(), {
-          status: 500,
-          headers: { "content-type": "text/html; charset=utf-8" },
-        }),
-        request.url,
+      return withCacheHeaders(
+        withSecurityHeaders(
+          new Response(renderErrorPage(), {
+            status: 500,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          }),
+          request.url,
+        ),
       );
     }
   },

@@ -324,6 +324,19 @@
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
+
+  /* Quem pediu menos movimento ao sistema recebe menos movimento aqui — inclusive no pulso do
+     esqueleto da busca e no scroll-snap do carrossel de Achados. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* Largura máxima do conteúdo central. */

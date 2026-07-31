@@ -83,15 +83,16 @@ describe("HTML inicial da Home (SSR)", () => {
   });
 
   it("não contém copy operacional do piloto (guardrails da North Star)", () => {
-    for (const termo of [
-      "wa.me",
-      "Mande a oferta",
-      "resumo semanal",
-      "Achado de hoje",
-      "cashback",
-    ]) {
+    for (const termo of ["Mande a oferta", "resumo semanal", "Achado de hoje", "cashback"]) {
       expect(html, `HTML inicial não deve conter "${termo}"`).not.toContain(termo);
     }
+  });
+
+  it("sem destino de WhatsApp configurado, nenhum CTA e nenhum link quebrado", () => {
+    // O ambiente de teste não define VITE_WHATSAPP_NUMBER — é exatamente o estado de staging
+    // enquanto o número real não for cadastrado.
+    expect(html).not.toContain("wa.me");
+    expect(html).not.toContain("Receber os Achados no WhatsApp");
   });
 
   it("não apresenta nenhum mercado real como participante", () => {

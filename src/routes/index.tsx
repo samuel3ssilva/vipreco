@@ -7,6 +7,7 @@ import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
+import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { loadHomeMarkets } from "@/services/home-markets";
 import { appMode } from "@/lib/app-mode";
@@ -100,6 +101,7 @@ function HomePage() {
           {/* O aviso de ambiente saiu daqui: a faixa acima do header já diz, em toda página, que
               esta não é a versão pública. Aqui fica só o que é sobre preço. */}
           <PriceDisclaimer />
+          <WhatsAppCta />
         </section>
 
         <section aria-labelledby="oportunidades-titulo" className="space-y-3">

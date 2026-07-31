@@ -12,6 +12,10 @@ import { describe, expect, it } from "vitest";
 
 const styles = readFileSync(join(process.cwd(), "src", "styles.css"), "utf-8");
 const appShell = readFileSync(join(process.cwd(), "src", "components", "AppShell.tsx"), "utf-8");
+const whatsappCta = readFileSync(
+  join(process.cwd(), "src", "components", "WhatsAppCta.tsx"),
+  "utf-8",
+);
 
 describe("alvo de toque de 48 px", () => {
   it("a utilitária btn-touch-48 vale 48 px (3rem)", () => {
@@ -40,5 +44,9 @@ describe("alvo de toque de 48 px", () => {
 
   it("a barra inferior de navegação mantém 56 px", () => {
     expect(appShell).toContain("flex min-h-14 flex-col items-center");
+  });
+
+  it("o CTA do WhatsApp tem 48 px de altura mínima", () => {
+    expect(whatsappCta).toContain("btn-touch-48");
   });
 });

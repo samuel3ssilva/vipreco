@@ -239,6 +239,12 @@ describe("anatomia do card oficial de Achado", () => {
     expect(html.match(/Preço de gôndola observado, sem remarcação\./g) ?? []).toHaveLength(1);
   });
 
+  it("não pula nível na hierarquia de títulos", () => {
+    // Um `h1` na primeira dobra e `h2` daí para baixo. Nenhum `h3` órfão.
+    expect(html.match(/<h1/g) ?? []).toHaveLength(1);
+    expect(html).not.toContain("<h3");
+  });
+
   it("não cria urgência artificial em nenhum Achado", () => {
     for (const termo of ["Faltam", "Termina em", "restam", "agora mesmo", "última chance"]) {
       expect(html, `HTML inicial não deve conter "${termo}"`).not.toContain(termo);

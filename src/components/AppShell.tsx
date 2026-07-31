@@ -25,7 +25,7 @@ export function AppShell({
     <div className="flex min-h-dvh flex-col bg-background">
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:font-semibold"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:inline-flex focus:min-h-12 focus:items-center focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:font-semibold"
       >
         Pular para o conteúdo
       </a>
@@ -37,7 +37,7 @@ export function AppShell({
         inert={isInert || undefined}
       >
         <PageContainer className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2">
-          <Link to="/" className="flex min-w-0 items-center gap-1.5">
+          <Link to="/" className="flex min-h-12 min-w-0 items-center gap-1.5">
             <img
               src="/logo/vipreco-simbolo.svg"
               alt=""
@@ -86,7 +86,7 @@ export function AppShell({
           <Link
             to="/buscar"
             aria-label="Buscar produto"
-            className="btn-base btn-secondary btn-sm sm:hidden"
+            className="btn-base btn-secondary btn-sm btn-touch-48 sm:hidden"
           >
             <Search aria-hidden="true" className="size-5" />
             <span>Buscar</span>

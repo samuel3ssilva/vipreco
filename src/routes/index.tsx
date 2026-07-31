@@ -4,6 +4,8 @@ import { HomeHero } from "@/components/HomeHero";
 import { TrustSection } from "@/components/TrustSection";
 import { LocalStory } from "@/components/LocalStory";
 import { ProductSearch } from "@/components/ProductSearch";
+import { ShareAchadoButton } from "@/components/ShareAchadoButton";
+import { StickyWhatsAppCta } from "@/components/StickyWhatsAppCta";
 import { UsualMarketPicker } from "@/components/UsualMarketPicker";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
@@ -11,7 +13,8 @@ import { SectionHeader } from "@/components/PageContainer";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { loadHomeMarkets } from "@/services/home-markets";
 import { appMode } from "@/lib/app-mode";
-import { ogImageMeta } from "@/lib/og";
+import { absoluteAssetUrl, ogImageMeta } from "@/lib/og";
+import { formatProductName } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
 // Tudo o que a Home mostra de primeira — os Achados e a lista de mercados do seletor — chega pelo
@@ -72,6 +75,7 @@ function HomePage() {
   // fictício aparecer num ambiente que se declara piloto.
   const isDemo =
     source === "demo" || validOpportunities.some((entry) => entry.is_demo || entry.market?.is_demo);
+  const [destaque] = validOpportunities;
 
   return (
     <AppShell>
@@ -79,6 +83,20 @@ function HomePage() {
         <HomeHero
           opportunities={validOpportunities}
           now={renderedAt}
+          shareSlot={
+            destaque ? (
+              <ShareAchadoButton
+                payload={{
+                  produto: formatProductName(destaque.product),
+                  preco: destaque.price,
+                  mercado: destaque.market.name,
+                  validUntil: destaque.valid_until,
+                  url: absoluteAssetUrl(`/produto/${destaque.product.id}`),
+                  isDemo,
+                }}
+              />
+            ) : null
+          }
           seal={
             isDemo ? (
               <p
@@ -128,6 +146,8 @@ function HomePage() {
 
         <LocalStory />
       </div>
+
+      <StickyWhatsAppCta />
     </AppShell>
   );
 }

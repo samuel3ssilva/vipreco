@@ -34,11 +34,35 @@ Um **link**. Nada além disso.
 - **Sem a variável, o CTA não é renderizado.** Um botão que abre um link quebrado — ou pior, uma
   conversa com um número errado — é pior do que a ausência do botão. A Home continua completa.
 
-## Ação humana pendente
+## Como o valor chega ao build
 
-Cadastrar `VITE_WHATSAPP_NUMBER` no ambiente de staging (e depois no de produção) com o número
-operacional real. Enquanto isso não acontece, o código, os testes e a configuração de exemplo já
-estão prontos e o CTA simplesmente não aparece.
+`VITE_*` é resolvida em **tempo de build**: se o valor não estiver no `.env` antes de
+`bun run build`, o CTA não é renderizado — nem no HTML do servidor, nem depois da hidratação.
+
+Em staging, `.github/workflows/deploy-staging.yml` faz, nesta ordem:
+
+1. lê a variável do Environment `staging` e registra o valor em `::add-mask::`, para que ele não
+   apareça em texto claro no log das etapas seguintes;
+2. repassa por `$GITHUB_ENV` e escreve `VITE_WHATSAPP_NUMBER` no `.env`;
+3. só então roda `bun run build` e publica.
+
+Ressalva honesta sobre log: `vars.*` **não** é mascarada automaticamente pelo GitHub, e o bloco
+`env:` de uma etapa é impresso no log. O valor aparece uma única vez — no `env:` da etapa que
+faz o mascaramento — e vem mascarado em tudo que vier depois. Para chegar a **zero** ocorrências,
+basta recadastrar `VITE_WHATSAPP_NUMBER` como _secret_ do Environment em vez de _variable_:
+segredos são mascarados em toda parte, inclusive nesse bloco. É uma troca de cadastro, sem
+mudança de código — o workflow lê `vars.VITE_WHATSAPP_NUMBER`, então a troca exige apenas mudar
+essa referência para `secrets.VITE_WHATSAPP_NUMBER`.
+
+Vale lembrar o que está sendo protegido: o número é **público por construção** — vai no bundle do
+cliente e no link que qualquer visitante enxerga. O mascaramento é higiene de log, não sigilo.
+
+## Estado da configuração
+
+| Ambiente | `VITE_WHATSAPP_NUMBER`                                           |
+| -------- | ---------------------------------------------------------------- |
+| staging  | cadastrada como _variable_ do Environment `staging` (31/07/2026) |
+| produção | **pendente** — cadastrar junto do rollout de produção            |
 
 > Envie **apenas o número**. Nunca junto de senha, token ou segredo.
 

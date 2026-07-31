@@ -35,6 +35,30 @@ describe("deploy-staging.yml", () => {
   it("chama verify-env:staging antes do deploy", () => {
     expect(workflow).toContain("verify-env:staging");
   });
+
+  // `VITE_*` é resolvida em tempo de build: se o valor não entrar no `.env` antes de
+  // `bun run build`, o CTA do WhatsApp simplesmente não é renderizado no Worker.
+  it("injeta VITE_WHATSAPP_NUMBER no .env a partir da variável do Environment", () => {
+    expect(workflow).toContain("WHATSAPP_NUMBER: ${{ vars.VITE_WHATSAPP_NUMBER }}");
+    expect(workflow).toContain("VITE_WHATSAPP_NUMBER=$VITE_WHATSAPP_NUMBER");
+    const escreveEnv = workflow.indexOf("Write .env for staging");
+    const build = workflow.indexOf("run: bun run build");
+    expect(escreveEnv).toBeGreaterThan(-1);
+    expect(build).toBeGreaterThan(escreveEnv);
+  });
+
+  it("mascara o número antes de qualquer etapa que possa ecoá-lo", () => {
+    expect(workflow).toContain('echo "::add-mask::$WHATSAPP_NUMBER"');
+    const mascara = workflow.indexOf("add-mask");
+    expect(mascara).toBeLessThan(workflow.indexOf("Write .env for staging"));
+  });
+
+  it("não carrega nenhum número de telefone escrito no arquivo", () => {
+    // Token isolado de 10 a 15 dígitos — o formato de um telefone internacional. As bordas
+    // `\b` evitam falso positivo nos SHAs das actions fixadas, onde os dígitos vêm colados a
+    // letras hexadecimais.
+    expect(workflow).not.toMatch(/\b\d{10,15}\b/);
+  });
 });
 
 describe("deploy-production.yml", () => {

@@ -237,12 +237,14 @@ function ForMarketsPage() {
         </section>
 
         {/* `tabIndex={-1}`: sem isso, o link âncora rola a página mas deixa o foco do teclado no
-            topo — quem chegou aqui pelo teclado continuaria tabulando a primeira dobra. */}
+            topo — quem chegou aqui pelo teclado continuaria tabulando a primeira dobra.
+            `scroll-mt-20`: o header é fixo no topo e, sem essa margem, a âncora parava o título
+            exatamente atrás dele — medido em 375 px no staging, com o alvo em `top: 0`. */}
         <section
           id="como-funciona"
           tabIndex={-1}
           aria-labelledby="como-funciona-titulo"
-          className="space-y-3"
+          className="scroll-mt-20 space-y-3"
         >
           <div>
             <h2 id="como-funciona-titulo" className="font-display text-xl sm:text-2xl">

@@ -85,6 +85,10 @@ describe("alvo de toque e link externo", () => {
     expect(rota).toContain('id="como-funciona"');
     expect(rota).toContain("tabIndex={-1}");
   });
+
+  it("a âncora não para o título atrás do header fixo", () => {
+    expect(rota).toContain("scroll-mt-20");
+  });
 });
 
 describe("hierarquia de títulos", () => {

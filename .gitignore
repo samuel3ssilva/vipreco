@@ -42,3 +42,6 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Relatório privado — regra permanente do PMO (docs/governance/PROMPT-CTO_ONDA-2.md).
+HANDOFF-2026-07-27.md

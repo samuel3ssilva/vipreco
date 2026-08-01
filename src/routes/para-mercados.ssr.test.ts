@@ -58,7 +58,8 @@ describe("primeira dobra da proposta", () => {
   });
 
   it("oferece o caminho de quem ainda não quer conversar, na própria página", () => {
-    expect(html).toContain("Ver como funciona");
+    // O rótulo diz de quem é a explicação: "/como-funciona" já existe, e é a do consumidor.
+    expect(html).toContain("Como funciona para o mercado");
     expect(html).toContain('href="#como-funciona"');
     expect(html).toContain('id="como-funciona"');
   });
@@ -156,6 +157,43 @@ describe("o que a página promete — e o que ela não promete", () => {
   it("não precisa cadastrar o mercado inteiro, e sem quantidade mínima", () => {
     expect(html).toContain("Não precisa cadastrar o mercado inteiro");
     expect(html).toContain("não existe quantidade mínima nem obrigação de envio");
+  });
+
+  it("limita o controle do mercado ao que o próprio mercado enviou", () => {
+    expect(html).toContain("Você escolhe quais produtos enviar");
+    expect(html).toContain(
+      "O mercado pode enviar produtos selecionados e pedir a correção ou retirada das informações que forneceu.",
+    );
+    expect(html).toContain("Pedido de correção do que enviou");
+    expect(html).toContain("Pedido de retirada do que enviou");
+  });
+
+  it("diz que a comparação orgânica segue as mesmas regras para todos", () => {
+    expect(html).toContain(
+      "Comparações orgânicas legítimas seguem as mesmas regras para todos. Pagamento não muda a ordem dos resultados.",
+    );
+  });
+
+  it("abre um canal de correção para qualquer informação incorreta, não só a do mercado", () => {
+    expect(html).toContain("Encontrou uma informação incorreta?");
+    expect(html).toContain("Avise o ViPreço para que ela seja conferida e corrigida");
+  });
+
+  it("nunca atribui ao mercado controle sobre o que aparece ou sobre a ordem", () => {
+    // Guardrail de copy: a página não pode sugerir controle sobre a comparação, sobre o que
+    // outros mercados informam ou sobre a posição no resultado.
+    for (const frase of [
+      "Você escolhe o que aparece",
+      "o que o mercado manda é o que aparece",
+      "você controla o que aparece",
+      "escolha sua posição",
+      "defina a ordem",
+      "saia na frente dos concorrentes",
+    ]) {
+      expect(html.toLowerCase(), `a página não deve conter "${frase}"`).not.toContain(
+        frase.toLowerCase(),
+      );
+    }
   });
 
   it("apresenta o piloto como preparação, não como operação em curso", () => {

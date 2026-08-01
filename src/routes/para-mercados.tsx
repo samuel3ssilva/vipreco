@@ -86,15 +86,21 @@ const ETAPAS = [
   },
 ] as const;
 
-/** O que o mercado informa — e, por consequência, o que ele controla. */
-const CONTROLES = [
+/**
+ * O que o mercado envia — e, por consequência, o que ele decide sobre o **próprio** envio.
+ *
+ * O escopo é essa fronteira e nada além dela: o mercado não controla a comparação orgânica, o
+ * que outros mercados informam nem a ordem dos resultados. Por isso os dois últimos itens dizem
+ * "do que enviou" em vez de "correção" e "retirada" soltos.
+ */
+const ENVIADO_PELO_MERCADO = [
   "Produto",
   "Embalagem",
   "Preço",
   "Validade, quando houver",
   "Unidade ou loja correspondente",
-  "Pedido de correção",
-  "Pedido de retirada",
+  "Pedido de correção do que enviou",
+  "Pedido de retirada do que enviou",
 ] as const;
 
 const REGRAS = [
@@ -139,7 +145,7 @@ const DUVIDAS = [
   {
     pergunta: "Posso corrigir uma informação?",
     resposta:
-      "Sim. O processo do piloto prevê pedido de correção e pedido de retirada pelo mesmo canal de conversa.",
+      "Sim, sobre o que o seu mercado enviou: o processo do piloto prevê pedido de correção e de retirada pelo mesmo canal de conversa. Encontrou outra informação incorreta? Avise para que ela seja conferida e corrigida.",
   },
   {
     pergunta: "O mercado paga para aparecer primeiro?",
@@ -222,7 +228,7 @@ function ForMarketsPage() {
                 href="#como-funciona"
                 className="btn-base btn-secondary btn-touch-48 w-full rounded-full sm:w-auto"
               >
-                Ver como funciona
+                Como funciona para o mercado
               </a>
             </div>
           </div>
@@ -281,22 +287,34 @@ function ForMarketsPage() {
         <section aria-labelledby="controle-titulo" className="space-y-3">
           <div>
             <h2 id="controle-titulo" className="font-display text-xl sm:text-2xl">
-              Você escolhe o que aparece
+              Você escolhe quais produtos enviar
             </h2>
             <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              A informação é do mercado. O que o mercado manda é o que aparece — e o que ele pedir
-              para corrigir ou retirar sai do ar.
+              O mercado pode enviar produtos selecionados e pedir a correção ou retirada das
+              informações que forneceu.
             </p>
           </div>
 
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {CONTROLES.map((item) => (
+            {ENVIADO_PELO_MERCADO.map((item) => (
               <li key={item} className="card-compact bg-surface flex items-start gap-2 text-sm">
                 <Tag aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
                 <span className="min-w-0">{item}</span>
               </li>
             ))}
           </ul>
+
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Comparações orgânicas legítimas seguem as mesmas regras para todos. Pagamento não muda a
+            ordem dos resultados.
+          </p>
+
+          <div className="card-compact bg-surface max-w-prose">
+            <p className="text-sm font-bold">Encontrou uma informação incorreta?</p>
+            <p className="meta-text mt-0.5">
+              Avise o ViPreço para que ela seja conferida e corrigida — venha de onde vier.
+            </p>
+          </div>
 
           <p className="max-w-prose text-sm text-muted-foreground">
             O ViPreço não altera preço de caixa, estoque nem a operação interna do mercado. Nesta

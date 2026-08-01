@@ -14,6 +14,14 @@
 export const WHATSAPP_CONSUMER_MESSAGE = "Quero receber os Achados de Artemis";
 
 /**
+ * Mensagem de quem tem um mercado (Parte 3, seções A e H do mandato). Mesmo destino, mesma
+ * mecânica — só o texto muda, para que a conversa já comece dizendo de onde a pessoa veio.
+ * Não alterar sem decisão do PMO.
+ */
+export const WHATSAPP_MARKET_MESSAGE =
+  "Tenho um mercado e quero conhecer o piloto do ViPreço em Artemis";
+
+/**
  * Reduz o número a dígitos e valida como E.164 sem o "+": DDI + assinante, 10 a 15 dígitos,
  * nunca começando em zero. Devolve `null` para qualquer coisa que não sirva — configuração
  * malformada não vira link.
@@ -42,11 +50,26 @@ export function whatsappLink(
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
+/** O número configurado no ambiente, quando existe — a única origem do destino em todo o produto. */
+function configuredNumber(): string | undefined {
+  return typeof import.meta.env.VITE_WHATSAPP_NUMBER === "string"
+    ? import.meta.env.VITE_WHATSAPP_NUMBER
+    : undefined;
+}
+
 /** O destino único do CTA do consumidor, lido da configuração do ambiente. */
 export function consumerWhatsappLink(
-  configured: string | undefined = typeof import.meta.env.VITE_WHATSAPP_NUMBER === "string"
-    ? import.meta.env.VITE_WHATSAPP_NUMBER
-    : undefined,
+  configured: string | undefined = configuredNumber(),
 ): string | null {
   return whatsappLink(configured);
+}
+
+/**
+ * O mesmo destino, com a mensagem de quem tem um mercado. Um número só no produto inteiro: quem
+ * responde é a mesma pessoa, e o texto pré-preenchido é o que diz de onde a conversa veio.
+ */
+export function marketWhatsappLink(
+  configured: string | undefined = configuredNumber(),
+): string | null {
+  return whatsappLink(configured, WHATSAPP_MARKET_MESSAGE);
 }

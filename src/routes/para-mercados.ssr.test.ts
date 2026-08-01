@@ -249,15 +249,34 @@ describe("o que a página promete — e o que ela não promete", () => {
 
 describe("pontuação da copy pública", () => {
   /**
-   * A interface, sem o que não é lido por ninguém: o `<head>` e os blocos de script (o estado de
+   * A interface, sem o que não é lido por ninguém: o `<head>` e os blocos de código (o estado de
    * hidratação repete strings do documento e não é copy). Sobram texto visível e atributos —
    * `aria-label`, `alt` e afins são copy para quem usa leitor de tela.
+   *
+   * Recorte de leitura sobre HTML que este próprio teste acabou de renderizar, não sanitização:
+   * nada aqui protege contra entrada hostil, e a busca é literal (`indexOf`) justamente para não
+   * ter cara de filtro de tag por expressão regular, que é frágil e não é o que se quer aqui.
    */
   function interfacePublica(fonte: string): string {
-    return fonte
-      .slice(fonte.indexOf("<body"))
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+    let resto = fonte.slice(fonte.indexOf("<body"));
+    let visivel = "";
+
+    for (;;) {
+      const candidatos = ["script", "style"]
+        .map((tag) => ({ tag, inicio: resto.indexOf(`<${tag}`) }))
+        .filter(({ inicio }) => inicio !== -1)
+        .sort((a, b) => a.inicio - b.inicio);
+
+      const primeiro = candidatos[0];
+      if (!primeiro) return visivel + resto;
+
+      const fechamento = `</${primeiro.tag}>`;
+      const fim = resto.indexOf(fechamento, primeiro.inicio);
+      if (fim === -1) return visivel + resto.slice(0, primeiro.inicio);
+
+      visivel += resto.slice(0, primeiro.inicio);
+      resto = resto.slice(fim + fechamento.length);
+    }
   }
 
   it("não usa travessão em lugar nenhum da interface", () => {
@@ -267,6 +286,9 @@ describe("pontuação da copy pública", () => {
       ["sem destino configurado", htmlSemDestino],
     ] as const) {
       const publico = interfacePublica(fonte);
+      // O recorte não pode ter comido a página: se sobrasse pouco, o teste passaria à toa.
+      expect(publico, nome).toContain("Seu mercado mais perto de quem compra no bairro");
+      expect(publico, nome).toContain("Dúvidas frequentes");
       const travessoes = publico.match(/[—–]/g) ?? [];
       expect(travessoes, `${nome}: a interface não pode ter travessão`).toHaveLength(0);
     }

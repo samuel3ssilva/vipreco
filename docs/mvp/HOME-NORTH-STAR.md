@@ -145,16 +145,30 @@ compartilhamento, alvos), 2C (estados da busca), 2B (hero e ordem), 2A (card ofi
 
 ## Baseline técnico da Parte 2
 
-`a4418af` — commit da `main` aceito pelo PMO como baseline oficial da Parte 2, em 01/08/2026.
+**Baseline funcional da Parte 2: `a4418af`.** Commit da `main` aceito pelo PMO em 01/08/2026 como
+o estado de referência do código da Parte 2.
+
+**Deploy de staging correspondente: run `30678532699`**, disparado na `main` com
+`headSha a4418af`. É esse run que publicou o código do baseline.
 
 | O quê                | Estado                                                                        |
 | -------------------- | ----------------------------------------------------------------------------- |
 | PRs contidos         | #37 (`ece616e`), #38 (`9710668`), #39 (`8efac37`), #40 (`a4418af`)             |
 | Testes               | 284 verdes em 29 arquivos                                                     |
 | CI e CodeQL          | verdes                                                                        |
-| Deploy de staging    | run `30678532699`, disparado na `main`, `headSha a4418af`                     |
 | Produção             | inalterada — último deploy em 30/07 (`b88e514`), sem nada da Parte 2          |
 | Schema e dados reais | inalterados — nenhum arquivo de `supabase/migrations` tocado nos quatro PRs   |
+
+### Baseline não é o mesmo que o topo da `main`
+
+O baseline marca **o código**, não o ponteiro da branch. A `main` pode avançar depois de `a4418af`
+por mudanças exclusivamente documentais — este próprio registro é uma delas — sem que o código
+publicado em staging mude: enquanto nenhum deploy novo for disparado, staging continua servindo o
+que o run `30678532699` publicou a partir de `a4418af`.
+
+O que invalida o baseline é mudança em `src/`, workflows, infraestrutura, configuração, schema ou
+dados — não um commit de documentação. Alterado o código, um baseline novo precisa ser fixado, com
+seu próprio deploy e seu próprio smoke.
 
 Os três primeiros PRs entraram por merge commit e seus commits seguem alcançáveis pela `main`; o
 #40 entrou por squash, de propósito, para não trazer junto o histórico da branch. As branches

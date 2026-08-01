@@ -224,9 +224,11 @@ function ForMarketsPage() {
               <MarketWhatsAppCta microcopy={HERO_MICROCOPY} />
               {/* Âncora, não outra rota: o próximo passo de quem ainda não quer conversar está
                   logo abaixo, na mesma página. */}
+              {/* `sm:whitespace-nowrap`: em uma linha só a partir de `sm`, para o botão ficar da
+                  mesma altura do convite ao lado — medido em 1280 px, 56 px contra 48 px. */}
               <a
                 href="#como-funciona"
-                className="btn-base btn-secondary btn-touch-48 w-full rounded-full sm:w-auto"
+                className="btn-base btn-secondary btn-touch-48 w-full rounded-full sm:w-auto sm:whitespace-nowrap"
               >
                 Como funciona para o mercado
               </a>

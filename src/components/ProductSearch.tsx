@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { getProductsPriceStats, searchProducts } from "@/services/catalog";
+import { searchState, type SearchState } from "@/lib/search-state";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/types/domain";
 
@@ -13,6 +14,32 @@ interface ProductSearchProps {
   /** Quando definido, o resultado aparece em lista fixa e não em painel flutuante. */
   inline?: boolean;
   onTermChange?: (term: string) => void;
+}
+
+/** O que o leitor de tela ouve em cada estado. */
+const ANUNCIO: Record<SearchState, (dados: { count: number }) => string> = {
+  inicial: () => "",
+  carregando: () => "Buscando produtos",
+  erro: () => "Não foi possível atualizar a busca agora.",
+  vazio: () => "Nenhum produto encontrado para esta busca.",
+  resultado: ({ count }) => `${count} produtos encontrados`,
+};
+
+/**
+ * Esqueleto da busca. Existe só depois de uma ação explícita — o visitante digitou pelo menos
+ * duas letras. A Home nunca chega ao navegador com ele: o HTML inicial não tem busca em curso.
+ */
+function SearchSkeleton() {
+  return (
+    <div className="space-y-2 p-4" aria-hidden="true">
+      {[0, 1, 2].map((linha) => (
+        <div key={linha} className="space-y-1.5">
+          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ProductSearch({
@@ -76,7 +103,8 @@ export function ProductSearch({
     navigate({ to: "/produto/$productId", params: { productId: product.id } });
   }
 
-  const showPanel = (inline || open) && enabled;
+  const estado = searchState({ enabled, isFetching, isError, count: results.length });
+  const showPanel = (inline || open) && estado !== "inicial";
 
   return (
     <div ref={containerRef} className="relative">
@@ -121,23 +149,28 @@ export function ProductSearch({
           }
         >
           <div aria-live="polite" className="sr-only">
-            {isFetching ? "Buscando produtos" : `${results.length} produtos encontrados`}
+            {ANUNCIO[estado]({ count: results.length })}
           </div>
-          {isError ? (
+          {estado === "erro" ? (
+            // Erro factual: diz o que não aconteceu e o que fazer. Não culpa a conexão do
+            // visitante, não promete atualização instantânea e não apaga nada do que já está na
+            // tela — os Achados da primeira dobra vêm do loader e seguem visíveis.
             <div className="p-4 text-sm" role="alert">
-              <p className="font-semibold">Não conseguimos buscar agora.</p>
-              <p className="meta-text">Verifique sua conexão com a internet.</p>
+              <p className="font-semibold">Não foi possível atualizar a busca agora.</p>
+              <p className="meta-text">Confira novamente em alguns instantes.</p>
               <button
                 type="button"
-                className="btn-base btn-secondary btn-sm mt-2"
+                className="btn-base btn-secondary btn-sm btn-touch-48 mt-2"
                 onClick={() => refetch()}
               >
                 Tentar novamente
               </button>
             </div>
-          ) : isFetching ? (
-            <p className="meta-text p-4">Buscando produtos…</p>
-          ) : results.length === 0 ? (
+          ) : estado === "carregando" ? (
+            <SearchSkeleton />
+          ) : estado === "vazio" ? (
+            // Vazio não é erro: não é anunciado como alerta, não tem tom de falha e oferece
+            // uma saída concreta.
             <div className="p-4">
               <p className="font-semibold">Ainda não temos esse produto no catálogo.</p>
               <p className="meta-text mt-0.5">
@@ -174,15 +207,22 @@ export function ProductSearch({
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
-                      <span className="meta-text">
-                        {stat
-                          ? stat.marketCount > 0
+                      {stat ? (
+                        <span className="meta-text">
+                          {stat.marketCount > 0
                             ? `A partir de ${formatPrice(stat.lowest ?? 0)} · Atualizado em ${stat.marketCount} ${
                                 stat.marketCount === 1 ? "mercado" : "mercados"
                               }`
-                            : "Preço em atualização."
-                          : "Carregando preços…"}
-                      </span>
+                            : "Preço em atualização."}
+                        </span>
+                      ) : (
+                        // Esqueleto no lugar do texto de carregamento, que piscava a
+                        // cada tecla. Só aparece depois de uma busca, nunca no HTML inicial.
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 block h-3 w-40 animate-pulse rounded bg-muted"
+                        />
+                      )}
                     </button>
                   </li>
                 );

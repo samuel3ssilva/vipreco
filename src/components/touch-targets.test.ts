@@ -58,6 +58,14 @@ describe("alvo de toque de 48 px", () => {
   // A partir da Parte 2, todo controle interativo novo ou alterado nasce com 48 px. O varrimento
   // abaixo cobre os arquivos tocados: se um `btn-sm` entrar sem `btn-touch-48`, o alvo cai para
   // os 44 px históricos sem ninguém perceber.
+  it("o CTA de mercado tem 48 px de altura mínima", () => {
+    const mercado = readFileSync(
+      join(process.cwd(), "src", "components", "MarketWhatsAppCta.tsx"),
+      "utf-8",
+    );
+    expect(mercado).toContain("btn-touch-48");
+  });
+
   it("nenhum controle das telas da Parte 2 usa btn-sm sem o alvo de 48 px", () => {
     const arquivos = [
       "AchadoCard.tsx",
@@ -66,6 +74,7 @@ describe("alvo de toque de 48 px", () => {
       "LocalStory.tsx",
       "ShareAchadoButton.tsx",
       "StickyWhatsAppCta.tsx",
+      "MarketWhatsAppCta.tsx",
     ];
     for (const arquivo of arquivos) {
       const fonte = readFileSync(join(process.cwd(), "src", "components", arquivo), "utf-8");

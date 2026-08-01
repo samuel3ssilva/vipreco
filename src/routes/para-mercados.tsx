@@ -253,7 +253,9 @@ function ForMarketsPage() {
             </p>
           </div>
 
-          <ol className="grid gap-3 sm:grid-cols-3">
+          {/* Três colunas só a partir de `md`. Em 640 px cada passo virava uma coluna de 189 px:
+              texto de cinco palavras por linha, card de 246 px de altura. Medido no navegador. */}
+          <ol className="grid gap-3 md:grid-cols-3">
             {ETAPAS.map(({ Icon, titulo, texto }) => (
               <li key={titulo} className="card-base">
                 <Icon aria-hidden="true" className="size-5 text-primary" />

@@ -18,7 +18,7 @@ existe.
 | 1   | Primeira dobra                           | para quem é, o que resolve, o que fazer depois     |
 | 2   | Como funciona                            | os três passos                                     |
 | 3   | Não precisa cadastrar o mercado inteiro  | começar com poucos produtos                        |
-| 4   | Você escolhe o que aparece               | o que o mercado informa, corrige e retira          |
+| 4   | Você escolhe quais produtos enviar       | o que o mercado envia, corrige e retira            |
 | 5   | As regras valem para todo mundo          | procedência, validade, ordem não vendida, correção |
 | 6   | O piloto está sendo preparado em Artemis | convite para conversa, não inscrição               |
 | 7   | Dúvidas frequentes                       | as seis perguntas do mandato                       |
@@ -56,6 +56,48 @@ O mandato lista o que não pode aparecer; o teste é que garante que continue n�
 
 O relatório semanal de exemplo que existia na versão anterior saiu por isso: os números eram
 inventados e a seção sugeria uma inteligência de mercado que não existe.
+
+## A fronteira do que o mercado controla
+
+Revisão comercial do PMO (01/08/2026). A primeira versão da seção 4 dizia "Você escolhe o que
+aparece" e "o que o mercado manda é o que aparece" — copy que, lida por um dono de mercado,
+sugeria controle sobre a comparação orgânica inteira: sobre informação legítima de terceiros e
+sobre a ordem dos resultados.
+
+A fronteira agora é explícita e tem três partes:
+
+1. **o que o mercado envia** — produto, embalagem, preço, validade quando houver, unidade, e o
+   pedido de correção ou de retirada **do que ele mesmo enviou**;
+2. **o que não muda** — "comparações orgânicas legítimas seguem as mesmas regras para todos.
+   Pagamento não muda a ordem dos resultados";
+3. **o que qualquer pessoa pode fazer** — avisar sobre informação incorreta, venha de onde vier,
+   para que seja conferida e corrigida.
+
+`para-mercados.ssr.test.ts` tem um guardrail de copy para isso: a página não pode voltar a dizer
+"Você escolhe o que aparece", "o que o mercado manda é o que aparece", "escolha sua posição",
+"defina a ordem" ou equivalentes. A frase aprovada **"Tem um mercado no bairro? Você escolhe o que
+aparece."** continua valendo na Home (`LocalStory`), como teaser — o guardrail é da rota, não do
+produto inteiro.
+
+## Prévia de link
+
+A rota tem título, descrição e `og:image` próprios: a prévia que o Founder manda para um dono de
+mercado não pode ser a do consumidor. `ogImageMeta()` passou a aceitar caminho e alt; sem
+argumento, entrega o asset de sempre — nenhuma outra rota muda.
+
+| O quê          | Valor                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `title`        | ViPreço para mercados de Artemis                                                                 |
+| `description`  | Conheça o piloto local do ViPreço e veja como divulgar alguns produtos com preço, data e origem. |
+| `og:image`     | `/og/vipreco-og-para-mercados.png` (absoluta quando `VITE_PUBLIC_SITE_URL` existe)               |
+| Dimensões      | 1200×630, `image/png`                                                                            |
+| `twitter:card` | `summary_large_image`                                                                            |
+
+O asset é **estático**, como o do consumidor: nenhum gerador dinâmico, nenhuma dependência
+externa, nenhum número, métrica, depoimento, logo de mercado real, promessa de venda ou urgência.
+Só a promessa da página e o estado real do piloto — "Piloto em preparação · Artemis". O fonte
+vetorial fica ao lado, em `public/og/vipreco-og-para-mercados.svg`, e o PNG foi rasterizado a
+partir dele com as fontes oficiais (Bricolage Grotesque 800 e Public Sans 600).
 
 ## O exemplo fictício
 

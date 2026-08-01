@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ViPreço para mercados de Artemis — piloto em preparação">
+  <title>ViPreço para mercados de Artemis</title>
+
+  <!-- Visto v2: creme à esquerda, verde da marca à direita. Sem número, sem métrica, sem promessa. -->
+  <rect width="1200" height="630" fill="#FBF7EC"/>
+  <rect x="800" width="400" height="630" fill="#0E5C3C"/>
+
+  <!-- Marca -->
+  <g transform="translate(64 64)">
+    <g transform="scale(1.05)">
+      <polyline points="9,26 20,38 39,17" fill="none" stroke="#0E5C3C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="39" cy="6.5" r="4.6" fill="#F5C24B"/>
+    </g>
+    <text x="62" y="40" font-family="Bricolage Grotesque" font-weight="800" font-size="40" letter-spacing="-1.4" fill="#10231C">Vi<tspan fill="#4E8570">Preço</tspan></text>
+  </g>
+
+  <!-- Promessa -->
+  <text x="64" y="318" font-family="Bricolage Grotesque" font-weight="800" font-size="50" letter-spacing="-1.6" fill="#10231C">Seu mercado mais perto</text>
+  <text x="64" y="382" font-family="Bricolage Grotesque" font-weight="800" font-size="50" letter-spacing="-1.6" fill="#10231C">de quem compra no bairro</text>
+  <text x="64" y="470" font-family="Public Sans" font-weight="600" font-size="27" fill="#5B6B63">Piloto em preparação · Artemis</text>
+
+  <!-- Símbolo da marca no painel -->
+  <g transform="translate(904 219) scale(4)">
+    <polyline points="9,26 20,38 39,17" fill="none" stroke="#FBF7EC" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="39" cy="6.5" r="4.6" fill="#F5C24B"/>
+  </g>
+</svg>

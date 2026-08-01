@@ -15,6 +15,21 @@ export const OG_IMAGE_PATH = "/og/vipreco-og-demo.png";
 export const OG_IMAGE_WIDTH = "1200";
 export const OG_IMAGE_HEIGHT = "630";
 
+/** Texto alternativo do asset padrão — o do consumidor. */
+export const OG_IMAGE_ALT =
+  "ViPreço — Achados de Artemis. Exemplo fictício de como um preço aparece, com faixa de demonstração.";
+
+/**
+ * Asset da proposta para mercados (Parte 3). Também estático, também 1200×630, também sem
+ * gerador dinâmico — e sem número, métrica, depoimento ou promessa de venda: só a promessa da
+ * página e o estado real do piloto. Fonte vetorial ao lado, em
+ * `public/og/vipreco-og-para-mercados.svg`.
+ */
+export const OG_IMAGE_MARKETS_PATH = "/og/vipreco-og-para-mercados.png";
+
+export const OG_IMAGE_MARKETS_ALT =
+  "ViPreço para mercados de Artemis — seu mercado mais perto de quem compra no bairro. Piloto em preparação.";
+
 /**
  * URL absoluta do asset quando o ambiente informa a sua origem pública
  * (`VITE_PUBLIC_SITE_URL`), relativa caso contrário.
@@ -36,18 +51,21 @@ export function absoluteAssetUrl(
   }
 }
 
-/** Metadados de prévia de link comuns a todas as rotas. */
-export function ogImageMeta(): Array<{ property?: string; name?: string; content: string }> {
+/**
+ * Metadados de prévia de link. Sem argumento, entrega o asset do consumidor — é o padrão da raiz
+ * e de toda rota que não pede outro. Uma rota com asset próprio passa o seu; as demais não mudam.
+ */
+export function ogImageMeta({ path, alt }: { path?: string; alt?: string } = {}): Array<{
+  property?: string;
+  name?: string;
+  content: string;
+}> {
   return [
-    { property: "og:image", content: absoluteAssetUrl(OG_IMAGE_PATH) },
+    { property: "og:image", content: absoluteAssetUrl(path ?? OG_IMAGE_PATH) },
     { property: "og:image:type", content: "image/png" },
     { property: "og:image:width", content: OG_IMAGE_WIDTH },
     { property: "og:image:height", content: OG_IMAGE_HEIGHT },
-    {
-      property: "og:image:alt",
-      content:
-        "ViPreço — Achados de Artemis. Exemplo fictício de como um preço aparece, com faixa de demonstração.",
-    },
+    { property: "og:image:alt", content: alt ?? OG_IMAGE_ALT },
     { name: "twitter:card", content: "summary_large_image" },
   ];
 }

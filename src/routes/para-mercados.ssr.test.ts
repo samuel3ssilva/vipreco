@@ -9,6 +9,7 @@ import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/rea
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { routeTree } from "@/routeTree.gen";
 import { WHATSAPP_MARKET_MESSAGE } from "@/lib/whatsapp";
+import { OG_IMAGE_MARKETS_ALT, OG_IMAGE_MARKETS_PATH } from "@/lib/og";
 
 async function renderRoute(path: string): Promise<string> {
   const router = createRouter({
@@ -309,6 +310,61 @@ describe("nada é coletado nesta página", () => {
   it("não existe grupo, canal nem automação de WhatsApp", () => {
     expect(html).not.toContain("chat.whatsapp.com");
     expect(html).not.toMatch(/graph\.facebook|business_management|twilio/i);
+  });
+});
+
+describe("prévia de link da rota", () => {
+  function metaDoHtml(fonte: string, atributo: string, chave: string): string | null {
+    const achado = fonte.match(new RegExp(`<meta ${atributo}="${chave}" content="([^"]*)"`, "i"));
+    return achado ? achado[1] : null;
+  }
+
+  it("tem título e descrição próprios, não os genéricos do produto", () => {
+    expect(html).toContain("<title>ViPreço para mercados de Artemis</title>");
+    expect(metaDoHtml(html, "name", "description")).toBe(
+      "Conheça o piloto local do ViPreço e veja como divulgar alguns produtos com preço, data e origem.",
+    );
+    expect(metaDoHtml(html, "property", "og:title")).toBe("ViPreço para mercados de Artemis");
+    expect(metaDoHtml(html, "property", "og:description")).toBe(
+      "Conheça o piloto local do ViPreço e veja como divulgar alguns produtos com preço, data e origem.",
+    );
+  });
+
+  it("aponta para o asset próprio, com dimensões, tipo, alt e card grande", () => {
+    expect(metaDoHtml(html, "property", "og:image")).toContain(OG_IMAGE_MARKETS_PATH);
+    expect(metaDoHtml(html, "property", "og:image")).not.toContain("vipreco-og-demo");
+    expect(metaDoHtml(html, "property", "og:image:type")).toBe("image/png");
+    expect(metaDoHtml(html, "property", "og:image:width")).toBe("1200");
+    expect(metaDoHtml(html, "property", "og:image:height")).toBe("630");
+    expect(metaDoHtml(html, "property", "og:image:alt")).toBe(OG_IMAGE_MARKETS_ALT);
+    expect(metaDoHtml(html, "name", "twitter:card")).toBe("summary_large_image");
+    expect(metaDoHtml(html, "property", "og:type")).toBe("website");
+  });
+
+  it("não muda a prévia das outras rotas", async () => {
+    const home = await renderRoute("/");
+    expect(metaDoHtml(home, "property", "og:image")).toContain("vipreco-og-demo.png");
+    expect(metaDoHtml(home, "property", "og:title")).toBe("ViPreço — onde está mais barato hoje");
+  });
+});
+
+// Regressão da versão anterior da página: o relatório semanal de exemplo trazia números
+// inventados e sugeria uma inteligência de mercado que não existe. Não pode voltar por descuido.
+describe("o relatório semanal antigo não voltou", () => {
+  it("nenhum vestígio da seção removida", () => {
+    for (const trecho of [
+      "Exemplo de relatório semanal",
+      "Ofertas publicadas na semana",
+      "Vezes que seu mercado apareceu",
+      "Vezes em que seu mercado tinha o menor preço",
+      "48 (exemplo)",
+      "21 (exemplo)",
+      "resumo semanal",
+      "números ilustrativos",
+    ]) {
+      expect(html, `o relatório antigo não pode voltar: "${trecho}"`).not.toContain(trecho);
+      expect(htmlSemDestino).not.toContain(trecho);
+    }
   });
 });
 

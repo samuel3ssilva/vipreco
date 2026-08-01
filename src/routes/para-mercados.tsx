@@ -4,6 +4,12 @@ import { AppShell } from "@/components/AppShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import { SourceBadge } from "@/components/SourceBadge";
 import { PILOT_LOCALITY } from "@/lib/pilot";
+import { OG_IMAGE_MARKETS_ALT, OG_IMAGE_MARKETS_PATH, ogImageMeta } from "@/lib/og";
+
+/** Título e descrição próprios da rota — é o que aparece na aba e na prévia do link. */
+const PAGE_TITLE = "ViPreço para mercados de Artemis";
+const PAGE_DESCRIPTION =
+  "Conheça o piloto local do ViPreço e veja como divulgar alguns produtos com preço, data e origem.";
 
 /**
  * Proposta para supermercados independentes (Parte 3, seções A–I do mandato).
@@ -25,20 +31,14 @@ import { PILOT_LOCALITY } from "@/lib/pilot";
 export const Route = createFileRoute("/para-mercados")({
   head: () => ({
     meta: [
-      { title: "Para mercados — ViPreço" },
-      {
-        name: "description",
-        content:
-          "Seu mercado mais perto de quem compra no bairro: envie alguns produtos pelo WhatsApp e o ViPreço organiza preço, data e origem para os moradores. Piloto em preparação em Artemis.",
-      },
-      { property: "og:title", content: "Para mercados — ViPreço" },
-      {
-        property: "og:description",
-        content:
-          "Envie alguns produtos pelo WhatsApp. O ViPreço organiza preço, data e origem para os moradores do bairro.",
-      },
+      { title: PAGE_TITLE },
+      { name: "description", content: PAGE_DESCRIPTION },
+      { property: "og:title", content: PAGE_TITLE },
+      { property: "og:description", content: PAGE_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      // Asset próprio: a prévia que o Founder manda para um dono de mercado não pode ser a do
+      // consumidor. `summary_large_image` vem junto, do mesmo helper.
+      ...ogImageMeta({ path: OG_IMAGE_MARKETS_PATH, alt: OG_IMAGE_MARKETS_ALT }),
     ],
   }),
   component: ForMarketsPage,

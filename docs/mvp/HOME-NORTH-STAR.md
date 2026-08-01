@@ -142,3 +142,21 @@ verdade e prova que a disputa deixou de existir.
 
 Cada PR da Parte 2 é revertível isoladamente, na ordem inversa do merge: 2D (CTA fixo,
 compartilhamento, alvos), 2C (estados da busca), 2B (hero e ordem), 2A (card oficial).
+
+## Baseline técnico da Parte 2
+
+`a4418af` — commit da `main` aceito pelo PMO como baseline oficial da Parte 2, em 01/08/2026.
+
+| O quê                | Estado                                                                        |
+| -------------------- | ----------------------------------------------------------------------------- |
+| PRs contidos         | #37 (`ece616e`), #38 (`9710668`), #39 (`8efac37`), #40 (`a4418af`)             |
+| Testes               | 284 verdes em 29 arquivos                                                     |
+| CI e CodeQL          | verdes                                                                        |
+| Deploy de staging    | run `30678532699`, disparado na `main`, `headSha a4418af`                     |
+| Produção             | inalterada — último deploy em 30/07 (`b88e514`), sem nada da Parte 2          |
+| Schema e dados reais | inalterados — nenhum arquivo de `supabase/migrations` tocado nos quatro PRs   |
+
+Os três primeiros PRs entraram por merge commit e seus commits seguem alcançáveis pela `main`; o
+#40 entrou por squash, de propósito, para não trazer junto o histórico da branch. As branches
+`feat/lp-pr2a-achado-card`, `feat/lp-pr2b-hero-home-order`, `feat/lp-pr2c-busca-estados` e
+`feat/lp-pr2d-cta-fixo-compartilhar` foram apagadas depois disso.

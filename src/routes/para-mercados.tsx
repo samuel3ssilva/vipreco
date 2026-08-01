@@ -266,6 +266,13 @@ function ForMarketsPage() {
               </li>
             ))}
           </ol>
+
+          {/* Os três passos descrevem como o piloto vai funcionar. Sem esta linha, o presente do
+              indicativo dos cards poderia ser lido como operação em curso — e não está. */}
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Nada disso está em operação hoje: o piloto ainda está sendo preparado, e o primeiro
+            passo é a conversa.
+          </p>
         </section>
 
         <section aria-labelledby="poucos-produtos-titulo" className="card-base space-y-2">

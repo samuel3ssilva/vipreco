@@ -120,6 +120,11 @@ describe("o que a página promete — e o que ela não promete", () => {
       return posicao;
     });
     expect(posicoes).toEqual([...posicoes].sort((a, b) => a - b));
+    // Os passos descrevem como o piloto vai funcionar; a frase abaixo impede que o presente do
+    // indicativo dos cards seja lido como operação em curso.
+    expect(html).toContain(
+      "Nada disso está em operação hoje: o piloto ainda está sendo preparado, e o primeiro passo é a conversa.",
+    );
   });
 
   it("deixa claro que a compra acontece na loja", () => {

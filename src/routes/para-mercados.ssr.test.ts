@@ -156,7 +156,31 @@ describe("o que a página promete — e o que ela não promete", () => {
 
   it("não precisa cadastrar o mercado inteiro, e sem quantidade mínima", () => {
     expect(html).toContain("Não precisa cadastrar o mercado inteiro");
-    expect(html).toContain("não existe quantidade mínima nem obrigação de envio");
+    expect(html).toContain("Não existe quantidade mínima nem obrigação de envio");
+  });
+
+  it("diz que o mercado pode escolher os produtos que queira destacar", () => {
+    expect(html).toContain(
+      "O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou produtos com estoque alto. Não é necessário cadastrar o mercado inteiro.",
+    );
+  });
+
+  it("fala em destacar e divulgar, nunca em anunciar — e sem validade curta nem urgência", () => {
+    // "Anunciar" leria como mídia paga, que não existe. Validade curta e queima de estoque são
+    // hipótese de entrevista, não proposta desta página.
+    for (const termo of [
+      "anunciar",
+      "anúncio",
+      "perto do vencimento",
+      "próximo do vencimento",
+      "queima de estoque",
+      "desconto garantido",
+      "contagem regressiva",
+    ]) {
+      expect(html.toLowerCase(), `a página não deve conter "${termo}"`).not.toContain(termo);
+    }
+    expect(html).toContain("destacar");
+    expect(html).toContain("divulgar");
   });
 
   it("limita o controle do mercado ao que o próprio mercado enviou", () => {
@@ -176,7 +200,11 @@ describe("o que a página promete — e o que ela não promete", () => {
 
   it("abre um canal de correção para qualquer informação incorreta, não só a do mercado", () => {
     expect(html).toContain("Encontrou uma informação incorreta?");
-    expect(html).toContain("Avise o ViPreço para que ela seja conferida e corrigida");
+    // O que a página promete é conferir a origem e corrigir — as duas origens ditas por extenso,
+    // sem sugerir que o mercado manda na informação que não é dele.
+    expect(html).toContain(
+      "Avise o ViPreço. Nós conferimos a origem e fazemos a correção, seja uma informação enviada pelo mercado ou verificada pela nossa equipe.",
+    );
   });
 
   it("nunca atribui ao mercado controle sobre o que aparece ou sobre a ordem", () => {
@@ -201,7 +229,38 @@ describe("o que a página promete — e o que ela não promete", () => {
     expect(html).toContain(
       "A operação inicial será pequena, manual e acompanhada de perto para entender o que funciona para moradores e mercados.",
     );
-    expect(html).toContain("não é uma inscrição, e nada foi publicado ainda");
+    expect(html).toContain("Não é uma inscrição, e nada foi publicado ainda");
+  });
+});
+
+describe("pontuação da copy pública", () => {
+  /**
+   * A interface, sem o que não é lido por ninguém: o `<head>` e os blocos de script (o estado de
+   * hidratação repete strings do documento e não é copy). Sobram texto visível e atributos —
+   * `aria-label`, `alt` e afins são copy para quem usa leitor de tela.
+   */
+  function interfacePublica(fonte: string): string {
+    return fonte
+      .slice(fonte.indexOf("<body"))
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+  }
+
+  it("não usa travessão em lugar nenhum da interface", () => {
+    // Revisão do Founder: frases curtas, pontos, vírgulas e dois-pontos. O travessão saiu.
+    for (const [nome, fonte] of [
+      ["com destino configurado", html],
+      ["sem destino configurado", htmlSemDestino],
+    ] as const) {
+      const publico = interfacePublica(fonte);
+      const travessoes = publico.match(/[—–]/g) ?? [];
+      expect(travessoes, `${nome}: a interface não pode ter travessão`).toHaveLength(0);
+    }
+  });
+
+  it("mantém o hífen onde ele é gramatical", () => {
+    // A regra é sobre travessão, não sobre hífen: "torrado e moído" convive com "dois-pontos".
+    expect(html).toContain("Café torrado e moído, tradicional");
   });
 });
 

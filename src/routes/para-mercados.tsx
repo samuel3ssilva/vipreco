@@ -70,13 +70,13 @@ const ETAPAS = [
     Icon: MessageCircle,
     titulo: "1. O mercado envia alguns produtos",
     texto:
-      "Produto, embalagem, preço, validade quando houver e uma evidência simples — a foto da etiqueta já serve. Pelo WhatsApp, do jeito que for mais fácil.",
+      "Produto, embalagem, preço, validade quando houver e uma evidência simples. A foto da etiqueta já serve. Pelo WhatsApp, do jeito que for mais fácil.",
   },
   {
     Icon: ClipboardCheck,
     titulo: "2. O ViPreço organiza e confere",
     texto:
-      "Cada preço é publicado com mercado, data e origem — e com a validade, quando o mercado informa. Nesta fase, uma pessoa confere cada informação antes de publicar.",
+      "Cada preço é publicado com mercado, data e origem. A validade entra quando o mercado informa. Nesta fase, uma pessoa confere cada informação antes de publicar.",
   },
   {
     Icon: Store,
@@ -110,7 +110,7 @@ const REGRAS = [
   },
   {
     regra: "Validade só quando o mercado informa.",
-    porque: "O ViPreço não inventa prazo — sem informação, nenhum prazo é exibido.",
+    porque: "O ViPreço não inventa prazo. Sem informação, nenhum prazo é exibido.",
   },
   {
     regra: "A ordem não é vendida.",
@@ -140,7 +140,7 @@ const DUVIDAS = [
   {
     pergunta: "Preciso enviar todos os produtos?",
     resposta:
-      "Não. O piloto pode começar com produtos selecionados — aqueles que fizerem sentido divulgar.",
+      "Não. O piloto pode começar com produtos selecionados: aqueles que fizerem sentido divulgar.",
   },
   {
     pergunta: "Posso corrigir uma informação?",
@@ -237,7 +237,7 @@ function ForMarketsPage() {
             <ExemploDeAchado />
             <p className="meta-text mt-2 max-w-prose">
               É assim que a informação do seu mercado aparece para o morador: produto, preço,
-              mercado, data e origem — sempre juntos.
+              mercado, data e origem, sempre juntos.
             </p>
           </div>
         </section>
@@ -278,8 +278,16 @@ function ForMarketsPage() {
             Para participar do piloto, o mercado não precisa cadastrar todos os itens. A ideia é
             começar com alguns produtos que façam sentido divulgar.
           </p>
+          {/* Quem escolhe os produtos é o mercado, e a escolha é de divulgação, não de mídia paga:
+              "destacar" e "divulgar", nunca "anunciar". Sem validade curta, sem queima de estoque
+              e sem urgência — o uso para produtos perto do vencimento segue como hipótese de
+              entrevista, fora desta página. */}
           <p className="max-w-prose text-sm text-muted-foreground">
-            Quantos produtos e com que frequência é assunto da conversa inicial — não existe
+            O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou
+            produtos com estoque alto. Não é necessário cadastrar o mercado inteiro.
+          </p>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Quantos produtos e com que frequência é assunto da conversa inicial. Não existe
             quantidade mínima nem obrigação de envio.
           </p>
         </section>
@@ -311,8 +319,12 @@ function ForMarketsPage() {
 
           <div className="card-compact bg-surface max-w-prose">
             <p className="text-sm font-bold">Encontrou uma informação incorreta?</p>
+            {/* A correção não é privilégio de quem enviou a informação, e também não é promessa de
+                remoção a pedido: o que a página promete é conferir a origem e corrigir. Vale para
+                o que o mercado mandou e para o que a equipe do ViPreço levantou. */}
             <p className="meta-text mt-0.5">
-              Avise o ViPreço para que ela seja conferida e corrigida — venha de onde vier.
+              Avise o ViPreço. Nós conferimos a origem e fazemos a correção, seja uma informação
+              enviada pelo mercado ou verificada pela nossa equipe.
             </p>
           </div>
 
@@ -328,7 +340,7 @@ function ForMarketsPage() {
               As regras valem para todo mundo
             </h2>
             <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              São as mesmas regras que o morador lê na página inicial — não existe uma versão para o
+              São as mesmas regras que o morador lê na página inicial. Não existe uma versão para o
               consumidor e outra para o mercado.
             </p>
           </div>
@@ -370,7 +382,7 @@ function ForMarketsPage() {
             mercados.
           </p>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Por enquanto, o convite é para uma conversa — não é uma inscrição, e nada foi publicado
+            Por enquanto, o convite é para uma conversa. Não é uma inscrição, e nada foi publicado
             ainda.
           </p>
         </section>

@@ -93,6 +93,12 @@ desktop o botão está oculto por `display: none`, e sem essa guarda o CTA da p�
 de foco sem nada para substituí-lo. Rolagem, redimensionamento, rotação e mudança de faixa
 remedem; sair da página devolve o comando ao CTA do fluxo.
 
+O mecanismo virou `StickyCta` na Parte 3, quando `/para-mercados` passou a ter o seu próprio CTA
+fixo (`FOR-MARKETS-PAGE.md`). `StickyWhatsAppCta` é a Home usando esse mecanismo: destino, rótulo,
+marcador no DOM e loja de visibilidade vêm de quem monta. As duas rotas compartilham a regra e
+nada mais — `createStickyCtaStore()` dá uma loja a cada convite, e o fixo de uma rota nunca
+silencia o CTA da outra.
+
 Um caso de borda conhecido, e deliberadamente não tratado: se o CTA da página estiver **com o
 foco** e a pessoa rolar a página com o dedo ou com o mouse até ele sair da tela, ele fica inerte
 enquanto focado e o foco volta para o começo do documento. Chegar nesse estado exige rolar por um
@@ -151,13 +157,13 @@ o estado de referência do código da Parte 2.
 **Deploy de staging correspondente: run `30678532699`**, disparado na `main` com
 `headSha a4418af`. É esse run que publicou o código do baseline.
 
-| O quê                | Estado                                                                        |
-| -------------------- | ----------------------------------------------------------------------------- |
-| PRs contidos         | #37 (`ece616e`), #38 (`9710668`), #39 (`8efac37`), #40 (`a4418af`)             |
-| Testes               | 284 verdes em 29 arquivos                                                     |
-| CI e CodeQL          | verdes                                                                        |
-| Produção             | inalterada — último deploy em 30/07 (`b88e514`), sem nada da Parte 2          |
-| Schema e dados reais | inalterados — nenhum arquivo de `supabase/migrations` tocado nos quatro PRs   |
+| O quê                | Estado                                                                      |
+| -------------------- | --------------------------------------------------------------------------- |
+| PRs contidos         | #37 (`ece616e`), #38 (`9710668`), #39 (`8efac37`), #40 (`a4418af`)          |
+| Testes               | 284 verdes em 29 arquivos                                                   |
+| CI e CodeQL          | verdes                                                                      |
+| Produção             | inalterada — último deploy em 30/07 (`b88e514`), sem nada da Parte 2        |
+| Schema e dados reais | inalterados — nenhum arquivo de `supabase/migrations` tocado nos quatro PRs |
 
 ### Baseline não é o mesmo que o topo da `main`
 

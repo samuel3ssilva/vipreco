@@ -12,6 +12,7 @@ function ler(...caminho: string[]): string {
 
 const rota = ler("src", "routes", "para-mercados.tsx");
 const cta = ler("src", "components", "MarketWhatsAppCta.tsx");
+const fixo = ler("src", "components", "StickyMarketCta.tsx");
 const shell = ler("src", "components", "AppShell.tsx");
 
 describe("a página não consulta nada", () => {
@@ -27,13 +28,13 @@ describe("a página não consulta nada", () => {
   });
 
   it("não faz requisição nenhuma por conta própria", () => {
-    for (const fonte of [rota, cta]) {
+    for (const fonte of [rota, cta, fixo]) {
       expect(fonte).not.toMatch(/\bfetch\s*\(|\baxios\b|XMLHttpRequest/);
     }
   });
 
   it("não grava nada no aparelho de quem visita", () => {
-    for (const fonte of [rota, cta]) {
+    for (const fonte of [rota, cta, fixo]) {
       expect(fonte).not.toMatch(/localStorage|sessionStorage|document\.cookie/);
     }
   });
@@ -56,7 +57,7 @@ describe("nenhum dado de contato coletado", () => {
   });
 
   it("nenhum número de telefone escrito no código", () => {
-    for (const fonte of [rota, cta]) {
+    for (const fonte of [rota, cta, fixo]) {
       expect(fonte).not.toMatch(/wa\.me\/\d/);
       expect(fonte).not.toMatch(/\b\d{10,15}\b/);
     }

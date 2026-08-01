@@ -103,8 +103,9 @@ describe("asset da proposta para mercados (Parte 3)", () => {
       join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH.replace(/\.png$/, ".svg")),
       "utf-8",
     );
-    expect(svg).toContain("Seu mercado mais perto");
-    expect(svg).toContain("Piloto em preparação · Artemis");
+    expect(svg).toContain("Para mercados");
+    expect(svg).toContain("de Artemis");
+    expect(svg).toContain("Piloto em preparação");
     // Nenhum dígito solto no texto exibido: os únicos números do arquivo são coordenadas.
     for (const texto of svg.match(/>([^<>]+)</g) ?? []) {
       expect(texto, `texto com número: ${texto}`).not.toMatch(/\d/);
@@ -114,6 +115,35 @@ describe("asset da proposta para mercados (Parte 3)", () => {
         proibido.toLowerCase(),
       );
     }
+  });
+
+  it("mantém tudo o que importa na área central segura de 630×500", () => {
+    // O WhatsApp Desktop reduz a prévia a uma miniatura lateral e corta as bordas. Nada
+    // essencial pode viver fora do centro; as faixas verdes das laterais são ornamento.
+    const svg = readFileSync(
+      join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH.replace(/\.png$/, ".svg")),
+      "utf-8",
+    );
+    const SEGURO = { x0: 285, x1: 915, y0: 65, y1: 565 };
+
+    const textos = [...svg.matchAll(/<text x="(-?\d+)" y="(-?\d+)"/g)];
+    expect(textos.length).toBeGreaterThanOrEqual(4);
+    for (const [, x, y] of textos) {
+      expect(Number(x), `texto em x=${x}`).toBeGreaterThanOrEqual(SEGURO.x0);
+      expect(Number(x), `texto em x=${x}`).toBeLessThanOrEqual(SEGURO.x1);
+      expect(Number(y), `texto em y=${y}`).toBeGreaterThanOrEqual(SEGURO.y0);
+      expect(Number(y), `texto em y=${y}`).toBeLessThanOrEqual(SEGURO.y1);
+    }
+
+    // As faixas decorativas param antes do centro, dos dois lados.
+    const bandaEsquerda = svg.match(/<rect width="(\d+)" height="630" fill="#0E5C3C"\/>/);
+    const bandaDireita = svg.match(/<rect x="(\d+)" width="(\d+)" height="630" fill="#0E5C3C"\/>/);
+    expect(Number(bandaEsquerda?.[1])).toBeLessThanOrEqual(SEGURO.x0);
+    expect(Number(bandaDireita?.[1])).toBeGreaterThanOrEqual(SEGURO.x1);
+  });
+
+  it("o caminho é versionado, para o WhatsApp não servir a prévia antiga do cache", () => {
+    expect(OG_IMAGE_MARKETS_PATH).toMatch(/-v\d+\.png$/);
   });
 
   it("é estático: nenhum gerador dinâmico, nenhuma dependência externa", () => {

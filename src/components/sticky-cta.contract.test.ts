@@ -8,7 +8,9 @@ function ler(...caminho: string[]): string {
   return readFileSync(join(process.cwd(), ...caminho), "utf-8");
 }
 
-const fixo = ler("src", "components", "StickyWhatsAppCta.tsx");
+// O mecanismo (medição, faixa, espaçador, limpeza) e o convite do morador que o usa.
+const fixo = ler("src", "components", "StickyCta.tsx");
+const fixoMorador = ler("src", "components", "StickyWhatsAppCta.tsx");
 const cta = ler("src", "components", "WhatsAppCta.tsx");
 const compartilhar = ler("src", "components", "ShareAchadoButton.tsx");
 const card = ler("src", "components", "AchadoCard.tsx");
@@ -28,13 +30,14 @@ describe("CTA fixo do mobile", () => {
 
   it("observa os CTAs equivalentes, sem depender de rolagem por pixel", () => {
     expect(fixo).toContain("IntersectionObserver");
-    expect(fixo).toContain("WHATSAPP_CTA_MARKER");
+    expect(fixo).toContain("document.querySelectorAll(`[${marcador}]`)");
     expect(fixo).toContain("observer.disconnect()");
   });
 
   it("usa exatamente o mesmo rótulo e o mesmo destino do CTA do fluxo", () => {
-    expect(fixo).toContain("WHATSAPP_CTA_LABEL");
-    expect(fixo).toContain("consumerWhatsappLink()");
+    expect(fixoMorador).toContain("WHATSAPP_CTA_LABEL");
+    expect(fixoMorador).toContain("WHATSAPP_CTA_MARKER");
+    expect(fixoMorador).toContain("consumerWhatsappLink()");
     expect(cta).toContain('export const WHATSAPP_CTA_LABEL = "Receber os Achados no WhatsApp"');
   });
 
@@ -54,15 +57,16 @@ describe("CTA fixo do mobile", () => {
   });
 
   it("não carrega nenhum número escrito no código", () => {
-    expect(fixo).not.toMatch(/\b\d{10,15}\b/);
-    expect(cta).not.toMatch(/\b\d{10,15}\b/);
+    for (const fonte of [fixo, fixoMorador, cta]) {
+      expect(fonte).not.toMatch(/\b\d{10,15}\b/);
+    }
   });
 });
 
 describe("nunca duas ações idênticas na mesma travessia de teclado", () => {
   it("a visibilidade do fixo é estado compartilhado, não estado privado do componente", () => {
     // Se voltar a ser `useState` local, o CTA do fluxo não tem como saber que precisa sair.
-    expect(fixo).toContain("setStickyCtaVisible(");
+    expect(fixo).toContain("loja.set(");
     expect(fixo).not.toContain("setVisivel");
     expect(cta).toContain("useSyncExternalStore(");
   });
@@ -96,7 +100,7 @@ describe("nunca duas ações idênticas na mesma travessia de teclado", () => {
 
   it("ao sair da página, devolve o comando ao CTA do fluxo", () => {
     const limpeza = fixo.slice(fixo.indexOf("observer.disconnect()"));
-    expect(limpeza).toContain("setStickyCtaVisible(false)");
+    expect(limpeza).toContain("loja.set(false)");
   });
 });
 

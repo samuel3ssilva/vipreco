@@ -21,14 +21,19 @@ export const OG_IMAGE_ALT =
 
 /**
  * Asset da proposta para mercados (Parte 3). Também estático, também 1200×630, também sem
- * gerador dinâmico — e sem número, métrica, depoimento ou promessa de venda: só a promessa da
- * página e o estado real do piloto. Fonte vetorial ao lado, em
- * `public/og/vipreco-og-para-mercados.svg`.
+ * gerador dinâmico — e sem número, métrica, depoimento ou promessa de venda: só o nome, para
+ * quem é a página e o estado real do piloto. Fonte vetorial ao lado, em
+ * `public/og/vipreco-og-para-mercados-v2.svg`.
+ *
+ * O `-v2` no caminho não é enfeite. A primeira versão espalhava o texto pela largura inteira, e
+ * o WhatsApp Desktop, que reduz a prévia a uma miniatura lateral, cortava as pontas. Esta traz
+ * tudo o que importa para a área central de 630×500; as laterais são ornamento. Caminho novo
+ * porque a prévia antiga já circulou e fica em cache do lado do WhatsApp — só um endereço
+ * diferente garante que a imagem nova apareça.
  */
-export const OG_IMAGE_MARKETS_PATH = "/og/vipreco-og-para-mercados.png";
+export const OG_IMAGE_MARKETS_PATH = "/og/vipreco-og-para-mercados-v2.png";
 
-export const OG_IMAGE_MARKETS_ALT =
-  "ViPreço para mercados de Artemis — seu mercado mais perto de quem compra no bairro. Piloto em preparação.";
+export const OG_IMAGE_MARKETS_ALT = "ViPreço para mercados de Artemis. Piloto em preparação.";
 
 /**
  * URL absoluta do asset quando o ambiente informa a sua origem pública

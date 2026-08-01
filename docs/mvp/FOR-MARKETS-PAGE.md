@@ -41,6 +41,23 @@ continua completa: proposta, regras e dúvidas seguem lá.
 Nada é coletado nesta página: nenhum formulário, nenhum campo, nenhum cadastro automático, nenhum
 CRM, nenhum grupo ou Canal, nenhuma automação de mensagem. Quem começa a conversa é a pessoa.
 
+### O convite fixo do mobile
+
+A página é longa. No mobile, quem está no meio dela ficava sem nenhuma ação à mão: o convite mora
+nas duas pontas. O `StickyMarketCta` resolve isso e nunca duplica o convite — ele aparece só
+quando **nenhum** dos dois CTAs do fluxo está na tela, e enquanto está no ar são eles que saem da
+ordem de foco e da árvore acessível (`inert` + `aria-hidden` + `tabIndex={-1}`).
+
+O mecanismo é o mesmo da Home, extraído para `StickyCta`: faixa abaixo de 640 px (o mesmo recorte
+do `sm:hidden`), acima da barra inferior de 56 px, respeitando `env(safe-area-inset-bottom)`,
+espaçador no fluxo para não cobrir o último conteúdo, 48 px de alvo, sem animação, só depois da
+hidratação. O que é desta rota são três coisas: o destino (`marketWhatsappLink()`), o rótulo
+("Quero conhecer o piloto") e a loja de visibilidade.
+
+As duas rotas compartilham a regra, não o estado. `createStickyCtaStore()` dá uma loja a cada
+convite e o marcador do DOM é próprio (`data-market-cta`, contra `data-whatsapp-cta` da Home): o
+fixo daqui não observa o CTA do morador, e o de lá não silencia este.
+
 ## O que a página não diz
 
 O mandato lista o que não pode aparecer; o teste é que garante que continue não aparecendo
@@ -57,6 +74,21 @@ O mandato lista o que não pode aparecer; o teste é que garante que continue n�
 O relatório semanal de exemplo que existia na versão anterior saiu por isso: os números eram
 inventados e a seção sugeria uma inteligência de mercado que não existe.
 
+Sobre **quais** produtos enviar, a página diz o que é verdade e para: o mercado escolhe o que
+queira **destacar** ou **divulgar** — ofertas, itens sazonais, estoque alto. Nunca "anunciar", que
+leria como mídia paga; e nada de validade curta, queima de estoque, desconto garantido ou contagem
+regressiva. O uso para produtos perto do vencimento é hipótese de entrevista, não proposta desta
+página, e o teste barra os dois desvios.
+
+## Pontuação
+
+Revisão do Founder: **zero travessões** na interface pública da rota. Onde o travessão separava
+duas orações, entrou ponto, vírgula ou dois-pontos, sem alongar a frase. O hífen gramatical
+("torrado e moído", "dois-pontos") não é alvo da regra.
+
+`para-mercados.ssr.test.ts` varre o HTML renderizado — corpo e atributos, com e sem destino de
+WhatsApp configurado, descontados `<script>` e `<style>` — e falha se um travessão voltar.
+
 ## A fronteira do que o mercado controla
 
 Revisão comercial do PMO (01/08/2026). A primeira versão da seção 4 dizia "Você escolhe o que
@@ -70,8 +102,13 @@ A fronteira agora é explícita e tem três partes:
    pedido de correção ou de retirada **do que ele mesmo enviou**;
 2. **o que não muda** — "comparações orgânicas legítimas seguem as mesmas regras para todos.
    Pagamento não muda a ordem dos resultados";
-3. **o que qualquer pessoa pode fazer** — avisar sobre informação incorreta, venha de onde vier,
-   para que seja conferida e corrigida.
+3. **o que qualquer pessoa pode fazer** — avisar sobre informação incorreta: "Avise o ViPreço.
+   Nós conferimos a origem e fazemos a correção, seja uma informação enviada pelo mercado ou
+   verificada pela nossa equipe."
+
+O item 3 mudou na segunda revisão do Founder. A versão anterior dizia "para que ela seja conferida
+e corrigida, venha de onde vier", que lida rápido soava a promessa de remoção a pedido. A frase
+atual diz o que de fato acontece e nomeia as duas origens possíveis, sem virar texto jurídico.
 
 `para-mercados.ssr.test.ts` tem um guardrail de copy para isso: a página não pode voltar a dizer
 "Você escolhe o que aparece", "o que o mercado manda é o que aparece", "escolha sua posição",
@@ -89,15 +126,40 @@ argumento, entrega o asset de sempre — nenhuma outra rota muda.
 | -------------- | ------------------------------------------------------------------------------------------------ |
 | `title`        | ViPreço para mercados de Artemis                                                                 |
 | `description`  | Conheça o piloto local do ViPreço e veja como divulgar alguns produtos com preço, data e origem. |
-| `og:image`     | `/og/vipreco-og-para-mercados.png` (absoluta quando `VITE_PUBLIC_SITE_URL` existe)               |
+| `og:image`     | `/og/vipreco-og-para-mercados-v2.png` (absoluta quando `VITE_PUBLIC_SITE_URL` existe)            |
 | Dimensões      | 1200×630, `image/png`                                                                            |
 | `twitter:card` | `summary_large_image`                                                                            |
 
 O asset é **estático**, como o do consumidor: nenhum gerador dinâmico, nenhuma dependência
 externa, nenhum número, métrica, depoimento, logo de mercado real, promessa de venda ou urgência.
-Só a promessa da página e o estado real do piloto — "Piloto em preparação · Artemis". O fonte
-vetorial fica ao lado, em `public/og/vipreco-og-para-mercados.svg`, e o PNG foi rasterizado a
-partir dele com as fontes oficiais (Bricolage Grotesque 800 e Public Sans 600).
+Só o nome, para quem é a página e o estado real do piloto: "ViPreço", "Para mercados de Artemis",
+"Piloto em preparação". O fonte vetorial fica ao lado, em
+`public/og/vipreco-og-para-mercados-v2.svg`, e o PNG foi rasterizado a partir das mesmas
+constantes, com as fontes oficiais (Bricolage Grotesque 800 e Public Sans 600).
+
+### Área central segura
+
+Revisão do Founder: no WhatsApp Desktop a prévia vira uma miniatura lateral, e a primeira versão
+da imagem — texto espalhado pela largura, painel verde à direita — perdia as pontas no recorte.
+
+A regra agora é geométrica. Todo conteúdo essencial vive na área central de **630×500**
+(x 285..915, y 65..565) de uma imagem de 1200×630. Medido na geração:
+
+| Elemento               | x       | y       |
+| ---------------------- | ------- | ------- |
+| Marca                  | 483–717 | 126–179 |
+| Título, linha 1        | 354–846 | 255–327 |
+| Título, linha 2        | 422–778 | 335–407 |
+| Selo do piloto         | 431–769 | 462–520 |
+| **Caixa do essencial** | 354–846 | 126–520 |
+
+As faixas verdes das laterais (190 px de cada lado, com o símbolo da marca cortado pela borda)
+são ornamento: somem no recorte quadrado e não levam informação junto. Conferido em quatro
+recortes — 1200×630 inteiro, quadrado central de 630×630, 4:3 central de 840×630 e miniatura de
+128 px.
+
+O caminho ganhou `-v2` de propósito. A prévia antiga já circulou e o WhatsApp guarda a imagem por
+URL; sem endereço novo, quem já viu o link continuaria vendo o card velho.
 
 ## O exemplo fictício
 

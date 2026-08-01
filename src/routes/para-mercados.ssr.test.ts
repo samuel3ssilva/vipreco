@@ -101,6 +101,14 @@ describe("CTA principal e mensagem do WhatsApp", () => {
     expect(html).toContain("(abre o WhatsApp)");
   });
 
+  it("o CTA fixo do mobile não sai no HTML do servidor", () => {
+    // No servidor não há tela para medir. Renderizar o botão fixo para escondê-lo logo depois
+    // produziria um pisca — e, por um instante, um terceiro convite igual na mesma página.
+    expect(html).not.toContain("shadow-raised");
+    expect(html).not.toContain("safe-area-inset-bottom");
+    expect(html.match(/data-market-cta/g) ?? []).toHaveLength(2);
+  });
+
   it("sem destino configurado, nenhum CTA e nenhum link quebrado", () => {
     expect(htmlSemDestino).not.toContain("wa.me");
     expect(htmlSemDestino).not.toContain("Quero conhecer o piloto");

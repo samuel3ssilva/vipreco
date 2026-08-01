@@ -1,57 +1,89 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-  getStickyCtaVisible,
-  getStickyCtaVisibleOnServer,
+  consumerCtaStore,
+  createStickyCtaStore,
   hiddenCtaAttributes,
-  setStickyCtaVisible,
-  subscribeStickyCta,
+  marketCtaStore,
 } from "@/lib/cta-visibility";
-
-beforeEach(() => {
-  setStickyCtaVisible(false);
-});
 
 describe("quem está no comando do CTA", () => {
   it("começa com o CTA do fluxo no comando", () => {
-    expect(getStickyCtaVisible()).toBe(false);
+    expect(createStickyCtaStore().get()).toBe(false);
   });
 
   it("no servidor a resposta é sempre a mesma — não há tela para medir", () => {
-    setStickyCtaVisible(true);
-    expect(getStickyCtaVisibleOnServer()).toBe(false);
+    const loja = createStickyCtaStore();
+    loja.set(true);
+    expect(loja.getOnServer()).toBe(false);
   });
 
   it("avisa quem está ouvindo quando o comando muda", () => {
+    const loja = createStickyCtaStore();
     const ouvinte = vi.fn();
-    subscribeStickyCta(ouvinte);
+    loja.subscribe(ouvinte);
 
-    setStickyCtaVisible(true);
+    loja.set(true);
     expect(ouvinte).toHaveBeenCalledTimes(1);
-    expect(getStickyCtaVisible()).toBe(true);
+    expect(loja.get()).toBe(true);
 
-    setStickyCtaVisible(false);
+    loja.set(false);
     expect(ouvinte).toHaveBeenCalledTimes(2);
   });
 
   it("não avisa ninguém quando a medida repete o valor anterior", () => {
     // A medida roda a cada evento de rolagem. Sem esta guarda, cada quadro de rolagem viraria
     // uma renderização do CTA da página.
+    const loja = createStickyCtaStore();
     const ouvinte = vi.fn();
-    subscribeStickyCta(ouvinte);
+    loja.subscribe(ouvinte);
 
-    setStickyCtaVisible(true);
-    setStickyCtaVisible(true);
-    setStickyCtaVisible(true);
+    loja.set(true);
+    loja.set(true);
+    loja.set(true);
     expect(ouvinte).toHaveBeenCalledTimes(1);
   });
 
   it("cancelar a inscrição para de avisar", () => {
+    const loja = createStickyCtaStore();
     const ouvinte = vi.fn();
-    const cancelar = subscribeStickyCta(ouvinte);
+    const cancelar = loja.subscribe(ouvinte);
     cancelar();
 
-    setStickyCtaVisible(true);
+    loja.set(true);
     expect(ouvinte).not.toHaveBeenCalled();
+  });
+
+  it("os métodos funcionam soltos, como `useSyncExternalStore` os recebe", () => {
+    // Os componentes passam `loja.subscribe` e `loja.get` como referências, sem o objeto. Se a
+    // implementação passasse a depender de `this`, isso quebraria só em runtime.
+    const { set, subscribe, get } = createStickyCtaStore();
+    const ouvinte = vi.fn();
+    subscribe(ouvinte);
+    set(true);
+    expect(get()).toBe(true);
+    expect(ouvinte).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("cada rota tem a sua loja", () => {
+  it("o convite do morador e o do dono de mercado não se silenciam", () => {
+    // A Home e `/para-mercados` compartilham o mecanismo, não o estado: o CTA fixo de uma rota
+    // não pode apagar o CTA do fluxo da outra.
+    expect(consumerCtaStore).not.toBe(marketCtaStore);
+
+    consumerCtaStore.set(true);
+    expect(marketCtaStore.get()).toBe(false);
+    consumerCtaStore.set(false);
+
+    marketCtaStore.set(true);
+    expect(consumerCtaStore.get()).toBe(false);
+    marketCtaStore.set(false);
+  });
+
+  it("uma loja nova nunca nasce com a medição de outra", () => {
+    const primeira = createStickyCtaStore();
+    primeira.set(true);
+    expect(createStickyCtaStore().get()).toBe(false);
   });
 });
 

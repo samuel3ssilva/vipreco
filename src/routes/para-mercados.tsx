@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarClock, ClipboardCheck, MessageCircle, Store, Tag } f
 import { AppShell } from "@/components/AppShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import { SourceBadge } from "@/components/SourceBadge";
+import { StickyMarketCta } from "@/components/StickyMarketCta";
 import { PILOT_LOCALITY } from "@/lib/pilot";
 import { OG_IMAGE_MARKETS_ALT, OG_IMAGE_MARKETS_PATH, ogImageMeta } from "@/lib/og";
 
@@ -429,6 +430,9 @@ function ForMarketsPage() {
           Ver os Achados de Artemis
         </Link>
       </div>
+
+      {/* Só no mobile, e só quando nenhum dos dois convites do fluxo está na tela. */}
+      <StickyMarketCta />
     </AppShell>
   );
 }

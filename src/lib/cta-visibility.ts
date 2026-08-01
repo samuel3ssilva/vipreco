@@ -9,37 +9,51 @@
  * lá em cima: duas ações idênticas na mesma travessia.
  *
  * O estado mora aqui, fora dos dois componentes, porque nenhum deles é ancestral do outro. O
- * `StickyWhatsAppCta` escreve; o `WhatsAppCta` lê e se apaga enquanto durar a duplicação.
+ * CTA fixo escreve; o CTA do fluxo lê e se apaga enquanto durar a duplicação.
+ *
+ * Cada convite tem a **sua** loja. O convite do morador e o convite do dono de mercado vivem em
+ * rotas diferentes, dizem coisas diferentes e não podem se silenciar: uma variável só faria a
+ * segunda rota herdar a medição da primeira.
  */
 
-let stickyVisivel = false;
-const ouvintes = new Set<() => void>();
-
-/** Chamado pelo CTA fixo a cada medição, e no desmonte para devolver o comando ao da página. */
-export function setStickyCtaVisible(visivel: boolean): void {
-  if (visivel === stickyVisivel) return;
-  stickyVisivel = visivel;
-  for (const ouvinte of ouvintes) ouvinte();
+export interface StickyCtaStore {
+  /** Chamado pelo CTA fixo a cada medição, e no desmonte para devolver o comando ao do fluxo. */
+  set(visivel: boolean): void;
+  subscribe(ouvinte: () => void): () => void;
+  get(): boolean;
+  /**
+   * No servidor não há tela para medir, e o CTA fixo só existe depois da hidratação. O HTML
+   * inicial sempre sai com o CTA do fluxo inteiro e ativo.
+   */
+  getOnServer(): boolean;
 }
 
-export function subscribeStickyCta(ouvinte: () => void): () => void {
-  ouvintes.add(ouvinte);
-  return () => {
-    ouvintes.delete(ouvinte);
+export function createStickyCtaStore(): StickyCtaStore {
+  let stickyVisivel = false;
+  const ouvintes = new Set<() => void>();
+
+  return {
+    set(visivel) {
+      if (visivel === stickyVisivel) return;
+      stickyVisivel = visivel;
+      for (const ouvinte of ouvintes) ouvinte();
+    },
+    subscribe(ouvinte) {
+      ouvintes.add(ouvinte);
+      return () => {
+        ouvintes.delete(ouvinte);
+      };
+    },
+    get: () => stickyVisivel,
+    getOnServer: () => false,
   };
 }
 
-export function getStickyCtaVisible(): boolean {
-  return stickyVisivel;
-}
+/** O convite do morador, na Home: `WhatsAppCta` lê, `StickyWhatsAppCta` escreve. */
+export const consumerCtaStore = createStickyCtaStore();
 
-/**
- * No servidor não há tela para medir, e o CTA fixo só existe depois da hidratação. O HTML
- * inicial sempre sai com o CTA da página inteiro e ativo.
- */
-export function getStickyCtaVisibleOnServer(): boolean {
-  return false;
-}
+/** O convite do dono de mercado, em `/para-mercados`. Instância própria, medição própria. */
+export const marketCtaStore = createStickyCtaStore();
 
 /**
  * Atributos que tiram o CTA duplicado da ordem de tabulação e da árvore acessível.

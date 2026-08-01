@@ -123,6 +123,16 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     expect(busca).toBeGreaterThan(primeiroAchado);
   });
 
+  it("a ordem do DOM é a ordem visual do mobile: promessa, Achados, ação", () => {
+    // Teclado e leitor de tela seguem o DOM. No alvo primário — mobile — ele precisa bater com
+    // o que o olho vê, senão o foco pula do topo para o rodapé da seção e volta.
+    const h1 = html.indexOf("Veja como os Achados de Artemis vão aparecer");
+    const primeiroAchado = html.indexOf("Arroz Camil Tipo 1");
+    const carrossel = html.indexOf('aria-label="Outros Achados"');
+    expect(primeiroAchado).toBeGreaterThan(h1);
+    expect(carrossel).toBeGreaterThan(primeiroAchado);
+  });
+
   it("entrega um Achado de destaque e dois secundários", () => {
     // O destaque é o único com o preço no tamanho dominante; os outros dois vêm no compacto.
     expect(html.match(/text-\[2\.125rem\]/g) ?? []).toHaveLength(1);
@@ -227,6 +237,12 @@ describe("anatomia do card oficial de Achado", () => {
   it("só afirma gôndola observada na origem que de fato observou a gôndola", () => {
     expect(leite.source_type).toBe("weekly_audit");
     expect(html.match(/Preço de gôndola observado, sem remarcação\./g) ?? []).toHaveLength(1);
+  });
+
+  it("não pula nível na hierarquia de títulos", () => {
+    // Um `h1` na primeira dobra e `h2` daí para baixo. Nenhum `h3` órfão.
+    expect(html.match(/<h1/g) ?? []).toHaveLength(1);
+    expect(html).not.toContain("<h3");
   });
 
   it("não cria urgência artificial em nenhum Achado", () => {

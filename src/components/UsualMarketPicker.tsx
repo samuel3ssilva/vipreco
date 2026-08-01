@@ -77,7 +77,7 @@ export function UsualMarketPicker({
         {current && !editing ? (
           <button
             type="button"
-            className="btn-base btn-quiet btn-sm shrink-0"
+            className="btn-base btn-quiet btn-sm btn-touch-48 shrink-0"
             onClick={() => setEditing(true)}
           >
             <Pencil aria-hidden="true" className="size-4" />
@@ -91,7 +91,7 @@ export function UsualMarketPicker({
           <p>Não conseguimos carregar a lista de mercados.</p>
           <button
             type="button"
-            className="btn-base btn-secondary btn-sm mt-2"
+            className="btn-base btn-secondary btn-sm btn-touch-48 mt-2"
             onClick={() => refetch()}
           >
             Tentar novamente
@@ -112,7 +112,7 @@ export function UsualMarketPicker({
                         type="button"
                         aria-pressed={isActive}
                         onClick={() => update(market.id)}
-                        className={`btn-base btn-sm ${isActive ? "btn-primary" : "btn-secondary"} max-w-full`}
+                        className={`btn-base btn-sm btn-touch-48 ${isActive ? "btn-primary" : "btn-secondary"} max-w-full`}
                       >
                         {isActive ? <Check aria-hidden="true" className="size-4 shrink-0" /> : null}
                         <span className="truncate">{market.name}</span>
@@ -124,7 +124,7 @@ export function UsualMarketPicker({
               {selected ? (
                 <button
                   type="button"
-                  className="btn-base btn-quiet btn-sm mt-2"
+                  className="btn-base btn-quiet btn-sm btn-touch-48 mt-2"
                   onClick={() => update(null)}
                 >
                   Remover mercado habitual

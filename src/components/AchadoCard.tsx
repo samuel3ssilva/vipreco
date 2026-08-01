@@ -88,14 +88,16 @@ export function AchadoCard({
         </div>
 
         <div>
-          <h3
+          {/* `h2` porque o card vive sob o `h1` da primeira dobra: um `h3` ali pularia um nível
+              da hierarquia de títulos. */}
+          <h2
             id={titleId}
             className={`font-display leading-tight ${destaque ? "text-xl" : "text-base"}`}
           >
             {[entry.product.name, entry.product.brand, entry.product.variant]
               .filter(Boolean)
               .join(" ")}
-          </h3>
+          </h2>
           {entry.product.size_text ? (
             <p className="meta-text mt-0.5">{entry.product.size_text}</p>
           ) : null}

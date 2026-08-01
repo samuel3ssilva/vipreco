@@ -382,8 +382,14 @@
 
 /* Alvo de toque de 48 px. Padrão para todo elemento interativo novo ou alterado a partir da
    North Star v1.2.2 — o mínimo histórico de 44 px de `btn-base`/`btn-sm` continua valendo para
-   os controles que já existiam. Declarada **depois** de `btn-base` e `btn-sm` de propósito: as
-   três definem `min-height`, e é a ordem no arquivo que decide qual vence. */
+   os controles que já existiam.
+
+   As três declaram `min-height`, então uma precisa vencer a outra na cascata. O Tailwind v4 não
+   preserva a ordem deste arquivo no CSS gerado: ele reordena as utilities pelo conjunto de
+   propriedades que cada uma declara. Na prática as três caem no mesmo grupo e saem nesta mesma
+   ordem relativa — verificado no CSS de build, com `btn-touch-48` depois de `btn-base` e de
+   `btn-sm` —, mas isso é observação, não garantia da ferramenta. Onde a diferença é visível ao
+   visitante, a solução não depende de ordem: ver `--btn-quiet-border` em `btn-quiet`. */
 @utility btn-touch-48 {
   min-height: 3rem;
 }
@@ -405,15 +411,32 @@
   }
 }
 
+/* Botão discreto: ocupa a mesma caixa de um botão com borda, mas sem pintar nada. A borda
+   transparente existe para o alinhamento não pular quando a variante muda.
+
+   O `border-color` passa por uma variável de propósito. A forma antiga — o atalho
+   `border: 1px solid transparent` — vencia qualquer `border-*` do Tailwind aplicado no mesmo
+   elemento, porque no CSS gerado `.btn-quiet` cai depois de `.border-border`; foi assim que o
+   botão de compartilhar ficou sem borda visível no staging. Trocar o atalho por longhands não
+   resolveria: a disputa continuaria sendo entre dois `border-color`, decidida por uma ordem que
+   quem escreve este arquivo não controla. Com a variável não há disputa nenhuma — `btn-quiet`
+   lê `--btn-quiet-border`, e quem quer a borda visível só precisa definir essa variável. */
 @utility btn-quiet {
   background-color: transparent;
   color: var(--color-muted-foreground);
-  border: 1px solid transparent;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--btn-quiet-border, transparent);
   font-weight: 600;
   &:hover:not(:disabled) {
     background-color: var(--color-surface);
     color: var(--color-surface-foreground);
   }
+}
+
+/* Torna visível a borda de `btn-quiet`. Sempre em par com ela; sozinha não faz nada. */
+@utility btn-quiet-bordered {
+  --btn-quiet-border: var(--color-border);
 }
 
 @utility card-base {
@@ -435,7 +458,8 @@
 
 @utility field-base {
   width: 100%;
-  min-height: 2.875rem;
+  /* 48 px de alvo, igual aos botões (North Star v1.2.2, acessibilidade da Parte 2). */
+  min-height: 3rem;
   padding: 0.6rem 0.85rem;
   border-radius: var(--radius);
   border: 2px solid var(--color-input);

@@ -64,12 +64,14 @@ describe("HTML inicial da Home (SSR)", () => {
   it("abre com a faixa de ambiente, antes de qualquer outro conteúdo", () => {
     expect(html).toContain("AMBIENTE DE TESTE");
     expect(html).toContain("esta não é a versão pública do ViPreço");
-    expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(html.indexOf("Achados da semana"));
+    expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(
+      html.indexOf("Veja como os Achados de Artemis vão aparecer"),
+    );
   });
 
   it("marca os Achados com o selo de dados fictícios", () => {
     expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
-    expect(html).toContain("Exemplos fictícios");
+    expect(html).toContain("Exemplos fictícios para mostrar produto, preço, mercado, data e fonte");
   });
 
   it("não repete o aviso de ambiente dentro da página — a faixa é o único lugar", () => {
@@ -98,6 +100,76 @@ describe("HTML inicial da Home (SSR)", () => {
   it("não apresenta nenhum mercado real como participante", () => {
     for (const entry of buildDemoOpportunities()) {
       expect(entry.market.name).toMatch(/^Mercado (principal|local \d)$/);
+    }
+  });
+});
+
+describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
+  it("abre com a copy DEMO aprovada, na ordem eyebrow → H1 → subtexto", () => {
+    const eyebrow = html.indexOf("Artemis · Piracicaba, SP");
+    const h1 = html.indexOf("Veja como os Achados de Artemis vão aparecer");
+    const subtexto = html.indexOf(
+      "Exemplos fictícios para mostrar produto, preço, mercado, data e fonte.",
+    );
+    expect(eyebrow).toBeGreaterThan(-1);
+    expect(h1).toBeGreaterThan(eyebrow);
+    expect(subtexto).toBeGreaterThan(h1);
+  });
+
+  it("coloca o Achado antes da busca", () => {
+    const primeiroAchado = html.indexOf("Arroz Camil Tipo 1");
+    const busca = html.indexOf("Procurando um produto específico?");
+    expect(primeiroAchado).toBeGreaterThan(-1);
+    expect(busca).toBeGreaterThan(primeiroAchado);
+  });
+
+  it("entrega um Achado de destaque e dois secundários", () => {
+    // O destaque é o único com o preço no tamanho dominante; os outros dois vêm no compacto.
+    expect(html.match(/text-\[2\.125rem\]/g) ?? []).toHaveLength(1);
+    expect(html.match(/text-\[1\.625rem\]/g) ?? []).toHaveLength(2);
+    expect(html).toContain('aria-label="Outros Achados"');
+  });
+
+  it("segue a ordem completa: hero, busca, confiança, pertencimento, mercados", () => {
+    const posicoes = [
+      "Veja como os Achados de Artemis vão aparecer",
+      "Procurando um produto específico?",
+      "Nenhum preço aparece sozinho",
+      "Começou em Artemis",
+      "Tem um mercado no bairro?",
+    ].map((trecho) => {
+      const posicao = html.indexOf(trecho);
+      expect(posicao, `"${trecho}" precisa estar no HTML inicial`).toBeGreaterThan(-1);
+      return posicao;
+    });
+    expect(posicoes).toEqual([...posicoes].sort((a, b) => a - b));
+  });
+
+  it("traz as três regras de confiança, cada uma com o seu porquê", () => {
+    expect(html).toContain("Você compra na loja.");
+    expect(html).toContain("O ViPreço não altera o preço no caixa.");
+    expect(html).toContain("O estoque é do mercado.");
+    expect(html).toContain("O produto pode acabar antes da validade informada.");
+    expect(html).toContain("A ordem não é vendida.");
+    expect(html).toContain("Pagamento nunca muda a comparação orgânica.");
+  });
+
+  it("em DEMO, diz que os preços são fictícios e o que muda no piloto", () => {
+    expect(html).toContain(
+      "Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com origem identificada.",
+    );
+  });
+
+  it("conta a história local sem expor nenhuma pessoa", () => {
+    expect(html).toContain("Antes de ser um site, era conversa de corredor de mercado.");
+    for (const termo of ["Samuel", "fundador", "minha mãe", "moradores", "mercados participando"]) {
+      expect(html, `história local não deve conter "${termo}"`).not.toContain(termo);
+    }
+  });
+
+  it("não promete disponibilidade em tempo real em lugar nenhum", () => {
+    for (const termo of ["Achados de hoje", "atualizado às", "publicado agora", "em tempo real"]) {
+      expect(html, `HTML inicial não deve conter "${termo}"`).not.toContain(termo);
     }
   });
 });

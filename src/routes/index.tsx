@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FileCheck2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { AchadoCard } from "@/components/AchadoCard";
+import { HomeHero } from "@/components/HomeHero";
+import { TrustSection } from "@/components/TrustSection";
+import { LocalStory } from "@/components/LocalStory";
 import { ProductSearch } from "@/components/ProductSearch";
 import { UsualMarketPicker } from "@/components/UsualMarketPicker";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
-import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { loadHomeMarkets } from "@/services/home-markets";
 import { appMode } from "@/lib/app-mode";
@@ -75,14 +75,36 @@ function HomePage() {
 
   return (
     <AppShell>
-      <div className="space-y-8">
-        <section aria-labelledby="titulo-principal" className="space-y-3">
-          <h1 id="titulo-principal" className="font-display text-2xl leading-tight sm:text-3xl">
-            Descubra onde o seu produto está mais barato na sua região.
-          </h1>
-          <p className="meta-text max-w-2xl text-sm">
-            Compare produtos iguais entre mercados, com data e fonte de cada preço.
-          </p>
+      <div className="space-y-10">
+        <HomeHero
+          opportunities={validOpportunities}
+          now={renderedAt}
+          seal={
+            isDemo ? (
+              <p
+                className="font-data inline-flex items-center gap-2 rounded-md border border-dashed bg-surface px-3 py-1.5 text-xs text-muted-foreground"
+                style={{ borderColor: "var(--vp-border-strong)" }}
+              >
+                <span aria-hidden="true">◌</span>
+                dados fictícios · exemplos para demonstrar o formato
+              </p>
+            ) : null
+          }
+          fallback={
+            <StateMessage
+              variant="empty"
+              title="Estamos começando a mapear preços na sua região."
+              description="Os primeiros Achados aparecem aqui assim que forem conferidos. Por enquanto, use a busca para comparar um produto específico."
+            />
+          }
+        />
+
+        <section aria-labelledby="busca-titulo" className="space-y-3">
+          <SectionHeader
+            id="busca-titulo"
+            title="Procurando um produto específico?"
+            description="Compare o mesmo produto entre os mercados, com data e fonte de cada preço."
+          />
           <ProductSearch label="Qual produto você quer comparar?" />
           <div className="flex flex-wrap items-center gap-2">
             <span className="meta-text">Buscas comuns:</span>
@@ -91,67 +113,20 @@ function HomePage() {
                 key={shortcut}
                 to="/buscar"
                 search={{ q: shortcut }}
-                className="btn-base btn-secondary btn-sm"
+                className="btn-base btn-secondary btn-sm btn-touch-48"
               >
                 {shortcut}
               </Link>
             ))}
           </div>
-          {/* O aviso de ambiente saiu daqui: a faixa acima do header já diz, em toda página, que
-              esta não é a versão pública. Aqui fica só o que é sobre preço. */}
           <PriceDisclaimer />
-          <WhatsAppCta />
-        </section>
-
-        <section aria-labelledby="oportunidades-titulo" className="space-y-3">
-          <SectionHeader
-            id="oportunidades-titulo"
-            title="Achados da semana"
-            description="Exemplos fictícios para mostrar como produtos iguais podem aparecer em diferentes mercados."
-          />
-          {validOpportunities.length === 0 ? (
-            <StateMessage
-              variant="empty"
-              title="Estamos começando a mapear preços na sua região."
-              description="As primeiras oportunidades aparecem aqui assim que forem conferidas. Por enquanto, use a busca para comparar um produto específico."
-            />
-          ) : (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {validOpportunities.map((entry) => (
-                <li key={entry.id} className="flex">
-                  <AchadoCard entry={entry} now={renderedAt} className="w-full" />
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* Selo de dados fictícios (North Star v1.2.2): marca os Achados, logo abaixo deles. */}
-          {isDemo ? (
-            <p
-              className="font-data inline-flex items-center gap-2 rounded-md border border-dashed bg-surface px-3 py-1.5 text-xs text-muted-foreground"
-              style={{ borderColor: "var(--vp-border-strong)" }}
-            >
-              <span aria-hidden="true">◌</span>
-              dados fictícios · exemplos para demonstrar o formato
-            </p>
-          ) : null}
         </section>
 
         <UsualMarketPicker initialMarkets={markets} />
 
-        <section className="card-compact bg-surface">
-          <h2 className="flex items-center gap-1.5 text-base font-bold">
-            <FileCheck2 aria-hidden="true" className="size-4 text-primary" />
-            De onde vêm esses preços?
-          </h2>
-          <p className="meta-text mt-0.5">
-            Nesta demonstração, todos os preços são fictícios. Quando o teste começar, cada preço
-            será publicado com sua origem identificada, como informação enviada pelo mercado ou
-            pesquisa autorizada.
-          </p>
-          <Link to="/como-funciona" className="btn-base btn-secondary btn-sm mt-2">
-            Entender como funciona
-          </Link>
-        </section>
+        <TrustSection isDemo={isDemo} />
+
+        <LocalStory />
       </div>
     </AppShell>
   );

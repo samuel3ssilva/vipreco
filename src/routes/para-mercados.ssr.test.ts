@@ -70,8 +70,39 @@ describe("primeira dobra da proposta", () => {
     expect(html).toContain("Café torrado e moído, tradicional");
     expect(html).toContain("14,90");
     expect(html).toContain("Mercado de exemplo");
-    expect(html).toContain("informado ontem · informado pelo mercado");
+    expect(html).toContain("31/07/2026 · informado pelo mercado");
     expect(html).toContain("Informado pelo mercado");
+  });
+
+  it("mostra a validade em data absoluta, no formato do card real", () => {
+    expect(html).toContain("válido até 05/08/2026");
+  });
+
+  it("nunca usa dia da semana nem dia relativo no card estático", () => {
+    // O card não tem loader e não recalcula nada: "sábado" e "ontem" congelados no código
+    // ficariam errados no dia seguinte. Data absoluta ou nada.
+    // Do rótulo do exemplo até o fim da primeira dobra: "Como funciona" aparece antes, no rótulo
+    // do CTA secundário, e não serve de limite.
+    const cartao = html.slice(html.indexOf("Exemplo fictício"), html.indexOf('id="como-funciona"'));
+    for (const relativo of [
+      "segunda",
+      "terça",
+      "quarta",
+      "quinta",
+      "sexta",
+      "sábado",
+      "domingo",
+      "ontem",
+      "hoje",
+      "amanhã",
+      "esta semana",
+      "próxima semana",
+      "há 2 dias",
+    ]) {
+      expect(cartao.toLowerCase(), `o card não pode dizer "${relativo}"`).not.toContain(relativo);
+    }
+    // E as duas datas que ele mostra são absolutas, no formato oficial.
+    expect(cartao.match(/\d{2}\/\d{2}\/\d{4}/g) ?? []).toHaveLength(2);
   });
 });
 
@@ -150,16 +181,27 @@ describe("o que a página promete — e o que ela não promete", () => {
     expect(html).toContain("O produto pode acabar antes da validade informada.");
   });
 
-  it("diz que pagamento não muda a comparação orgânica", () => {
+  it("diz, em português simples, que pagamento não muda a ordem", () => {
     expect(html).toContain("A ordem não é vendida.");
-    expect(html).toContain("Pagamento nunca muda a comparação orgânica.");
-    expect(html).toContain("Pagamento não altera a comparação orgânica.");
+    // A regra que não pode sumir da página: a fronteira do controle, a lista de regras e a
+    // resposta sobre pagar para aparecer primeiro dizem todas a mesma frase.
+    expect(html.match(/Pagamento não muda a ordem dos resultados\./g) ?? []).toHaveLength(3);
   });
 
-  it("separa informação orgânica de conteúdo patrocinado, que ainda não existe", () => {
-    expect(html).toContain("Informação orgânica");
+  it("explica o jargão uma vez e não o repete", () => {
+    // "Orgânica" é palavra de dentro de casa. A página apresenta o termo como sinônimo do que já
+    // disse em português simples, e em nenhum outro lugar o usa como título ou resposta.
+    expect(html).toContain(
+      "A comparação normal, sem pagamento, também chamada de comparação orgânica, segue as mesmas regras para todos.",
+    );
+    expect(html.match(/orgânic/gi) ?? []).toHaveLength(1);
+  });
+
+  it("separa a comparação normal do conteúdo patrocinado, que ainda não existe", () => {
+    expect(html).toContain("Comparação normal");
     expect(html).toContain("Conteúdo patrocinado");
     expect(html).toContain("Não existe hoje.");
+    expect(html).toContain("não entrará na comparação nem mudará a ordem dos resultados");
   });
 
   it("só fala em validade quando o mercado informa", () => {
@@ -206,9 +248,9 @@ describe("o que a página promete — e o que ela não promete", () => {
     expect(html).toContain("Pedido de retirada do que enviou");
   });
 
-  it("diz que a comparação orgânica segue as mesmas regras para todos", () => {
+  it("diz que a comparação segue as mesmas regras para todos", () => {
     expect(html).toContain(
-      "Comparações orgânicas legítimas seguem as mesmas regras para todos. Pagamento não muda a ordem dos resultados.",
+      "A comparação normal, sem pagamento, também chamada de comparação orgânica, segue as mesmas regras para todos. Pagamento não muda a ordem dos resultados.",
     );
   });
 
@@ -361,17 +403,44 @@ describe("nenhuma alegação não comprovada", () => {
 });
 
 describe("dúvidas frequentes", () => {
-  it("responde as seis perguntas do mandato", () => {
+  it("responde as seis perguntas do mandato e as duas da auditoria", () => {
     for (const pergunta of [
       "O ViPreço vende os produtos?",
       "O ViPreço altera o preço no caixa?",
       "Preciso enviar todos os produtos?",
       "Posso corrigir uma informação?",
       "O mercado paga para aparecer primeiro?",
+      "O piloto custa alguma coisa?",
+      "Outros mercados poderão ver meus preços?",
       "Como demonstrar interesse?",
     ]) {
       expect(html, `falta a pergunta "${pergunta}"`).toContain(pergunta);
     }
+  });
+
+  it("responde sobre custo sem prometer gratuidade nem inventar condição", () => {
+    expect(html).toContain(
+      "O piloto ainda está em preparação. As condições serão combinadas na conversa inicial. Nada será cobrado sem acordo prévio.",
+    );
+    for (const termo of [
+      "grátis",
+      "gratuito",
+      "gratuita",
+      "sem custo",
+      "de graça",
+      "sem cobrança",
+      "não custa nada",
+      "taxa de adesão",
+      "plano",
+    ]) {
+      expect(html.toLowerCase(), `a página não deve dizer "${termo}"`).not.toContain(termo);
+    }
+  });
+
+  it("responde sobre concorrentes sem esconder que o que é publicado é público", () => {
+    expect(html).toContain(
+      "Sim. Tudo o que for publicado no ViPreço é público para moradores e mercados. Você escolhe quais informações do seu mercado deseja enviar e pode pedir correção ou retirada do que forneceu. Informações verificadas pelo ViPreço seguem as mesmas regras para todos.",
+    );
   });
 
   it("não responde o que ainda não foi decidido comercialmente", () => {

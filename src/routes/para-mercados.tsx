@@ -3,8 +3,15 @@ import { ArrowLeft, CalendarClock, ClipboardCheck, MessageCircle, Store, Tag } f
 import { AppShell } from "@/components/AppShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import { SourceBadge } from "@/components/SourceBadge";
+import { StickyMarketCta } from "@/components/StickyMarketCta";
 import { formatDate } from "@/lib/format";
 import { PILOT_LOCALITY } from "@/lib/pilot";
+import { OG_IMAGE_MARKETS_ALT, OG_IMAGE_MARKETS_PATH, ogImageMeta } from "@/lib/og";
+
+/** Título e descrição próprios da rota — é o que aparece na aba e na prévia do link. */
+const PAGE_TITLE = "ViPreço para mercados de Artemis";
+const PAGE_DESCRIPTION =
+  "Conheça o piloto local do ViPreço e veja como divulgar alguns produtos com preço, data e origem.";
 
 /**
  * Proposta para supermercados independentes (Parte 3, seções A–I do mandato).
@@ -26,20 +33,14 @@ import { PILOT_LOCALITY } from "@/lib/pilot";
 export const Route = createFileRoute("/para-mercados")({
   head: () => ({
     meta: [
-      { title: "Para mercados — ViPreço" },
-      {
-        name: "description",
-        content:
-          "Seu mercado mais perto de quem compra no bairro: envie alguns produtos pelo WhatsApp e o ViPreço organiza preço, data e origem para os moradores. Piloto em preparação em Artemis.",
-      },
-      { property: "og:title", content: "Para mercados — ViPreço" },
-      {
-        property: "og:description",
-        content:
-          "Envie alguns produtos pelo WhatsApp. O ViPreço organiza preço, data e origem para os moradores do bairro.",
-      },
+      { title: PAGE_TITLE },
+      { name: "description", content: PAGE_DESCRIPTION },
+      { property: "og:title", content: PAGE_TITLE },
+      { property: "og:description", content: PAGE_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      // Asset próprio: a prévia que o Founder manda para um dono de mercado não pode ser a do
+      // consumidor. `summary_large_image` vem junto, do mesmo helper.
+      ...ogImageMeta({ path: OG_IMAGE_MARKETS_PATH, alt: OG_IMAGE_MARKETS_ALT }),
     ],
   }),
   component: ForMarketsPage,
@@ -251,9 +252,11 @@ function ForMarketsPage() {
               <MarketWhatsAppCta microcopy={HERO_MICROCOPY} />
               {/* Âncora, não outra rota: o próximo passo de quem ainda não quer conversar está
                   logo abaixo, na mesma página. */}
+              {/* `sm:whitespace-nowrap`: em uma linha só a partir de `sm`, para o botão ficar da
+                  mesma altura do convite ao lado — medido em 1280 px, 56 px contra 48 px. */}
               <a
                 href="#como-funciona"
-                className="btn-base btn-secondary btn-touch-48 w-full rounded-full sm:w-auto"
+                className="btn-base btn-secondary btn-touch-48 w-full rounded-full sm:w-auto sm:whitespace-nowrap"
               >
                 Como funciona para o mercado
               </a>
@@ -270,12 +273,14 @@ function ForMarketsPage() {
         </section>
 
         {/* `tabIndex={-1}`: sem isso, o link âncora rola a página mas deixa o foco do teclado no
-            topo — quem chegou aqui pelo teclado continuaria tabulando a primeira dobra. */}
+            topo — quem chegou aqui pelo teclado continuaria tabulando a primeira dobra.
+            `scroll-mt-20`: o header é fixo no topo e, sem essa margem, a âncora parava o título
+            exatamente atrás dele — medido em 375 px no staging, com o alvo em `top: 0`. */}
         <section
           id="como-funciona"
           tabIndex={-1}
           aria-labelledby="como-funciona-titulo"
-          className="space-y-3"
+          className="scroll-mt-20 space-y-3"
         >
           <div>
             <h2 id="como-funciona-titulo" className="font-display text-xl sm:text-2xl">
@@ -286,7 +291,9 @@ function ForMarketsPage() {
             </p>
           </div>
 
-          <ol className="grid gap-3 sm:grid-cols-3">
+          {/* Três colunas só a partir de `md`. Em 640 px cada passo virava uma coluna de 189 px:
+              texto de cinco palavras por linha, card de 246 px de altura. Medido no navegador. */}
+          <ol className="grid gap-3 md:grid-cols-3">
             {ETAPAS.map(({ Icon, titulo, texto }) => (
               <li key={titulo} className="card-base">
                 <Icon aria-hidden="true" className="size-5 text-primary" />
@@ -295,6 +302,13 @@ function ForMarketsPage() {
               </li>
             ))}
           </ol>
+
+          {/* Os três passos descrevem como o piloto vai funcionar. Sem esta linha, o presente do
+              indicativo dos cards poderia ser lido como operação em curso — e não está. */}
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Nada disso está em operação hoje: o piloto ainda está sendo preparado, e o primeiro
+            passo é a conversa.
+          </p>
         </section>
 
         <section aria-labelledby="poucos-produtos-titulo" className="card-base space-y-2">
@@ -446,6 +460,9 @@ function ForMarketsPage() {
           Ver os Achados de Artemis
         </Link>
       </div>
+
+      {/* Só no mobile, e só quando nenhum dos dois convites do fluxo está na tela. */}
+      <StickyMarketCta />
     </AppShell>
   );
 }

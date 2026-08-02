@@ -1,11 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { consumerWhatsappLink } from "@/lib/whatsapp";
-import {
-  getStickyCtaVisible,
-  getStickyCtaVisibleOnServer,
-  hiddenCtaAttributes,
-  subscribeStickyCta,
-} from "@/lib/cta-visibility";
+import { consumerCtaStore, hiddenCtaAttributes } from "@/lib/cta-visibility";
 
 /**
  * CTA único de entrada no WhatsApp (North Star v1.2.2, Assets §4 e §6).
@@ -40,9 +35,9 @@ export function WhatsAppCta() {
   // uma segunda ação idêntica para o teclado e para o leitor de tela. O bloco inteiro sai —
   // botão e microcopy —, porque anunciar a explicação de um botão que não existe é pior.
   const duplicado = useSyncExternalStore(
-    subscribeStickyCta,
-    getStickyCtaVisible,
-    getStickyCtaVisibleOnServer,
+    consumerCtaStore.subscribe,
+    consumerCtaStore.get,
+    consumerCtaStore.getOnServer,
   );
   if (!href) return null;
 

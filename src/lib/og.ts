@@ -15,6 +15,26 @@ export const OG_IMAGE_PATH = "/og/vipreco-og-demo.png";
 export const OG_IMAGE_WIDTH = "1200";
 export const OG_IMAGE_HEIGHT = "630";
 
+/** Texto alternativo do asset padrão — o do consumidor. */
+export const OG_IMAGE_ALT =
+  "ViPreço — Achados de Artemis. Exemplo fictício de como um preço aparece, com faixa de demonstração.";
+
+/**
+ * Asset da proposta para mercados (Parte 3). Também estático, também 1200×630, também sem
+ * gerador dinâmico — e sem número, métrica, depoimento ou promessa de venda: só o nome, para
+ * quem é a página e o estado real do piloto. Fonte vetorial ao lado, em
+ * `public/og/vipreco-og-para-mercados-v2.svg`.
+ *
+ * O `-v2` no caminho não é enfeite. A primeira versão espalhava o texto pela largura inteira, e
+ * o WhatsApp Desktop, que reduz a prévia a uma miniatura lateral, cortava as pontas. Esta traz
+ * tudo o que importa para a área central de 630×500; as laterais são ornamento. Caminho novo
+ * porque a prévia antiga já circulou e fica em cache do lado do WhatsApp — só um endereço
+ * diferente garante que a imagem nova apareça.
+ */
+export const OG_IMAGE_MARKETS_PATH = "/og/vipreco-og-para-mercados-v2.png";
+
+export const OG_IMAGE_MARKETS_ALT = "ViPreço para mercados de Artemis. Piloto em preparação.";
+
 /**
  * URL absoluta do asset quando o ambiente informa a sua origem pública
  * (`VITE_PUBLIC_SITE_URL`), relativa caso contrário.
@@ -36,18 +56,21 @@ export function absoluteAssetUrl(
   }
 }
 
-/** Metadados de prévia de link comuns a todas as rotas. */
-export function ogImageMeta(): Array<{ property?: string; name?: string; content: string }> {
+/**
+ * Metadados de prévia de link. Sem argumento, entrega o asset do consumidor — é o padrão da raiz
+ * e de toda rota que não pede outro. Uma rota com asset próprio passa o seu; as demais não mudam.
+ */
+export function ogImageMeta({ path, alt }: { path?: string; alt?: string } = {}): Array<{
+  property?: string;
+  name?: string;
+  content: string;
+}> {
   return [
-    { property: "og:image", content: absoluteAssetUrl(OG_IMAGE_PATH) },
+    { property: "og:image", content: absoluteAssetUrl(path ?? OG_IMAGE_PATH) },
     { property: "og:image:type", content: "image/png" },
     { property: "og:image:width", content: OG_IMAGE_WIDTH },
     { property: "og:image:height", content: OG_IMAGE_HEIGHT },
-    {
-      property: "og:image:alt",
-      content:
-        "ViPreço — Achados de Artemis. Exemplo fictício de como um preço aparece, com faixa de demonstração.",
-    },
+    { property: "og:image:alt", content: alt ?? OG_IMAGE_ALT },
     { name: "twitter:card", content: "summary_large_image" },
   ];
 }

@@ -13,6 +13,18 @@ Um **link**. Nada além disso.
 3. A resposta de onboarding é manual, por pessoa.
 4. Saída: "para sair, é só avisar aqui" — pedido honrado sem fricção.
 
+## Duas mensagens, um destino
+
+A partir da Parte 3, `/para-mercados` usa o mesmo mecanismo com outro texto pré-preenchido:
+
+| Quem toca       | Onde                    | Mensagem                                                           |
+| --------------- | ----------------------- | ------------------------------------------------------------------ |
+| Morador         | Home (fluxo e CTA fixo) | "Quero receber os Achados de Artemis"                              |
+| Dono de mercado | `/para-mercados`        | "Tenho um mercado e quero conhecer o piloto do ViPreço em Artemis" |
+
+**Um número só.** Quem responde é a mesma pessoa; o texto é o que diz de onde a conversa veio.
+Ver `docs/mvp/FOR-MARKETS-PAGE.md`.
+
 ## O que **não** é
 
 - Nenhum SDK, nenhuma biblioteca, nenhuma requisição a servidor da Meta.

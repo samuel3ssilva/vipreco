@@ -1,8 +1,10 @@
-import { statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   OG_IMAGE_HEIGHT,
+  OG_IMAGE_MARKETS_ALT,
+  OG_IMAGE_MARKETS_PATH,
   OG_IMAGE_PATH,
   OG_IMAGE_WIDTH,
   absoluteAssetUrl,
@@ -60,5 +62,99 @@ describe("asset estático da prévia", () => {
     expect(OG_IMAGE_PATH).not.toContain("$");
     expect(OG_IMAGE_WIDTH).toBe("1200");
     expect(OG_IMAGE_HEIGHT).toBe("630");
+  });
+});
+
+describe("asset da proposta para mercados (Parte 3)", () => {
+  function metaMercados(property: string): string | undefined {
+    return ogImageMeta({ path: OG_IMAGE_MARKETS_PATH, alt: OG_IMAGE_MARKETS_ALT }).find(
+      (entry) => entry.property === property || entry.name === property,
+    )?.content;
+  }
+
+  it("é um asset próprio, não o do consumidor", () => {
+    expect(OG_IMAGE_MARKETS_PATH).not.toBe(OG_IMAGE_PATH);
+    expect(metaMercados("og:image")).toBe(OG_IMAGE_MARKETS_PATH);
+    expect(metaMercados("og:image:alt")).toBe(OG_IMAGE_MARKETS_ALT);
+    expect(metaMercados("twitter:card")).toBe("summary_large_image");
+    expect(metaMercados("og:image:width")).toBe("1200");
+    expect(metaMercados("og:image:height")).toBe("630");
+    expect(metaMercados("og:image:type")).toBe("image/png");
+  });
+
+  it("não muda a prévia das outras rotas", () => {
+    expect(meta("og:image")).toBe(OG_IMAGE_PATH);
+    expect(meta("og:image:alt")).toMatch(/fictício/i);
+  });
+
+  it("existe no bundle público, em 1200×630, e é leve o bastante", () => {
+    const png = statSync(join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH));
+    expect(png.isFile()).toBe(true);
+    expect(png.size).toBeGreaterThan(1_000);
+    expect(png.size).toBeLessThan(500_000);
+    // O PNG carrega as dimensões no cabeçalho IHDR: bytes 16–23, big-endian.
+    const cabecalho = readFileSync(join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH));
+    expect(cabecalho.readUInt32BE(16)).toBe(1200);
+    expect(cabecalho.readUInt32BE(20)).toBe(630);
+  });
+
+  it("tem o fonte vetorial ao lado, sem número, métrica ou promessa", () => {
+    const svg = readFileSync(
+      join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH.replace(/\.png$/, ".svg")),
+      "utf-8",
+    );
+    expect(svg).toContain("Para mercados");
+    expect(svg).toContain("de Artemis");
+    expect(svg).toContain("Piloto em preparação");
+    // Nenhum dígito solto no texto exibido: os únicos números do arquivo são coordenadas.
+    for (const texto of svg.match(/>([^<>]+)</g) ?? []) {
+      expect(texto, `texto com número: ${texto}`).not.toMatch(/\d/);
+    }
+    for (const proibido of ["R$", "cashback", "%", "vendas", "grátis", "vagas"]) {
+      expect(svg.toLowerCase(), `a imagem não pode dizer "${proibido}"`).not.toContain(
+        proibido.toLowerCase(),
+      );
+    }
+  });
+
+  it("mantém tudo o que importa na área central segura de 630×500", () => {
+    // O WhatsApp Desktop reduz a prévia a uma miniatura lateral e corta as bordas. Nada
+    // essencial pode viver fora do centro; as faixas verdes das laterais são ornamento.
+    const svg = readFileSync(
+      join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH.replace(/\.png$/, ".svg")),
+      "utf-8",
+    );
+    const SEGURO = { x0: 285, x1: 915, y0: 65, y1: 565 };
+
+    const textos = [...svg.matchAll(/<text x="(-?\d+)" y="(-?\d+)"/g)];
+    expect(textos.length).toBeGreaterThanOrEqual(4);
+    for (const [, x, y] of textos) {
+      expect(Number(x), `texto em x=${x}`).toBeGreaterThanOrEqual(SEGURO.x0);
+      expect(Number(x), `texto em x=${x}`).toBeLessThanOrEqual(SEGURO.x1);
+      expect(Number(y), `texto em y=${y}`).toBeGreaterThanOrEqual(SEGURO.y0);
+      expect(Number(y), `texto em y=${y}`).toBeLessThanOrEqual(SEGURO.y1);
+    }
+
+    // As faixas decorativas param antes do centro, dos dois lados.
+    const bandaEsquerda = svg.match(/<rect width="(\d+)" height="630" fill="#0E5C3C"\/>/);
+    const bandaDireita = svg.match(/<rect x="(\d+)" width="(\d+)" height="630" fill="#0E5C3C"\/>/);
+    expect(Number(bandaEsquerda?.[1])).toBeLessThanOrEqual(SEGURO.x0);
+    expect(Number(bandaDireita?.[1])).toBeGreaterThanOrEqual(SEGURO.x1);
+  });
+
+  it("o caminho é versionado, para o WhatsApp não servir a prévia antiga do cache", () => {
+    expect(OG_IMAGE_MARKETS_PATH).toMatch(/-v\d+\.png$/);
+  });
+
+  it("é estático: nenhum gerador dinâmico, nenhuma dependência externa", () => {
+    const svg = readFileSync(
+      join(process.cwd(), "public", OG_IMAGE_MARKETS_PATH.replace(/\.png$/, ".svg")),
+      "utf-8",
+    );
+    expect(OG_IMAGE_MARKETS_PATH).not.toContain("$");
+    // O `xmlns` é o namespace do formato, não um recurso buscado — fora dele, nenhuma URL.
+    expect(svg.replace(/xmlns="[^"]*"/g, "")).not.toMatch(/https?:\/\//);
+    expect(svg).not.toContain("<image");
+    expect(svg).not.toContain("<script");
   });
 });

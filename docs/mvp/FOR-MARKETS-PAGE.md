@@ -21,7 +21,7 @@ existe.
 | 4   | Você escolhe quais produtos enviar       | o que o mercado envia, corrige e retira            |
 | 5   | As regras valem para todo mundo          | procedência, validade, ordem não vendida, correção |
 | 6   | O piloto está sendo preparado em Artemis | convite para conversa, não inscrição               |
-| 7   | Dúvidas frequentes                       | as seis perguntas do mandato                       |
+| 7   | Dúvidas frequentes                       | as seis do mandato mais custo e concorrentes       |
 | 8   | Convite final                            | o mesmo CTA, a mesma mensagem                      |
 
 A volta para os Achados fecha a página. Não existe rodapé próprio — a barra inferior do `AppShell`
@@ -79,6 +79,51 @@ queira **destacar** ou **divulgar** — ofertas, itens sazonais, estoque alto. N
 leria como mídia paga; e nada de validade curta, queima de estoque, desconto garantido ou contagem
 regressiva. O uso para produtos perto do vencimento é hipótese de entrevista, não proposta desta
 página, e o teste barra os dois desvios.
+
+## As duas perguntas que faltavam
+
+Auditoria final da Parte 3. Um dono de mercado faz as duas antes de qualquer outra, e a página
+respondia só por omissão.
+
+**"O piloto custa alguma coisa?"** — "O piloto ainda está em preparação. As condições serão
+combinadas na conversa inicial. Nada será cobrado sem acordo prévio." Não promete gratuidade, não
+define mensalidade, contrato nem preço, e não sugere cobrança escondida: nenhuma dessas decisões
+foi tomada, e inventar qualquer uma delas seria pior do que não responder. O teste barra "grátis",
+"gratuito", "sem custo", "de graça", "taxa de adesão" e "plano".
+
+**"Outros mercados poderão ver meus preços?"** — "Sim. Tudo o que for publicado no ViPreço é
+público para moradores e mercados. Você escolhe quais informações do seu mercado deseja enviar e
+pode pedir correção ou retirada do que forneceu. Informações verificadas pelo ViPreço seguem as
+mesmas regras para todos." O produto é um comparador público; esconder isso na conversa comercial
+seria mentira com data para vencer. A fronteira do controle continua a mesma.
+
+## Jargão
+
+"Orgânica" é palavra de dentro de casa. A página usa o termo **uma vez**, e nessa vez o explica:
+
+> A comparação normal, sem pagamento, também chamada de comparação orgânica, segue as mesmas
+> regras para todos. Pagamento não muda a ordem dos resultados.
+
+Nos outros lugares a página diz "comparação normal" ou "ordem dos resultados" — inclusive no card
+que antes se chamava "Informação orgânica" e agora se chama "Comparação normal". A regra
+**"Pagamento não muda a ordem dos resultados."** aparece nas três posições em que a pergunta se
+coloca: na fronteira do controle, na lista de regras e na resposta sobre pagar para aparecer
+primeiro. O teste conta as ocorrências dos dois lados.
+
+## Datas do exemplo
+
+O card fictício mostrava "válido até sábado" e "informado ontem". A página não tem loader, não
+recebe hora do servidor e não recalcula nada: dia da semana e dia relativo escritos no código
+ficam errados no dia seguinte e continuam errados para sempre.
+
+Agora as duas datas são absolutas e passam pelo mesmo `formatDate` do Achado real — "válido até
+05/08/2026" e "31/07/2026 · informado pelo mercado". A linha de procedência perde o segmento
+relativo do card real ("· ontem ·"), que é justamente a parte que exige recálculo. Um teste
+proíbe dia da semana e dia relativo dentro do card.
+
+Consequência assumida: sendo absolutas e estáticas, as datas envelhecem. O card está rotulado
+**Exemplo fictício** e a alternativa — recalcular no cliente — reintroduziria divergência de
+hidratação e a relatividade que a auditoria pediu para tirar.
 
 ## Pontuação
 

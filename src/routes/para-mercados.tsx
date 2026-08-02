@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarClock, ClipboardCheck, MessageCircle, Store, Tag } f
 import { AppShell } from "@/components/AppShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import { SourceBadge } from "@/components/SourceBadge";
+import { formatDate } from "@/lib/format";
 import { PILOT_LOCALITY } from "@/lib/pilot";
 
 /**
@@ -53,6 +54,11 @@ const CTA_FINAL_MICROCOPY =
  * Exemplo fictício, na mesma anatomia do Achado real: é a resposta visual para "o que aparece
  * para o morador". Nome de mercado propositalmente genérico — nenhum mercado real é apresentado
  * como participante, aqui ou em qualquer outro lugar do produto.
+ *
+ * As datas são **absolutas**, e passam pelo mesmo `formatDate` do card real. A versão anterior
+ * dizia "válido até sábado" e "informado ontem": numa página estática, sem loader e sem hora do
+ * servidor, dia da semana e dia relativo são afirmações que ninguém recalcula e que ficam erradas
+ * no dia seguinte. Data absoluta erra menos, e é o que o morador vê no Achado de verdade.
  */
 const EXEMPLO = {
   produto: "Café torrado e moído, tradicional",
@@ -61,8 +67,10 @@ const EXEMPLO = {
   valor: "14,90",
   precoFalado: "14 reais e 90 centavos",
   mercado: "Mercado de exemplo",
-  validade: "válido até sábado",
-  procedencia: "informado ontem · informado pelo mercado",
+  /** Meio-dia UTC: qualquer hora entre 03h e 21h cai no mesmo dia no fuso do piloto. */
+  observadoEm: "2026-07-31T12:00:00.000Z",
+  validoAte: "2026-08-05T12:00:00.000Z",
+  origem: "informado pelo mercado",
 } as const;
 
 const ETAPAS = [
@@ -114,7 +122,7 @@ const REGRAS = [
   },
   {
     regra: "A ordem não é vendida.",
-    porque: "Pagamento nunca muda a comparação orgânica.",
+    porque: "Pagamento não muda a ordem dos resultados.",
   },
   {
     regra: "Errou? É só avisar.",
@@ -150,7 +158,22 @@ const DUVIDAS = [
   {
     pergunta: "O mercado paga para aparecer primeiro?",
     resposta:
-      "Pagamento não altera a comparação orgânica. Se um dia existir conteúdo comercial, ele será identificado como tal e ficará fora da comparação.",
+      "Pagamento não muda a ordem dos resultados. Se um dia existir conteúdo comercial, ele será identificado como tal e ficará fora da comparação.",
+  },
+  {
+    // Nada de gratuidade prometida, nada de mensalidade, contrato ou preço inventado: o que a
+    // página pode dizer com honestidade é que ainda não há condição definida e que ninguém será
+    // cobrado sem combinar antes.
+    pergunta: "O piloto custa alguma coisa?",
+    resposta:
+      "O piloto ainda está em preparação. As condições serão combinadas na conversa inicial. Nada será cobrado sem acordo prévio.",
+  },
+  {
+    // A pergunta que um dono de mercado faz de verdade. A resposta não pode esconder que o que é
+    // publicado é público, nem sugerir controle sobre o que o ViPreço verifica por conta própria.
+    pergunta: "Outros mercados poderão ver meus preços?",
+    resposta:
+      "Sim. Tudo o que for publicado no ViPreço é público para moradores e mercados. Você escolhe quais informações do seu mercado deseja enviar e pode pedir correção ou retirada do que forneceu. Informações verificadas pelo ViPreço seguem as mesmas regras para todos.",
   },
   {
     pergunta: "Como demonstrar interesse?",
@@ -169,7 +192,7 @@ function ExemploDeAchado() {
         <SourceBadge source="store_list" />
         <span className="font-data inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
           <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
-          {EXEMPLO.validade}
+          {`válido até ${formatDate(EXEMPLO.validoAte)}`}
         </span>
       </div>
 
@@ -191,7 +214,11 @@ function ExemploDeAchado() {
         {EXEMPLO.mercado} <span className="font-normal">{`· ${PILOT_LOCALITY}`}</span>
       </p>
 
-      <p className="font-data text-xs leading-snug text-muted-foreground">{EXEMPLO.procedencia}</p>
+      {/* Mesma linha seca do card real, menos o dia relativo: sem loader, não há como recalcular
+          "ontem" — e um "ontem" congelado no código vira mentira no dia seguinte. */}
+      <p className="font-data text-xs leading-snug text-muted-foreground">
+        {`${formatDate(EXEMPLO.observadoEm)} · ${EXEMPLO.origem}`}
+      </p>
     </div>
   );
 }
@@ -312,9 +339,12 @@ function ForMarketsPage() {
             ))}
           </ul>
 
+          {/* Primeira ocorrência pública de "orgânica" na página, e a única: aqui o termo é
+              apresentado como sinônimo do que já foi dito em português simples. Nos outros lugares
+              a página diz "comparação normal" ou "ordem dos resultados". */}
           <p className="max-w-prose text-sm text-muted-foreground">
-            Comparações orgânicas legítimas seguem as mesmas regras para todos. Pagamento não muda a
-            ordem dos resultados.
+            A comparação normal, sem pagamento, também chamada de comparação orgânica, segue as
+            mesmas regras para todos. Pagamento não muda a ordem dos resultados.
           </p>
 
           <div className="card-compact bg-surface max-w-prose">
@@ -356,7 +386,7 @@ function ForMarketsPage() {
 
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="card-compact bg-surface">
-              <p className="text-sm font-bold">Informação orgânica</p>
+              <p className="text-sm font-bold">Comparação normal</p>
               <p className="meta-text mt-0.5">
                 É tudo o que existe hoje: preço, mercado, data e origem, ordenados do menor preço
                 para o maior. Nada nessa ordem está à venda.
@@ -365,8 +395,8 @@ function ForMarketsPage() {
             <div className="card-compact bg-surface">
               <p className="text-sm font-bold">Conteúdo patrocinado</p>
               <p className="meta-text mt-0.5">
-                Não existe hoje. Se um dia existir, virá identificado, em área separada, e
-                continuará fora da comparação orgânica.
+                Não existe hoje. Se um dia existir, virá identificado, em área separada, e não
+                entrará na comparação nem mudará a ordem dos resultados.
               </p>
             </div>
           </div>

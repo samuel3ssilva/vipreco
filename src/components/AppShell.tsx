@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Home, Search, HelpCircle, Store } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
@@ -21,6 +21,12 @@ export function AppShell({
    * oculta o restante da página da árvore de acessibilidade e do teclado. */
   inert?: boolean;
 }) {
+  // A pill é um convite para ir até `/para-mercados`. Estando lá, ela vira um botão que leva à
+  // própria página — navegação circular, e uma ação a mais competindo com o CTA real da página.
+  const naPaginaDeMercados = useRouterState({
+    select: (state) => state.location.pathname === "/para-mercados",
+  });
+
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <a
@@ -75,13 +81,15 @@ export function AppShell({
                 Só a partir de `lg`: entre 640 e 1024 px ela espremia a marca a ponto de o
                 logotipo virar "Vi…". Abaixo disso, "Para mercados" na navegação (desktop) e a
                 barra inferior (mobile) já levam ao mesmo lugar. */}
-            <Link
-              to="/para-mercados"
-              className="btn-base btn-sm btn-touch-48 hidden shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary lg:inline-flex"
-            >
-              Tenho um mercado
-              <span aria-hidden="true">→</span>
-            </Link>
+            {naPaginaDeMercados ? null : (
+              <Link
+                to="/para-mercados"
+                className="btn-base btn-sm btn-touch-48 hidden shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-primary bg-card text-primary hover:bg-secondary lg:inline-flex"
+              >
+                Tenho um mercado
+                <span aria-hidden="true">→</span>
+              </Link>
+            )}
           </div>
           <Link
             to="/buscar"

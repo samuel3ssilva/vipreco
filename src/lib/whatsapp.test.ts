@@ -4,9 +4,12 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
+import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import {
   WHATSAPP_CONSUMER_MESSAGE,
+  WHATSAPP_MARKET_MESSAGE,
   consumerWhatsappLink,
+  marketWhatsappLink,
   normalizeWhatsappNumber,
   whatsappLink,
 } from "@/lib/whatsapp";
@@ -59,6 +62,59 @@ describe("link de conversa individual", () => {
   });
 });
 
+describe("link de quem tem um mercado (Parte 3)", () => {
+  it("usa exatamente a mensagem aprovada pelo PMO", () => {
+    expect(WHATSAPP_MARKET_MESSAGE).toBe(
+      "Tenho um mercado e quero conhecer o piloto do ViPreço em Artemis",
+    );
+  });
+
+  it("é o mesmo número do consumidor, com outro texto", () => {
+    const mercado = marketWhatsappLink("5519999999999");
+    const consumidor = consumerWhatsappLink("5519999999999");
+    expect(new URL(mercado!).pathname).toBe(new URL(consumidor!).pathname);
+    expect(decodeURIComponent(new URL(mercado!).searchParams.get("text")!)).toBe(
+      WHATSAPP_MARKET_MESSAGE,
+    );
+    expect(mercado).not.toBe(consumidor);
+  });
+
+  it("sem destino configurado não existe link", () => {
+    expect(marketWhatsappLink(undefined)).toBeNull();
+    expect(marketWhatsappLink("")).toBeNull();
+    expect(marketWhatsappLink("meu-numero")).toBeNull();
+  });
+});
+
+describe("CTA de mercado renderizado", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("não renderiza nada enquanto o destino não estiver configurado", () => {
+    expect(
+      renderToString(createElement(MarketWhatsAppCta, { microcopy: "Conversa inicial." })),
+    ).toBe("");
+  });
+
+  it("com destino injetado, entrega um único link para wa.me e a microcopy", () => {
+    const html = renderToString(
+      createElement(MarketWhatsAppCta, {
+        microcopy: "Conversa inicial.",
+        href: marketWhatsappLink("5519999999999"),
+      }),
+    );
+
+    expect(html).toContain("Quero conhecer o piloto");
+    expect(html).toContain("Conversa inicial.");
+    expect(html.match(/https:\/\/wa\.me\//g) ?? []).toHaveLength(1);
+    expect(html).toContain(encodeURIComponent(WHATSAPP_MARKET_MESSAGE));
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain("btn-primary");
+    expect(html).toContain("btn-touch-48");
+  });
+});
+
 describe("CTA renderizado", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -83,7 +139,13 @@ describe("CTA renderizado", () => {
 });
 
 describe("nenhum telefone no código", () => {
-  const fontes = ["src/lib/whatsapp.ts", "src/components/WhatsAppCta.tsx", "src/routes/index.tsx"];
+  const fontes = [
+    "src/lib/whatsapp.ts",
+    "src/components/WhatsAppCta.tsx",
+    "src/components/MarketWhatsAppCta.tsx",
+    "src/routes/index.tsx",
+    "src/routes/para-mercados.tsx",
+  ];
 
   it("nenhum arquivo de produção carrega um número real", () => {
     for (const caminho of fontes) {

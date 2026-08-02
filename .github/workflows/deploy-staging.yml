@@ -27,6 +27,11 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: bun install --frozen-lockfile
 
+      # `VITE_PUBLIC_SITE_URL` é *variable* do Environment `staging`, não secret: é o endereço que
+      # o produto anuncia de si mesmo, público por definição. Sem a variável cadastrada, o build
+      # cai no endereço `workers.dev`, que é o que staging sempre teve — trocar o domínio da
+      # demonstração passa a ser cadastro de ambiente, não commit.
+      #
       # `VITE_WHATSAPP_NUMBER` é *secret* do Environment, não *variable*. O valor em si é público
       # por construção — vai no bundle do cliente e no link que qualquer visitante enxerga —, mas
       # só como secret o GitHub o mascara sozinho em todo o log, inclusive nos blocos `env:`.
@@ -40,7 +45,7 @@ jobs:
           VITE_SUPABASE_PROJECT_ID=${{ secrets.SUPABASE_PROJECT_ID }}
           VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          VITE_PUBLIC_SITE_URL=https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev
+          VITE_PUBLIC_SITE_URL=${{ vars.VITE_PUBLIC_SITE_URL || 'https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev' }}
           VITE_WHATSAPP_NUMBER=${{ secrets.VITE_WHATSAPP_NUMBER }}
           EOF
 

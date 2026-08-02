@@ -53,9 +53,51 @@ isso depende de ofertas reais e de autorização.
   caso contrário. **Nenhum domínio fica fixado no código.** Staging já define a variável;
   produção ainda não — ver "Pendências".
 
+## Os três endereços
+
+Decisão do Founder e do PMO, 02/08/2026. O mesmo produto responde em endereços com propósitos
+diferentes, e o código sabe distinguir os três (`src/lib/indexing.ts`):
+
+| Endereço              | Para quê                             | Indexável |
+| --------------------- | ------------------------------------ | --------- |
+| `vipreco.com.br`      | produto público, quando existir      | sim       |
+| `www.vipreco.com.br`  | redirecionamento futuro              | sim       |
+| `demo.vipreco.com.br` | a demonstração que o Founder mostra  | **não**   |
+| `*.workers.dev`       | contingência técnica, não se divulga | **não**   |
+
+### Como a proteção funciona
+
+Duas camadas independentes, de propósito:
+
+1. **Por host, a cada requisição.** `X-Robots-Tag: noindex, nofollow, noarchive` no Worker e
+   `robots.txt` com `Disallow: /`. Não depende de como o build foi feito: mesmo bundle, hosts
+   diferentes, respostas diferentes. O `sitemap.xml` sai vazio nesses hosts — entregar lista de
+   endereços para indexar num host que pede `Disallow` é instrução contraditória.
+2. **Por build.** A meta `robots` no HTML, decidida pelo endereço que o build declara em
+   `VITE_PUBLIC_SITE_URL`.
+
+Sem endereço declarado, a camada 2 responde "não indexar". É o lado seguro do erro: sair do
+noindex tem que ser decisão escrita em configuração, nunca efeito colateral. Por isso a proteção
+**não** está amarrada ao modo DEMO — que é o padrão de qualquer build sem variável e faria a
+produção nascer invisível.
+
+`canonical` e `og:url` seguem a mesma régua: aparecem apontando para `demo.vipreco.com.br` ou para
+o domínio público, e **não aparecem** em `workers.dev`. Nada que alguém possa copiar deve levar ao
+endereço de contingência.
+
+`src/lib/indexing.test.ts` e `src/routes/indexing.ssr.test.ts` falham se a demonstração perder o
+noindex, se a produção herdá-lo, se a faixa de ambiente sumir do host de demonstração ou se
+`workers.dev` e `demo.vipreco.com.br` forem tratados como produção.
+
 ## Pendências de configuração humana
 
-- `VITE_PUBLIC_SITE_URL` no ambiente de **produção**, quando o domínio definitivo for decidido.
+- **Zona `vipreco.com.br` no Cloudflare** — não existe ainda. Os nameservers do domínio apontam
+  para o DNS do Registro.br (`a.auto.dns.br` / `b.auto.dns.br`), e há **DNSSEC ativo**: trocar os
+  nameservers sem antes remover o DNSSEC no Registro.br derruba a resolução do domínio.
+- `VITE_PUBLIC_SITE_URL` como **variable** do Environment `staging`, com
+  `https://demo.vipreco.com.br`, **depois** que o domínio resolver. Antes disso o build cai no
+  endereço `workers.dev`, que é o comportamento atual.
+- `VITE_PUBLIC_SITE_URL` no ambiente de **produção**, quando o domínio definitivo for ligado.
   Sem ela, a prévia de link em produção usa caminho relativo — funciona no navegador, mas alguns
   rastreadores exigem URL absoluta.
 

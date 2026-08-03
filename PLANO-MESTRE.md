@@ -600,6 +600,10 @@ Mandato registrado em `docs/governance/PROMPT-CTO_ONDA-3.md`. Escopo:
 
 ### 12.4 Trilha de Produto, sem dados reais
 
+> **SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3** (02/08/2026) — a lista de itens de produto
+> desta subseção foi substituída pelos épicos E1/E2/E3 de `docs/product/ROADMAP-MVP-v3.md`. A regra
+> de governança continua valendo: branch separada, só dados fictícios, autorização do PMO.
+
 Após Onda 2, o CTO pode preparar em branch separada, somente com dados fictícios e após autorização do PMO:
 
 - ledger fiscal e testes sintéticos;
@@ -679,6 +683,14 @@ escopo que aquela nota avalia.
 ---
 
 ## 13. Especificação funcional do MVP
+
+> **SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3** (02/08/2026) — toda esta seção foi
+> substituída por `docs/product/ROADMAP-MVP-v3.md` e pelas specs de `docs/product/` e `docs/data/`.
+> Três pontos mudaram de forma relevante: (a) a comparação passou a ser o núcleo do MVP, e não fase
+> futura; (b) "ordenar por tempo restante" e "contagem regressiva" foram revogados na Parte 2 — o
+> card não cria urgência artificial (`src/lib/temporal.ts`); (c) a foto deixou de ser opcional e
+> entrou no MVP com regras próprias (`docs/data/IMAGE-POLICY.md`). O restante desta seção fica como
+> registro histórico da especificação anterior.
 
 ### Achados do dia
 

@@ -9,6 +9,17 @@ manualmente pelo Founder, com as ferramentas que já usa (WhatsApp + planilha).
 documento descreve o processo para quando o Founder autorizar dados sintéticos de
 demonstração mais realistas ou, mais adiante, o Gate V2 com um comerciante real.
 
+> **SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3** (02/08/2026) — **por incompletude**, não
+> por contradição. Tudo o que está abaixo continua correto. Faltam três passos que o v3 exige e que
+> serão acrescentados em R9 (card MVP-DOCS-06): **conferir a imagem**
+> (`docs/data/IMAGE-POLICY.md` §4), **estruturar a promoção**
+> (`docs/data/PROMOTION-TYPES.md`) e **marcar esgotado ou encerrado**
+> (`docs/data/OFFER-STATES.md`).
+>
+> Registro honesto do estado atual: publicar uma oferta hoje é **executar SQL à mão no editor do
+> Supabase**. Não há painel, e não deve haver. O que precisa existir antes de qualquer dado real é
+> um script versionado de publicação — card MVP-BUSINESS-02.
+
 ---
 
 ## 1. Modelo de mensagem de WhatsApp para recebimento de oferta
@@ -31,13 +42,13 @@ Pode mandar por áudio ou texto, do jeito que for mais fácil.
 
 Antes de publicar, o Founder confirma que a mensagem recebida tem, no mínimo:
 
-| Campo | Obrigatório | Exemplo |
-| ----- | :---------: | ------- |
-| Produto (nome + marca + tamanho) | Sim | "Café Pilão tradicional 500 g" |
-| Preço | Sim | R$ 14,90 |
-| Mercado | Sim (já conhecido pelo cadastro do comerciante) | Mercado Bairro Verde |
-| Validade | Não — se ausente, assume-se "até revisão manual" | "até sábado" |
-| Evidência (foto/nota) | Recomendado, não obrigatório nesta fase | foto da etiqueta |
+| Campo                            |                   Obrigatório                    | Exemplo                        |
+| -------------------------------- | :----------------------------------------------: | ------------------------------ |
+| Produto (nome + marca + tamanho) |                       Sim                        | "Café Pilão tradicional 500 g" |
+| Preço                            |                       Sim                        | R$ 14,90                       |
+| Mercado                          | Sim (já conhecido pelo cadastro do comerciante)  | Mercado Bairro Verde           |
+| Validade                         | Não — se ausente, assume-se "até revisão manual" | "até sábado"                   |
+| Evidência (foto/nota)            |     Recomendado, não obrigatório nesta fase      | foto da etiqueta               |
 
 Se faltar produto ou preço, a oferta **não é publicada** — o Founder responde pedindo o
 dado que falta.
@@ -89,12 +100,12 @@ consumidor").
 Modelo simples que o Founder monta manualmente (planilha) e compartilha com o comerciante
 uma vez por semana:
 
-| Métrica | Exemplo |
-| ------- | ------- |
-| Ofertas publicadas na semana | 3 |
-| Vezes que o mercado apareceu numa comparação | 48 |
-| Vezes em que o mercado tinha o menor preço | 21 |
-| Observações | Nenhuma reclamação recebida |
+| Métrica                                      | Exemplo                     |
+| -------------------------------------------- | --------------------------- |
+| Ofertas publicadas na semana                 | 3                           |
+| Vezes que o mercado apareceu numa comparação | 48                          |
+| Vezes em que o mercado tinha o menor preço   | 21                          |
+| Observações                                  | Nenhuma reclamação recebida |
 
 Nenhuma dessas métricas é instrumentada automaticamente nesta fase — são contadas à mão
 a partir do que foi publicado na semana. Automatizar a coleta é trabalho do Roadmap B, só

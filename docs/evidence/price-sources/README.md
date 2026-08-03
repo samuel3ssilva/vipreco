@@ -148,7 +148,15 @@ Preço, catálogo e estrutura de site mudam. Evidência sobre fonte tem prazo.
   valor de auditoria;
 - revalidar é produzir registro **novo**, com data nova. Nunca editar a data do antigo.
 
-Sem data de revalidação, o padrão é **90 dias** a partir da observação.
+Sem data de revalidação, o padrão é **90 dias** a partir da observação. É piso, não regra: fonte
+volátil nasce com prazo menor, por tipo de evidência, e o padrão só vale onde ninguém definiu nada.
+
+**Este prazo é da evidência, nunca do preço.** Ele diz quando uma afirmação sobre a fonte precisa
+ser verificada de novo. Não é validade de preço, duração de oferta, prazo de folheto nem
+autorização para manter preço publicado, e não substitui `valid_until` nem os estados `active`,
+`ended`, `sold_out` e `expired` de [`../../data/OFFER-STATES.md`](../../data/OFFER-STATES.md).
+Preço e oferta obedecem aos próprios campos, estados e evidências: evidência dentro do prazo não
+mantém vivo um preço vencido, e evidência vencida não derruba um preço válido.
 
 ---
 

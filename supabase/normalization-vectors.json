@@ -1,0 +1,49 @@
+{
+  "descricao": "Vetores do contrato único de normalização de texto. A MESMA lista roda nos dois lados: em TypeScript, por src/lib/normalize.contract.test.ts (que também confere que este arquivo e o bloco SQL não divergiram); em SQL, por scripts/db-drill/90-assertions.sql, contra um Postgres vivo no drill de reconstrução de schema. Divergência entre os dois é falha de teste.",
+  "contrato": [
+    "1. nulo vira string vazia",
+    "2. minúsculas",
+    "3. remover diacríticos do português",
+    "4. qualquer sequência de espaço em branco vira um único espaço",
+    "5. remover espaço das pontas"
+  ],
+  "naoFaz": [
+    "não remove o espaço entre número e unidade: '500g' continua diferente de '500 g'",
+    "não remove pontuação, hífen ou símbolo",
+    "não toca em dígitos: zeros à esquerda de GTIN são preservados"
+  ],
+  "vetores": [
+    { "entrada": "500 g", "saida": "500 g", "porque": "caso base" },
+    { "entrada": "500  g", "saida": "500 g", "porque": "espaço repetido colapsa" },
+    {
+      "entrada": "500g",
+      "saida": "500g",
+      "porque": "continua diferente de '500 g' — o contrato não interpreta texto"
+    },
+    { "entrada": "1 L", "saida": "1 l", "porque": "caixa" },
+    { "entrada": "1L", "saida": "1l", "porque": "continua diferente de '1 l'" },
+    { "entrada": "Café Pilão", "saida": "cafe pilao", "porque": "acento e caixa" },
+    { "entrada": "CAFÉ PILÃO", "saida": "cafe pilao", "porque": "caixa alta com acento" },
+    { "entrada": "Ypê", "saida": "ype", "porque": "acento circunflexo" },
+    { "entrada": "Açúcar Cristal", "saida": "acucar cristal", "porque": "cedilha e agudo" },
+    { "entrada": "  Arroz  ", "saida": "arroz", "porque": "espaço antes e depois" },
+    {
+      "entrada": " Detergente   Neutro ",
+      "saida": "detergente neutro",
+      "porque": "pontas e repetição juntas"
+    },
+    {
+      "entrada": "Óleo de Soja 900 ml",
+      "saida": "oleo de soja 900 ml",
+      "porque": "frase completa como a operação digita"
+    },
+    { "entrada": "7896006711117", "saida": "7896006711117", "porque": "GTIN intacto" },
+    {
+      "entrada": "07896006711117",
+      "saida": "07896006711117",
+      "porque": "zero à esquerda preservado — GTIN é texto"
+    },
+    { "entrada": "", "saida": "", "porque": "vazio continua vazio" },
+    { "entrada": "   ", "saida": "", "porque": "só espaço vira vazio" }
+  ]
+}

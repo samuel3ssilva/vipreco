@@ -147,6 +147,11 @@ Aliases resolvem a distância entre como o produto se chama e como a pessoa o ch
 - alias entra no texto de busca normalizado pelo mesmo contrato do `PRODUCT-IDENTIFIERS.md`;
 - alias **não** aparece na interface como nome do produto.
 
+**Isto não é o alias de fonte.** O vínculo entre o item de uma fonte externa e um SKU do
+catálogo é outra coisa, com outro ciclo de vida e regras opostas — ele **é** identidade —, e
+vive fora do MVP em
+[`../data/SOURCE-PRODUCT-ALIASES.md`](../data/SOURCE-PRODUCT-ALIASES.md).
+
 ---
 
 ## 6. Estado do registro

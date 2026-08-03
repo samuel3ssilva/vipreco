@@ -95,23 +95,27 @@ Nenhuma etapa desta trilha começa antes que **todas** estejam prontas. A razão
 conector que despeja preço num modelo de dado que ainda não distingue 900 ml de 1 L produz
 comparação errada mais rápido do que a operação manual produziria.
 
-| Dependência                         | Onde vive                                                    |
-| ----------------------------------- | ------------------------------------------------------------ |
-| produto exato implantado            | `../product/CANONICAL-PRODUCT-SPEC.md` · E1                  |
-| aliases **por fonte**               | `../data/MVP-DATA-CONTRACT.md` + extensão desta trilha       |
-| quantidades e unidades estruturadas | `../data/MVP-DATA-CONTRACT.md` §2 · E1                       |
-| promoções e tipos de preço          | `../data/PROMOTION-TYPES.md` · E2                            |
-| estados e expiração                 | `../data/OFFER-STATES.md` · E2                               |
-| procedência                         | [`PRICE-PROVENANCE-POLICY.md`](PRICE-PROVENANCE-POLICY.md)   |
-| RLS revisada                        | `docs/security/`                                             |
-| leitura pública controlada          | `../data/OFFER-STATES.md` §3                                 |
-| backup e restore                    | `docs/operations/RESILIENCE-RUNBOOK.md`                      |
-| logs e incidentes                   | `docs/operations/INCIDENT-RESPONSE-PLAN.md`                  |
-| processo de revisão humana          | [`AUTOMATION-QUALITY-GATES.md`](AUTOMATION-QUALITY-GATES.md) |
-| revisão jurídica da fonte           | PM-DATA-1                                                    |
-| aprovação do Founder e do PMO       | cada Gate                                                    |
+| Dependência                         | Onde vive                                                                    |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| produto exato implantado            | `../product/CANONICAL-PRODUCT-SPEC.md` · E1                                  |
+| aliases **por fonte**               | [`../data/SOURCE-PRODUCT-ALIASES.md`](../data/SOURCE-PRODUCT-ALIASES.md)     |
+| quantidades e unidades estruturadas | `../data/MVP-DATA-CONTRACT.md` §2 · E1                                       |
+| promoções tipificadas               | `../data/PROMOTION-TYPES.md` · E2                                            |
+| tipos de preço, canais e condições  | [`../data/PRICE-CONDITION-TAXONOMY.md`](../data/PRICE-CONDITION-TAXONOMY.md) |
+| protocolo de evidência              | [`../evidence/price-sources/README.md`](../evidence/price-sources/README.md) |
+| estados e expiração                 | `../data/OFFER-STATES.md` · E2                                               |
+| procedência                         | [`PRICE-PROVENANCE-POLICY.md`](PRICE-PROVENANCE-POLICY.md)                   |
+| RLS revisada                        | `docs/security/`                                                             |
+| leitura pública controlada          | `../data/OFFER-STATES.md` §3                                                 |
+| backup e restore                    | `docs/operations/RESILIENCE-RUNBOOK.md`                                      |
+| logs e incidentes                   | `docs/operations/INCIDENT-RESPONSE-PLAN.md`                                  |
+| processo de revisão humana          | [`AUTOMATION-QUALITY-GATES.md`](AUTOMATION-QUALITY-GATES.md)                 |
+| revisão jurídica da fonte           | PM-DATA-1                                                                    |
+| aprovação do Founder e do PMO       | cada Gate                                                                    |
 
-**"Aliases por fonte" é a única dependência que o MVP não cobre sozinho.** Cada rede nomeia o
+**"Aliases por fonte" é a única dependência que o MVP não cobre sozinho** — o contrato está
+escrito em [`../data/SOURCE-PRODUCT-ALIASES.md`](../data/SOURCE-PRODUCT-ALIASES.md), fora do
+contrato de dados do MVP e de propósito. Cada rede nomeia o
 mesmo produto à sua maneira, e o alias que resolve uma fonte não resolve outra. O contrato de
 alias do MVP (`CANONICAL-PRODUCT-SPEC.md` §5) precisa ganhar a dimensão de origem antes que
 qualquer conector exista.

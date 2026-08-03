@@ -12,23 +12,23 @@ e **a regra que o governa**.
 
 ## 1. Produto exato
 
-| Campo                 | Tipo                                                          | Obrigatório | Regra                                                                   |
-| --------------------- | ------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------- |
-| `product_id`          | uuid                                                          | sim         | chave de comparação. **Nada no código pode assumir que GTIN é a chave** |
-| `name`                | text                                                          | sim         | nome do produto, sem marca e sem tamanho embutidos                      |
-| `brand`               | text                                                          | não         | campo de identidade; ausência é estado normal                           |
-| `variant`             | text                                                          | não         | campo de identidade (tradicional, integral, neutro…)                    |
-| `package_type`        | enum `unidade, pack, kit, garrafa, lata, vidro, sache, caixa` | sim         | campo de identidade — ver `../product/CANONICAL-PRODUCT-SPEC.md` §4.6   |
-| `quantity_value`      | numeric(12,4) > 0                                             | sim         | quantidade **declarada na embalagem**                                   |
-| `quantity_unit`       | enum `g, kg, ml, l, un`                                       | sim         | unidade declarada                                                       |
-| `normalized_quantity` | numeric(12,4)                                                 | derivado    | ver §2                                                                  |
-| `normalized_unit`     | enum `g, ml, un`                                              | derivado    | ver §2                                                                  |
-| `category`            | text                                                          | não         | agrupamento editorial; **não** é identidade                             |
-| `primary_gtin`        | text                                                          | não         | ver [`PRODUCT-IDENTIFIERS.md`](PRODUCT-IDENTIFIERS.md)                  |
-| `search_aliases`      | lista de text                                                 | não         | entrada de busca, nunca identidade                                      |
-| `is_active`           | boolean                                                       | sim         | inalterado                                                              |
-| `is_demo`             | boolean                                                       | sim         | sinal defensivo; **não** é o mecanismo de separação (D9)                |
-| imagem (7 campos)     | —                                                             | não         | ver [`IMAGE-POLICY.md`](IMAGE-POLICY.md)                                |
+| Campo                 | Tipo                                                          | Obrigatório | Regra                                                                                                                       |
+| --------------------- | ------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `product_id`          | uuid                                                          | sim         | chave de comparação. **Nada no código pode assumir que GTIN é a chave**                                                     |
+| `name`                | text                                                          | sim         | nome do produto, sem marca e sem tamanho embutidos                                                                          |
+| `brand`               | text                                                          | não         | campo de identidade; ausência é estado normal                                                                               |
+| `variant`             | text                                                          | não         | campo de identidade (tradicional, integral, neutro…)                                                                        |
+| `package_type`        | enum `unidade, pack, kit, garrafa, lata, vidro, sache, caixa` | sim         | campo de identidade — ver `../product/CANONICAL-PRODUCT-SPEC.md` §4.6                                                       |
+| `quantity_value`      | numeric(12,4) > 0                                             | sim         | quantidade **declarada na embalagem**                                                                                       |
+| `quantity_unit`       | enum `g, kg, ml, l, un`                                       | sim         | unidade declarada                                                                                                           |
+| `normalized_quantity` | numeric(12,4)                                                 | derivado    | ver §2                                                                                                                      |
+| `normalized_unit`     | enum `g, ml, un`                                              | derivado    | ver §2                                                                                                                      |
+| `category`            | text                                                          | não         | agrupamento editorial; **não** é identidade                                                                                 |
+| `primary_gtin`        | text                                                          | não         | ver [`PRODUCT-IDENTIFIERS.md`](PRODUCT-IDENTIFIERS.md)                                                                      |
+| `search_aliases`      | lista de text                                                 | não         | entrada de busca, nunca identidade. **Não** é alias de fonte — ver [`SOURCE-PRODUCT-ALIASES.md`](SOURCE-PRODUCT-ALIASES.md) |
+| `is_active`           | boolean                                                       | sim         | inalterado                                                                                                                  |
+| `is_demo`             | boolean                                                       | sim         | sinal defensivo; **não** é o mecanismo de separação (D9)                                                                    |
+| imagem (7 campos)     | —                                                             | não         | ver [`IMAGE-POLICY.md`](IMAGE-POLICY.md)                                                                                    |
 
 `size_text` permanece durante a transição como **texto de exibição**, nunca como fonte de cálculo.
 
@@ -172,6 +172,11 @@ Regras:
 
 ## 6. O que este contrato não decide
 
+- **nada de pós-MVP.** Aliases por fonte
+  ([`SOURCE-PRODUCT-ALIASES.md`](SOURCE-PRODUCT-ALIASES.md)) e tipos de preço, canais e
+  condições ([`PRICE-CONDITION-TAXONOMY.md`](PRICE-CONDITION-TAXONOMY.md)) ficam **fora** deste
+  contrato de propósito: o que está aqui é base para as migrations de R1/R2, e nada pós-MVP
+  pode entrar nessa fila por acidente;
 - forma final das tabelas (coluna × tabela associada) — R1/R2;
 - unicidade de GTIN sob reformulação — `PRODUCT-IDENTIFIERS.md` §4;
 - janela do preço anterior — P-01;

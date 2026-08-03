@@ -34,6 +34,14 @@ próprio documento.
 | [`data/OFFER-STATES.md`](data/OFFER-STATES.md)               | **NORMATIVO** |
 | [`data/IMAGE-POLICY.md`](data/IMAGE-POLICY.md)               | **NORMATIVO** |
 
+Dois contratos de dados existem **fora do MVP**, em `data/` por assunto e não por fase. Não
+entram em nenhuma migration de R1/R2:
+
+| Documento                                                              | Estado                                                                                                                             |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| [`data/SOURCE-PRODUCT-ALIASES.md`](data/SOURCE-PRODUCT-ALIASES.md)     | **NORMATIVO como contrato** — **fora do MVP**. Alias **de fonte**, que é vínculo de identidade; não confundir com `search_aliases` |
+| [`data/PRICE-CONDITION-TAXONOMY.md`](data/PRICE-CONDITION-TAXONOMY.md) | **NORMATIVO como contrato** — **fora do MVP**. Ortogonal a `PROMOTION-TYPES.md`, que continua íntegro                              |
+
 ## Analytics
 
 | Documento                                                            | Estado                                                            |
@@ -61,6 +69,12 @@ Gate humano.
 | [`post-mvp/SOURCE-CONNECTOR-STATUS.md`](post-mvp/SOURCE-CONNECTOR-STATUS.md)                     | registro de avaliação; nenhum estado autoriza implementação       |
 | [`post-mvp/AUTOMATION-QUALITY-GATES.md`](post-mvp/AUTOMATION-QUALITY-GATES.md)                   | registro de critério                                              |
 | [`post-mvp/PRICE-PROVENANCE-POLICY.md`](post-mvp/PRICE-PROVENANCE-POLICY.md)                     | **NORMATIVO** no que já existe; registro de critério na automação |
+
+## Evidências
+
+| Documento                                                              | Estado                                                                                                                                                                              |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`evidence/price-sources/README.md`](evidence/price-sources/README.md) | **NORMATIVO como protocolo** — define os marcadores `[C] [H] [F] [D] [J]`, os metadados obrigatórios e a expiração. **A pasta está vazia de evidências, e esse é o estado correto** |
 
 ## Governança e estratégia
 

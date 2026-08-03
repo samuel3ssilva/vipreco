@@ -3,6 +3,13 @@
 Decisões técnicas da **Parte 2**. Complementa `HOME-INITIAL-RENDER.md` (que explica por que a
 Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 
+> **SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3** (02/08/2026) em **dois pontos**, e só
+> neles: a **ordem da página** abaixo (a busca sobe para a primeira dobra — decisão D2) e a
+> apresentação da anatomia do card como final (o Card v2 acrescenta cinco itens —
+> `docs/product/CARD-V2-SPEC.md`). Todo o resto deste documento continua descrevendo o código como
+> ele é, e continua vinculante: hero, CTA fixo, estados da busca, alvo de toque, cascata das
+> utilities e as regras do que o card **não** faz.
+
 ## Ordem da página
 
 | #   | Seção                          | Componente                |
@@ -36,7 +43,7 @@ focável pelo teclado com `aria-label`, e grade de duas colunas a partir dali.
 ## Card oficial
 
 `AchadoCard` tem uma anatomia só e duas ênfases (`destaque`, `secundario`). O que ele **não**
-faz, e os testes provam:
+faz, e os testes provam — e estas cinco regras **sobrevivem inteiras** ao Card v2:
 
 - não inventa validade — sem `valid_until`, nenhum chip e nenhum estado "termina em breve";
 - não inventa preço anterior — a ausência é o estado normal;

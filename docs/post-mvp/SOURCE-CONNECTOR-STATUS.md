@@ -12,14 +12,11 @@
 > **Estudos anteriores relatados pelo Founder/PMO não foram localizados nesta missão.** Ver
 > §4 — este documento **não** afirma que investigação anterior nunca existiu.
 
-**Marcadores de procedência usados neste documento:**
-
-| Marcador | Significa                                                        |
-| -------- | ---------------------------------------------------------------- |
-| **[F]**  | contexto fornecido pelo Founder — não evidência reproduzida      |
-| **[D]**  | decisão do PMO                                                   |
-| **[H]**  | hipótese — plausível, não medida nem verificada por este projeto |
-| **[C]**  | confirmado — verificado nesta missão, com evidência reproduzível |
+**Marcadores de procedência:** `[C]` confirmado · `[H]` hipótese · `[F]` contexto do Founder ·
+`[D]` decisão do PMO · `[J]` revisão jurídica pendente. A definição normativa dos marcadores e as
+regras de uso estão em
+[`../evidence/price-sources/README.md`](../evidence/price-sources/README.md) §6 — **não são
+redefinidas aqui.**
 
 ---
 
@@ -167,7 +164,12 @@ Verificado nesta missão contra o código, o schema e a infraestrutura:
 
 Enquanto essa pendência estiver aberta, PM-DATA-1 começa do zero em termos de evidência: um
 estudo que ninguém consegue abrir não pode sustentar um Gate. Rastreado como **PM-DATA-02**
-em [`../pmo/TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md).
+em [`../pmo/TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md) e como **TD-009** em
+[`../pmo/TECHNICAL-DEBT-REGISTER.md`](../pmo/TECHNICAL-DEBT-REGISTER.md).
+
+**Onde os relatórios entram quando forem localizados:**
+[`../evidence/price-sources/README.md`](../evidence/price-sources/README.md) §10 — que também
+define o protocolo de metadados, reprodução e expiração ao qual eles ficam sujeitos.
 
 Não refazer as investigações, não acessar as fontes e não reconstruir os relatórios por
 suposição — nada disso está autorizado.

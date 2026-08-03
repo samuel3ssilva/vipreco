@@ -467,4 +467,43 @@ status.
 - **Documentos:** `docs/post-mvp/SOURCE-CONNECTOR-STATUS.md` §4,
   `docs/post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md` §1 e §7, `docs/pmo/TRELLO-MAPPING.md`
   (PM-DATA-02)
-- **Status:** ativa — pendência aberta
+- **Status:** ativa — pendência aberta. O destino dos relatórios, quando localizados, foi definido
+  por **DL-018**: `docs/evidence/price-sources/README.md` §10
+
+### DL-018 — Fronteira documental dos contratos pós-MVP de ingestão
+
+- **Data:** 03/08/2026
+- **Decisão:** **três documentos novos**, e não ampliação dos existentes:
+  `docs/data/SOURCE-PRODUCT-ALIASES.md`, `docs/data/PRICE-CONDITION-TAXONOMY.md` e
+  `docs/evidence/price-sources/README.md`. Os documentos normativos do MVP —
+  `MVP-DATA-CONTRACT.md`, `PROMOTION-TYPES.md`, `PRODUCT-IDENTIFIERS.md`,
+  `CANONICAL-PRODUCT-SPEC.md` — **permanecem íntegros**, ganhando apenas referências cruzadas.
+- **Contexto:** o mandato R0.6 pediu auditoria antes de criar, com preferência declarada por
+  ampliar documento existente e por referenciar em vez de copiar.
+- **Por que não ampliar, caso a caso:**
+  - **alias de fonte** não é o alias que o projeto já tem. `CANONICAL-PRODUCT-SPEC.md` §5 e
+    `search_aliases` tratam de **entrada de busca**, explicitamente "nunca identidade"; alias de
+    fonte **é** vínculo de identidade. São opostos no ponto decisivo: um alias de busca errado
+    devolve um resultado a mais, um alias de fonte errado publica o preço do produto errado;
+  - **tipo e condição de preço** é ortogonal a `PROMOTION-TYPES.md`, não uma extensão dele:
+    promoção é mecânica de desconto, tipo de preço é qual preço é e para quem. Um preço de clube
+    sem promoção existe; uma promoção no canal online existe;
+  - **em ambos os casos**, escrever no contrato do MVP colocaria conteúdo pós-MVP na fila de
+    migrations de R1/R2 por acidente — o risco que a trilha existe para evitar;
+  - **índice de evidências** não tinha cobertura alguma: `docs/evidence/` não existia.
+- **Alternativas:** (a) ampliar `MVP-DATA-CONTRACT.md` — rejeitada pelo risco de migration
+  acidental; (b) escrever tudo dentro de `AUTOMATED-PRICE-INGESTION-ROADMAP.md` — rejeitada:
+  aquele documento é sequência e gates, não contrato de dado, e ficaria ilegível; (c) só
+  referenciar, sem documento novo — rejeitada: não há onde referenciar, o conteúdo não existe.
+- **Antiduplicação:** a **ordem de matching** continua normativa apenas em
+  `AUTOMATED-PRICE-INGESTION-ROADMAP.md` §5; as **regras invioláveis** de canal e tipo, idem. Os
+  documentos novos referenciam e acrescentam só o que é próprio deles. A **legenda dos
+  marcadores** `[C] [H] [F] [D] [J]` passa a ter uma única definição normativa, em
+  `docs/evidence/price-sources/README.md` §6 — `SOURCE-CONNECTOR-STATUS.md` deixou de redefini-la
+  e passou a referenciá-la.
+- **Consequência:** nenhum item do MVP muda. Nenhum schema nasce. Nenhum card sai de Inbox ou
+  Bloqueado. `[J]` (revisão jurídica pendente) passa a existir como marcador.
+- **Documentos:** os três criados, mais referências em `MVP-DATA-CONTRACT.md`,
+  `PROMOTION-TYPES.md`, `CANONICAL-PRODUCT-SPEC.md`, `AUTOMATED-PRICE-INGESTION-ROADMAP.md`,
+  `SOURCE-CONNECTOR-STATUS.md`, `TRELLO-MAPPING.md`, `TECHNICAL-DEBT-REGISTER.md`, `INDEX.md`
+- **Status:** ativa

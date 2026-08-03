@@ -510,7 +510,17 @@ nesta fase.
 missão** — registro completo em
 [`../post-mvp/SOURCE-CONNECTOR-STATUS.md`](../post-mvp/SOURCE-CONNECTOR-STATUS.md) §4. O quadro
 **não** afirma que investigação anterior nunca existiu; PM-DATA-02 existe justamente para
-localizá-la. Contexto e sequência em
+localizá-la.
+
+**Contratos que estes cards consomem** — todos fora do MVP, todos sem schema:
+
+| Assunto                          | Documento normativo                                                          |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| alias de produto por fonte       | [`../data/SOURCE-PRODUCT-ALIASES.md`](../data/SOURCE-PRODUCT-ALIASES.md)     |
+| tipo de preço, canal e condição  | [`../data/PRICE-CONDITION-TAXONOMY.md`](../data/PRICE-CONDITION-TAXONOMY.md) |
+| protocolo e índice de evidências | [`../evidence/price-sources/README.md`](../evidence/price-sources/README.md) |
+
+Contexto e sequência em
 [`../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`](../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md).
 
 Etiquetas comuns a todos: `POST-MVP`. As demais estão em cada linha.
@@ -543,41 +553,59 @@ alimenta PM-DATA-0 e o limiar definitivo é do PMO. **Fora de escopo:** qualquer
 dois estudos foram produzidos: um plano técnico sobre Pague Menos, São Vicente e Carrefour
 (`plano-coleta-automatica-ofertas.md`) e uma investigação complementar sobre Savegnago e Atacadão
 (`investigacao-savegnago-atacadao.md`). Nenhum dos dois foi localizado nesta missão — ver
-`../post-mvp/SOURCE-CONNECTOR-STATUS.md` §4 para os caminhos inspecionados. **Aceite:** os
-relatórios **localizados, versionados ou substituídos por evidência reproduzível**; enquanto isso
-não acontecer, os achados por fonte permanecem **[H]** e nenhum spike pós-MVP começa. Manter
-registrado o que já se sabe, **sem acrescentar investigação nova**. **Gate:** nenhum para localizar
-e versionar; **sim** para qualquer acesso a fonte. **Fora de escopo:** refazer as investigações,
-acessar as fontes, reconstruir os relatórios por suposição.
+`../post-mvp/SOURCE-CONNECTOR-STATUS.md` §4 para os caminhos inspecionados. **Onde eles entram
+quando forem localizados:**
+[`../evidence/price-sources/README.md`](../evidence/price-sources/README.md) §10, sujeitos ao
+protocolo de metadados (§4), reprodução (§5) e expiração (§7) daquele índice. **Aceite:** os
+relatórios **localizados, versionados ou substituídos por evidência reproduzível**, com o bloco de
+metadados preenchido; enquanto isso não acontecer, os achados por fonte permanecem **[H]** e nenhum
+spike pós-MVP começa. Manter registrado o que já se sabe, **sem acrescentar investigação nova**.
+**Gate:** nenhum para localizar e versionar; **sim** para qualquer acesso a fonte. **Fora de
+escopo:** refazer as investigações, acessar as fontes, reconstruir os relatórios por suposição.
+**Também rastreado como TD-009.**
 
 **PM-DATA-03 — Revisão jurídica e de fontes.** Ler termos de uso e obter parecer, por fonte.
 **Aceite:** parecer escrito antes de qualquer acesso automatizado. **Gate:** **sim** — autorização
 por fonte, ou HOLD. **Fora de escopo:** aceitar qualquer termo em nome do ViPreço.
 
 **PM-DATA-04 — Definir contrato de conector.** Interface comum: o que um conector entrega, com
-quais campos obrigatórios e qual classe de evidência. **Aceite:** contrato cobre as catorze
-dimensões de qualidade. **Gate:** **sim.** **Fora de escopo:** implementar conector.
+quais campos obrigatórios e qual classe de evidência. **Fonte:**
+[`../data/SOURCE-PRODUCT-ALIASES.md`](../data/SOURCE-PRODUCT-ALIASES.md) (alias por fonte, estados
+e regras) e [`../data/PRICE-CONDITION-TAXONOMY.md`](../data/PRICE-CONDITION-TAXONOMY.md) (tipo de
+preço, canal, condição, escopo). **Aceite:** contrato cobre as catorze dimensões de qualidade, os
+cinco estados de alias e as quatro dimensões da taxonomia; critério escrito de "alteração
+substancial" na descrição da fonte. **Gate:** **sim.** **Fora de escopo:** implementar conector,
+criar tabela, criar migration.
 
-**PM-DATA-05 — Atacadão em shadow mode.** Coletar, guardar, auditar. **Publicar nada.** **Aceite:**
-prova de que o conector distingue preço por unidade de preço por caixa; nenhuma linha publicada.
-**Gate:** **sim, próprio.** **Fora de escopo:** publicação, segunda fonte.
+**PM-DATA-05 — Atacadão em shadow mode.** Coletar, guardar, auditar. **Publicar nada.** **Fonte:**
+[`../data/PRICE-CONDITION-TAXONOMY.md`](../data/PRICE-CONDITION-TAXONOMY.md) §3, regra 1
+(`bulk_price` e `bulk_min_quantity`). **Aceite:** prova de que o conector distingue preço por
+unidade de preço por caixa; nenhuma linha publicada. **Gate:** **sim, próprio.** **Fora de escopo:**
+publicação, segunda fonte.
 
 **PM-DATA-06 — Auditar precisão composta do Atacadão.** **Aceite:** precisão composta medida sobre
 as catorze dimensões; quando houver amostra, também o limite inferior do IC de 95%. **Gate:**
 **sim** — o número decide se a trilha continua.
 
-**PM-DATA-07 — Provar regionalização do Savegnago.** **Aceite:** demonstrar que preço varia por
-canal e por unidade e que o conector sabe qual está lendo. Sem isso, nem shadow mode. **Gate:**
+**PM-DATA-07 — Provar regionalização do Savegnago.** **Fonte:**
+[`../data/PRICE-CONDITION-TAXONOMY.md`](../data/PRICE-CONDITION-TAXONOMY.md) §2.4 e §3, regra 6.
+**Aceite:** demonstrar que preço varia por canal e por unidade e que o conector sabe qual está
+lendo — `store_id` e `region_id` resolvidos, não presumidos. Sem isso, nem shadow mode. **Gate:**
 **sim.**
 
-**PM-DATA-08 — Provar canais e condições do Pague Menos.** **Aceite:** separação demonstrada entre
-online, loja, promoção e Clube Leve Mais — as quatro, nomeadas no dado. **Gate:** **sim.**
+**PM-DATA-08 — Provar canais e condições do Pague Menos.** **Fonte:**
+[`../data/PRICE-CONDITION-TAXONOMY.md`](../data/PRICE-CONDITION-TAXONOMY.md) §2 e §3.
+**Aceite:** separação demonstrada entre online, loja, promoção e Clube Leve Mais — as quatro,
+nomeadas no dado, com a condição de acesso registrada. **Gate:** **sim.**
 
 **PM-DATA-09 — Reavaliar São Vicente.** Fallback. **Aceite:** só avança se a regionalização das
 anteriores se mostrar instável. **Gate:** **sim.**
 
-**PM-DATA-10 — Implementar fila de revisão.** **Aceite:** item Classe B nunca vira publicado sem
-decisão humana; **nenhum desfecho automático por inatividade**. **Gate:** **sim.**
+**PM-DATA-10 — Implementar fila de revisão.** **Fonte:**
+[`../data/SOURCE-PRODUCT-ALIASES.md`](../data/SOURCE-PRODUCT-ALIASES.md) §4 (os cinco estados e as
+transições). **Aceite:** item Classe B nunca vira publicado sem decisão humana; alias em
+`proposed` ou `needs_review` nunca alimenta conector; **nenhum desfecho automático por
+inatividade**. **Gate:** **sim.**
 
 **PM-DATA-11 — Gate de publicação limitada.** **Aceite:** subconjunto pequeno, com procedência de
 conector escrita, e reavaliação em prazo definido. **Gate:** **sim, próprio** — é a primeira vez que

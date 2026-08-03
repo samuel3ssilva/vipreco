@@ -126,3 +126,16 @@ aparece dentro da linha da condição, com a quantidade escrita.
 
 Quando o tipo de promoção não permite derivar quantidade explícita, `calculation_status` do efetivo é
 `ambiguous` e nada é exibido.
+
+---
+
+## 6. O que este documento não cobre
+
+**Tipo de preço, canal e condição de acesso** — preço de clube, preço com cartão, preço online
+contra loja física, preço de atacado, exigência de identificação no caixa. É dimensão
+**ortogonal** a esta: um preço de clube sem promoção existe, e uma promoção no canal online
+existe.
+
+Está registrada, **fora do MVP**, em
+[`PRICE-CONDITION-TAXONOMY.md`](PRICE-CONDITION-TAXONOMY.md). Os quatro tipos deste documento
+continuam normativos para E2.7 e não são afetados por ela.

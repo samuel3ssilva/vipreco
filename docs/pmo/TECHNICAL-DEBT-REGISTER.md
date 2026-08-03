@@ -208,7 +208,10 @@ O custo de deixar aberto é concreto: sem os relatórios, PM-DATA-1 recomeça do
 feito é pago duas vezes — ou pior, é refeito com conclusões diferentes e ninguém sabe qual valia.
 
 **Ação:** **os relatórios anteriores devem ser localizados, versionados ou substituídos por
-evidência reproduzível antes de qualquer spike pós-MVP.** **PR:** nenhum de código — versionar os
-arquivos, se encontrados. **Card:** PM-DATA-02. **Dependência:** ação humana do Founder/PMO.
+evidência reproduzível antes de qualquer spike pós-MVP.** Quando localizados, entram em
+[`../evidence/price-sources/README.md`](../evidence/price-sources/README.md) §10, sujeitos ao
+protocolo de metadados, reprodução e expiração daquele índice — a classificação vem dos critérios,
+não da procedência do arquivo. **PR:** nenhum de código — versionar os arquivos, se encontrados.
+**Card:** PM-DATA-02. **Dependência:** ação humana do Founder/PMO.
 **Fora de escopo:** refazer as investigações, acessar as fontes, reconstruir os relatórios por
 suposição.

@@ -9,6 +9,18 @@
 > Nenhuma fonte foi acessada por conector. Nenhum preço foi coletado. Nenhum termo de uso foi
 > aceito. A revisão jurídica é **PM-DATA-1** e ainda não aconteceu.
 
+> **Estudos anteriores relatados pelo Founder/PMO não foram localizados nesta missão.** Ver
+> §4 — este documento **não** afirma que investigação anterior nunca existiu.
+
+**Marcadores de procedência usados neste documento:**
+
+| Marcador | Significa                                                        |
+| -------- | ---------------------------------------------------------------- |
+| **[F]**  | contexto fornecido pelo Founder — não evidência reproduzida      |
+| **[D]**  | decisão do PMO                                                   |
+| **[H]**  | hipótese — plausível, não medida nem verificada por este projeto |
+| **[C]**  | confirmado — verificado nesta missão, com evidência reproduzível |
+
 ---
 
 ## 1. Ordem provisória
@@ -28,6 +40,11 @@ começar a investigar, se houver investigação.
 ---
 
 ## 2. Por fonte
+
+> **Todo o conteúdo técnico desta seção é [H] — hipótese.** As armadilhas descritas por fonte
+> derivam de raciocínio sobre o modelo de negócio de cada rede e do contexto **[F]** do
+> Founder; nenhuma delas foi observada, medida ou reproduzida por este projeto. Nada aqui
+> pode ser citado como achado verificado. Ver §4.
 
 ### Atacadão — GO somente para spike futuro em shadow mode
 
@@ -96,11 +113,61 @@ outros quatro. Facilidade de acesso nunca foi o critério.
 
 ---
 
-## 4. Registro de investigações existentes
+## 4. Registro de investigações anteriores
 
-Nenhuma investigação técnica foi feita por este projeto. Não há conector, não há amostra
-coletada, não há credencial, não há acordo e não há contato com nenhuma das seis redes.
+### [F] Existência relatada
 
-O que existe é o que está escrito aqui: uma ordem provisória e um conjunto de condições,
-derivados do contexto **[F]** do Founder registrado em
-`AUTOMATED-PRICE-INGESTION-ROADMAP.md` §1.
+O Founder/PMO informou que **dois estudos anteriores foram produzidos**:
+
+| #   | Estudo                    | Fontes cobertas                     | Relatório esperado                   |
+| --- | ------------------------- | ----------------------------------- | ------------------------------------ |
+| 1   | plano técnico             | Pague Menos, São Vicente, Carrefour | `plano-coleta-automatica-ofertas.md` |
+| 2   | investigação complementar | Savegnago, Atacadão                 | `investigacao-savegnago-atacadao.md` |
+
+Esta é uma afirmação **[F]** do Founder/PMO, registrada como contexto. Não foi verificada, e
+não precisa ser verificada para valer como registro do que foi relatado.
+
+### NOT LOCATED
+
+Nenhum dos dois relatórios foi encontrado nesta missão.
+
+Caminhos inspecionados: árvore de trabalho completa do repositório, inclusive arquivos
+ignorados pelo Git; o histórico de objetos de **todos** os refs (`git rev-list --all`);
+`git stash`; e o diretório de sessão do projeto. Nenhum arquivo com esses nomes existe em
+nenhum deles, e nenhum objeto do histórico contém esse conteúdo.
+
+**Isto não afirma que as investigações nunca existiram.** É ausência de evidência localizável
+nos caminhos inspecionados — não evidência de ausência. Os estudos podem existir fora do
+repositório.
+
+### NOT VERIFIED
+
+Os achados técnicos específicos desses estudos **não foram reproduzidos nem validados** nesta
+missão. Nenhuma fonte foi acessada. Nenhum achado do handoff pode ser promovido a **[C]** até
+que o relatório seja localizado ou a evidência seja reproduzida.
+
+Enquanto isso, os detalhes técnicos por fonte deste documento permanecem **[H]**, com exceção
+das observações fornecidas pelo Founder — **[F]** — e das decisões do PMO — **[D]**.
+
+### [C] Confirmado
+
+Verificado nesta missão contra o código, o schema e a infraestrutura:
+
+- **nenhum conector existe** — nenhum código de coleta, em nenhuma branch;
+- **nenhuma coleta recorrente existe** — nenhum agendador, nenhuma fila, nenhum workflow;
+- **nenhuma credencial de fonte existe** — nenhum secret, nenhuma variável de ambiente;
+- **nenhum acordo com as redes existe**;
+- **nenhum preço automatizado foi publicado** — toda linha de `prices` é manual ou fictícia;
+- **nenhuma fonte foi acessada durante R0.5.**
+
+### Pendência
+
+> **Os relatórios anteriores devem ser localizados, versionados ou substituídos por evidência
+> reproduzível antes de qualquer spike pós-MVP.**
+
+Enquanto essa pendência estiver aberta, PM-DATA-1 começa do zero em termos de evidência: um
+estudo que ninguém consegue abrir não pode sustentar um Gate. Rastreado como **PM-DATA-02**
+em [`../pmo/TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md).
+
+Não refazer as investigações, não acessar as fontes e não reconstruir os relatórios por
+suposição — nada disso está autorizado.

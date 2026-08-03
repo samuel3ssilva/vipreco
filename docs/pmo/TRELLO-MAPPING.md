@@ -300,11 +300,12 @@ de sair da lista 5.
 
 ### MVP-DATA-01 — Contrato único de normalização ✅ _(esta rodada)_
 
-- **Objetivo:** alinhar `pa_normalize_text()` e `normalizeSearchText()` (TD-001).
+- **Objetivo:** alinhar `pa_normalize_text()` e `normalizeSearchText()` (TD-001A; TD-001B segue
+  aberta).
 - **Fonte:** `docs/data/PRODUCT-IDENTIFIERS.md` §2
 - **Dependências:** nenhuma · **Etapa:** R0.5 · **Etiquetas:** DATA
-- **Aceite:** os onze vetores idênticos nos dois lados; migration **criada e não aplicada**; rollback
-  documentado; nenhum produto unido automaticamente.
+- **Aceite:** os dezesseis vetores idênticos nos dois lados; migration **criada e não aplicada**;
+  rollback documentado; nenhum produto unido automaticamente.
 - **Gate:** aplicar a migration.
 - **Fora de escopo:** quantidade estruturada; união de duplicatas.
 - **Evidência:** PR `fix/product-normalization-contract`, CI e CodeQL verdes.
@@ -503,27 +504,33 @@ de sair da lista 5.
 
 Não fazem parte do MVP, não bloqueiam o MVP, não podem começar autonomamente, e cada um depende de
 Gate humano. Nenhuma investigação autoriza publicação, e nenhum preço coletado entra no produto
-nesta fase. Contexto e sequência em
+nesta fase.
+
+**Dois estudos técnicos anteriores são relatados pelo Founder/PMO e não foram localizados nesta
+missão** — registro completo em
+[`../post-mvp/SOURCE-CONNECTOR-STATUS.md`](../post-mvp/SOURCE-CONNECTOR-STATUS.md) §4. O quadro
+**não** afirma que investigação anterior nunca existiu; PM-DATA-02 existe justamente para
+localizá-la. Contexto e sequência em
 [`../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`](../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md).
 
 Etiquetas comuns a todos: `POST-MVP`. As demais estão em cada linha.
 
-| ID             | Título                                   | Etapa     | Etiquetas extras    | Lista inicial |
-| -------------- | ---------------------------------------- | --------- | ------------------- | ------------- |
-| **PM-DATA-01** | Medir déficit de cobertura               | PM-DATA-0 | DATA, BUSINESS      | Inbox         |
-| **PM-DATA-02** | Preservar investigações                  | PM-DATA-0 | DOCS                | Inbox         |
-| **PM-DATA-03** | Revisão jurídica e de fontes             | PM-DATA-1 | LEGAL               | **Bloqueado** |
-| **PM-DATA-04** | Definir contrato de conector             | PM-DATA-1 | CONNECTOR, DATA     | **Bloqueado** |
-| **PM-DATA-05** | Atacadão em shadow mode                  | PM-DATA-2 | CONNECTOR, SECURITY | **Bloqueado** |
-| **PM-DATA-06** | Auditar precisão composta do Atacadão    | PM-DATA-3 | CONNECTOR, DATA     | **Bloqueado** |
-| **PM-DATA-07** | Provar regionalização do Savegnago       | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
-| **PM-DATA-08** | Provar canais e condições do Pague Menos | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
-| **PM-DATA-09** | Reavaliar São Vicente                    | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
-| **PM-DATA-10** | Implementar fila de revisão              | PM-DATA-3 | DATA, BUSINESS      | **Bloqueado** |
-| **PM-DATA-11** | Gate de publicação limitada              | PM-DATA-4 | SECURITY, BUSINESS  | **Bloqueado** |
-| **PM-DATA-12** | Agendamento e observabilidade            | PM-DATA-6 | CONNECTOR, SECURITY | **Bloqueado** |
-| **PM-DATA-13** | Expansão Santa Terezinha                 | PM-DATA-7 | BUSINESS            | **Bloqueado** |
-| **PM-DATA-14** | Reavaliar fontes em HOLD                 | —         | LEGAL, BUSINESS     | **Bloqueado** |
+| ID             | Título                                         | Etapa     | Etiquetas extras    | Lista inicial |
+| -------------- | ---------------------------------------------- | --------- | ------------------- | ------------- |
+| **PM-DATA-01** | Medir déficit de cobertura                     | PM-DATA-0 | DATA, BUSINESS      | Inbox         |
+| **PM-DATA-02** | Localizar e preservar investigações anteriores | PM-DATA-0 | DOCS                | Inbox         |
+| **PM-DATA-03** | Revisão jurídica e de fontes                   | PM-DATA-1 | LEGAL               | **Bloqueado** |
+| **PM-DATA-04** | Definir contrato de conector                   | PM-DATA-1 | CONNECTOR, DATA     | **Bloqueado** |
+| **PM-DATA-05** | Atacadão em shadow mode                        | PM-DATA-2 | CONNECTOR, SECURITY | **Bloqueado** |
+| **PM-DATA-06** | Auditar precisão composta do Atacadão          | PM-DATA-3 | CONNECTOR, DATA     | **Bloqueado** |
+| **PM-DATA-07** | Provar regionalização do Savegnago             | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
+| **PM-DATA-08** | Provar canais e condições do Pague Menos       | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
+| **PM-DATA-09** | Reavaliar São Vicente                          | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
+| **PM-DATA-10** | Implementar fila de revisão                    | PM-DATA-3 | DATA, BUSINESS      | **Bloqueado** |
+| **PM-DATA-11** | Gate de publicação limitada                    | PM-DATA-4 | SECURITY, BUSINESS  | **Bloqueado** |
+| **PM-DATA-12** | Agendamento e observabilidade                  | PM-DATA-6 | CONNECTOR, SECURITY | **Bloqueado** |
+| **PM-DATA-13** | Expansão Santa Terezinha                       | PM-DATA-7 | BUSINESS            | **Bloqueado** |
+| **PM-DATA-14** | Reavaliar fontes em HOLD                       | —         | LEGAL, BUSINESS     | **Bloqueado** |
 
 ### Detalhamento
 
@@ -532,9 +539,16 @@ dois ou mais mercados pelo caminho manual. **Aceite:** medida real, não estimat
 comparáveis como referência inicial do piloto, **não** como regra permanente. **Gate:** o resultado
 alimenta PM-DATA-0 e o limiar definitivo é do PMO. **Fora de escopo:** qualquer conector.
 
-**PM-DATA-02 — Preservar investigações.** Manter registrado o que já se sabe sobre cada fonte, sem
-acrescentar investigação nova. **Aceite:** `SOURCE-CONNECTOR-STATUS.md` reflete o estado real —
-hoje, nenhuma investigação técnica feita. **Gate:** nenhum.
+**PM-DATA-02 — Localizar e preservar investigações anteriores.** O Founder/PMO relata **[F]** que
+dois estudos foram produzidos: um plano técnico sobre Pague Menos, São Vicente e Carrefour
+(`plano-coleta-automatica-ofertas.md`) e uma investigação complementar sobre Savegnago e Atacadão
+(`investigacao-savegnago-atacadao.md`). Nenhum dos dois foi localizado nesta missão — ver
+`../post-mvp/SOURCE-CONNECTOR-STATUS.md` §4 para os caminhos inspecionados. **Aceite:** os
+relatórios **localizados, versionados ou substituídos por evidência reproduzível**; enquanto isso
+não acontecer, os achados por fonte permanecem **[H]** e nenhum spike pós-MVP começa. Manter
+registrado o que já se sabe, **sem acrescentar investigação nova**. **Gate:** nenhum para localizar
+e versionar; **sim** para qualquer acesso a fonte. **Fora de escopo:** refazer as investigações,
+acessar as fontes, reconstruir os relatórios por suposição.
 
 **PM-DATA-03 — Revisão jurídica e de fontes.** Ler termos de uso e obter parecer, por fonte.
 **Aceite:** parecer escrito antes de qualquer acesso automatizado. **Gate:** **sim** — autorização

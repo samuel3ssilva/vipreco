@@ -153,6 +153,13 @@ produto nesta fase, e **nenhuma infraestrutura preventiva** é criada por anteci
 Está registrada agora, e não depois, por um motivo só: quando o Gate de necessidade for avaliado, a
 decisão precisa ser tomada sobre algo escrito.
 
+**Sobre estudos anteriores:** o Founder/PMO relata **[F]** que dois estudos técnicos de fontes
+foram produzidos antes desta fase. Eles não foram localizados nem verificados nesta missão — o
+registro está em
+[`../post-mvp/SOURCE-CONNECTOR-STATUS.md`](../post-mvp/SOURCE-CONNECTOR-STATUS.md) §4. **Devem ser
+localizados, versionados ou substituídos por evidência reproduzível antes de qualquer spike
+pós-MVP.** Este roadmap não afirma que investigação anterior nunca existiu.
+
 ---
 
 As exclusões permanentes já registradas em `docs/mvp/TEST-MVP-PLAN.md` §4 (login de consumidor, Pix,

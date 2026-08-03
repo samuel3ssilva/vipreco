@@ -6,17 +6,18 @@ dependência e o PR planejado.
 Severidade: **alta** = produz erro silencioso em dado ou em ordenação · **média** = degrada com
 escala · **baixa** = incompletude sem efeito hoje.
 
-| ID          | Título                                    | Severidade | Estado                                           |
-| ----------- | ----------------------------------------- | ---------- | ------------------------------------------------ |
-| **TD-001A** | normalização SQL e TypeScript divergentes | **alta**   | **RESOLVIDA pelo PR #47**, sujeita ao merge      |
-| **TD-001B** | número e unidade com ou sem espaço        | **alta**   | **ABERTA** até a quantidade estruturada de R1/R2 |
-| TD-002      | comparação sem terceiro desempate         | **alta**   | **RESOLVIDA pelo PR #46**, sujeita ao merge      |
-| TD-003      | `markets.city` não consumido              | baixa      | R2                                               |
-| TD-004      | `getProductsPriceStats` sem `limit`       | média      | R4                                               |
-| TD-005      | dupla busca na rota de produto            | baixa      | R5                                               |
-| TD-006      | rota de produto sem `og:image` própria    | baixa      | R5                                               |
-| TD-007      | `pg_trgm` instalado e não usado           | baixa      | R4                                               |
-| TD-008      | rotas dinâmicas fora do `sitemap.xml`     | baixa      | R5                                               |
+| ID          | Título                                       | Severidade | Estado                                           |
+| ----------- | -------------------------------------------- | ---------- | ------------------------------------------------ |
+| **TD-001A** | normalização SQL e TypeScript divergentes    | **alta**   | **RESOLVIDA pelo PR #47**, sujeita ao merge      |
+| **TD-001B** | número e unidade com ou sem espaço           | **alta**   | **ABERTA** até a quantidade estruturada de R1/R2 |
+| TD-002      | comparação sem terceiro desempate            | **alta**   | **RESOLVIDA pelo PR #46**, sujeita ao merge      |
+| TD-003      | `markets.city` não consumido                 | baixa      | R2                                               |
+| TD-004      | `getProductsPriceStats` sem `limit`          | média      | R4                                               |
+| TD-005      | dupla busca na rota de produto               | baixa      | R5                                               |
+| TD-006      | rota de produto sem `og:image` própria       | baixa      | R5                                               |
+| TD-007      | `pg_trgm` instalado e não usado              | baixa      | R4                                               |
+| TD-008      | rotas dinâmicas fora do `sitemap.xml`        | baixa      | R5                                               |
+| TD-009      | estudos anteriores de fontes não localizados | média      | **ABERTA** — bloqueia spike pós-MVP              |
 
 ---
 
@@ -190,3 +191,24 @@ catálogo real nem indexação pública, não tem efeito — vira lacuna de desc
 
 **Ação:** gerar as entradas de produto a partir do catálogo. **PR:** R5, junto com a emenda ao
 sitemap que o PR #44 introduz. **Dependência:** P-03 (rota da comparação).
+
+---
+
+## TD-009 — Estudos anteriores de fontes não localizados
+
+**Severidade: média.** Não é dívida de código: é dívida de evidência.
+
+O Founder/PMO relata **[F]** que dois estudos técnicos sobre fontes foram produzidos — um plano
+sobre Pague Menos, São Vicente e Carrefour (`plano-coleta-automatica-ofertas.md`) e uma
+investigação complementar sobre Savegnago e Atacadão (`investigacao-savegnago-atacadao.md`).
+**NOT LOCATED** nesta missão; **NOT VERIFIED** quanto aos achados. Caminhos inspecionados e
+classificação completa em [`../post-mvp/SOURCE-CONNECTOR-STATUS.md`](../post-mvp/SOURCE-CONNECTOR-STATUS.md) §4.
+
+O custo de deixar aberto é concreto: sem os relatórios, PM-DATA-1 recomeça do zero e o trabalho já
+feito é pago duas vezes — ou pior, é refeito com conclusões diferentes e ninguém sabe qual valia.
+
+**Ação:** **os relatórios anteriores devem ser localizados, versionados ou substituídos por
+evidência reproduzível antes de qualquer spike pós-MVP.** **PR:** nenhum de código — versionar os
+arquivos, se encontrados. **Card:** PM-DATA-02. **Dependência:** ação humana do Founder/PMO.
+**Fora de escopo:** refazer as investigações, acessar as fontes, reconstruir os relatórios por
+suposição.

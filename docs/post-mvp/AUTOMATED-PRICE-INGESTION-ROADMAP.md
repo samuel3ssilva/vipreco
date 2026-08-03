@@ -2,10 +2,16 @@
 
 **Status: NORMATIVO como registro de intenção. NÃO É ESCOPO DO MVP.**
 
-> **Nada nesta trilha está autorizado.** Nenhuma linha de código, nenhum conector, nenhuma
-> coleta, nenhuma investigação técnica e nenhuma infraestrutura preventiva. Este documento
-> registra o desenho para que a decisão futura seja tomada sobre algo escrito, não sobre
-> uma conversa.
+> **Nada nesta trilha está autorizado.** Não pode começar nenhuma linha de código, nenhum
+> conector, nenhuma coleta, nenhuma investigação técnica nova e nenhuma infraestrutura
+> preventiva. Este documento registra o desenho para que a decisão futura seja tomada sobre
+> algo escrito, não sobre uma conversa.
+
+> **Sobre investigações anteriores:** o Founder/PMO relata que dois estudos foram produzidos
+> antes desta fase. Eles **não foram localizados** nesta missão e seus achados **não foram
+> verificados** — ver [`SOURCE-CONNECTOR-STATUS.md`](SOURCE-CONNECTOR-STATUS.md) §4. A frase
+> acima proíbe começar investigação **nova**; ela não afirma que investigação anterior nunca
+> existiu.
 
 Quatro afirmações que valem para tudo o que vem abaixo:
 
@@ -33,22 +39,32 @@ contra dado medido, não contra estas duas frases.
 Nenhuma das duas foi medida. As duas são hipóteses plausíveis do Founder sobre o mercado, e é
 exatamente por isso que a trilha começa por medir (PM-DATA-0), não por construir.
 
+**[F]** O Founder/PMO relata também que dois estudos técnicos anteriores sobre fontes foram
+produzidos — um plano sobre Pague Menos, São Vicente e Carrefour, e uma investigação
+complementar sobre Savegnago e Atacadão. Esses relatórios **não foram localizados** nesta
+missão e seus achados **não foram verificados**; o registro completo, com os caminhos
+inspecionados, está em [`SOURCE-CONNECTOR-STATUS.md`](SOURCE-CONNECTOR-STATUS.md) §4.
+
+Isso muda o ponto de partida de PM-DATA-1, não o desenho da trilha: **os relatórios anteriores
+devem ser localizados, versionados ou substituídos por evidência reproduzível antes de
+qualquer spike pós-MVP.** Um estudo que ninguém consegue abrir não sustenta um Gate.
+
 ---
 
 ## 2. Sequência
 
 Cada etapa termina em Gate humano. Nenhuma começa antes que a anterior tenha sido aprovada.
 
-| #             | Etapa                                   | O que entrega                                                           | Termina em                        |
-| ------------- | --------------------------------------- | ----------------------------------------------------------------------- | --------------------------------- |
-| **PM-DATA-0** | Gate de necessidade e prontidão         | medida do déficit de cobertura e checagem das dependências de §4        | decisão do PMO: seguir ou parar   |
-| **PM-DATA-1** | Evidências e revisão jurídica           | inventário das fontes candidatas, termos de uso lidos, parecer jurídico | autorização por fonte, ou HOLD    |
-| **PM-DATA-2** | Primeira fonte em shadow mode           | um conector que coleta e **não publica nada**                           | amostra auditável                 |
-| **PM-DATA-3** | Validação humana e precisão             | auditoria da amostra contra as 14 dimensões de §6                       | precisão composta medida          |
-| **PM-DATA-4** | Publicação limitada                     | um subconjunto pequeno publicado com procedência de conector            | reavaliação após período definido |
-| **PM-DATA-5** | Segundo conector                        | prova de que o contrato de conector generaliza                          | idem                              |
-| **PM-DATA-6** | Recorrência, observabilidade e operação | agendamento, alerta, fila de revisão, runbook                           | operação sustentável              |
-| **PM-DATA-7** | Santa Terezinha e expansão Piracicaba   | avaliação de cobertura fora de Artemis                                  | decisão de expansão               |
+| #             | Etapa                                   | O que entrega                                                                                               | Termina em                        |
+| ------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **PM-DATA-0** | Gate de necessidade e prontidão         | medida do déficit de cobertura e checagem das dependências de §4                                            | decisão do PMO: seguir ou parar   |
+| **PM-DATA-1** | Evidências e revisão jurídica           | localização dos estudos anteriores, inventário das fontes candidatas, termos de uso lidos, parecer jurídico | autorização por fonte, ou HOLD    |
+| **PM-DATA-2** | Primeira fonte em shadow mode           | um conector que coleta e **não publica nada**                                                               | amostra auditável                 |
+| **PM-DATA-3** | Validação humana e precisão             | auditoria da amostra contra as 14 dimensões de §6                                                           | precisão composta medida          |
+| **PM-DATA-4** | Publicação limitada                     | um subconjunto pequeno publicado com procedência de conector                                                | reavaliação após período definido |
+| **PM-DATA-5** | Segundo conector                        | prova de que o contrato de conector generaliza                                                              | idem                              |
+| **PM-DATA-6** | Recorrência, observabilidade e operação | agendamento, alerta, fila de revisão, runbook                                                               | operação sustentável              |
+| **PM-DATA-7** | Santa Terezinha e expansão Piracicaba   | avaliação de cobertura fora de Artemis                                                                      | decisão de expansão               |
 
 **Nenhuma etapa autoriza a seguinte.** Passar de PM-DATA-2 para PM-DATA-3 é decisão humana,
 mesmo que a coleta tenha funcionado perfeitamente.
@@ -153,6 +169,10 @@ restantes.
 
 Estados e condições em [`SOURCE-CONNECTOR-STATUS.md`](SOURCE-CONNECTOR-STATUS.md).
 **Nenhum estado ali constitui autorização de implementação.**
+
+Os estados por fonte são **[H] — hipótese**. Os estudos anteriores relatados pelo Founder/PMO,
+que cobrem cinco das seis redes, não foram localizados nem verificados (§4 daquele documento),
+então nenhum estado ali se apoia em achado reproduzido.
 
 ---
 

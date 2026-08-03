@@ -436,3 +436,35 @@ status.
   `docs/post-mvp/SOURCE-CONNECTOR-STATUS.md`, `docs/post-mvp/AUTOMATION-QUALITY-GATES.md`,
   `docs/post-mvp/PRICE-PROVENANCE-POLICY.md`
 - **Status:** ativa, não iniciada
+- **Corrigida em 03/08/2026 por DL-017** no ponto do registro de investigações anteriores.
+
+### DL-017 — Procedência dos estudos anteriores de fontes
+
+- **Data:** 03/08/2026
+- **Decisão:** a documentação **não pode afirmar que nenhuma investigação técnica de fontes
+  existiu**. Passa a distinguir quatro estados: **[F] existência relatada**, **NOT LOCATED**,
+  **NOT VERIFIED** e **[C] confirmado**.
+- **Contexto:** o handoff do Founder/PMO informa **[F]** que dois estudos foram produzidos — um
+  plano técnico sobre Pague Menos, São Vicente e Carrefour (`plano-coleta-automatica-ofertas.md`)
+  e uma investigação complementar sobre Savegnago e Atacadão
+  (`investigacao-savegnago-atacadao.md`). A redação anterior de `SOURCE-CONNECTOR-STATUS.md` §4
+  dizia "nenhuma investigação técnica foi feita por este projeto", o que contradiz o handoff.
+- **O que foi verificado:** os dois relatórios **não foram localizados** nesta missão. Caminhos
+  inspecionados: árvore de trabalho completa do repositório inclusive arquivos ignorados pelo Git;
+  histórico de objetos de todos os refs; `git stash`; diretório de sessão do projeto. Nenhum
+  arquivo com esses nomes, nenhum objeto de histórico com esse conteúdo.
+- **O que não foi verificado:** os achados técnicos específicos dos dois estudos. Não foram
+  reproduzidos, não foram validados, nenhuma fonte foi acessada. **Nenhum achado do handoff é
+  promovido a [C].**
+- **Alternativas:** (a) manter "nenhuma investigação foi feita" — rejeitada: contradiz o Founder e
+  descarta trabalho que pode existir; (b) incorporar os achados relatados como verificados —
+  rejeitada: promoveria a **[C]** conteúdo que ninguém consegue abrir; (c) refazer as
+  investigações — rejeitada: não autorizado, e acessar fonte exige Gate.
+- **Consequência:** os detalhes técnicos por fonte permanecem **[H]** até que a evidência seja
+  localizada ou reproduzida; **os relatórios anteriores devem ser localizados, versionados ou
+  substituídos por evidência reproduzível antes de qualquer spike pós-MVP**; PM-DATA-02 passa a
+  ser "Localizar e preservar investigações anteriores".
+- **Documentos:** `docs/post-mvp/SOURCE-CONNECTOR-STATUS.md` §4,
+  `docs/post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md` §1 e §7, `docs/pmo/TRELLO-MAPPING.md`
+  (PM-DATA-02)
+- **Status:** ativa — pendência aberta

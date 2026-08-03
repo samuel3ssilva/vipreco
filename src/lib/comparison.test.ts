@@ -159,6 +159,105 @@ describe("latestValidPricePerMarket", () => {
   });
 });
 
+// A ordem final entre mercados. O desempate acima decide qual preço vence **dentro** de um
+// mercado; estes decidem em que posição cada mercado aparece na lista que o visitante lê.
+describe("ordem final da comparação", () => {
+  /** Três mercados idênticos em preço e em observação: só o `id` os distingue. */
+  const EMPATE_TOTAL = [
+    price({ id: "p-c", market_id: "m3", price: 9.9, observed_at: "2026-07-25T00:00:00Z" }),
+    price({ id: "p-a", market_id: "m1", price: 9.9, observed_at: "2026-07-25T00:00:00Z" }),
+    price({ id: "p-b", market_id: "m2", price: 9.9, observed_at: "2026-07-25T00:00:00Z" }),
+  ];
+
+  it("desempata por identificador estável quando preço e observed_at são idênticos", () => {
+    const result = latestValidPricePerMarket(EMPATE_TOTAL, NOW);
+    expect(result.map((entry) => entry.id)).toEqual(["p-a", "p-b", "p-c"]);
+  });
+
+  it("produz a mesma ordem qualquer que seja a ordem de entrada", () => {
+    // O banco não promete ordem entre linhas empatadas. Estas seis permutações representam o
+    // que ele pode devolver; nenhuma delas pode mudar o que o visitante lê.
+    const permutacoes = [
+      [0, 1, 2],
+      [0, 2, 1],
+      [1, 0, 2],
+      [1, 2, 0],
+      [2, 0, 1],
+      [2, 1, 0],
+    ];
+
+    for (const ordem of permutacoes) {
+      const entrada = ordem.map((indice) => EMPATE_TOTAL[indice]);
+      const result = latestValidPricePerMarket(entrada, NOW);
+      expect(
+        result.map((entry) => entry.id),
+        `entrada ${ordem.join("")}`,
+      ).toEqual(["p-a", "p-b", "p-c"]);
+    }
+  });
+
+  it("repete o mesmo resultado em execuções sucessivas com a mesma entrada", () => {
+    const primeira = latestValidPricePerMarket(EMPATE_TOTAL, NOW).map((entry) => entry.id);
+    for (let execucao = 0; execucao < 20; execucao++) {
+      expect(latestValidPricePerMarket(EMPATE_TOTAL, NOW).map((entry) => entry.id)).toEqual(
+        primeira,
+      );
+    }
+  });
+
+  it("preço crescente continua vindo antes do desempate por identificador", () => {
+    const result = latestValidPricePerMarket(
+      [
+        price({ id: "p-a", market_id: "m1", price: 12, observed_at: "2026-07-25T00:00:00Z" }),
+        price({ id: "p-z", market_id: "m2", price: 9.9, observed_at: "2026-07-25T00:00:00Z" }),
+      ],
+      NOW,
+    );
+
+    expect(result.map((entry) => entry.id)).toEqual(["p-z", "p-a"]);
+  });
+
+  it("observação mais recente continua vindo antes do desempate por identificador", () => {
+    const result = latestValidPricePerMarket(
+      [
+        price({ id: "p-a", market_id: "m1", price: 9.9, observed_at: "2026-07-20T00:00:00Z" }),
+        price({ id: "p-z", market_id: "m2", price: 9.9, observed_at: "2026-07-26T00:00:00Z" }),
+      ],
+      NOW,
+    );
+
+    expect(result.map((entry) => entry.id)).toEqual(["p-z", "p-a"]);
+  });
+
+  it("destaque, origem e mercado não interferem na ordem", () => {
+    // `is_featured` é a camada de conteúdo destacado. Ela vive em seção separada e rotulada, e
+    // jamais reordena a lista orgânica — princípio inviolável #4 do CLAUDE.md.
+    const result = latestValidPricePerMarket(
+      [
+        price({
+          id: "p-a",
+          market_id: "m1",
+          price: 9.9,
+          observed_at: "2026-07-25T00:00:00Z",
+          is_featured: false,
+          source_type: "community",
+        }),
+        price({
+          id: "p-b",
+          market_id: "m2",
+          price: 9.9,
+          observed_at: "2026-07-25T00:00:00Z",
+          is_featured: true,
+          source_type: "receipt",
+        }),
+      ],
+      NOW,
+    );
+
+    expect(result.map((entry) => entry.id)).toEqual(["p-a", "p-b"]);
+  });
+});
+
 describe("compareWithUsualMarket", () => {
   const entries = latestValidPricePerMarket(
     [

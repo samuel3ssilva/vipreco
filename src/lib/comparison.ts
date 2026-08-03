@@ -44,7 +44,17 @@ export function latestValidPricePerMarket(
 
   return [...byMarket.values()].sort((a, b) => {
     if (a.price !== b.price) return a.price - b.price;
-    return new Date(b.observed_at).getTime() - new Date(a.observed_at).getTime();
+    const recencia = new Date(b.observed_at).getTime() - new Date(a.observed_at).getTime();
+    if (recencia !== 0) return recencia;
+    // Terceiro critério, e ele não é opcional. Sem `id`, dois mercados com o mesmo preço e a
+    // mesma observação ficavam na ordem em que entraram no `Map` — que é a ordem em que o banco
+    // devolveu as linhas. A mesma consulta podia produzir duas listas diferentes, e a primeira
+    // posição é justamente a que o produto chama de "menor preço".
+    //
+    // `id` é uuid, único por linha e estável entre requisições. É o mesmo desempate que
+    // `compareRecency` já usa para escolher o preço vencedor **dentro** de um mercado; agora a
+    // ordem **entre** mercados tem a mesma garantia.
+    return a.id.localeCompare(b.id);
   });
 }
 

@@ -71,7 +71,11 @@ export async function getProductComparison(productId: string): Promise<ProductCo
       .from("prices")
       .select(`${PRICE_FIELDS},market:markets(${MARKET_FIELDS})`)
       .eq("product_id", productId)
-      .order("observed_at", { ascending: false }),
+      // `id` acompanha `observed_at` em toda consulta que alimenta a comparação: o banco não
+      // promete ordem entre linhas empatadas, e o domínio ordena com o mesmo par. Ver
+      // `latestValidPricePerMarket`.
+      .order("observed_at", { ascending: false })
+      .order("id", { ascending: true }),
   ]);
 
   if (productResult.error) fail("Não foi possível carregar o produto agora.", productResult.error);
@@ -177,7 +181,8 @@ export async function getProductsPriceStats(
     .from("prices")
     .select(`${PRICE_FIELDS},market:markets(${MARKET_FIELDS})`)
     .in("product_id", ids)
-    .order("observed_at", { ascending: false });
+    .order("observed_at", { ascending: false })
+    .order("id", { ascending: true });
 
   if (error) fail("Não foi possível carregar os preços agora.", error);
 

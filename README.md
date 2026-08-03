@@ -1,8 +1,11 @@
 # ViPreço
 
 MVP mobile-first para comparar preços de supermercados da sua região.
-Consumidores usam o app **sem login**; o conteúdo é público e somente leitura,
-e as contribuições da comunidade entram como sugestões pendentes de revisão.
+Consumidores usam o app **sem login** e o conteúdo é público e somente leitura.
+
+**Escopo de produto:** [`docs/product/ROADMAP-MVP-v3.md`](docs/product/ROADMAP-MVP-v3.md).
+**Índice da documentação, com o que é normativo e o que é histórico:**
+[`docs/INDEX.md`](docs/INDEX.md).
 
 ## Stack
 
@@ -15,13 +18,14 @@ e as contribuições da comunidade entram como sugestões pendentes de revisão.
 
 ## Rotas
 
-| Rota                  | Descrição                                                        |
-| --------------------- | ---------------------------------------------------------------- |
-| `/`                   | Oportunidades da semana, produtos atualizados e mercado habitual |
-| `/buscar`             | Busca por nome, marca, variante, tamanho ou código de barras     |
-| `/produto/$productId` | Comparação de preços do mesmo produto entre mercados             |
-| `/como-funciona`      | Origem dos dados, revisão e limites do sistema                   |
-| `/sitemap.xml`        | Sitemap gerado no servidor                                       |
+| Rota                  | Descrição                                                      |
+| --------------------- | -------------------------------------------------------------- |
+| `/`                   | Achados, busca, mercado habitual e seções de confiança         |
+| `/buscar`             | Busca por nome, marca, variante, tamanho ou código de barras   |
+| `/produto/$productId` | Comparação de preços do mesmo produto entre mercados           |
+| `/como-funciona`      | Origem dos dados, revisão e limites do sistema                 |
+| `/para-mercados`      | Proposta para donos de supermercado, com convite pelo WhatsApp |
+| `/sitemap.xml`        | Sitemap gerado no servidor                                     |
 
 ## Modelo de dados
 
@@ -46,8 +50,12 @@ Essas regras vivem em `src/lib/comparison.ts` e estão cobertas por testes.
 
 - RLS habilitado em todas as tabelas, com `GRANT` explícito por papel.
 - `anon`/`authenticated` só leem registros ativos e válidos.
-- Inserções públicas são permitidas apenas em sugestões, interesses e feedback,
-  sempre com status `pending` e sem dados pessoais.
+- **Não existe nenhuma superfície pública de escrita.** O INSERT de
+  `price_submissions`, `product_watch_requests` e `decision_feedback` foi revogado
+  de `anon`/`authenticated` na Onda 3 (checkpoint PMO de 29/07/2026,
+  `supabase/migrations/20260729223000_close_public_write_surfaces.sql`), e os três
+  controles correspondentes não são renderizados. Reabrir qualquer um exige endpoint
+  server-side, validação, proteção anti-abuso, teste de bypass e novo gate.
 - Preferências (mercado habitual, interesses respondidos) ficam apenas no
   `localStorage` do aparelho.
 

@@ -39,6 +39,16 @@ rodada.
 
 ## 3. Escopo
 
+> **SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3** (02/08/2026) — o escopo de rodada desta
+> seção e da §5 foi substituído pelos épicos E1/E2/E3 e pela sequência R1–R9
+> (`docs/product/ROADMAP-MVP-v3.md`, `docs/pmo/MVP-EXECUTION-PLAN.md`). As **hipóteses** (§1), o
+> **público** (§2), as **exclusões permanentes** (§4), as **métricas** (§6), os **gates V0/V1/V2**
+> (§7), os **critérios de GO/AJUSTAR/NO-GO** (§8) e os **limites** (§11) continuam vinculantes.
+>
+> Uma novidade que o v3 acrescenta e que esta seção não previa: **analytics first-party** entra no
+> escopo (E3). Ele não está na lista de exclusões permanentes de §4 e não a contradiz — mas exige
+> gate próprio, como toda superfície de escrita.
+
 **Dentro do escopo desta rodada (A1 + A2):**
 
 - produto demonstrável com dados sintéticos (home/Achados, busca, produto, como

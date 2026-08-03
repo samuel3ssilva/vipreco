@@ -3,6 +3,13 @@
 Decisão registrada em 31/07/2026. Complementa o que o PR #31 fez com os Achados, agora cobrindo o
 seletor "Seu mercado habitual".
 
+> **Evolução prevista (não contradição).** A decisão D1 do rebaseline
+> (`docs/pmo/MVP-DECISION-LOG.md`) unifica as duas fontes num contrato único de catálogo com dois
+> adapters — fixture em DEMO, Supabase em piloto. **As garantias descritas aqui são requisito da
+> migração, não vítimas dela:** nenhum carregamento visível na primeira dobra, `generatedAt` vindo
+> do servidor, e falha do Supabase que não derruba a Home. Ver
+> `docs/data/MVP-DATA-CONTRACT.md` §5. A Home não foi alterada.
+
 ## Objetivo
 
 Nenhum carregamento visível na primeira dobra da Home. Quem abre a página — inclusive com

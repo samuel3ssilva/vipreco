@@ -69,3 +69,78 @@ BEGIN
   RAISE NOTICE 'Drill de reconstrucao de schema: todas as garantias de autorizacao confirmadas contra banco vivo.';
 END
 $$;
+
+-- ============================================================================
+-- 6. Contrato unico de normalizacao (R0.5 / TD-001)
+-- ============================================================================
+--
+-- Os MESMOS vetores rodam nos dois lados: aqui, contra pa_normalize_text() num Postgres
+-- vivo; e em src/lib/normalize.contract.test.ts, contra normalizeSearchText(). Aquele
+-- teste tambem le ESTE arquivo e falha se as duas listas divergirem -- entao acrescentar
+-- um vetor aqui sem acrescentar em supabase/normalization-vectors.json quebra o CI, e
+-- vice-versa.
+--
+-- Por que isso importa: o indice products_canonical_identity_idx e funcional sobre esta
+-- funcao. Se ela e a normalizacao do cliente discordarem, o banco aceita como produtos
+-- distintos duas grafias do mesmo SKU, e a comparacao se parte sem nenhum erro visivel.
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  vetor record;
+  obtido text;
+BEGIN
+  FOR vetor IN
+    SELECT * FROM (VALUES
+      ('500 g', '500 g'),
+      ('500  g', '500 g'),
+      ('500g', '500g'),
+      ('1 L', '1 l'),
+      ('1L', '1l'),
+      ('Café Pilão', 'cafe pilao'),
+      ('CAFÉ PILÃO', 'cafe pilao'),
+      ('Ypê', 'ype'),
+      ('Açúcar Cristal', 'acucar cristal'),
+      ('  Arroz  ', 'arroz'),
+      (' Detergente   Neutro ', 'detergente neutro'),
+      ('Óleo de Soja 900 ml', 'oleo de soja 900 ml'),
+      ('7896006711117', '7896006711117'),
+      ('07896006711117', '07896006711117'),
+      ('', ''),
+      ('   ', '')
+    ) AS v(entrada, saida)
+  LOOP
+    obtido := public.pa_normalize_text(vetor.entrada);
+    IF obtido IS DISTINCT FROM vetor.saida THEN
+      failures := array_append(failures, format(
+        'pa_normalize_text(%L) devolveu %L, esperado %L', vetor.entrada, obtido, vetor.saida));
+    END IF;
+  END LOOP;
+
+  -- Entrada nula tambem faz parte do contrato, e nao cabe na tabela de vetores acima.
+  IF public.pa_normalize_text(NULL) IS DISTINCT FROM '' THEN
+    failures := array_append(failures, 'pa_normalize_text(NULL) deveria devolver string vazia');
+  END IF;
+
+  -- Tabulacao e quebra de linha contam como espaco em branco. Fora da tabela de vetores
+  -- porque exigem literal com escape (E'...'), que o teste espelhado nao precisa parsear.
+  IF public.pa_normalize_text(E'\t\ncafé\t') IS DISTINCT FROM 'cafe' THEN
+    failures := array_append(failures, 'pa_normalize_text nao trata tabulacao e quebra de linha como espaco');
+  END IF;
+
+  -- A funcao precisa continuar IMMUTABLE: products_canonical_identity_idx e um indice
+  -- funcional sobre ela, e o Postgres so aceita funcao imutavel em indice.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'pa_normalize_text' AND p.provolatile = 'i'
+  ) THEN
+    failures := array_append(failures, 'pa_normalize_text deixou de ser IMMUTABLE -- o indice funcional de identidade canonica depende disso');
+  END IF;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Contrato de normalizacao violado em % vetor(es):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'Contrato de normalizacao: todos os vetores confirmados contra banco vivo.';
+END
+$$;

@@ -1,0 +1,153 @@
+#!/usr/bin/env bun
+/**
+ * Relatório read-only de colisões de identidade canônica sob o contrato único de
+ * normalização (R0.5 / TD-001).
+ *
+ * POR QUE ELE EXISTE
+ *
+ * `products_canonical_identity_idx` é um índice ÚNICO e FUNCIONAL sobre
+ * `pa_normalize_text(name, brand, variant, size_text)`. A migration
+ * `20260803000000_normalization_contract.sql` troca essa função por uma mais restritiva
+ * — ela passa a colapsar espaço em branco. Duas linhas que hoje o banco aceita como
+ * produtos distintos, porque só diferem no espaçamento, passariam a ser a mesma chave.
+ *
+ * O `REINDEX` da migration falha nesse caso, e falhar é o comportamento certo: o banco
+ * recusa a mudança em vez de aceitar uma união silenciosa. Este script existe para
+ * descobrir isso ANTES, com calma, em vez de durante a aplicação.
+ *
+ * O QUE ELE NÃO FAZ
+ *
+ * Não escreve, não altera, não apaga e **não une produtos**. Colisão é relatório para
+ * decisão humana. Unir ou excluir produto é decisão do Founder/PMO, nunca do CTO.
+ *
+ * COMO RODAR
+ *
+ *   bun scripts/normalization-collisions.ts <arquivo.json>
+ *
+ * onde `arquivo.json` é um array de objetos com `id`, `name`, `brand`, `variant` e
+ * `size_text` — o formato exato que a consulta abaixo devolve.
+ *
+ * CONSULTA READ-ONLY para gerar a entrada, direto no SQL editor do ambiente alvo:
+ *
+ *   SELECT id, name, brand, variant, size_text FROM public.products;
+ *
+ * Nenhuma credencial é lida por este script. Ele não fala com o Supabase.
+ */
+import { readFileSync } from "node:fs";
+
+export interface ProdutoIdentidade {
+  id: string;
+  name: string;
+  brand?: string | null;
+  variant?: string | null;
+  size_text?: string | null;
+}
+
+/**
+ * A normalização **antiga** do banco: minúsculas e diacríticos do português, sem tocar em
+ * espaço. É o que `pa_normalize_text()` faz hoje, e o que o índice atual enxerga.
+ */
+export function normalizarAntigo(input: string | null | undefined): string {
+  return (input ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * A normalização **do contrato**: acrescenta o colapso de espaço em branco e a remoção
+ * das pontas. Igual a `normalizeSearchText()` de `src/lib/normalize.ts`, reescrita aqui
+ * para o script não depender do alias de módulo do app.
+ */
+export function normalizarNovo(input: string | null | undefined): string {
+  return normalizarAntigo(input).replace(/\s+/g, " ").trim();
+}
+
+// Separador de campo na chave de identidade. NUL nunca aparece em nome, marca, variante
+// ou tamanho, entao juntar por ele nao cria colisao artificial entre campos vizinhos.
+// Escrito como escape, e nao como byte literal: um NUL cru faz o Git classificar o
+// arquivo como binario, e um script que ninguem consegue revisar no diff nao serve.
+const SEPARADOR = "\u0000";
+
+function identidade(
+  produto: ProdutoIdentidade,
+  normalizar: (v: string | null | undefined) => string,
+) {
+  return [produto.name, produto.brand ?? "", produto.variant ?? "", produto.size_text ?? ""]
+    .map(normalizar)
+    .join(SEPARADOR);
+}
+
+export interface Colisao {
+  /** A identidade canônica que os produtos passariam a compartilhar. */
+  identidade: string;
+  produtos: ProdutoIdentidade[];
+}
+
+/**
+ * Grupos de produtos que **hoje** o banco aceita como distintos e que, sob o contrato
+ * novo, passariam a ter a mesma identidade canônica.
+ *
+ * Só reporta grupos em que as identidades antigas eram de fato diferentes: dois produtos
+ * já idênticos sob a função antiga nunca existiram, porque o índice único os barrou na
+ * escrita.
+ */
+export function encontrarColisoes(produtos: ProdutoIdentidade[]): Colisao[] {
+  const porIdentidadeNova = new Map<string, ProdutoIdentidade[]>();
+  for (const produto of produtos) {
+    const chave = identidade(produto, normalizarNovo);
+    const grupo = porIdentidadeNova.get(chave) ?? [];
+    grupo.push(produto);
+    porIdentidadeNova.set(chave, grupo);
+  }
+
+  const colisoes: Colisao[] = [];
+  for (const [chave, grupo] of porIdentidadeNova) {
+    if (grupo.length < 2) continue;
+    const identidadesAntigas = new Set(
+      grupo.map((produto) => identidade(produto, normalizarAntigo)),
+    );
+    if (identidadesAntigas.size < 2) continue;
+    colisoes.push({ identidade: chave.replaceAll(SEPARADOR, " · "), produtos: grupo });
+  }
+  return colisoes;
+}
+
+/** Relatório legível. Vazio significa: pode aplicar a migration. */
+export function formatarRelatorio(colisoes: Colisao[], total: number): string {
+  if (colisoes.length === 0) {
+    return `Nenhuma colisão em ${total} produto(s). O contrato novo não une nada.`;
+  }
+
+  const linhas = [
+    `${colisoes.length} colisão(ões) em ${total} produto(s).`,
+    "",
+    "HUMAN ACTION REQUIRED — não aplique a migration. Unir ou excluir produto é",
+    "decisão do Founder/PMO. Este script não altera nada.",
+    "",
+  ];
+  for (const colisao of colisoes) {
+    linhas.push(`• ${colisao.identidade}`);
+    for (const produto of colisao.produtos) {
+      const partes = [produto.name, produto.brand, produto.variant, produto.size_text]
+        .filter(Boolean)
+        .join(" | ");
+      linhas.push(`    ${produto.id}  ${partes}`);
+    }
+  }
+  return linhas.join("\n");
+}
+
+if (import.meta.main) {
+  const caminho = process.argv[2];
+  if (!caminho) {
+    console.error("uso: bun scripts/normalization-collisions.ts <arquivo.json>");
+    process.exit(2);
+  }
+  const produtos = JSON.parse(readFileSync(caminho, "utf-8")) as ProdutoIdentidade[];
+  const colisoes = encontrarColisoes(produtos);
+  console.log(formatarRelatorio(colisoes, produtos.length));
+  // Sai com 1 quando há colisão: assim o script serve de portão num runbook sem que
+  // ninguém precise ler a saída com atenção.
+  process.exit(colisoes.length === 0 ? 0 : 1);
+}

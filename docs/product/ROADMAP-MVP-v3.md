@@ -140,6 +140,21 @@ Lista fechada. Nenhum destes itens entra sem novo gate do Founder/PMO, e nenhum 
 O último item merece ênfase: não é uma funcionalidade adiada, é uma **proibição**. Similar nunca
 entra na comparação exata, em nenhuma fase. Ver [`CANONICAL-PRODUCT-SPEC.md`](CANONICAL-PRODUCT-SPEC.md).
 
+### Automação de ingestão de preços — fora do MVP
+
+A trilha de **automação complementar de ingestão de preços** (conectores lendo preço de sites e
+folhetos oficiais de redes) está registrada em
+[`../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`](../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md).
+
+**Ela não faz parte do MVP e não bloqueia o MVP.** Não pode começar autonomamente, depende de Gate
+humano em cada etapa, e nenhuma investigação autoriza publicação. Nenhum preço coletado entra no
+produto nesta fase, e **nenhuma infraestrutura preventiva** é criada por antecipação.
+
+Está registrada agora, e não depois, por um motivo só: quando o Gate de necessidade for avaliado, a
+decisão precisa ser tomada sobre algo escrito.
+
+---
+
 As exclusões permanentes já registradas em `docs/mvp/TEST-MVP-PLAN.md` §4 (login de consumidor, Pix,
 NFC-e, scanner de QR, geolocalização, notificações, painel administrativo completo, integração com
 PDV, CRM, automação de WhatsApp, moderação pública de submissão) **continuam valendo** e somam-se a

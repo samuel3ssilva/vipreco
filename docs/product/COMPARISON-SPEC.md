@@ -21,6 +21,37 @@ E2 não é reconstrução. É completar o que falta em volta desse núcleo.
 
 ---
 
+## 1.1 A rota canônica
+
+**Decisão do Founder/PMO, 03/08/2026 (D8, DL-014):** a rota canônica da comparação no MVP é e
+continua sendo:
+
+```
+/produto/$productId
+```
+
+Ela representa **um SKU exato** e exibe as ofertas desse SKU em diferentes mercados.
+
+O CTA público muda de rótulo — passa a ser **"Comparar em X mercados"** (§6) — e continua levando
+à mesma rota. A mudança que E2 pede é de **jornada e apresentação, não de roteamento**.
+
+**Não criar:** `/comparar/$productId`, redirect, alias, rota nova. E **nenhuma alteração de código
+por causa desta decisão**: ela confirma o que já existe.
+
+O motivo é prático, não estético. A tela já é a comparação; trocar a URL pagaria churn, quebraria
+links já compartilhados no WhatsApp e acrescentaria rota, entrada de sitemap e testes por um ganho
+apenas semântico.
+
+`sitemap.xml`, `canonical` e `og:url` continuam apontando para a rota que já existe — o PR #44 não
+precisa de emenda por causa disto.
+
+Uma rota dedicada fica registrada **apenas como hipótese futura**, condicionada a necessidade
+comprovada: por exemplo, se a comparação passar a aceitar mais de um SKU por tela, aí a URL
+deixaria de descrever o que a página é. Enquanto uma tela = um SKU, `/produto/$productId` é o nome
+certo.
+
+---
+
 ## 2. Contrato da tela
 
 ```
@@ -169,6 +200,5 @@ Garantias a preservar na migração:
 
 ## 9. O que esta especificação não decide
 
-- a **rota** da tela (P-03);
 - a **janela** do preço anterior (P-01);
 - o **mecanismo de configuração** do prazo de 24 h (P-05).

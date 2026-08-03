@@ -42,6 +42,22 @@ corte natural é **R0.5–R6**. R7 e R8 não bloqueiam E2 e concentram os dois m
 | **Rollback**           | reverter commit                                                                                            |
 | **Tamanho**            | médio                                                                                                      |
 
+### Estado de validação, por branch
+
+Contagens de teste **não se somam entre branches**. Cada número abaixo é o total daquela branch,
+medido nela.
+
+| Branch                                |  Testes | Observação                                      |
+| ------------------------------------- | ------: | ----------------------------------------------- |
+| `main` (`862a179`)                    | **385** | linha de base                                   |
+| PR #45 — documental                   | **385** | só markdown; não acrescenta teste               |
+| PR #46 — desempate                    | **391** | +6 sobre a `main`                               |
+| PR #47 — normalização                 | **423** | +38 sobre a `main`                              |
+| PR #44 — domínio (aberto desde 02/08) | **415** | +30 sobre a `main`; independente dos três acima |
+
+Os quatro PRs partem da mesma `main` e não foram mergeados. Somar 385 + 391 + 423 + 415, ou
+apresentar 423 como "o total do projeto", descreveria um estado que não existe em lugar nenhum.
+
 ---
 
 ## R1 — Produto exato
@@ -125,7 +141,7 @@ estado de carregamento; `generatedAt` continua vindo do servidor.
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Objetivo**           | exato / outro tamanho / similar; preço unitário; CTA "Comparar em X mercados"; compartilhamento na comparação; `og:image` própria (TD-006); dupla busca (TD-005); sitemap (TD-008) |
 | **Módulos**            | `src/routes/produto.$productId.tsx`; `PriceCard`; `PriceSummary`; `src/lib/og.ts`; `src/lib/indexing.ts`                                                                           |
-| **Dependências**       | R4; **P-03 precisa estar resolvida**                                                                                                                                               |
+| **Dependências**       | R4. A rota está decidida (D8/DL-014): permanece `/produto/$productId`                                                                                                              |
 | **Migration**          | não                                                                                                                                                                                |
 | **Revisão do Founder** | sim                                                                                                                                                                                |
 | **PRs**                | 2                                                                                                                                                                                  |
@@ -210,17 +226,29 @@ existir **antes** de qualquer dado real.
 
 ## Pendências que bloqueiam etapas
 
-| Pendência                                     | Bloqueia      |
-| --------------------------------------------- | ------------- |
-| P-01 — janela do preço anterior               | R8            |
-| P-02 — tecnologia de armazenamento de eventos | R8            |
-| P-03 — rota da comparação                     | R5            |
-| P-04 — política de Dependabot                 | higiene de CI |
-| P-05 — configuração do prazo de 24 h          | R8            |
+| Pendência                                     | Bloqueia |
+| --------------------------------------------- | -------- |
+| P-01 — janela do preço anterior               | R8       |
+| P-02 — tecnologia de armazenamento de eventos | R8       |
+| P-05 — configuração do prazo de 24 h          | R8       |
+
+**As três bloqueiam apenas R8.** De R1 a R7 não há nenhuma pendência aberta — P-03 e P-04 foram
+fechadas em 03/08/2026 (D8 e D10 em [`MVP-DECISION-LOG.md`](MVP-DECISION-LOG.md)).
 
 ---
 
 ## Fora deste plano
 
-O trabalho de domínio (`demo.vipreco.com.br`) está **pausado**. O PR #44 permanece aberto, verde e
-intacto. Retomar é decisão do Founder/PMO e não depende de nenhuma etapa acima.
+**Domínio.** O trabalho de `demo.vipreco.com.br` está **pausado**. O PR #44 permanece aberto, verde
+e intacto. Retomar é decisão do Founder/PMO e não depende de nenhuma etapa acima.
+
+**Dependências.** Os seis PRs de Dependabot seguem abertos e intocados. A política está em
+[`DEPENDENCY-POLICY.md`](DEPENDENCY-POLICY.md), e a janela recomendada para tratá-los é **depois de
+R2** — antes disso, três majors de ferramenta chegando junto com um schema novo tornam impossível
+dizer qual dos dois quebrou o quê.
+
+**Automação de ingestão de preços.** Trilha PM-DATA-0 a PM-DATA-7, registrada em
+[`../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`](../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md).
+**Não faz parte do MVP, não bloqueia o MVP e não pode começar autonomamente.** Ela só é avaliada
+depois que R1 a R9 estiverem entregues e o Gate de necessidade for aprovado — e nenhuma
+infraestrutura preventiva é criada por antecipação.

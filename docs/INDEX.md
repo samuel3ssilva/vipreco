@@ -42,12 +42,25 @@ próprio documento.
 
 ## PMO — decisão e execução
 
-| Documento                                                          | Estado                                              |
-| ------------------------------------------------------------------ | --------------------------------------------------- |
-| [`pmo/MVP-DECISION-LOG.md`](pmo/MVP-DECISION-LOG.md)               | **NORMATIVO** — matriz D1–D12, pendências e log     |
-| [`pmo/MVP-EXECUTION-PLAN.md`](pmo/MVP-EXECUTION-PLAN.md)           | **NORMATIVO** — sequência R1–R9                     |
-| [`pmo/TECHNICAL-DEBT-REGISTER.md`](pmo/TECHNICAL-DEBT-REGISTER.md) | **NORMATIVO**                                       |
-| [`pmo/TRELLO-MAPPING.md`](pmo/TRELLO-MAPPING.md)                   | **NORMATIVO** — mapa do quadro; o quadro não existe |
+| Documento                                                          | Estado                                                                     |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| [`pmo/MVP-DECISION-LOG.md`](pmo/MVP-DECISION-LOG.md)               | **NORMATIVO** — matriz D1–D12, pendências e log                            |
+| [`pmo/MVP-EXECUTION-PLAN.md`](pmo/MVP-EXECUTION-PLAN.md)           | **NORMATIVO** — sequência R1–R9                                            |
+| [`pmo/TECHNICAL-DEBT-REGISTER.md`](pmo/TECHNICAL-DEBT-REGISTER.md) | **NORMATIVO**                                                              |
+| [`pmo/TRELLO-MAPPING.md`](pmo/TRELLO-MAPPING.md)                   | **NORMATIVO** — mapa do quadro; o quadro não existe                        |
+| [`pmo/DEPENDENCY-POLICY.md`](pmo/DEPENDENCY-POLICY.md)             | **NORMATIVO** — política de dependências e inventário dos seis PRs abertos |
+
+## Pós-MVP — registrado, não autorizado
+
+**Nada nesta pasta faz parte do MVP.** Nenhuma etapa pode começar autonomamente; cada uma depende de
+Gate humano.
+
+| Documento                                                                                        | Estado                                                            |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| [`post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`](post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md) | **NORMATIVO como registro de intenção** — fora do MVP             |
+| [`post-mvp/SOURCE-CONNECTOR-STATUS.md`](post-mvp/SOURCE-CONNECTOR-STATUS.md)                     | registro de avaliação; nenhum estado autoriza implementação       |
+| [`post-mvp/AUTOMATION-QUALITY-GATES.md`](post-mvp/AUTOMATION-QUALITY-GATES.md)                   | registro de critério                                              |
+| [`post-mvp/PRICE-PROVENANCE-POLICY.md`](post-mvp/PRICE-PROVENANCE-POLICY.md)                     | **NORMATIVO** no que já existe; registro de critério na automação |
 
 ## Governança e estratégia
 

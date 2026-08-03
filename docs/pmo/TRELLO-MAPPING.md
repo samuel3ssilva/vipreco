@@ -27,11 +27,17 @@ Regra: um card com **gate** só passa de 6 para 8 com registro da autorização 
 
 ## Etiquetas
 
-`E1 — Identidade exata` · `E2 — Comparação confiável` · `E3 — Aquisição e retenção` · `DATA` ·
-`DESIGN` · `SECURITY` · `BUSINESS` · `DOCS`
+**Do MVP:** `E1 — Identidade exata` · `E2 — Comparação confiável` · `E3 — Aquisição e retenção` ·
+`DATA` · `DESIGN` · `SECURITY` · `BUSINESS` · `DOCS`
+
+**Da trilha pós-MVP:** `POST-MVP` · `CONNECTOR` · `LEGAL` (acumulam com `DATA`, `SECURITY` e
+`BUSINESS`)
 
 `SECURITY` acumula com a etiqueta de épico. Todo card com `SECURITY` exige revisão adversarial antes
 de sair da lista 5.
+
+**Todo card com `POST-MVP` entra fora de Ready** e assim permanece até o Gate de necessidade
+(PM-DATA-0) ser aprovado. Ver §"Trilha pós-MVP".
 
 ---
 
@@ -233,7 +239,8 @@ de sair da lista 5.
 
 - **Objetivo:** prévia própria e botão de compartilhar na comparação (TD-006).
 - **Fonte:** `docs/product/COMPARISON-SPEC.md` §8
-- **Dependências:** **P-03 resolvida** · **Etapa:** R5 · **Etiquetas:** E2, DESIGN
+- **Dependências:** nenhuma — a rota está decidida (D8/DL-014): `/produto/$productId` ·
+  **Etapa:** R5 · **Etiquetas:** E2, DESIGN
 - **Aceite:** prévia estática; em DEMO o texto compartilhado continua começando pelo aviso de
   exemplo fictício; sem gerador dinâmico.
 - **Gate:** nenhum.
@@ -457,17 +464,22 @@ de sair da lista 5.
 - **Fonte:** `docs/data/OFFER-STATES.md` §5 · **Bloqueia:** R8, MVP-E2-09
 - **Etiquetas:** DOCS · **Gate:** **sim.** · **Evidência:** entrada no decision log.
 
-### MVP-DOCS-03 — Decidir P-03 (rota da comparação)
+### MVP-DOCS-03 — Decidir P-03 (rota da comparação) ✅ _(resolvida em 03/08/2026)_
 
-- **Objetivo:** manter `/produto/$productId` ou criar rota nova.
-- **Fonte:** `MVP-DECISION-LOG.md` D8 · **Bloqueia:** R5, MVP-E2-10, TD-008
-- **Etiquetas:** DOCS · **Gate:** **sim.** · **Evidência:** entrada no decision log.
+- **Decisão:** a rota canônica permanece `/produto/$productId`. Nenhuma rota nova, nenhum redirect,
+  nenhum alias. O CTA passa a ser "Comparar em X mercados" e leva à mesma rota.
+- **Fonte:** `MVP-DECISION-LOG.md` D8 e DL-014 · **Desbloqueou:** R5, MVP-E2-10, TD-008
+- **Etiquetas:** DOCS · **Evidência:** entrada no decision log e `COMPARISON-SPEC.md` §1.1.
 
-### MVP-DOCS-04 — Decidir P-04 (Dependabot)
+### MVP-DOCS-04 — Decidir P-04 (Dependabot) ✅ _(resolvida em 03/08/2026)_
 
-- **Objetivo:** política para os seis PRs de _major_ abertos.
-- **Fonte:** `MVP-DECISION-LOG.md` D10 · **Bloqueia:** higiene de CI
-- **Etiquetas:** DOCS · **Gate:** **sim.** · **Evidência:** entrada no decision log.
+- **Decisão:** política escrita em [`DEPENDENCY-POLICY.md`](DEPENDENCY-POLICY.md), com inventário
+  somente leitura dos seis PRs. Nenhum auto-merge, major sempre em PR próprio, CI vermelho proíbe
+  merge, lockfile inesperado exige investigação.
+- **Fonte:** `MVP-DECISION-LOG.md` D10 e DL-015 · **Desbloqueou:** higiene de CI
+- **Etiquetas:** DOCS · **Evidência:** política + inventário dos seis PRs.
+- **Atenção:** a política **não autoriza** merge de nenhum dos seis. Cada um continua sendo gate
+  humano próprio.
 
 ### MVP-DOCS-05 — Decidir P-05 (configuração do prazo de 24 h)
 
@@ -485,12 +497,101 @@ de sair da lista 5.
 
 ---
 
+## Trilha pós-MVP — automação complementar de ingestão
+
+**Todos os catorze cards abaixo entram no quadro em `Inbox` ou `Bloqueado` — nunca em `Ready`.**
+
+Não fazem parte do MVP, não bloqueiam o MVP, não podem começar autonomamente, e cada um depende de
+Gate humano. Nenhuma investigação autoriza publicação, e nenhum preço coletado entra no produto
+nesta fase. Contexto e sequência em
+[`../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`](../post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md).
+
+Etiquetas comuns a todos: `POST-MVP`. As demais estão em cada linha.
+
+| ID             | Título                                   | Etapa     | Etiquetas extras    | Lista inicial |
+| -------------- | ---------------------------------------- | --------- | ------------------- | ------------- |
+| **PM-DATA-01** | Medir déficit de cobertura               | PM-DATA-0 | DATA, BUSINESS      | Inbox         |
+| **PM-DATA-02** | Preservar investigações                  | PM-DATA-0 | DOCS                | Inbox         |
+| **PM-DATA-03** | Revisão jurídica e de fontes             | PM-DATA-1 | LEGAL               | **Bloqueado** |
+| **PM-DATA-04** | Definir contrato de conector             | PM-DATA-1 | CONNECTOR, DATA     | **Bloqueado** |
+| **PM-DATA-05** | Atacadão em shadow mode                  | PM-DATA-2 | CONNECTOR, SECURITY | **Bloqueado** |
+| **PM-DATA-06** | Auditar precisão composta do Atacadão    | PM-DATA-3 | CONNECTOR, DATA     | **Bloqueado** |
+| **PM-DATA-07** | Provar regionalização do Savegnago       | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
+| **PM-DATA-08** | Provar canais e condições do Pague Menos | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
+| **PM-DATA-09** | Reavaliar São Vicente                    | PM-DATA-5 | CONNECTOR           | **Bloqueado** |
+| **PM-DATA-10** | Implementar fila de revisão              | PM-DATA-3 | DATA, BUSINESS      | **Bloqueado** |
+| **PM-DATA-11** | Gate de publicação limitada              | PM-DATA-4 | SECURITY, BUSINESS  | **Bloqueado** |
+| **PM-DATA-12** | Agendamento e observabilidade            | PM-DATA-6 | CONNECTOR, SECURITY | **Bloqueado** |
+| **PM-DATA-13** | Expansão Santa Terezinha                 | PM-DATA-7 | BUSINESS            | **Bloqueado** |
+| **PM-DATA-14** | Reavaliar fontes em HOLD                 | —         | LEGAL, BUSINESS     | **Bloqueado** |
+
+### Detalhamento
+
+**PM-DATA-01 — Medir déficit de cobertura.** Medir quantos produtos canônicos têm preço vigente em
+dois ou mais mercados pelo caminho manual. **Aceite:** medida real, não estimativa; 20 produtos
+comparáveis como referência inicial do piloto, **não** como regra permanente. **Gate:** o resultado
+alimenta PM-DATA-0 e o limiar definitivo é do PMO. **Fora de escopo:** qualquer conector.
+
+**PM-DATA-02 — Preservar investigações.** Manter registrado o que já se sabe sobre cada fonte, sem
+acrescentar investigação nova. **Aceite:** `SOURCE-CONNECTOR-STATUS.md` reflete o estado real —
+hoje, nenhuma investigação técnica feita. **Gate:** nenhum.
+
+**PM-DATA-03 — Revisão jurídica e de fontes.** Ler termos de uso e obter parecer, por fonte.
+**Aceite:** parecer escrito antes de qualquer acesso automatizado. **Gate:** **sim** — autorização
+por fonte, ou HOLD. **Fora de escopo:** aceitar qualquer termo em nome do ViPreço.
+
+**PM-DATA-04 — Definir contrato de conector.** Interface comum: o que um conector entrega, com
+quais campos obrigatórios e qual classe de evidência. **Aceite:** contrato cobre as catorze
+dimensões de qualidade. **Gate:** **sim.** **Fora de escopo:** implementar conector.
+
+**PM-DATA-05 — Atacadão em shadow mode.** Coletar, guardar, auditar. **Publicar nada.** **Aceite:**
+prova de que o conector distingue preço por unidade de preço por caixa; nenhuma linha publicada.
+**Gate:** **sim, próprio.** **Fora de escopo:** publicação, segunda fonte.
+
+**PM-DATA-06 — Auditar precisão composta do Atacadão.** **Aceite:** precisão composta medida sobre
+as catorze dimensões; quando houver amostra, também o limite inferior do IC de 95%. **Gate:**
+**sim** — o número decide se a trilha continua.
+
+**PM-DATA-07 — Provar regionalização do Savegnago.** **Aceite:** demonstrar que preço varia por
+canal e por unidade e que o conector sabe qual está lendo. Sem isso, nem shadow mode. **Gate:**
+**sim.**
+
+**PM-DATA-08 — Provar canais e condições do Pague Menos.** **Aceite:** separação demonstrada entre
+online, loja, promoção e Clube Leve Mais — as quatro, nomeadas no dado. **Gate:** **sim.**
+
+**PM-DATA-09 — Reavaliar São Vicente.** Fallback. **Aceite:** só avança se a regionalização das
+anteriores se mostrar instável. **Gate:** **sim.**
+
+**PM-DATA-10 — Implementar fila de revisão.** **Aceite:** item Classe B nunca vira publicado sem
+decisão humana; **nenhum desfecho automático por inatividade**. **Gate:** **sim.**
+
+**PM-DATA-11 — Gate de publicação limitada.** **Aceite:** subconjunto pequeno, com procedência de
+conector escrita, e reavaliação em prazo definido. **Gate:** **sim, próprio** — é a primeira vez que
+dado coletado aparece para o público.
+
+**PM-DATA-12 — Agendamento e observabilidade.** **Aceite:** contagem por classe, detecção de
+mudança de formato, idade do dado publicado, alerta quando a execução não roda. **Gate:** **sim.**
+Falhar em silêncio é pior do que falhar alto.
+
+**PM-DATA-13 — Expansão Santa Terezinha.** **Aceite:** avaliação de cobertura fora de Artemis, com
+dado. **Gate:** **sim.**
+
+**PM-DATA-14 — Reavaliar fontes em HOLD.** Carrefour e Pão de Açúcar. **Aceite:** reavaliação é
+decisão do Founder/PMO e **não** decorre de a trilha ter dado certo. **Gate:** **sim.**
+
+---
+
 ## Cards já concluídos nesta rodada
 
 | ID          | Onde                                                                          |
 | ----------- | ----------------------------------------------------------------------------- |
 | MVP-DOCS-01 | PR `docs/mvp-roadmap-v3-source-of-truth`                                      |
+| MVP-DOCS-03 | decisão D8/DL-014 registrada                                                  |
+| MVP-DOCS-04 | decisão D10/DL-015 e `DEPENDENCY-POLICY.md`                                   |
 | MVP-E2-01   | PR `fix/comparison-deterministic-tiebreaker`                                  |
 | MVP-DATA-01 | PR `fix/product-normalization-contract` — **migration criada e não aplicada** |
 
-Os três entram no quadro na lista **Revisão do Founder**, não em Concluído: nenhum foi mergeado.
+Os três com PR entram no quadro na lista **Revisão do Founder**, não em Concluído: nenhum foi
+mergeado. Os dois de decisão vão para **Concluído** — decisão registrada não depende de merge.
+
+**O quadro real não foi criado nem atualizado nesta missão.**

@@ -115,18 +115,20 @@ Todas resolvidas por princípio, sem inventar informação nova. Detalhamento e 
 
 ### D8 — Rota da tela de comparação
 
-|                      |                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Pergunta**         | A comparação continua em `/produto/$productId` ou vira rota nova?                                           |
-| **Recomendada (R0)** | nenhuma                                                                                                     |
-| **Decisão**          | **não tomada neste mandato**                                                                                |
-| **Base**             | nenhum dos dez princípios alcança a questão — é escolha de URL e de continuidade de links já compartilhados |
-| **Efeito potencial** | sitemap (PR #44), links já em circulação, `og:url`, `canonical`                                             |
-| **Estado**           | **PENDENTE — P-03**                                                                                         |
-
-Recomendação do CTO, para quando o PMO decidir: manter `/produto/$productId`. A rota já é
-compartilhável, já está no ar, e o custo de trocar é pagar redirecionamento permanente por um ganho
-apenas semântico. Nada nesta documentação depende da resposta.
+|                         |                                                                                                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pergunta**            | A comparação continua em `/produto/$productId` ou vira rota nova?                                                                                                 |
+| **Recomendada (R0)**    | manter `/produto/$productId`                                                                                                                                      |
+| **Decisão**             | **A rota canônica da comparação no MVP permanece `/produto/$productId`.** Ela representa um SKU exato e exibe suas ofertas em diferentes mercados.                |
+| **CTA**                 | o rótulo público passa a ser **"Comparar em X mercados"** e continua levando a `/produto/$productId`. A mudança é de jornada e de apresentação, não de roteamento |
+| **Não criar**           | `/comparar/$productId`, redirect, alias, rota nova — e **nenhuma alteração de código nesta missão**                                                               |
+| **Base**                | decisão do Founder/PMO, 03/08/2026                                                                                                                                |
+| **Racional**            | a tela existente já é a comparação; evita churn de URL; preserva compartilhamentos já em circulação; reduz código e testes                                        |
+| **Efeito no schema**    | nenhum                                                                                                                                                            |
+| **Efeito na interface** | baixo — só o rótulo do CTA                                                                                                                                        |
+| **Efeito na segurança** | nenhum. `sitemap.xml`, `canonical` e `og:url` continuam apontando para a rota que já existe                                                                       |
+| **Hipótese futura**     | uma rota dedicada fica registrada **apenas como hipótese**, condicionada a necessidade comprovada — nunca por preferência estética                                |
+| **Estado**              | **RESOLVIDA**                                                                                                                                                     |
 
 ### D9 — Convivência de dado real e fictício
 
@@ -143,16 +145,19 @@ apenas semântico. Nada nesta documentação depende da resposta.
 
 ### D10 — PRs de Dependabot
 
-|                      |                                                                                                                                            |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Pergunta**         | Os seis PRs de Dependabot ficam congelados até o fim do rebaseline?                                                                        |
-| **Recomendada (R0)** | congelar até o fim de R6                                                                                                                   |
-| **Decisão**          | **não tomada neste mandato** — nenhum princípio alcança política de dependência                                                            |
-| **Efeito potencial** | zod 3→4 atinge `validateSearch`; TypeScript 5→7 atinge o modo estrito; eslint 9→10 atinge o CI. Os três chegariam junto com um schema novo |
-| **Estado**           | **PENDENTE — P-04**                                                                                                                        |
+|                         |                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Pergunta**            | Os seis PRs de Dependabot ficam congelados até o fim do rebaseline?                                                                                                                                                                                                                                                                                                                                                                  |
+| **Recomendada (R0)**    | congelar até o fim de R6                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Decisão**             | **Política escrita**, em [`DEPENDENCY-POLICY.md`](DEPENDENCY-POLICY.md): nenhum auto-merge; crítica ou alta em PR isolado com merge manual; moderada ou baixa em revisão periódica; patch/minor agrupáveis por ecossistema quando comprovadamente seguras; **major sempre em PR próprio**; dependência não utilizada removida em PR próprio; CI ou CodeQL vermelho proíbe merge; alteração inesperada de lockfile exige investigação |
+| **Inventário**          | os seis auditados em modo somente leitura. **Zero alertas de segurança abertos** — todos são manutenção. Os seis são **major**, logo nenhum é agrupável. #4 e #5 estão com CI vermelho, por causa externa e por regra nova de lint                                                                                                                                                                                                   |
+| **Efeito no schema**    | nenhum                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Efeito na interface** | nenhum                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Efeito na segurança** | positivo — a regra de lockfile inesperado cobre a superfície de cadeia de suprimentos                                                                                                                                                                                                                                                                                                                                                |
+| **Estado**              | **RESOLVIDA na política**                                                                                                                                                                                                                                                                                                                                                                                                            |
 
-Nenhum deles foi tocado nesta rodada, e o mandato R0.5 proíbe alterar dependências — na prática
-estão congelados até que o PMO diga o contrário.
+A política **não autoriza** o merge de nenhum dos seis. Nenhum foi tocado: sem update de branch,
+sem merge, sem fechamento, sem auto-merge, sem alteração de dependência.
 
 ### D11 — Ordem de merge do PR #44
 
@@ -185,9 +190,13 @@ estão congelados até que o PMO diga o contrário.
 
 | Estado                 | Decisões                                                             |
 | ---------------------- | -------------------------------------------------------------------- |
-| **RESOLVIDA**          | D1, D2, D3, D4, D6, D7, D9, D11, D12 — **nove**                      |
+| **RESOLVIDA**          | D1, D2, D3, D4, D6, D7, **D8**, D9, **D10**, D11, D12 — **onze**     |
 | **RESOLVIDA em parte** | D5 (arquitetura sim; tecnologia de armazenamento pendente) — **uma** |
-| **PENDENTE**           | D8, D10 — **duas**                                                   |
+| **PENDENTE**           | nenhuma                                                              |
+
+D8 e D10 foram fechadas pelo Founder/PMO em 03/08/2026. **As doze decisões do assessment estão
+resolvidas.** As pendências que restam (§Parte 2) não vieram do assessment — são perguntas que a
+própria documentação levantou ao descer ao detalhe.
 
 ---
 
@@ -199,9 +208,11 @@ Nenhuma destas pode virar código ou migration enquanto estiver aberta.
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
 | **P-01** | Qual a **janela temporal** para selecionar a observação anterior que vira "preço anterior"?                                                                                                                                                                 | mandato §7: "caso a janela temporal exata não esteja decidida no assessment, marcar como PENDENTE. Não inventar." O assessment não a decidiu | E2.10 e o item 7 do Card v2 |
 | **P-02** | Qual a **tecnologia de armazenamento** dos eventos de analytics?                                                                                                                                                                                            | mandato §13: exige ADR com alternativas e proíbe escolher sem spike e novo gate                                                              | R8                          |
-| **P-03** | A comparação fica em `/produto/$productId` ou em rota nova? (D8)                                                                                                                                                                                            | assessment §20                                                                                                                               | R5, sitemap                 |
-| **P-04** | Política para os seis PRs de Dependabot. (D10)                                                                                                                                                                                                              | assessment §20                                                                                                                               | higiene de CI               |
 | **P-05** | Qual o **valor inicial e o mecanismo de configuração** do prazo de 24 h de visibilidade de oferta não ativa? O mandato fixa 24 h e exige que seja configurável, mas não diz onde a configuração vive (constante versionada, variável de ambiente ou coluna) | mandato §8                                                                                                                                   | R8                          |
+
+**Fechadas em 03/08/2026:** **P-03** (rota da comparação — permanece `/produto/$productId`, ver D8)
+e **P-04** (política de dependências — ver D10 e [`DEPENDENCY-POLICY.md`](DEPENDENCY-POLICY.md)).
+Restam três: P-01, P-02 e P-05, todas bloqueando apenas R8.
 
 ---
 
@@ -373,3 +384,55 @@ status.
   delegação.
 - **Documentos:** `PLANO-MESTRE.md`, `docs/mvp/TEST-MVP-PLAN.md`, `docs/pmo/TRELLO-MAPPING.md`
 - **Status:** ativa
+
+### DL-014 — Rota canônica da comparação (D8 / P-03)
+
+- **Data:** 03/08/2026
+- **Decisão:** a comparação permanece em `/produto/$productId`. O CTA público passa a ser
+  "Comparar em X mercados" e continua levando à mesma rota. Nenhuma rota nova, nenhum redirect,
+  nenhum alias, e nenhuma alteração de código nesta missão.
+- **Contexto:** a tela existente já é a comparação — o assessment R0 concluiu isso, e a mudança
+  que E2 pede é de jornada e apresentação, não de roteamento.
+- **Alternativas:** `/comparar/$productId` com redirect permanente — rejeitada: pagaria churn de
+  URL, quebraria compartilhamentos já em circulação e acrescentaria rota, sitemap e testes por um
+  ganho apenas semântico.
+- **Consequência:** R5 deixa de ter dependência bloqueante; `sitemap.xml`, `canonical` e `og:url`
+  continuam apontando para a rota que já existe; o PR #44 não precisa de nenhuma emenda por causa
+  desta decisão. Uma rota dedicada fica registrada como hipótese futura, condicionada a
+  necessidade comprovada.
+- **Documentos:** `docs/product/COMPARISON-SPEC.md`, `docs/pmo/MVP-EXECUTION-PLAN.md`,
+  `docs/pmo/TRELLO-MAPPING.md`
+- **Status:** ativa
+
+### DL-015 — Política de dependências (D10 / P-04)
+
+- **Data:** 03/08/2026
+- **Decisão:** política escrita em [`DEPENDENCY-POLICY.md`](DEPENDENCY-POLICY.md), com inventário
+  somente leitura dos seis PRs abertos.
+- **Contexto:** seis PRs de _major_ abertos desde 28/07, nenhum com alerta de segurança associado.
+- **Alternativas:** auto-merge para patch/minor — rejeitada: todo merge neste projeto é gate
+  humano (`PLANO-MESTRE.md` §0), e abrir exceção para dependência é abrir na superfície de cadeia
+  de suprimentos.
+- **Consequência:** os seis continuam abertos e intocados. A janela recomendada para tratá-los é
+  depois de R2, com a estrutura de dados estabilizada.
+- **Documentos:** `docs/pmo/DEPENDENCY-POLICY.md`
+- **Status:** ativa
+
+### DL-016 — Trilha pós-MVP de automação de ingestão
+
+- **Data:** 03/08/2026
+- **Decisão:** registrar, **fora do MVP**, a trilha de automação complementar de ingestão de
+  preços: sequência PM-DATA-0 a PM-DATA-7, ordem provisória de fontes, regras de matching, classes
+  de qualidade e política de procedência.
+- **Contexto:** duas afirmações do Founder, classificadas como **[F] — contexto, não evidência
+  quantitativa**: Artemis isoladamente pode não produzir volume suficiente para comparações úteis,
+  e moradores de Artemis também compram em redes próximas.
+- **Alternativas:** (a) não registrar e decidir depois — rejeitada: a decisão futura ficaria sem
+  base escrita; (b) começar a investigar fontes agora — rejeitada: nada da trilha pode começar
+  autonomamente, e o Gate de necessidade exige medir o déficit antes de construir qualquer coisa.
+- **Consequência:** quatro documentos em `docs/post-mvp/` e catorze cards `PM-DATA-*`, **todos
+  fora de Ready**. Nenhuma infraestrutura preventiva. Nenhuma investigação autoriza publicação.
+- **Documentos:** `docs/post-mvp/AUTOMATED-PRICE-INGESTION-ROADMAP.md`,
+  `docs/post-mvp/SOURCE-CONNECTOR-STATUS.md`, `docs/post-mvp/AUTOMATION-QUALITY-GATES.md`,
+  `docs/post-mvp/PRICE-PROVENANCE-POLICY.md`
+- **Status:** ativa, não iniciada

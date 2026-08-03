@@ -6,31 +6,39 @@ dependência e o PR planejado.
 Severidade: **alta** = produz erro silencioso em dado ou em ordenação · **média** = degrada com
 escala · **baixa** = incompletude sem efeito hoje.
 
-| ID     | Título                                    | Severidade | Estado                    |
-| ------ | ----------------------------------------- | ---------- | ------------------------- |
-| TD-001 | normalização SQL e TypeScript divergentes | **alta**   | PR técnico B desta rodada |
-| TD-002 | comparação sem terceiro desempate         | **alta**   | PR técnico A desta rodada |
-| TD-003 | `markets.city` não consumido              | baixa      | R2                        |
-| TD-004 | `getProductsPriceStats` sem `limit`       | média      | R4                        |
-| TD-005 | dupla busca na rota de produto            | baixa      | R5                        |
-| TD-006 | rota de produto sem `og:image` própria    | baixa      | R5                        |
-| TD-007 | `pg_trgm` instalado e não usado           | baixa      | R4                        |
-| TD-008 | rotas dinâmicas fora do `sitemap.xml`     | baixa      | R5                        |
+| ID          | Título                                    | Severidade | Estado                                           |
+| ----------- | ----------------------------------------- | ---------- | ------------------------------------------------ |
+| **TD-001A** | normalização SQL e TypeScript divergentes | **alta**   | **RESOLVIDA pelo PR #47**, sujeita ao merge      |
+| **TD-001B** | número e unidade com ou sem espaço        | **alta**   | **ABERTA** até a quantidade estruturada de R1/R2 |
+| TD-002      | comparação sem terceiro desempate         | **alta**   | **RESOLVIDA pelo PR #46**, sujeita ao merge      |
+| TD-003      | `markets.city` não consumido              | baixa      | R2                                               |
+| TD-004      | `getProductsPriceStats` sem `limit`       | média      | R4                                               |
+| TD-005      | dupla busca na rota de produto            | baixa      | R5                                               |
+| TD-006      | rota de produto sem `og:image` própria    | baixa      | R5                                               |
+| TD-007      | `pg_trgm` instalado e não usado           | baixa      | R4                                               |
+| TD-008      | rotas dinâmicas fora do `sitemap.xml`     | baixa      | R5                                               |
 
 ---
 
-## TD-001 — Normalização SQL e TypeScript divergentes
+## TD-001 — Duplicação silenciosa de produto
 
-**Severidade: alta.**
+O achado original foi dividido em dois, porque **um está resolvido e o outro não**, e tratá-los
+como um só faria o PR #47 parecer uma solução completa contra duplicação de SKU. Ele não é.
+
+---
+
+## TD-001A — Normalização SQL e TypeScript divergentes
+
+**Severidade: alta. Estado: RESOLVIDA pelo PR #47, sujeita ao merge.**
 
 `normalizeSearchText()` (TypeScript) colapsa espaço repetido e remove espaço das pontas.
 `pa_normalize_text()` (SQL) faz apenas minúsculas e remoção de acento.
 
-**Risco: duplicação silenciosa de produtos.** O índice `products_canonical_identity_idx` considera
-`"500 g"`, `"500  g"` e `"500g"` três identidades distintas. Numa operação manual por WhatsApp, a
-mesma oferta digitada duas vezes com espaçamento diferente cria um SKU novo, e a comparação se parte
-em três sem nenhum erro visível. Efeito secundário: um termo com espaço duplo não encontra o
-`search_text` correspondente.
+**Risco: duplicação silenciosa de produtos por espaçamento.** O índice
+`products_canonical_identity_idx` considera `"500 g"` e `"500  g"` identidades distintas. Numa
+operação manual por WhatsApp, a mesma oferta digitada duas vezes com espaçamento diferente cria um
+SKU novo, e a comparação se parte sem nenhum erro visível. Efeito secundário: um termo com espaço
+duplo não encontra o `search_text` correspondente.
 
 **Ação:**
 
@@ -48,11 +56,45 @@ distintas pelo espaçamento — o banco recusa a mudança em vez de aceitar uma 
 isso a ordem é: rodar o script de colisões, obter relatório vazio, e só então aplicar. Relatório não
 vazio é `HUMAN ACTION REQUIRED`.
 
+**O que o PR #47 faz — e o que ele não faz.** Ele alinha SQL e TypeScript e colapsa espaços
+repetidos. Ele **não** resolve identidade por quantidade, e **não deve ser descrito como solução
+completa contra duplicação de SKU**. O que sobra está em TD-001B.
+
+---
+
+## TD-001B — Número e unidade com ou sem espaço
+
+**Severidade: alta. Estado: ABERTA** até a quantidade estruturada de R1/R2.
+
+Estas quatro grafias continuam sendo, para o banco, produtos diferentes — antes e depois do PR #47:
+
+```
+500g      500 g
+1L        1 L
+```
+
+O contrato de normalização **não colapsa** o espaço entre número e unidade, e isso é decisão, não
+esquecimento: colapsar exigiria interpretar o texto para descobrir onde termina o número e começa a
+unidade, e o princípio 3 (`dado estruturado antes de interpretação de texto`) decide contra.
+Um parser de string acertaria `"500g"` e erraria em `"1kg de arroz tipo 1"`, `"pack 6x350ml"` ou
+`"12 rolos"` — e erraria em silêncio.
+
+**A resposta certa é E1.** `quantity_value = 500` + `quantity_unit = 'g'` torna a grafia
+irrelevante: `"500g"` e `"500 g"` passam a ser o mesmo SKU porque a **quantidade** é a mesma, não
+porque as strings ficaram parecidas.
+
+**Risco enquanto estiver aberta:** a operação manual pode criar SKU duplicado digitando `"500g"` num
+dia e `"500 g"` no outro. A mitigação atual é procedimental, não técnica — o checklist de
+`docs/mvp/MANUAL-OFFER-OPERATIONS.md` §3 manda conferir se o produto já existe antes de criar.
+
+**Ação:** quantidade e unidade estruturadas (`../data/MVP-DATA-CONTRACT.md` §1–2), com backfill
+revisado linha a linha. **Dependência:** R1. **PR:** R1/R2, cards MVP-E1-01 e MVP-E1-08.
+
 ---
 
 ## TD-002 — Comparação sem terceiro desempate
 
-**Severidade: alta.**
+**Severidade: alta. Estado: RESOLVIDA pelo PR #46, sujeita ao merge.**
 
 `latestValidPricePerMarket()` ordenava por preço e, no empate, por `observed_at` decrescente. Sem
 terceiro critério, dois mercados com preço e data idênticos ficavam na ordem de inserção do `Map`,

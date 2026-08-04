@@ -43,9 +43,17 @@ export const QUANTITY_UNITS = Object.freeze(
   Object.keys(UNIT_CONVERSIONS) as QuantityUnit[],
 ) as readonly QuantityUnit[];
 
-/** A unidade informada é uma das cinco? Guarda de tipo, para dado que vem de fora. */
+/**
+ * A unidade informada é uma das cinco? Guarda de tipo, para dado que vem de fora.
+ *
+ * `Object.hasOwn` e não `in`: `in` percorre a cadeia de protótipos, então `"toString" in
+ * UNIT_CONVERSIONS` é `true` e a guarda deixaria passar `toString`, `constructor` e
+ * `valueOf` como se fossem unidades. `UNIT_CONVERSIONS["toString"]` é uma função, `.factor`
+ * é `undefined`, e a conversão devolveria `NaN` com `status: "ok"` — exatamente o valor
+ * inválido silencioso que o contrato proíbe.
+ */
 export function isQuantityUnit(value: unknown): value is QuantityUnit {
-  return typeof value === "string" && value in UNIT_CONVERSIONS;
+  return typeof value === "string" && Object.hasOwn(UNIT_CONVERSIONS, value);
 }
 
 /** Por que uma quantidade declarada não pôde ser normalizada. */
@@ -53,7 +61,9 @@ export type QuantityRejection =
   /** `NaN`, `Infinity` — resultado típico de um parse malfeito lá atrás */
   | "not_finite"
   /** zero ou negativo: embalagem não tem quantidade nula */
-  | "not_positive";
+  | "not_positive"
+  /** a unidade declarada não é uma das cinco do contrato */
+  | "unknown_unit";
 
 export type QuantityNormalization =
   | { status: "ok"; quantity: NormalizedQuantity }
@@ -79,19 +89,23 @@ function roundToScale(value: number): number {
  * normalized_quantity = quantity_value × fator(quantity_unit)
  * normalized_unit     = grandeza(quantity_unit)
  * ```
+ *
+ * As três guardas cobrem as três formas de a conversão dar errado, e a ordem importa:
+ * unidade desconhecida antes de indexar a tabela (senão a leitura estoura em `undefined`),
+ * entrada não finita antes de multiplicar, e **resultado** não finito depois. A última é a
+ * que não é redundante: `1e308` é um valor de entrada finito, e `1e308 kg` transborda para
+ * `Infinity` só depois do fator 1000. Validar a entrada não valida a saída.
  */
 export function normalizeQuantity(declared: DeclaredQuantity): QuantityNormalization {
+  if (!isQuantityUnit(declared.unit)) return { status: "rejected", rejection: "unknown_unit" };
   if (!Number.isFinite(declared.value)) return { status: "rejected", rejection: "not_finite" };
   if (declared.value <= 0) return { status: "rejected", rejection: "not_positive" };
 
   const conversion = UNIT_CONVERSIONS[declared.unit];
-  return {
-    status: "ok",
-    quantity: {
-      value: roundToScale(declared.value * conversion.factor),
-      unit: conversion.normalizedUnit,
-    },
-  };
+  const value = roundToScale(declared.value * conversion.factor);
+  if (!Number.isFinite(value)) return { status: "rejected", rejection: "not_finite" };
+
+  return { status: "ok", quantity: { value, unit: conversion.normalizedUnit } };
 }
 
 /**

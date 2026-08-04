@@ -172,6 +172,28 @@ foi contatado, nada foi lido de staging.
 A distinção importa para ler o histórico de execuções: este run vermelho valida o workflow,
 não mede o banco.
 
+### Um registro de deployment que **não** é um deploy
+
+Esse run criou, no GitHub, um _deployment record_ para o ambiente `staging` em `252af35`. É
+consequência automática de o job declarar `environment: staging` — o GitHub abre um registro
+para qualquer job que use um Environment, tenha ele deployado alguma coisa ou não.
+
+**Nenhum deploy aconteceu.** `deploy-staging.yml` é `workflow_dispatch` puro, e sua última
+execução continua sendo a de 02/08/2026, em `862a179`. O Worker de staging serve exatamente
+o mesmo build de antes, e o de produção também. Os dois respondem `HTTP 200`.
+
+| O que                                 | Estado                                                        |
+| ------------------------------------- | ------------------------------------------------------------- |
+| Último `deploy-staging.yml` executado | 02/08/2026, `862a179` — inalterado                            |
+| Worker de staging                     | mesmo build; `HTTP 200`                                       |
+| Worker de produção                    | `b88e514`; `HTTP 200`                                         |
+| Registro de deployment em `252af35`   | criado pelo `environment:` do preflight, com status `failure` |
+
+Fica escrito porque lido de relance — "staging :: 252af35" no topo da lista de deployments —
+isso parece um deploy novo, e não é. A diferença entre "o GitHub registrou um uso de
+Environment" e "o Worker foi republicado" é a diferença entre nada ter mudado e o piloto ter
+mudado de versão sem ninguém pedir.
+
 ---
 
 ## 9. Onde o gate ficou

@@ -464,3 +464,353 @@ BEGIN
   RAISE NOTICE 'R2-A: o total separa packs de contagens diferentes; units_per_package nao e identidade.';
 END
 $$;
+
+-- ============================================================================
+-- R2-B / MVP-E1-05 - integridade de GTIN contra banco vivo.
+--
+-- A MESMA lista de supabase/gtin-vectors.json, e src/lib/gtin.contract.test.ts confere
+-- que os dois lados não divergiram. Acrescentar vetor de um lado sem acrescentar do outro
+-- quebra o CI antes de chegar aqui.
+-- ============================================================================
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  v record;
+  obtido boolean;
+BEGIN
+  FOR v IN
+    SELECT * FROM (VALUES
+      ('1234567890128', true),
+      ('40063812', true),
+      ('614141000036', true),
+      ('01234567890128', true),
+      ('0000000000000', true),
+      ('7896089012345', false),
+      ('7896089054321', false),
+      ('0000000000001', false),
+      ('123456789013', false),
+      ('123456789012a', false),
+      ('123-4567-89012-8', false),
+      ('', false),
+      ('123456789', false),
+      ('123456789012345', false),
+      ('+123456789012', false),
+      ('1234567890128.0', false)
+    ) AS g(codigo, valido)
+  LOOP
+    obtido := public.pa_is_valid_gtin(v.codigo);
+    IF obtido IS DISTINCT FROM v.valido THEN
+      failures := array_append(failures, format('pa_is_valid_gtin(%L) devolveu %s, esperado %s', v.codigo, coalesce(obtido::text, 'NULL'), v.valido));
+    END IF;
+  END LOOP;
+
+  -- NULL nao e invalido: GTIN e opcional, e produto sem GTIN e produto normal.
+  IF public.pa_is_valid_gtin(NULL) IS NOT NULL THEN
+    failures := array_append(failures, 'pa_is_valid_gtin(NULL) deveria devolver NULL -- GTIN e opcional');
+  END IF;
+
+  -- Zero a esquerda e parte do codigo. Se algum caminho convertesse para numero, estes
+  -- dois virariam o mesmo valor -- e sao dois codigos diferentes.
+  IF public.pa_is_valid_gtin('01234567890128') IS NOT TRUE
+     OR public.pa_is_valid_gtin('1234567890128') IS NOT TRUE THEN
+    failures := array_append(failures, 'os dois codigos com e sem zero a esquerda deveriam ser validos e independentes');
+  END IF;
+
+  -- Propriedade: para qualquer corpo, anexar o digito calculado fecha o codigo.
+  IF public.pa_gtin_check_digit('123456789012') <> 8 THEN
+    failures := array_append(failures, 'pa_gtin_check_digit divergiu do vetor de referencia EAN-13');
+  END IF;
+  IF public.pa_gtin_check_digit('4006381') <> 2 THEN
+    failures := array_append(failures, 'pa_gtin_check_digit divergiu do vetor de referencia GTIN-8');
+  END IF;
+
+  -- A funcao precisa continuar IMMUTABLE: e usada em CHECK.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname IN ('pa_is_valid_gtin', 'pa_gtin_check_digit')
+      AND p.provolatile = 'i'
+    HAVING count(*) = 2
+  ) THEN
+    failures := array_append(failures, 'pa_is_valid_gtin ou pa_gtin_check_digit nao e IMMUTABLE');
+  END IF;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Contrato de GTIN violado em % vetor(es):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'Contrato de GTIN: todos os vetores confirmados contra banco vivo.';
+END
+$$;
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  fn text;
+BEGIN
+  -- As duas funcoes novas nao podem ficar executaveis por anon nem por authenticated. O
+  -- Supabase concede EXECUTE a esses papeis na criacao de TODA funcao do schema public,
+  -- por ALTER DEFAULT PRIVILEGES da plataforma -- foi o achado ao vivo da Onda 3, e a
+  -- migration revoga explicitamente por causa dele.
+  FOREACH fn IN ARRAY ARRAY['pa_is_valid_gtin(text)', 'pa_gtin_check_digit(text)']
+  LOOP
+    IF has_function_privilege('anon', format('public.%s', fn), 'EXECUTE') THEN
+      failures := array_append(failures, format('anon tem EXECUTE em public.%s', fn));
+    END IF;
+    IF has_function_privilege('authenticated', format('public.%s', fn), 'EXECUTE') THEN
+      failures := array_append(failures, format('authenticated tem EXECUTE em public.%s', fn));
+    END IF;
+    IF NOT has_function_privilege('service_role', format('public.%s', fn), 'EXECUTE') THEN
+      failures := array_append(failures, format('service_role perdeu EXECUTE em public.%s', fn));
+    END IF;
+  END LOOP;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Grants das funcoes de GTIN (R2-B) errados em % ponto(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-B: as funcoes de GTIN nao sao executaveis por anon nem por authenticated.';
+END
+$$;
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- A constraint precisa REJEITAR de verdade, e a unicidade parcial que ja existia
+  -- precisa continuar existindo -- esta migration nao a recria de proposito.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill gtin invalido', '7896089012345', true);
+    failures := array_append(failures, 'aceitou GTIN com digito verificador errado');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill gtin com letra', '789600671111a', true);
+    failures := array_append(failures, 'aceitou GTIN com caractere nao-digito');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill gtin com espaco', '1234567890128 ', true);
+    failures := array_append(failures, 'aceitou GTIN com espaco nas pontas -- trim e trabalho de quem escreve');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  -- Sem GTIN continua sendo um produto perfeitamente normal.
+  INSERT INTO public.products (name, gtin, is_demo) VALUES ('Drill sem gtin', NULL, true);
+
+  -- GTIN valido entra.
+  INSERT INTO public.products (name, gtin, is_demo)
+  VALUES ('Drill gtin valido', '1234567890128', true);
+
+  -- E continua unico entre os preenchidos.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill gtin repetido', '1234567890128', true);
+    failures := array_append(failures, 'aceitou o mesmo GTIN em dois produtos -- products_gtin_unique_idx sumiu');
+  EXCEPTION WHEN unique_violation THEN NULL;
+  END;
+
+  -- Dois produtos sem GTIN nao colidem: o indice de unicidade e parcial.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo) VALUES ('Drill outro sem gtin', NULL, true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, 'dois produtos sem GTIN colidiram -- a unicidade deveria ser parcial');
+  END;
+
+  -- Zero a esquerda: 13 e 14 digitos do mesmo numero sao codigos DIFERENTES, e os dois
+  -- cabem no banco ao mesmo tempo.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill gtin com zero', '01234567890128', true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, '01234567890128 colidiu com 1234567890128 -- algum caminho converteu para numero');
+  END;
+
+  DELETE FROM public.products WHERE name LIKE 'Drill %';
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Constraint de GTIN (R2-B) errada em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-B: GTIN invalido rejeitado, ausente aceito, unicidade parcial preservada, zero a esquerda distinto.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- QUEM ESCREVE EM products PRECISA DE EXECUTE EM pa_is_valid_gtin.
+--
+-- Este bloco comecou como a verificacao de uma afirmacao da migration: que a expressao de
+-- um CHECK seria avaliada como parte da definicao da tabela e NAO exigiria EXECUTE de quem
+-- escreve. A afirmacao era FALSA, e o drill mostrou isso contra Postgres 16 vivo:
+--
+--   permission denied for function pa_is_valid_gtin
+--
+-- em toda escrita do papel sem EXECUTE -- com GTIN valido, invalido ou nulo. A migration
+-- foi corrigida; este bloco passou a afirmar o comportamento real, e nao o suposto.
+--
+-- A consequencia e OPERACIONAL, nao de seguranca: a constraint fica mais restritiva do que
+-- se documentava, nunca menos. Nenhum papel real e afetado hoje -- anon e authenticated nao
+-- escrevem em products desde a Onda 3, e service_role tem o GRANT. Mas quem for fazer o
+-- backfill de MVP-E1-08 precisa escrever como service_role, e a mensagem de erro apontaria
+-- para uma funcao que ele nunca chamou. Por isso isso e teste, e nao comentario.
+--
+-- CHEGAR ATE AQUI EXIGIU ISOLAR A VARIAVEL, E O CAMINHO ENSINOU O RESTO
+--
+-- O mesmo SQLSTATE 42501 tem pelo menos quatro origens nesta tabela, e as tres primeiras
+-- precisaram ser eliminadas antes de a quarta ficar visivel:
+--
+--   1. RLS de products                  -> resolvido com BYPASSRLS no papel de teste;
+--   2. trigger products_search_text     -> funcao de TRIGGER *tambem* exige EXECUTE de quem
+--                                          escreve, e a Onda 3 a revogou de PUBLIC;
+--   3. DEFAULT gen_random_uuid()        -> pgcrypto vive no schema `extensions`, que exige
+--                                          USAGE proprio;
+--   4. o CHECK de GTIN                  -> o que este bloco realmente mede.
+--
+-- Por isso o papel recebe exatamente o que as tres primeiras exigem e nada do que a quarta
+-- exige. E por isso as mensagens de falha carregam SQLERRM: sem ele, cada uma das quatro
+-- se parece com as outras tres.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- BYPASSRLS de proposito. `products` tem RLS, e uma negacao de RLS levanta o MESMO
+  -- SQLSTATE 42501 (insufficient_privilege) que a falta de EXECUTE numa funcao. Sem isso
+  -- o teste confundiria uma coisa com a outra e acusaria a migration de um defeito que
+  -- ela nao tem. O papel existe para isolar exatamente uma variavel: o privilegio de
+  -- EXECUTE. Ele nao representa anon, nem authenticated, nem qualquer papel real.
+  CREATE ROLE drill_sem_execute NOLOGIN BYPASSRLS;
+  GRANT USAGE ON SCHEMA public TO drill_sem_execute;
+  -- `products.id` tem DEFAULT gen_random_uuid(), e o Supabase instala pgcrypto no schema
+  -- `extensions`. Sem USAGE aqui o INSERT morre no DEFAULT -- um TERCEIRO caminho
+  -- diferente para o mesmo SQLSTATE 42501.
+  GRANT USAGE ON SCHEMA extensions TO drill_sem_execute;
+  GRANT INSERT, DELETE ON public.products TO drill_sem_execute;
+
+  -- As de TRIGGER, sim: sem elas o INSERT morre em pa_products_search_text() e o teste
+  -- estaria medindo outra coisa.
+  GRANT EXECUTE ON FUNCTION public.pa_products_search_text() TO drill_sem_execute;
+  GRANT EXECUTE ON FUNCTION public.pa_normalize_text(text) TO drill_sem_execute;
+
+  -- A de CHECK, nao. E a unica variavel do experimento.
+  REVOKE ALL ON FUNCTION public.pa_is_valid_gtin(text) FROM drill_sem_execute;
+
+  IF has_function_privilege('drill_sem_execute', 'public.pa_is_valid_gtin(text)', 'EXECUTE') THEN
+    failures := array_append(failures, 'o papel de teste ficou com EXECUTE -- a prova abaixo nao valeria nada');
+  END IF;
+
+  SET LOCAL ROLE drill_sem_execute;
+
+  -- Sem EXECUTE, NENHUMA escrita passa -- nem a que traz um GTIN perfeitamente valido.
+  -- SQLERRM entra na mensagem porque 42501 tem quatro origens nesta tabela, e so a
+  -- mensagem do Postgres diz qual delas foi.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel sem execute valido', '614141000036', true);
+    failures := array_append(failures, 'escrita passou sem EXECUTE em pa_is_valid_gtin -- o comportamento do Postgres mudou, e a migration precisa ser relida');
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      IF SQLERRM NOT LIKE '%pa_is_valid_gtin%' THEN
+        failures := array_append(failures, format('42501 veio de outro objeto, nao do CHECK de GTIN -- %s', SQLERRM));
+      END IF;
+  END;
+
+  -- E o GTIN nulo tambem nao passa: o CHECK e avaliado de qualquer jeito, entao a barreira
+  -- nao depende de haver GTIN. E o que torna isso um requisito de escrita, e nao de dado.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel sem execute nulo', NULL, true);
+    failures := array_append(failures, 'escrita sem GTIN passou sem EXECUTE -- entao a barreira dependeria do dado, e nao e o caso');
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  RESET ROLE;
+
+  -- O contraste que fecha o argumento: COM EXECUTE, o mesmo papel escreve normalmente e a
+  -- constraint volta a se comportar como constraint -- aprova o valido e rejeita o
+  -- invalido por check_violation. E por isso que service_role recebe o GRANT.
+  GRANT EXECUTE ON FUNCTION public.pa_is_valid_gtin(text) TO drill_sem_execute;
+  GRANT EXECUTE ON FUNCTION public.pa_gtin_check_digit(text) TO drill_sem_execute;
+  SET LOCAL ROLE drill_sem_execute;
+
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel com execute valido', '614141000036', true);
+  EXCEPTION WHEN OTHERS THEN
+    failures := array_append(failures, format('com EXECUTE, o GTIN valido ainda foi barrado -- %s', SQLERRM));
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel com execute invalido', '7896089012345', true);
+    failures := array_append(failures, 'com EXECUTE, o GTIN invalido entrou -- a constraint nao esta valendo');
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+    WHEN insufficient_privilege THEN
+      failures := array_append(failures, format('com EXECUTE ainda houve 42501 -- %s', SQLERRM));
+  END;
+
+  RESET ROLE;
+
+  -- O drill nao deixa papel nem privilegio para tras. DROP OWNED BY em vez de enumerar
+  -- REVOKEs: enumerar foi o que falhou antes, porque a lista esquecia o USAGE em
+  -- `extensions` e o Postgres recusa remover papel com privilegio pendente. Esta forma
+  -- revoga tudo que foi concedido ao papel neste banco, entao nao fica desatualizada
+  -- quando um GRANT novo entrar acima -- e agora ha seis deles.
+  DELETE FROM public.products WHERE name LIKE 'Drill papel %execute%';
+  DROP OWNED BY drill_sem_execute;
+  DROP ROLE drill_sem_execute;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'EXECUTE de pa_is_valid_gtin na escrita (R2-B) divergiu em % ponto(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-B: sem EXECUTE em pa_is_valid_gtin nenhuma escrita em products passa; com EXECUTE, a constraint aprova o valido e rejeita o invalido.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- search_path fixado. Funcao usada em CHECK e resolvida com o search_path de quem
+-- escreve, se ela nao tiver o proprio -- e ai basta um schema na frente de public para
+-- que `substr` ou `length` passem a ser outra coisa. O drill nunca tinha conferido isso
+-- em funcao nenhuma; passa a conferir nas seis.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  fn text;
+  config text[];
+BEGIN
+  FOREACH fn IN ARRAY ARRAY[
+    'pa_is_valid_gtin', 'pa_gtin_check_digit', 'pa_normalize_text',
+    'pa_set_updated_at', 'pa_products_search_text', 'approve_submission'
+  ]
+  LOOP
+    SELECT p.proconfig INTO config
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public' AND p.proname = fn;
+
+    IF config IS NULL OR NOT (config && ARRAY['search_path=public']) THEN
+      failures := array_append(failures, format('public.%s nao fixa search_path=public (tem: %s)', fn, coalesce(array_to_string(config, ','), 'nada')));
+    END IF;
+  END LOOP;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'search_path nao fixado em % funcao(oes):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-B: as seis funcoes do schema public fixam search_path.';
+END
+$$;

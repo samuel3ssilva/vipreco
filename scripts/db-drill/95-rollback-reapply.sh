@@ -32,6 +32,12 @@ psql_run() {
   docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -q -U postgres -d postgres
 }
 
+# `-t -A` de proposito: sem eles o psql devolve cabecalho, alinhamento e "(1 row)" junto do
+# numero, e a comparacao com "13" nunca bate -- o valor esta certo e o teste reprova.
+psql_valor() {
+  docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -q -t -A -U postgres -d postgres
+}
+
 # Extrai o SQL entre os marcadores e remove o prefixo de comentario. `sed` guarda apenas o
 # miolo; o `s/^-- \{0,3\}//` tira o "-- " e a indentacao que o comentario acrescenta.
 extrair_rollback() {
@@ -41,7 +47,7 @@ extrair_rollback() {
 }
 
 objetos_presentes() {
-  psql_run <<'SQL'
+  psql_valor <<'SQL'
 SELECT count(*) FROM (
   SELECT 1 FROM information_schema.columns
    WHERE table_schema='public' AND table_name='products'

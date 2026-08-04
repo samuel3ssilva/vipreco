@@ -301,7 +301,7 @@ BEGIN
       array_length(failures, 1), array_to_string(failures, E'\n');
   END IF;
 
-  RAISE NOTICE 'R2-A: os sete CHECKs rejeitam dado invalido contra banco vivo.';
+  RAISE NOTICE 'R2-A: os cinco CHECKs rejeitam dado invalido em sete casos, contra banco vivo.';
 END
 $$;
 
@@ -358,5 +358,109 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'R2-A: 500 g e 0,5 kg colidem; 500 g e 500 ml nao; linha sem estrutura nao participa.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- As bordas numericas. numeric(12,4) nao e enfeite: ele define o que o banco aceita, o
+-- que ele ARREDONDA em silencio e o que ele recusa. Arredondamento silencioso e
+-- justamente o caminho por onde um zero entraria numa coluna que exige > 0.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- Escala decimal: 0,00004 nao cabe em 4 casas. O Postgres arredonda para 0,0000 -- e ai
+  -- o CHECK > 0 precisa pegar. Se ele nao pegasse, entraria um produto de quantidade zero
+  -- por caminho nenhum que o dominio consegue enxergar.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill escala que arredonda para zero', 'unidade', 0.00004, 'g', true);
+    failures := array_append(failures, 'aceitou 0,00004 -- arredondou para zero e o CHECK > 0 nao pegou');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  -- E a menor quantidade que de fato cabe continua entrando: a regra e recusar zero, nao
+  -- recusar valor pequeno.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill menor escala valida', 'unidade', 0.0001, 'g', true);
+  EXCEPTION WHEN check_violation THEN
+    failures := array_append(failures, 'recusou 0,0001 -- a menor quantidade representavel deveria entrar');
+  END;
+
+  -- Quantidade grande demais para o tipo: o banco recusa por estouro, e nao trunca. Um
+  -- truncamento silencioso aqui viraria um produto com quantidade errada e valida.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill quantidade grande demais', 'unidade', 1000000000, 'g', true);
+    failures := array_append(failures, 'aceitou 1e9 em numeric(12,4) -- truncou em vez de recusar');
+  EXCEPTION WHEN numeric_value_out_of_range THEN NULL;
+  END;
+
+  -- E o maior valor que cabe entra, inclusive passando pela multiplicacao do indice
+  -- (x1000 para kg), que acontece FORA do numeric(12,4) e portanto nao estoura.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill maior quantidade valida', 'unidade', 99999999.9999, 'kg', true);
+  EXCEPTION WHEN numeric_value_out_of_range THEN
+    failures := array_append(failures, 'a conversao do indice estourou no maior valor representavel');
+  END;
+
+  DELETE FROM public.products WHERE name LIKE 'Drill %escala valida' OR name LIKE 'Drill maior%';
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Bordas numericas de quantity_value (R2-A) erradas em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: arredondamento para zero e recusado, estouro e recusado, bordas validas entram.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- units_per_package NAO faz parte da identidade. A consequencia disso e concreta e
+-- precisa estar provada: o que separa um pack de 6 de um pack de 12 e o TOTAL em
+-- quantity_value, e nao a contagem. Um backfill que escreva 350 no lugar de 2100 nao
+-- produz erro de digitacao -- produz dois SKUs disputando a mesma identidade.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- Preenchido como o contrato manda (total), os dois packs sao produtos diferentes.
+  INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+  VALUES ('Refri drill', 'Marca drill', 'Original', '6 x 350 ml', 'pack', 2100, 'ml', 6, true);
+
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+    VALUES ('Refri drill', 'Marca drill', 'Original', '12 x 350 ml', 'pack', 4200, 'ml', 12, true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, 'pack de 6 e pack de 12 colidiram -- o total deveria separa-los');
+  END;
+
+  -- Preenchido errado (conteudo de cada item no lugar do total), os dois viram a mesma
+  -- identidade e o segundo e barrado. E o comportamento correto do indice, e e por isso
+  -- que o comentario de quantity_value diz TOTAL com todas as letras.
+  INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+  VALUES ('Suco drill', 'Marca drill', 'Uva', '6 x 350 ml', 'pack', 350, 'ml', 6, true);
+
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+    VALUES ('Suco drill', 'Marca drill', 'Uva', '12 x 350 ml', 'pack', 350, 'ml', 12, true);
+    failures := array_append(failures, 'units_per_package entrou na identidade -- 350/6 e 350/12 deveriam colidir');
+  EXCEPTION WHEN unique_violation THEN NULL;
+  END;
+
+  DELETE FROM public.products WHERE name IN ('Refri drill', 'Suco drill');
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Identidade de pack (R2-A) errada em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: o total separa packs de contagens diferentes; units_per_package nao e identidade.';
 END
 $$;

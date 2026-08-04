@@ -18,6 +18,20 @@ const migration = readFileSync(
   "utf-8",
 );
 
+/**
+ * As colunas que a migration acrescenta, com a definição completa de cada uma.
+ *
+ * A definição vai até o FIM DA LINHA, e não até a primeira vírgula: parar na vírgula
+ * lê `quantity_value numeric(12,4)` como `numeric(12`, e aí a única coluna que tem
+ * vírgula dentro do próprio tipo é justamente a que nenhuma guarda consegue inspecionar.
+ */
+function colunasAdicionadas(sql: string): { nome: string; definicao: string }[] {
+  return [...sql.matchAll(/ADD COLUMN IF NOT EXISTS (\w+) ([^\n]+)/g)].map((m) => ({
+    nome: m[1],
+    definicao: m[2].replace(/[,;]\s*$/, ""),
+  }));
+}
+
 describe("migration R2-A — acordo com o contrato de domínio", () => {
   it("o CHECK de package_type lista exatamente os oito valores do tipo", () => {
     const check = /package_type IN\s*\(([^)]*)\)/.exec(migration);
@@ -140,12 +154,28 @@ describe("migration R2-A — é aditiva, e isso é verificável no texto", () =>
   it("toda coluna nova nasce sem NOT NULL e sem DEFAULT", () => {
     // As duas coisas pelo mesmo motivo: NOT NULL quebraria toda linha existente, e um
     // DEFAULT inventaria valor para produto que ninguém conferiu.
-    const adds = [...migration.matchAll(/ADD COLUMN IF NOT EXISTS (\w+) ([^,;\n]+)/g)];
+    const adds = colunasAdicionadas(migration);
     expect(adds.length).toBe(4);
-    for (const [, nome, definicao] of adds) {
+    for (const { nome, definicao } of adds) {
       expect(definicao, `${nome} nasceu NOT NULL`).not.toMatch(/NOT NULL/i);
       expect(definicao, `${nome} nasceu com DEFAULT`).not.toMatch(/DEFAULT/i);
     }
+  });
+
+  it("e o guarda acima enxerga além da vírgula de numeric(12,4)", () => {
+    // Controle positivo. A leitura anterior parava na primeira vírgula, então
+    // `quantity_value numeric(12,4)` chegava como `numeric(12` — e a única coluna com
+    // vírgula dentro do próprio tipo era exatamente a que o guarda não conseguia
+    // inspecionar. Um teste que nunca reprova não prova nada; este exige que ele reprove.
+    const hostil = migration.replace(
+      "quantity_value numeric(12,4)",
+      "quantity_value numeric(12,4) NOT NULL DEFAULT 1",
+    );
+    expect(hostil, "a substituição do controle não encontrou a coluna").not.toBe(migration);
+
+    const alvo = colunasAdicionadas(hostil).find((c) => c.nome === "quantity_value");
+    expect(alvo?.definicao).toMatch(/NOT NULL/i);
+    expect(alvo?.definicao).toMatch(/DEFAULT/i);
   });
 
   it("preserva o índice textual e o próprio size_text", () => {

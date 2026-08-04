@@ -69,13 +69,18 @@ COMMENT ON COLUMN public.products.package_type IS
   'Campo de identidade. Oito valores (CANONICAL-PRODUCT-SPEC.md §4.6). Vidro, sache e '
   'lata do mesmo conteudo sao SKUs diferentes, nao o mesmo produto em embalagens.';
 COMMENT ON COLUMN public.products.quantity_value IS
-  'Quantidade DECLARADA na embalagem, > 0. numeric(12,4) fixa a precisao dos dois lados: '
-  'o dominio arredonda igual em src/lib/quantity.ts.';
+  'Conteudo TOTAL da embalagem, > 0. Num pack e o total, nao o conteudo de cada item: '
+  '"6 x 350 ml" e 2100 ml com units_per_package = 6 (MVP-DATA-CONTRACT.md §2). Preencher '
+  '350 aqui faria dois packs de contagens diferentes disputarem a mesma identidade. '
+  'numeric(12,4) fixa a precisao dos dois lados: o dominio arredonda igual em '
+  'src/lib/quantity.ts.';
 COMMENT ON COLUMN public.products.quantity_unit IS
   'Unidade declarada: g, kg, ml, l, un. Cinco unidades, tres grandezas.';
 COMMENT ON COLUMN public.products.units_per_package IS
   'Itens contaveis dentro do pack, quando o texto os declara. Permite as duas bases de '
-  'preco unitario ao mesmo tempo -- por litro entre marcas e por lata na gondola.';
+  'preco unitario ao mesmo tempo -- por litro entre marcas e por lata na gondola. NAO '
+  'entra na identidade: o que separa um pack de 6 de um pack de 12 e o total em '
+  'quantity_value, nao esta contagem.';
 COMMENT ON COLUMN public.products.size_text IS
   'Texto de EXIBICAO, nunca fonte de calculo. Preservado durante e depois da transicao '
   'para quantidade estruturada (MVP-DATA-CONTRACT.md §1).';

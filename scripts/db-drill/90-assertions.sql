@@ -659,6 +659,19 @@ $$;
 -- O papel de teste existe so aqui dentro, e some ao fim do bloco. anon e authenticated
 -- nao serviriam para esta prova: eles nao tem INSERT em products desde a Onda 3, entao o
 -- INSERT pararia antes de chegar na constraint.
+--
+-- ISOLAR A VARIAVEL DEU TRABALHO, E O TRABALHO ENSINOU ALGO
+--
+-- A primeira versao deste bloco reprovou, e a leitura ingenua seria "a premissa da
+-- migration esta errada". Nao estava: `products` tem o trigger `products_search_text`, e
+-- funcao de TRIGGER e chamada com o privilegio de quem escreve. O INSERT morria em
+-- pa_products_search_text() -- que a Onda 3 revogou de PUBLIC -- antes de chegar perto do
+-- CHECK. Dois caminhos diferentes para o mesmo SQLSTATE 42501.
+--
+-- Dai a assimetria que este bloco documenta, e que vale para o rollout: quem escreve em
+-- products PRECISA de EXECUTE nas funcoes de TRIGGER, e NAO precisa nas funcoes usadas em
+-- CHECK. Por isso o papel recebe as duas de trigger e continua sem a de GTIN: assim, um
+-- 42501 que sobrar so pode ter vindo do CHECK.
 -- ----------------------------------------------------------------------------
 
 DO $$
@@ -673,6 +686,13 @@ BEGIN
   CREATE ROLE drill_sem_execute NOLOGIN BYPASSRLS;
   GRANT USAGE ON SCHEMA public TO drill_sem_execute;
   GRANT INSERT, DELETE ON public.products TO drill_sem_execute;
+
+  -- As de TRIGGER, sim: sem elas o INSERT morre em pa_products_search_text() e o teste
+  -- estaria medindo outra coisa.
+  GRANT EXECUTE ON FUNCTION public.pa_products_search_text() TO drill_sem_execute;
+  GRANT EXECUTE ON FUNCTION public.pa_normalize_text(text) TO drill_sem_execute;
+
+  -- A de CHECK, nao. E a unica variavel do experimento.
   REVOKE ALL ON FUNCTION public.pa_is_valid_gtin(text) FROM drill_sem_execute;
 
   IF has_function_privilege('drill_sem_execute', 'public.pa_is_valid_gtin(text)', 'EXECUTE') THEN
@@ -705,8 +725,12 @@ BEGIN
 
   RESET ROLE;
 
+  -- O drill nao deixa papel nem privilegio para tras. Todo GRANT precisa voltar antes do
+  -- DROP ROLE: privilegio pendente e uma dependencia, e o Postgres recusa remover o papel.
   DELETE FROM public.products WHERE name LIKE 'Drill papel sem execute%';
   REVOKE ALL ON public.products FROM drill_sem_execute;
+  REVOKE ALL ON FUNCTION public.pa_products_search_text() FROM drill_sem_execute;
+  REVOKE ALL ON FUNCTION public.pa_normalize_text(text) FROM drill_sem_execute;
   REVOKE USAGE ON SCHEMA public FROM drill_sem_execute;
   DROP ROLE drill_sem_execute;
 

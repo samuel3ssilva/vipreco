@@ -94,6 +94,37 @@ describe("resolveExactIdentity — lacunas", () => {
       }
     }
   });
+
+  it("quantidade que transborda depois do fator vira lacuna, não identidade", () => {
+    const resultado = resolveExactIdentity(produto({ quantity_value: 1e308, quantity_unit: "kg" }));
+    expect(resultado.status).toBe("incomplete");
+    if (resultado.status === "incomplete") {
+      expect(resultado.gaps).toContain("quantity_not_finite");
+    }
+  });
+
+  it("unidade suja distingue-se de unidade ausente, e não estoura", () => {
+    // Regressão: `quantity_unit` chega tipada, mas o tipo é uma promessa sobre a origem do
+    // dado. Uma linha vinda do banco ou de um fixture antigo pode trazer `"kilo"`, e antes
+    // disso a resolução falhava por exceção em vez de devolver estado.
+    const suja = produto({ quantity_unit: "kilo" as never });
+    expect(() => resolveExactIdentity(suja)).not.toThrow();
+
+    const resultado = resolveExactIdentity(suja);
+    expect(resultado.status).toBe("incomplete");
+    if (resultado.status === "incomplete") {
+      expect(resultado.gaps).toContain("quantity_unit_invalid");
+      // Preenchido e errado não é a mesma coisa que não preenchido: um é dado sujo que
+      // alguém precisa ver, o outro é o estado normal do modelo de hoje.
+      expect(resultado.gaps).not.toContain("quantity_unit_missing");
+    }
+
+    const ausente = resolveExactIdentity(produto({ quantity_unit: null }));
+    if (ausente.status === "incomplete") {
+      expect(ausente.gaps).toContain("quantity_unit_missing");
+      expect(ausente.gaps).not.toContain("quantity_unit_invalid");
+    }
+  });
 });
 
 describe("resolveExactIdentity — compatibilidade com o modelo legado", () => {

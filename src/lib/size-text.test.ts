@@ -209,3 +209,65 @@ describe("parseSizeText — os sete produtos do seed fictício", () => {
     }
   });
 });
+
+describe("parseSizeText — regressões da revisão adversarial", () => {
+  it("não confunde nome herdado de Object.prototype com unidade", () => {
+    // Regressão: `UNIT_WORDS[palavra]` e `COUNT_WORDS[palavra]` liam pela cadeia de
+    // protótipos. `UNIT_WORDS["constructor"]` devolve uma função, e `"5 constructor"`
+    // saía como leitura válida com uma função no lugar da unidade; `"12 toString"`
+    // virava doze unidades.
+    for (const texto of ["5 constructor", "12 toString", "3 valueOf", "1 hasOwnProperty"]) {
+      const resultado = parseSizeText(texto);
+      expect(resultado.status).toBe("unsupported");
+      if (resultado.status === "unsupported") {
+        expect(resultado.unsupported).toBe("unknown_unit");
+      }
+    }
+  });
+
+  it("não confunde nome herdado com unidade dentro de pack multiplicado", () => {
+    const resultado = parseSizeText("6 x 350 constructor");
+    expect(resultado.status).toBe("unsupported");
+  });
+
+  it("não descarta em silêncio o que sobra ao lado de um pack multiplicado", () => {
+    // Regressão: `MULTIPLIED_PACK` casa o primeiro pack e ignorava o resto do texto.
+    // `"500 g 6 x 350 ml"` devolvia 2100 ml e sumia com os 500 g.
+    for (const texto of ["500 g 6 x 350 ml", "6 x 350 ml e 2 x 100 g", "6 x 350 ml + 250 g"]) {
+      const resultado = parseSizeText(texto);
+      expect(resultado.status).toBe("ambiguous");
+      if (resultado.status === "ambiguous") {
+        expect(resultado.ambiguity).toBe("multiple_readings");
+      }
+    }
+  });
+
+  it("o pack legítimo continua sendo lido", () => {
+    const resultado = parseSizeText("6 x 350 ml");
+    expect(resultado.status).toBe("parsed");
+    if (resultado.status === "parsed") {
+      expect(resultado.quantity).toEqual({ value: 2100, unit: "ml" });
+      expect(resultado.unitsPerPackage).toBe(6);
+    }
+  });
+
+  it("a proposta não carrega ruído de ponto flutuante", () => {
+    // `0,35 × 3` em ponto flutuante é 1.0499999999999998. Uma proposta de curadoria com
+    // essa cara é uma proposta que ninguém aprova sem desconfiar do resto.
+    const resultado = parseSizeText("3 x 0,35 l");
+    expect(resultado.status).toBe("parsed");
+    if (resultado.status === "parsed") {
+      expect(resultado.quantity.value).toBe(1.05);
+    }
+  });
+
+  it("continua determinístico depois das guardas novas", () => {
+    const textos = ["6 x 350 ml", "500 g 6 x 350 ml", "5 constructor", "3 x 0,35 l", "12 rolos"];
+    for (const texto of textos) {
+      const primeira = JSON.stringify(parseSizeText(texto));
+      for (let i = 0; i < 5; i++) {
+        expect(JSON.stringify(parseSizeText(texto))).toBe(primeira);
+      }
+    }
+  });
+});

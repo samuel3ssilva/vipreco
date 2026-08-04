@@ -152,13 +152,44 @@ const VARIABLE_WEIGHT_MARKERS: readonly string[] = [
 
 const DOZEN_WORDS: readonly string[] = ["duzia", "duzias"];
 
+/**
+ * Consulta às duas tabelas de palavras.
+ *
+ * `Object.hasOwn` antes de indexar, e nunca `TABELA[palavra] !== undefined`: a leitura
+ * direta percorre a cadeia de protótipos, então `UNIT_WORDS["constructor"]` devolve uma
+ * função em vez de `undefined` e `"5 constructor"` sairia daqui como uma leitura válida
+ * com uma função no lugar da unidade. `COUNT_WORDS["toString"]` tem o mesmo efeito, e
+ * `"12 toString"` viraria doze unidades.
+ */
+function unitWordOf(word: string): QuantityUnit | undefined {
+  return Object.hasOwn(UNIT_WORDS, word) ? UNIT_WORDS[word] : undefined;
+}
+
+function countWordOf(word: string): { pack: boolean } | undefined {
+  return Object.hasOwn(COUNT_WORDS, word) ? COUNT_WORDS[word] : undefined;
+}
+
 /** `"1,5"` e `"1.5"` são o mesmo número em texto de embalagem brasileiro. */
 function toNumber(raw: string): number {
   return Number(raw.replace(",", "."));
 }
 
+/**
+ * `numeric(12,4)` do contrato de dados, aplicado já na proposta. `3 × 0,35 l` em ponto
+ * flutuante é `1.0499999999999998`, e uma proposta de curadoria com essa cara é uma
+ * proposta que ninguém aprova sem desconfiar do resto.
+ */
+function roundToScale(value: number): number {
+  return Math.round(value * 1e4) / 1e4;
+}
+
 /** `"6 x 350 ml"` / `"6x350ml"` / `"6 × 350 ml"`. */
 const MULTIPLIED_PACK = /(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*([a-z]+)/;
+
+/** Quantos números o texto contém, independentemente de virem acompanhados de unidade. */
+function countNumbers(text: string): number {
+  return text.match(/\d+(?:[.,]\d+)?/g)?.length ?? 0;
+}
 
 /**
  * Número seguido, opcionalmente, da palavra colada ou separada por espaço. Construída a
@@ -196,27 +227,36 @@ export function parseSizeText(input: string | null | undefined): SizeTextParse {
   //    viram duas leituras e o texto é rejeitado como ambíguo.
   const multiplied = MULTIPLIED_PACK.exec(text);
   if (multiplied) {
-    const unit = UNIT_WORDS[multiplied[3]];
+    // O casamento consome exatamente dois números. Qualquer número sobrando é texto que a
+    // leitura ignoraria em silêncio — `"500 g 6 x 350 ml"` e `"6 x 350 ml e 2 x 100 g"`
+    // devolviam o primeiro pack e descartavam o resto. Descartar em silêncio é a forma
+    // mais cara de errar aqui, porque o resultado parece confiável.
+    if (countNumbers(text) > 2) {
+      return { status: "ambiguous", raw, ambiguity: "multiple_readings" };
+    }
+
+    const unit = unitWordOf(multiplied[3]);
     const count = Number(multiplied[1]);
     const each = toNumber(multiplied[2]);
     if (unit === undefined) {
-      const countable = COUNT_WORDS[multiplied[3]];
+      const countable = countWordOf(multiplied[3]);
       if (countable === undefined)
         return { status: "unsupported", raw, unsupported: "unknown_unit" };
       // "2 x 6 unidades" — doze unidades, e o pack tem doze itens.
+      const total = roundToScale(count * each);
       return {
         status: "parsed",
         raw,
-        quantity: { value: count * each, unit: "un" },
+        quantity: { value: total, unit: "un" },
         packageHint: "pack",
-        unitsPerPackage: count * each,
+        unitsPerPackage: total,
         method: "multiplied_pack",
       };
     }
     return {
       status: "parsed",
       raw,
-      quantity: { value: each * count, unit },
+      quantity: { value: roundToScale(each * count), unit },
       packageHint: "pack",
       unitsPerPackage: count,
       method: "multiplied_pack",
@@ -258,12 +298,12 @@ export function parseSizeText(input: string | null | undefined): SizeTextParse {
     return { status: "ambiguous", raw, ambiguity: "unit_missing" };
   }
 
-  const unit = UNIT_WORDS[word];
+  const unit = unitWordOf(word);
   if (unit !== undefined) {
     return {
       status: "parsed",
       raw,
-      quantity: { value, unit },
+      quantity: { value: roundToScale(value), unit },
       packageHint: null,
       unitsPerPackage: null,
       method: "value_unit",
@@ -271,7 +311,7 @@ export function parseSizeText(input: string | null | undefined): SizeTextParse {
   }
 
   if (DOZEN_WORDS.includes(word)) {
-    const total = value * 12;
+    const total = roundToScale(value * 12);
     return {
       status: "parsed",
       raw,
@@ -282,7 +322,7 @@ export function parseSizeText(input: string | null | undefined): SizeTextParse {
     };
   }
 
-  const countable = COUNT_WORDS[word];
+  const countable = countWordOf(word);
   if (countable !== undefined) {
     const pack = countable.pack && value > 1;
     return {

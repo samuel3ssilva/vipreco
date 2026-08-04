@@ -22,7 +22,8 @@
  * diz, sem chutar, quando o dado de hoje ainda não sustenta uma identidade exata.
  */
 import { normalizeSearchText } from "@/lib/normalize";
-import { normalizeQuantity, sameNormalizedQuantity } from "@/lib/quantity";
+import type { QuantityRejection } from "@/lib/quantity";
+import { isQuantityUnit, normalizeQuantity, sameNormalizedQuantity } from "@/lib/quantity";
 import type { NormalizedQuantity, PackageType, Product } from "@/types/domain";
 
 /**
@@ -43,8 +44,21 @@ export type IdentityGap =
   | "package_type_missing"
   | "quantity_value_missing"
   | "quantity_unit_missing"
+  /** unidade preenchida, mas fora das cinco do contrato — dado sujo, não ausência */
+  | "quantity_unit_invalid"
   | "quantity_not_finite"
   | "quantity_not_positive";
+
+/**
+ * Cada motivo de rejeição da aritmética vira uma lacuna de identidade. Mapa explícito, e
+ * não ternário: com um `Record` fechado sobre `QuantityRejection`, acrescentar um sexto
+ * motivo lá quebra a compilação aqui, em vez de cair silenciosamente no ramo `else`.
+ */
+const GAP_BY_REJECTION: Readonly<Record<QuantityRejection, IdentityGap>> = Object.freeze({
+  not_finite: "quantity_not_finite",
+  not_positive: "quantity_not_positive",
+  unknown_unit: "quantity_unit_invalid",
+});
 
 export type IdentityResolution =
   | { status: "resolved"; identity: ExactProductIdentity }
@@ -62,8 +76,8 @@ export type IdentityInput = Pick<
  * Deliberadamente não olha para `size_text`. Um registro do modelo de hoje — que só tem
  * o texto — volta como `incomplete`, e essa é a resposta certa: dizer "identidade
  * resolvida" a partir de texto livre é a inferência que o princípio 3 proíbe. Quem quiser
- * derivar quantidade de texto usa `deriveQuantityFromSizeText()`, que é curadoria
- * assistida e devolve o resultado rotulado como tal.
+ * derivar quantidade de texto usa o adaptador dedicado de `size_text`, que é curadoria
+ * assistida e devolve o resultado rotulado como proposta — nunca como confirmação.
  */
 export function resolveExactIdentity(product: IdentityInput): IdentityResolution {
   const gaps: IdentityGap[] = [];
@@ -75,9 +89,17 @@ export function resolveExactIdentity(product: IdentityInput): IdentityResolution
   if (packageType === null) gaps.push("package_type_missing");
 
   const value = product.quantity_value ?? null;
-  const unit = product.quantity_unit ?? null;
+  // `quantity_unit` chega tipada, mas o tipo é uma promessa sobre a origem do dado, não uma
+  // garantia de runtime: uma linha vinda do banco, de um fixture antigo ou de JSON pode
+  // trazer `"kilo"`. Sem esta guarda, indexar a tabela devolve `undefined` e a leitura de
+  // `.factor` estoura — falha por exceção, não por estado.
+  const unit = isQuantityUnit(product.quantity_unit) ? product.quantity_unit : null;
   if (value === null) gaps.push("quantity_value_missing");
-  if (unit === null) gaps.push("quantity_unit_missing");
+  if (product.quantity_unit === null || product.quantity_unit === undefined) {
+    gaps.push("quantity_unit_missing");
+  } else if (unit === null) {
+    gaps.push("quantity_unit_invalid");
+  }
 
   let quantity: NormalizedQuantity | null = null;
   if (value !== null && unit !== null) {
@@ -85,9 +107,7 @@ export function resolveExactIdentity(product: IdentityInput): IdentityResolution
     if (normalized.status === "ok") {
       quantity = normalized.quantity;
     } else {
-      gaps.push(
-        normalized.rejection === "not_finite" ? "quantity_not_finite" : "quantity_not_positive",
-      );
+      gaps.push(GAP_BY_REJECTION[normalized.rejection]);
     }
   }
 

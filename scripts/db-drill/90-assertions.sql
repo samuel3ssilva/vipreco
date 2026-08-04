@@ -685,6 +685,10 @@ BEGIN
   -- EXECUTE. Ele nao representa anon, nem authenticated, nem qualquer papel real.
   CREATE ROLE drill_sem_execute NOLOGIN BYPASSRLS;
   GRANT USAGE ON SCHEMA public TO drill_sem_execute;
+  -- `products.id` tem DEFAULT gen_random_uuid(), e o Supabase instala pgcrypto no schema
+  -- `extensions`. Sem USAGE aqui o INSERT morre no DEFAULT -- um TERCEIRO caminho
+  -- diferente para o mesmo SQLSTATE 42501.
+  GRANT USAGE ON SCHEMA extensions TO drill_sem_execute;
   GRANT INSERT, DELETE ON public.products TO drill_sem_execute;
 
   -- As de TRIGGER, sim: sem elas o INSERT morre em pa_products_search_text() e o teste
@@ -710,7 +714,10 @@ BEGIN
   EXCEPTION
     WHEN check_violation THEN NULL;
     WHEN insufficient_privilege THEN
-      failures := array_append(failures, 'INSERT falhou por falta de EXECUTE na funcao -- a premissa do REVOKE esta errada');
+      -- SQLERRM junto de proposito: 42501 tem varias origens (RLS, USAGE de schema,
+      -- funcao de trigger, funcao de CHECK) e uma mensagem generica manda o proximo
+      -- leitor adivinhar. A mensagem do Postgres diz exatamente qual objeto faltou.
+      failures := array_append(failures, format('INSERT de GTIN invalido falhou por privilegio, nao por CHECK -- %s', SQLERRM));
   END;
 
   -- E o GTIN valido precisa ENTRAR: a constraint roda, aprova, e ninguem precisou de
@@ -720,7 +727,7 @@ BEGIN
     VALUES ('Drill papel sem execute valido', '614141000036', true);
   EXCEPTION
     WHEN insufficient_privilege THEN
-      failures := array_append(failures, 'GTIN valido foi barrado por falta de EXECUTE -- o REVOKE quebrou escrita legitima');
+      failures := array_append(failures, format('GTIN valido foi barrado por privilegio -- %s', SQLERRM));
   END;
 
   RESET ROLE;

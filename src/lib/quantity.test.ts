@@ -26,6 +26,23 @@ describe("tabela de unidades", () => {
     expect(isQuantityUnit(undefined)).toBe(false);
     expect(isQuantityUnit(500)).toBe(false);
   });
+
+  it("não deixa passar nome herdado de Object.prototype", () => {
+    // Regressão: com `value in UNIT_CONVERSIONS` a guarda percorria a cadeia de protótipos
+    // e aceitava `toString` como unidade. `UNIT_CONVERSIONS["toString"]` é uma função,
+    // `.factor` é `undefined`, e a conversão devolvia `NaN` com `status: "ok"`.
+    for (const herdado of ["toString", "constructor", "valueOf", "hasOwnProperty", "__proto__"]) {
+      expect(isQuantityUnit(herdado)).toBe(false);
+    }
+  });
+
+  it("a tabela de conversão não é mutável", () => {
+    const alvo = UNIT_CONVERSIONS as unknown as Record<string, unknown>;
+    expect(() => {
+      alvo.kg = { normalizedUnit: "g", factor: 1 };
+    }).toThrow();
+    expect(UNIT_CONVERSIONS.kg.factor).toBe(1000);
+  });
 });
 
 describe("normalizeQuantity — os fatores do contrato", () => {
@@ -122,6 +139,49 @@ describe("normalizeQuantity — rejeições explícitas", () => {
       status: "rejected",
       rejection: "not_finite",
     });
+    expect(normalizeQuantity({ value: Number.NEGATIVE_INFINITY, unit: "g" })).toEqual({
+      status: "rejected",
+      rejection: "not_finite",
+    });
+  });
+
+  it("transbordo depois do fator é rejeitado, não devolvido como Infinity", () => {
+    // Regressão: a guarda validava só a entrada. `1e308` é finito; `1e308 kg` só transborda
+    // depois de multiplicar por 1000, e o resultado saía com `status: "ok"`.
+    for (const unit of ["kg", "l"] as const) {
+      const resultado = normalizeQuantity({ value: 1e308, unit });
+      expect(resultado).toEqual({ status: "rejected", rejection: "not_finite" });
+    }
+    const maximo = normalizeQuantity({ value: Number.MAX_VALUE, unit: "kg" });
+    expect(maximo.status).toBe("rejected");
+  });
+
+  it("unidade desconhecida vira estado, não exceção", () => {
+    // Regressão: o tipo promete `QuantityUnit`, mas uma linha vinda do banco, de um fixture
+    // antigo ou de JSON pode trazer `"kilo"`. Antes, indexar a tabela devolvia `undefined` e
+    // a leitura de `.factor` estourava — falha por exceção em vez de por estado.
+    const suja = { value: 500, unit: "kilo" } as unknown as Parameters<typeof normalizeQuantity>[0];
+    expect(() => normalizeQuantity(suja)).not.toThrow();
+    expect(normalizeQuantity(suja)).toEqual({ status: "rejected", rejection: "unknown_unit" });
+
+    const herdada = { value: 500, unit: "toString" } as unknown as Parameters<
+      typeof normalizeQuantity
+    >[0];
+    expect(normalizeQuantity(herdada)).toEqual({ status: "rejected", rejection: "unknown_unit" });
+  });
+
+  it("nenhuma rejeição devolve quantidade: não existe 0 nem NaN de consolação", () => {
+    const entradas = [
+      { value: 0, unit: "g" as const },
+      { value: -1, unit: "g" as const },
+      { value: Number.NaN, unit: "g" as const },
+      { value: 1e308, unit: "kg" as const },
+    ];
+    for (const entrada of entradas) {
+      const resultado = normalizeQuantity(entrada);
+      expect(resultado.status).toBe("rejected");
+      expect(resultado).not.toHaveProperty("quantity");
+    }
   });
 });
 

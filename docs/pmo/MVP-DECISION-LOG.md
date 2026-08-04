@@ -547,3 +547,103 @@ status.
   autorização do Founder/PMO.
 - **Documentos:** `pmo/trello/README.md` (criado), `TRELLO-MAPPING.md`, `INDEX.md`
 - **Status:** ativa
+
+### DL-020 — R2 versionado antes da aplicação remota
+
+- **Decisão:** as migrations de R2 **podem existir e ser mergeadas na `main`**, e o merge
+  **não** equivale à aplicação. Nenhuma migration é aplicada em ambiente remoto sem gate
+  humano do Founder/PMO. Auditoria read-only precede a aplicação; backfill exige revisão
+  linha a linha; `parsed` nunca vira `confirmed` automaticamente; constraints nascem
+  nullable ou `NOT VALID` quando apropriado, e a validação é etapa separada; preço unitário
+  não é persistido; `products.gtin` continua sendo a persistência de `primary_gtin` no MVP;
+  `product_identifiers` permanece fora do MVP.
+- **Contexto:** R2 entregou três PRs — [#54](https://github.com/samuel3ssilva/vipreco/pull/54)
+  (identidade e quantidade estruturadas), [#55](https://github.com/samuel3ssilva/vipreco/pull/55)
+  (integridade de GTIN) e [#56](https://github.com/samuel3ssilva/vipreco/pull/56) (preview
+  read-only de backfill). Mergeados nesta ordem em 04/08/2026. `main` em `56140df`, dez
+  migrations versionadas, **nenhuma aplicada**.
+- **Por que merge não é aplicação:** o Git é o lugar onde a migration é revisável,
+  versionada e testável. O banco é onde ela vira irreversível. Confundir os dois transforma
+  aprovação de código em autorização de operação, e são decisões de pessoas diferentes:
+  escrever migration é trabalho do CTO, aplicar é decisão do Founder/PMO (princípio 14 do
+  `CLAUDE.md`). Foi confirmado por auditoria que **nenhuma automação do repositório aplica
+  migration nem faz deploy em push para `main`**: os dois workflows de deploy são
+  `workflow_dispatch`, e o de produção ainda exige uma string de confirmação exata.
+- **Por que `NOT VALID` e por que nullable:** o conteúdo de `products` em staging e em
+  produção **nunca foi consultado** — não há credencial, e o mandato proíbe conectar.
+  Constraint validada na criação faria a aplicação inteira falhar por uma linha antiga;
+  `NOT VALID` passa a valer para escrita nova imediatamente e adia a conferência das linhas
+  existentes para um passo que **pode falhar de propósito**. Coluna `NOT NULL` quebraria
+  toda linha existente; a obrigatoriedade é o estado final, depois do backfill revisado, em
+  outra migration com outro gate.
+- **Por que quantidade normalizada não virou coluna:** o contrato marca `normalized_quantity`
+  e `normalized_unit` como **derivados**. Duplicar dado derivável cria um segundo lugar onde
+  o valor pode envelhecer. O índice de identidade exata é de **expressão**: calcula a
+  conversão no momento de indexar. É o que faz `500 g` e `0,5 kg` colidirem por conta, e não
+  por coincidência de string — provado contra Postgres vivo no drill de CI.
+- **Achado que corrigiu um documento normativo:** o comentário da migration de R2-B afirmava
+  que a expressão de um `CHECK` não exigiria `EXECUTE` de quem escreve. **Era falso.** Um
+  papel com `INSERT` em `products` e sem `EXECUTE` em `pa_is_valid_gtin` recebe
+  `permission denied for function` em toda escrita, inclusive com `gtin` nulo. A consequência
+  é **operacional, não de segurança** — a constraint fica mais restritiva do que o
+  documentado, nunca menos, e nenhum papel real é afetado hoje. Mas o backfill precisa ser
+  feito como `service_role`, e isso está no runbook. O comentário foi corrigido e a
+  afirmação virou assertion do drill, com os dois lados do contraste.
+- **Alternativas:** (a) segurar as migrations fora da `main` até a autorização de aplicação
+  — rejeitada: tira do Git exatamente o que precisa ser revisado, e o custo de revisão sobe
+  quando o momento é o de aplicar; (b) aplicar em staging junto com o merge — rejeitada:
+  transforma revisão de código em autorização de operação; (c) validar as constraints na
+  criação — rejeitada: falha a aplicação inteira por uma linha antiga, e sem consultar o
+  ambiente não há como saber se existe; (d) persistir a quantidade normalizada — rejeitada,
+  ver acima.
+- **Docker local:** permanece **NOT VERIFIED**. O `db-schema-drill` verde em CI, com
+  Postgres 16 real e reconstrução do schema desde banco vazio, é aceito como prova para
+  revisão e merge das migrations nesta fase. Não se força Docker local com risco de ENOSPC.
+- **Registro de imprecisão preservada:** a mensagem do commit original de R2-B menciona
+  “645 → 651 testes”, com baseline incorreto — a contagem correta parte da `main` com 629.
+  O histórico publicado **não foi reescrito** (sem `amend`, sem `rebase`, sem `force-push`);
+  a correção factual está no corpo do PR #55 e aqui.
+- **Consequência:** nenhum item do MVP muda de escopo. Nenhuma migration é aplicada. Nenhum
+  backfill é executado. MVP-E1-01, E1-02, E1-05 e E1-08 permanecem em `Bloqueado` — **card
+  fecha quando o gate fecha, não quando o PR mergeia**, a mesma regra de DL-019.
+- **Documentos:** `data/R2-ROLLOUT-RUNBOOK.md` (criado), `data/R2-APPLICATION-GATE.md`
+  (criado), `scripts/r2/README.md` (criado), `scripts/r2/target-readiness.sql` (criado),
+  `INDEX.md`
+- **Status:** ativa
+
+---
+
+### DL-021 — Contagem real do quadro Trello, medida e discriminada
+
+- **Decisão:** a contagem de cards do quadro passa a ser registrada **discriminada por
+  categoria**, e não como um número único de “UNMAPPED”. A medição de 04/08/2026 substitui
+  o número de 19 registrado em DL-019.
+- **Medição (04/08/2026, quadro `ViPreço - MVP Artemis`):**
+
+  | Categoria | Quantidade |
+  | --- | --- |
+  | cards oficiais com ID `MVP-…` / `POST-MVP-…` | 42 |
+  | cards oficiais da trilha pós-MVP, com ID `PM-DATA-…` | 14 |
+  | **subtotal oficial** (bate com os 56 de DL-019) | **56** |
+  | cards operacionais de onda, `R0`–`R8`, criados manualmente | 9 |
+  | cards do próprio Trello (lista “Guia de introdução ao Trello”) | 7 |
+  | outros cards manuais (2 em `Ideias`, 1 em `Precisa validar`, 1 em `Concluído`) | 4 |
+  | **subtotal não oficial** | **20** |
+  | **total aberto** | **76** |
+  | arquivados | 1 |
+  | **total geral** | **77** |
+
+- **Por que 19 estava errado:** o número tratava como uma categoria só o que são três — os
+  cards de onda `R0`–`R8` (trabalho do Founder), os cards que o próprio Trello cria ao abrir
+  um quadro, e os cards manuais avulsos. Um número agregado não permite responder a pergunta
+  que interessa: *o que aqui é trabalho e o que é ruído de ferramenta?*
+- **Por que os 14 `PM-DATA-…` contam como oficiais:** eles têm ID e estão no mapeamento; o
+  prefixo é diferente porque a trilha é pós-MVP. `42 + 14 = 56` fecha exatamente com o total
+  oficial de DL-019, o que confirma que a divergência estava só na classificação do resto.
+- **Estado do card “Teste 1”:** **arquivado**, na lista `Ideias`. É o único card arquivado do
+  quadro. Arquivar é reversível; não foi apagado, pela mesma razão de DL-019.
+- **Consequência:** nenhum card foi criado, apagado ou reclassificado para chegar a estes
+  números — eles são o que o quadro tem. Nenhum `POST-MVP` ou não oficial foi alterado nesta
+  missão.
+- **Documentos:** `TRELLO-MAPPING.md`, `trello/README.md`
+- **Status:** ativa

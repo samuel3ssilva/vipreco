@@ -316,7 +316,8 @@ mergeia.** Às vezes coincide. Aqui não coincidiu.
 | O quê                         | Quanto                                   |
 | ----------------------------- | ---------------------------------------- |
 | cards oficiais                | **56**, todos com ID único e etiquetados |
-| cards UNMAPPED preservados    | **19**                                   |
+| cards não oficiais preservados | **20** — 9 de onda `R0`–`R8`, 7 do próprio Trello, 4 avulsos (ver DL-021) |
+| cards arquivados              | **1** — `Teste 1`, na lista `Ideias`     |
 | listas oficiais               | **8** (mais as manuais, preservadas)     |
 | etiquetas oficiais            | **11**                                   |
 | cards em `Ready`              | **1** — `MVP-DATA-02`                    |

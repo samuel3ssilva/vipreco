@@ -1,0 +1,88 @@
+{
+  "descricao": "Vetores de validação de GTIN (MVP-E1-05). A MESMA lista roda nos dois lados: em TypeScript, por src/lib/gtin.contract.test.ts (que também confere que este arquivo e o bloco SQL não divergiram); em SQL, por scripts/db-drill/90-assertions.sql, contra um Postgres vivo no drill de reconstrução de schema. Divergência entre os dois é falha de teste.",
+  "contrato": "docs/data/PRODUCT-IDENTIFIERS.md §3",
+  "porque_vetores_sinteticos": "Nenhum código aqui descreve produto de demonstração. Dado de demonstração muda por motivos que nada têm a ver com o que estes vetores afirmam, e um GTIN válido pode pertencer a um produto real — os dois motivos pelos quais os GTINs fictícios inválidos do seed viraram NULL no PR #53.",
+  "vetores": [
+    {
+      "codigo": "1234567890128",
+      "valido": true,
+      "porque": "EAN-13 sintético bem formado, dígito verificador correto"
+    },
+    {
+      "codigo": "40063812",
+      "valido": true,
+      "porque": "GTIN-8: o mesmo algoritmo, só muda o comprimento do corpo"
+    },
+    {
+      "codigo": "614141000036",
+      "valido": true,
+      "porque": "GTIN-12 (UPC-A)"
+    },
+    {
+      "codigo": "01234567890128",
+      "valido": true,
+      "porque": "GTIN-14 sintético — e NÃO é o mesmo código que o EAN-13 sem o zero"
+    },
+    {
+      "codigo": "0000000000000",
+      "valido": true,
+      "porque": "treze zeros passam na aritmética; validade de formato não é prova de identidade"
+    },
+    {
+      "codigo": "7896089012345",
+      "valido": false,
+      "porque": "dígito verificador errado (o correto seria 7) — estava no seed fictício até o PR #53"
+    },
+    {
+      "codigo": "7896089054321",
+      "valido": false,
+      "porque": "dígito verificador errado (o correto seria 3) — idem"
+    },
+    {
+      "codigo": "0000000000001",
+      "valido": false,
+      "porque": "dígito verificador errado (o correto seria 0)"
+    },
+    {
+      "codigo": "123456789013",
+      "valido": false,
+      "porque": "doze dígitos com dígito verificador errado (o correto seria 2): comprimento válido, aritmética não"
+    },
+    {
+      "codigo": "123456789012a",
+      "valido": false,
+      "porque": "letra no meio — não é dígito ASCII"
+    },
+    {
+      "codigo": "123-4567-89012-8",
+      "valido": false,
+      "porque": "hífen: um GTIN com hífen simplesmente não é um GTIN, e limpar aqui esconderia o erro"
+    },
+    {
+      "codigo": "",
+      "valido": false,
+      "porque": "string vazia é dado sujo, e é diferente de ausente (NULL)"
+    },
+    {
+      "codigo": "123456789",
+      "valido": false,
+      "porque": "nove dígitos: comprimento fora de {8, 12, 13, 14}"
+    },
+    {
+      "codigo": "123456789012345",
+      "valido": false,
+      "porque": "quinze dígitos, idem"
+    },
+    {
+      "codigo": "+123456789012",
+      "valido": false,
+      "porque": "sinal — um to_number() aceitaria, e é justamente o que não pode acontecer"
+    },
+    {
+      "codigo": "1234567890128.0",
+      "valido": false,
+      "porque": "separador decimal: sintoma clássico de o código ter passado por um tipo numérico"
+    }
+  ],
+  "espaco_em_branco_fica_de_fora": "Os três casos com espaço nas pontas NÃO estão nesta lista porque as duas funções respondem perguntas diferentes, e de propósito. assessGtin() valida a ENTRADA e faz trim seguro das pontas — colar um código traz espaço junto, e recusar o que o usuário claramente digitou certo seria hostil. pa_is_valid_gtin() valida o VALOR ARMAZENADO, e aí espaço é dado sujo: trim é trabalho de quem escreve, não da constraint. Cada lado testa o seu comportamento no seu próprio arquivo."
+}

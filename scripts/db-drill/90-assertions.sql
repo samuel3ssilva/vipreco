@@ -144,3 +144,323 @@ BEGIN
   RAISE NOTICE 'Contrato de normalizacao: todos os vetores confirmados contra banco vivo.';
 END
 $$;
+
+-- ============================================================================
+-- R2-A / MVP-E1-01 e MVP-E1-02 - identidade exata estruturada em products.
+--
+-- Roda contra o banco vivo reconstruido, e nao contra o texto da migration: coluna que
+-- existe, CHECK que rejeita de verdade, indice que colide de verdade. O objetivo e provar
+-- as tres afirmacoes da migration que o texto sozinho nao sustenta -- que ela e aditiva,
+-- que '500 g' e '0,5 kg' passam a colidir, e que nada disso vale para linha sem campo
+-- estruturado.
+-- ============================================================================
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  col record;
+  esperado record;
+BEGIN
+  -- 1. As quatro colunas existem, sao NULLABLE e tem o tipo do contrato.
+  FOR esperado IN
+    SELECT * FROM (VALUES
+      ('package_type', 'text'),
+      ('quantity_value', 'numeric'),
+      ('quantity_unit', 'text'),
+      ('units_per_package', 'integer')
+    ) AS t(nome, tipo)
+  LOOP
+    SELECT column_name, data_type, is_nullable INTO col
+      FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'products' AND column_name = esperado.nome;
+
+    IF col IS NULL THEN
+      failures := array_append(failures, format('coluna products.%s nao existe', esperado.nome));
+    ELSE
+      IF col.data_type IS DISTINCT FROM esperado.tipo THEN
+        failures := array_append(failures, format('products.%s e %s, esperado %s', esperado.nome, col.data_type, esperado.tipo));
+      END IF;
+      -- Nullable nao e detalhe: e o que faz a migration ser aditiva. NOT NULL aqui
+      -- quebraria toda linha existente, e a obrigatoriedade so vem depois do backfill.
+      IF col.is_nullable <> 'YES' THEN
+        failures := array_append(failures, format('products.%s nasceu NOT NULL -- quebraria as linhas existentes', esperado.nome));
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 2. numeric(12,4), a precisao que o dominio espelha em src/lib/quantity.ts.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'quantity_value'
+       AND numeric_precision = 12 AND numeric_scale = 4
+  ) THEN
+    failures := array_append(failures, 'products.quantity_value nao e numeric(12,4)');
+  END IF;
+
+  -- 3. size_text continua existindo. E texto de exibicao, e o contrato manda preservar.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'size_text'
+  ) THEN
+    failures := array_append(failures, 'products.size_text foi removido -- o contrato manda preservar como texto de exibicao');
+  END IF;
+
+  -- 4. O indice textual antigo NAO foi removido. Enquanto houver linha sem campo
+  --    estruturado, ele e a unica protecao contra duplicata.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class WHERE relname = 'products_canonical_identity_idx'
+  ) THEN
+    failures := array_append(failures, 'products_canonical_identity_idx sumiu -- R2-A e aditiva e nao pode remover o indice do modelo textual');
+  END IF;
+
+  -- 5. O indice novo existe, e unico e e parcial.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+     WHERE c.relname = 'products_exact_identity_idx' AND i.indisunique AND i.indpred IS NOT NULL
+  ) THEN
+    failures := array_append(failures, 'products_exact_identity_idx nao existe, nao e unico ou nao e parcial');
+  END IF;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Schema de identidade exata (R2-A) violado em % ponto(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: colunas, tipos e indices de identidade exata confirmados contra banco vivo.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- Comportamento, e nao catalogo: os CHECKs precisam REJEITAR de verdade, e o indice
+-- precisa COLIDIR de verdade. Catalogo diz que a constraint existe; so o INSERT diz que
+-- ela funciona.
+--
+-- Cada tentativa tem nome proprio. Se um CHECK falhar em disparar, a linha entra -- e com
+-- nomes iguais a segunda entrada bateria no indice de identidade canonica, disfarcando a
+-- falha real de unique_violation.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill pacote invalido', 'engradado', 500, 'g', true);
+    failures := array_append(failures, 'aceitou package_type = engradado, fora dos oito valores do contrato');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill unidade invalida', 'unidade', 500, 'kilo', true);
+    failures := array_append(failures, 'aceitou quantity_unit = kilo, fora das cinco unidades');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  -- Embalagem nao tem quantidade nula nem negativa.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill quantidade zero', 'unidade', 0, 'g', true);
+    failures := array_append(failures, 'aceitou quantity_value = 0');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill quantidade negativa', 'unidade', -1, 'g', true);
+    failures := array_append(failures, 'aceitou quantity_value negativo');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  -- Valor sem unidade e unidade sem valor sao dado pela metade, e dado pela metade e o
+  -- que produz comparacao errada mais tarde.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, is_demo)
+    VALUES ('Drill valor sem unidade', 'unidade', 500, true);
+    failures := array_append(failures, 'aceitou quantity_value sem quantity_unit');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_unit, is_demo)
+    VALUES ('Drill unidade sem valor', 'unidade', 'g', true);
+    failures := array_append(failures, 'aceitou quantity_unit sem quantity_value');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+    VALUES ('Drill pack vazio', 'pack', 6, 'un', 0, true);
+    failures := array_append(failures, 'aceitou units_per_package = 0');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'CHECKs de identidade exata (R2-A) nao rejeitam em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: os cinco CHECKs rejeitam dado invalido em sete casos, contra banco vivo.';
+END
+$$;
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- O ganho real sobre o indice textual: '500 g' e '0,5 kg' sao a mesma prateleira e
+  -- passam a colidir por CONTA. O indice sobre size_text nunca conseguiu isso, porque
+  -- '500 g' e '0,5 kg' sao dois textos diferentes.
+  INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, is_demo)
+  VALUES ('Cafe drill', 'Marca drill', 'Tradicional', '500 g', 'unidade', 500, 'g', true);
+
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Cafe drill', 'Marca drill', 'Tradicional', '0,5 kg', 'unidade', 0.5, 'kg', true);
+    failures := array_append(failures, '500 g e 0,5 kg entraram como dois produtos -- a conversao nao esta no indice');
+  EXCEPTION WHEN unique_violation THEN NULL;
+  END;
+
+  -- E o que NAO pode colidir: mesma conta, grandeza diferente.
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Cafe drill', 'Marca drill', 'Tradicional', '500 ml', 'unidade', 500, 'ml', true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, '500 g e 500 ml colidiram -- o indice esta comparando numero sem olhar a grandeza');
+  END;
+
+  -- Embalagem diferente e SKU diferente (CANONICAL-PRODUCT-SPEC.md §4.6).
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Cafe drill', 'Marca drill', 'Tradicional', '500 g sache', 'sache', 500, 'g', true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, 'unidade e sache colidiram -- package_type nao esta na identidade');
+  END;
+
+  -- E o indice e PARCIAL: linha sem campo estruturado nao participa dele. Duas linhas
+  -- assim so podem ser barradas pelo indice textual, e este par tem size_text diferente.
+  INSERT INTO public.products (name, brand, variant, size_text, is_demo)
+  VALUES ('Legado drill', 'Marca drill', 'Tradicional', '500 g', true);
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, is_demo)
+    VALUES ('Legado drill', 'Marca drill', 'Tradicional', '0,5 kg', true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, 'o indice novo barrou linha sem campo estruturado -- ele deveria ser parcial');
+  END;
+
+  -- O drill nao deixa linha para tras.
+  DELETE FROM public.products WHERE name IN ('Cafe drill', 'Legado drill');
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Indice de identidade exata (R2-A) errado em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: 500 g e 0,5 kg colidem; 500 g e 500 ml nao; linha sem estrutura nao participa.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- As bordas numericas. numeric(12,4) nao e enfeite: ele define o que o banco aceita, o
+-- que ele ARREDONDA em silencio e o que ele recusa. Arredondamento silencioso e
+-- justamente o caminho por onde um zero entraria numa coluna que exige > 0.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- Escala decimal: 0,00004 nao cabe em 4 casas. O Postgres arredonda para 0,0000 -- e ai
+  -- o CHECK > 0 precisa pegar. Se ele nao pegasse, entraria um produto de quantidade zero
+  -- por caminho nenhum que o dominio consegue enxergar.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill escala que arredonda para zero', 'unidade', 0.00004, 'g', true);
+    failures := array_append(failures, 'aceitou 0,00004 -- arredondou para zero e o CHECK > 0 nao pegou');
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  -- E a menor quantidade que de fato cabe continua entrando: a regra e recusar zero, nao
+  -- recusar valor pequeno.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill menor escala valida', 'unidade', 0.0001, 'g', true);
+  EXCEPTION WHEN check_violation THEN
+    failures := array_append(failures, 'recusou 0,0001 -- a menor quantidade representavel deveria entrar');
+  END;
+
+  -- Quantidade grande demais para o tipo: o banco recusa por estouro, e nao trunca. Um
+  -- truncamento silencioso aqui viraria um produto com quantidade errada e valida.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill quantidade grande demais', 'unidade', 1000000000, 'g', true);
+    failures := array_append(failures, 'aceitou 1e9 em numeric(12,4) -- truncou em vez de recusar');
+  EXCEPTION WHEN numeric_value_out_of_range THEN NULL;
+  END;
+
+  -- E o maior valor que cabe entra, inclusive passando pela multiplicacao do indice
+  -- (x1000 para kg), que acontece FORA do numeric(12,4) e portanto nao estoura.
+  BEGIN
+    INSERT INTO public.products (name, package_type, quantity_value, quantity_unit, is_demo)
+    VALUES ('Drill maior quantidade valida', 'unidade', 99999999.9999, 'kg', true);
+  EXCEPTION WHEN numeric_value_out_of_range THEN
+    failures := array_append(failures, 'a conversao do indice estourou no maior valor representavel');
+  END;
+
+  DELETE FROM public.products WHERE name LIKE 'Drill %escala valida' OR name LIKE 'Drill maior%';
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Bordas numericas de quantity_value (R2-A) erradas em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: arredondamento para zero e recusado, estouro e recusado, bordas validas entram.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- units_per_package NAO faz parte da identidade. A consequencia disso e concreta e
+-- precisa estar provada: o que separa um pack de 6 de um pack de 12 e o TOTAL em
+-- quantity_value, e nao a contagem. Um backfill que escreva 350 no lugar de 2100 nao
+-- produz erro de digitacao -- produz dois SKUs disputando a mesma identidade.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- Preenchido como o contrato manda (total), os dois packs sao produtos diferentes.
+  INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+  VALUES ('Refri drill', 'Marca drill', 'Original', '6 x 350 ml', 'pack', 2100, 'ml', 6, true);
+
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+    VALUES ('Refri drill', 'Marca drill', 'Original', '12 x 350 ml', 'pack', 4200, 'ml', 12, true);
+  EXCEPTION WHEN unique_violation THEN
+    failures := array_append(failures, 'pack de 6 e pack de 12 colidiram -- o total deveria separa-los');
+  END;
+
+  -- Preenchido errado (conteudo de cada item no lugar do total), os dois viram a mesma
+  -- identidade e o segundo e barrado. E o comportamento correto do indice, e e por isso
+  -- que o comentario de quantity_value diz TOTAL com todas as letras.
+  INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+  VALUES ('Suco drill', 'Marca drill', 'Uva', '6 x 350 ml', 'pack', 350, 'ml', 6, true);
+
+  BEGIN
+    INSERT INTO public.products (name, brand, variant, size_text, package_type, quantity_value, quantity_unit, units_per_package, is_demo)
+    VALUES ('Suco drill', 'Marca drill', 'Uva', '12 x 350 ml', 'pack', 350, 'ml', 12, true);
+    failures := array_append(failures, 'units_per_package entrou na identidade -- 350/6 e 350/12 deveriam colidir');
+  EXCEPTION WHEN unique_violation THEN NULL;
+  END;
+
+  DELETE FROM public.products WHERE name IN ('Refri drill', 'Suco drill');
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Identidade de pack (R2-A) errada em % caso(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-A: o total separa packs de contagens diferentes; units_per_package nao e identidade.';
+END
+$$;

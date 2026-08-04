@@ -184,9 +184,11 @@ COMMENT ON COLUMN public.products.gtin IS
 -- ROLLBACK
 -- ============================================================================
 --
+-- ROLLBACK-SQL-BEGIN
 --   ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_gtin_valid;
 --   DROP FUNCTION IF EXISTS public.pa_is_valid_gtin(text);
 --   DROP FUNCTION IF EXISTS public.pa_gtin_check_digit(text);
+-- ROLLBACK-SQL-END
 --
 -- Nesta ordem: a constraint depende da funcao. Nenhuma linha e tocada em momento algum,
 -- entao o rollback e completo -- nao existe dado criado por esta migration que se perca.

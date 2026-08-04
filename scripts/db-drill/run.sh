@@ -91,4 +91,10 @@ psql_apply "assertions de autorizacao (90-assertions.sql)" "$SCRIPT_DIR/90-asser
 # consulta quebrada e pior do que um runbook sem consulta nenhuma.
 psql_apply "auditoria read-only de prontidao (scripts/r2/target-readiness.sql)" "$REPO_ROOT/scripts/r2/target-readiness.sql"
 
+# Por ultimo, porque e o unico estagio que muda o schema: executa o rollback DOCUMENTADO
+# das migrations de R2 -- extraido do proprio arquivo, e nao copiado -- e reaplica. Bloco
+# de rollback que nunca rodou e alegacao, nao fato.
+echo "==> Drill de rollback e reaplicacao de R2..."
+bash "$SCRIPT_DIR/95-rollback-reapply.sh" "$CONTAINER_NAME" "$MIGRATIONS_DIR"
+
 echo "==> Drill de reconstrucao de schema concluido com sucesso: ${#migration_files[@]} migrations reproduzidas e verificadas contra banco vivo, e a auditoria de prontidao de R2 executada."

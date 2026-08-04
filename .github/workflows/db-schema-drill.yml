@@ -5,20 +5,25 @@ name: DB schema drill
 # Onda 3 aprendeu (ao vivo, em staging) que texto de migration sozinho nao prova. Ver
 # docs/operations/ONDA-4-TECHNICAL-PLAN.md e scripts/db-drill/. Nao usa nenhum secret,
 # nao toca em nenhum projeto Supabase real.
+#
+# R2.3 - o filtro `paths:` que existia aqui no nivel do workflow foi REMOVIDO de
+# proposito. Com ele, um PR que nao tocasse em migrations nao produzia report nenhum, e
+# um required check sem report deixa o PR pendente para sempre -- ou seja, o check nao
+# podia ser exigido sem travar todo PR documental. O desenho agora e outro:
+#
+#   detect  -> sempre roda, e decide se ha algo que o drill exercite (barato)
+#   drill   -> so roda quando ha (caro: Docker + Postgres + todas as migrations)
+#   gate    -> SEMPRE roda e SEMPRE reporta, consolidando os dois acima
+#
+# O required check da main e o `gate` (`db-schema-drill-required`), nao o `drill`. Isso
+# torna o check exigivel sem transformar PR de documentacao em bypass de admin, e sem
+# gastar um Postgres inteiro para validar Markdown.
 
 on:
   push:
     branches: [main]
-    paths:
-      - "supabase/migrations/**"
-      - "scripts/db-drill/**"
-      - ".github/workflows/db-schema-drill.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "supabase/migrations/**"
-      - "scripts/db-drill/**"
-      - ".github/workflows/db-schema-drill.yml"
   workflow_dispatch: {}
 
 concurrency:
@@ -29,8 +34,31 @@ permissions:
   contents: read
 
 jobs:
+  detect:
+    name: detectar mudanca relevante
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.detect.outputs.relevant }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # O detector compara duas revisoes: com o clone raso padrao (depth 1) o
+          # merge-base nao existe localmente e todo PR cairia no fallback "relevante".
+          fetch-depth: 0
+
+      - name: Detectar mudanca relevante para o drill
+        id: detect
+        env:
+          DRILL_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          DRILL_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/db-drill/detect-relevant-changes.sh
+
   drill:
     name: reconstruir schema e validar autorizacao
+    needs: detect
+    if: needs.detect.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -39,3 +67,52 @@ jobs:
 
       - name: Rodar drill de reconstrucao de schema
         run: bash scripts/db-drill/run.sh
+
+  gate:
+    # Este `name:` e o nome do contexto que a protecao da main exige. Mudar esta linha
+    # quebra o required check silenciosamente: o check exigido para de ser reportado e
+    # todo PR fica pendente. Ver docs/evidence/r2/branch-protection.md.
+    name: db-schema-drill-required
+    needs: [detect, drill]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consolidar resultado do drill
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          DRILL_RESULT: ${{ needs.drill.result }}
+          RELEVANT: ${{ needs.detect.outputs.relevant }}
+        run: |
+          set -euo pipefail
+          echo "detector: ${DETECT_RESULT}"
+          echo "veredito: ${RELEVANT:-<vazio>}"
+          echo "drill:    ${DRILL_RESULT}"
+
+          if [ "$DETECT_RESULT" != "success" ]; then
+            echo "::error::O detector terminou como '${DETECT_RESULT}'. Sem detector nao ha como afirmar que o drill era dispensavel, entao o gate reprova."
+            exit 1
+          fi
+
+          case "${RELEVANT:-}" in
+            true)
+              if [ "$DRILL_RESULT" = "success" ]; then
+                echo "Mudanca relevante para o schema, e o drill reconstruiu tudo com sucesso."
+                exit 0
+              fi
+              echo "::error::Mudanca relevante para o schema, e o drill terminou como '${DRILL_RESULT}'."
+              exit 1
+              ;;
+            false)
+              if [ "$DRILL_RESULT" = "skipped" ]; then
+                echo "Nenhum arquivo lido pelo drill mudou: reconstrucao de schema dispensada."
+                exit 0
+              fi
+              echo "::error::Estado incoerente: o detector disse 'false' mas o drill terminou como '${DRILL_RESULT}'."
+              exit 1
+              ;;
+            *)
+              echo "::error::O detector nao produziu um veredito reconhecivel (valor: '${RELEVANT:-<vazio>}')."
+              exit 1
+              ;;
+          esac

@@ -506,19 +506,25 @@ de sair da lista 5.
 - **Aceite:** os dez passos do fluxo com campo obrigatório, evidência e responsável.
 - **Gate:** nenhum. · **Evidência:** documento atualizado.
 
-### MVP-DOCS-07 — Tornar o `db-schema-drill` required check da `main`
+### MVP-DOCS-07 — Tornar o `db-schema-drill` required check da `main` — **CONCLUÍDO em 04/08/2026**
 
-- **Objetivo:** o drill reconstrói o schema do zero contra Postgres vivo, mas **não** é required
-  check — nada impede um merge de migration com ele vermelho, além de conferência manual.
-- **Fonte:** `docs/evidence/r2/branch-protection.md` · **Decisão:** DL-022 · **Origem:** R2.2 §2 e §15
+- **Objetivo:** o drill reconstrói o schema do zero contra Postgres vivo, mas **não** era required
+  check — nada impedia um merge de migration com ele vermelho, além de conferência manual.
+- **Fonte:** `docs/evidence/r2/branch-protection.md` · **Decisão:** DL-022, concluído por DL-023
+  · **Origem:** R2.2 §2 e §15 · **Resolvido em:** R2.3 §2 e §3
 - **Etapa:** fora da sequência R · **Etiquetas:** DOCS, SECURITY
-- **Por que não foi resolvido em R2.2:** o workflow é filtrado por caminho, e required check que não
-  é reportado deixa todo PR documental pendente para sempre. Medido nos PRs #58 (drill presente),
-  #48 e #60 (ausente). A correção completa precisa mexer no workflow.
-- **Aceite:** os dois checks atuais preservados; `strict=true` preservado; nenhuma proteção removida;
-  PR só de `docs/` continua chegando a `CLEAN`.
-- **Gate:** **sim** — mexe em workflow e em proteção de branch. · **Evidência:** proteção relida
-  depois da mudança, e um PR de cada tipo conferido.
+- **Por que não foi resolvido em R2.2:** o workflow era filtrado por caminho, e required check que
+  não é reportado deixa todo PR documental pendente para sempre. Medido nos PRs #58 (drill
+  presente), #48 e #60 (ausente). A correção completa precisava mexer no workflow.
+- **Como foi resolvido:** PR [#62](https://github.com/samuel3ssilva/vipreco/pull/62) tirou o filtro
+  `paths:` e separou o workflow em detector, drill pesado e um gate que **sempre reporta**. O
+  required check passou a ser `db-schema-drill-required` — o gate —, não o drill.
+- **Aceite — verificado:** os dois checks anteriores preservados; `strict=true` preservado; nenhuma
+  proteção removida ou relaxada; `enforce_admins` intocado; os dois estados da proteção comparados
+  campo a campo, e **só a lista de checks mudou**, por acréscimo.
+- **Gate:** cumprido. · **Evidência:** `docs/evidence/r2/branch-protection.md` §1 e §5 — proteção
+  relida depois da mudança, e um PR de cada tipo conferido, com o log do gate lido (e não só o ✅:
+  passar pelo motivo certo e pelo motivo errado têm a mesma aparência na lista de checks).
 
 ---
 

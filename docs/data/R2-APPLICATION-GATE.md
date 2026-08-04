@@ -54,6 +54,32 @@ E o motivo de tudo acima parar aqui: **não existe credencial de escrita nem de 
 catálogo** neste ambiente — sem `service_role`, sem senha de banco, sem access token, sem CLI.
 A aplicação em staging permanece bloqueada por `CREDENTIAL ACCESS REQUIRED`.
 
+### O caminho para responder o que ficou `NOT VERIFIED` (R2.3, 04/08/2026)
+
+As seis últimas linhas da tabela acima ficaram `NOT VERIFIED` porque exigem o catálogo do
+sistema, e a chave anônima não o enxerga. Isso deixou de ser um beco: existe agora um caminho
+**automatizado, read-only e auditável** para respondê-las —
+[`.github/workflows/r2-staging-preflight.yml`](../../.github/workflows/r2-staging-preflight.yml),
+documentado em [`../evidence/r2/automation.md`](../evidence/r2/automation.md).
+
+O que muda para este gate:
+
+| Antes                                                      | Depois                                                                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| responder G3/G4/G5 exigiria alguém rodar SQL à mão         | um `workflow_dispatch` responde, e registra a resposta num Job Summary       |
+| a credencial passaria por chat, `.env` ou área de trabalho | fica em **Environment Secret** `SUPABASE_DB_URL` do ambiente `staging`       |
+| "read-only" seria uma promessa de quem executa             | é estrutural: guarda estática, transação `READ ONLY` e verificação no banco  |
+| nada impediria apontar para produção por engano            | o runner **recusa** a execução se a URL não for comprovadamente a de staging |
+
+O que **não** muda: nada disso aplica migration. O workflow não tem modo `apply`, e a
+autorização continua sendo do Founder/PMO, ambiente por ambiente, como manda o princípio 14 do
+`CLAUDE.md`.
+
+**Estado em 04/08/2026:** o segredo `SUPABASE_DB_URL` ainda não existe em `staging`, então o
+preflight nunca leu o banco. O bloqueio passou de `CREDENTIAL ACCESS REQUIRED` — que era sobre
+não haver caminho — para `STAGING SECRET REQUIRED`, que é sobre uma decisão do Founder que
+ainda não foi tomada.
+
 Os dois GTINs inválidos **não são curadoria pendente**: são as duas linhas que o commit
 `1102967` já anulou no `supabase/seed.sql`, e que staging não recebeu porque foi semeado antes
 daquela correção. Realinhar staging com o seed versionado resolve o item — e é escrita, logo é

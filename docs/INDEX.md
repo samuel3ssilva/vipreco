@@ -90,7 +90,8 @@ Gate humano.
 | [`evidence/r2/README.md`](evidence/r2/README.md)                           | **DESCRITIVO** — índice das evidências da aplicação remota de R2                                                                                                                    |
 | [`evidence/r2/staging/preflight.md`](evidence/r2/staging/preflight.md)     | **DESCRITIVO** — o que foi medido em staging em 04/08/2026, e com qual limite                                                                                                       |
 | [`evidence/r2/staging/application.md`](evidence/r2/staging/application.md) | **DESCRITIVO** — gate G1–G15 e o registro de que **nada foi aplicado**                                                                                                              |
-| [`evidence/r2/branch-protection.md`](evidence/r2/branch-protection.md)     | **DESCRITIVO** — por que o `db-schema-drill` ainda não é required check, e a ação humana exata                                                                                      |
+| [`evidence/r2/branch-protection.md`](evidence/r2/branch-protection.md)     | **DESCRITIVO** — o `db-schema-drill` como required check da `main`, e por que a versão óbvia teria travado todo PR documental                                                       |
+| [`evidence/r2/automation.md`](evidence/r2/automation.md)                   | **DESCRITIVO** — o workflow de preflight remoto de staging: read-only em três camadas, recusa de produção, e por que ainda não rodou                                                |
 
 ## Governança e estratégia
 

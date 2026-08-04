@@ -27,6 +27,39 @@ import { isQuantityUnit, normalizeQuantity, sameNormalizedQuantity } from "@/lib
 import type { NormalizedQuantity, PackageType, Product } from "@/types/domain";
 
 /**
+ * Os oito tipos de embalagem do contrato, como `Record` fechado sobre `PackageType`.
+ *
+ * A forma importa: um array literal aceitaria sete valores em silêncio, enquanto o
+ * `Record` cobra os oito do compilador. É a mesma construção de `UNIT_CONVERSIONS`, e pelo
+ * mesmo motivo — acrescentar o nono passa a exigir uma decisão explícita.
+ */
+const PACKAGE_TYPE_SET: Readonly<Record<PackageType, true>> = Object.freeze({
+  unidade: true,
+  pack: true,
+  kit: true,
+  garrafa: true,
+  lata: true,
+  vidro: true,
+  sache: true,
+  caixa: true,
+});
+
+/** Os oito tipos, em ordem estável. Espelha o CHECK de `products.package_type`. */
+export const PACKAGE_TYPES = Object.freeze(
+  Object.keys(PACKAGE_TYPE_SET) as PackageType[],
+) as readonly PackageType[];
+
+/**
+ * A embalagem informada é um dos oito? Guarda de tipo, para dado que vem de fora.
+ *
+ * `Object.hasOwn` e não `in`, pelo mesmo motivo de `isQuantityUnit`: `in` percorre a
+ * cadeia de protótipos e deixaria `"toString"` passar como tipo de embalagem.
+ */
+export function isPackageType(value: unknown): value is PackageType {
+  return typeof value === "string" && Object.hasOwn(PACKAGE_TYPE_SET, value);
+}
+
+/**
  * A tupla resolvida. Todos os campos de texto já vêm normalizados; `brand` e `variant`
  * ausentes viram string vazia — ausência é um valor de identidade legítimo, não um furo.
  */
@@ -44,6 +77,8 @@ export type IdentityGap =
   | "package_type_missing"
   | "quantity_value_missing"
   | "quantity_unit_missing"
+  /** embalagem preenchida, mas fora dos oito do contrato — dado sujo, não ausência */
+  | "package_type_invalid"
   /** unidade preenchida, mas fora das cinco do contrato — dado sujo, não ausência */
   | "quantity_unit_invalid"
   | "quantity_not_finite"
@@ -85,8 +120,15 @@ export function resolveExactIdentity(product: IdentityInput): IdentityResolution
   const name = normalizeSearchText(product.name);
   if (name.length === 0) gaps.push("name_missing");
 
-  const packageType = product.package_type ?? null;
-  if (packageType === null) gaps.push("package_type_missing");
+  // Mesma guarda de `quantity_unit`, e pelo mesmo motivo: o tipo é uma promessa sobre a
+  // origem do dado, não uma garantia de runtime. O CHECK de `products.package_type` diz o
+  // mesmo em SQL, e os dois precisam concordar.
+  const packageType = isPackageType(product.package_type) ? product.package_type : null;
+  if (product.package_type === null || product.package_type === undefined) {
+    gaps.push("package_type_missing");
+  } else if (packageType === null) {
+    gaps.push("package_type_invalid");
+  }
 
   const value = product.quantity_value ?? null;
   // `quantity_unit` chega tipada, mas o tipo é uma promessa sobre a origem do dado, não uma

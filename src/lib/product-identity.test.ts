@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  PACKAGE_TYPES,
   identityKey,
+  isPackageType,
   resolveExactIdentity,
   sameExactIdentity,
   sameProductLine,
@@ -212,5 +214,59 @@ describe("sameExactIdentity e sameProductLine", () => {
     expect(sameProductLine(base, resolvido(produto({ quantity_value: 250 })))).toBe(true);
     expect(sameProductLine(base, resolvido(produto({ variant: "Extraforte" })))).toBe(false);
     expect(sameProductLine(base, resolvido(produto({ package_type: "pack" })))).toBe(false);
+  });
+});
+
+describe("PACKAGE_TYPES e isPackageType", () => {
+  it("tem exatamente os oito tipos do contrato", () => {
+    expect([...PACKAGE_TYPES].sort()).toEqual([
+      "caixa",
+      "garrafa",
+      "kit",
+      "lata",
+      "pack",
+      "sache",
+      "unidade",
+      "vidro",
+    ]);
+  });
+
+  it("recusa embalagem fora dos oito, incluindo nome herdado de Object.prototype", () => {
+    expect(isPackageType("unidade")).toBe(true);
+    expect(isPackageType("UNIDADE")).toBe(false);
+    expect(isPackageType("engradado")).toBe(false);
+    expect(isPackageType(undefined)).toBe(false);
+    expect(isPackageType(8)).toBe(false);
+    for (const herdado of ["toString", "constructor", "valueOf"]) {
+      expect(isPackageType(herdado)).toBe(false);
+    }
+  });
+
+  it("embalagem suja distingue-se de embalagem ausente, e não vira identidade", () => {
+    // O CHECK de `products.package_type` diz o mesmo em SQL. Os dois precisam concordar:
+    // um banco que aceita `engradado` e um domínio que o recusa produzem um registro que
+    // entra no banco e some da comparação.
+    const suja = resolveExactIdentity(produto({ package_type: "engradado" as never }));
+    expect(suja.status).toBe("incomplete");
+    if (suja.status === "incomplete") {
+      expect(suja.gaps).toContain("package_type_invalid");
+      expect(suja.gaps).not.toContain("package_type_missing");
+    }
+
+    const ausente = resolveExactIdentity(produto({ package_type: null }));
+    if (ausente.status === "incomplete") {
+      expect(ausente.gaps).toContain("package_type_missing");
+      expect(ausente.gaps).not.toContain("package_type_invalid");
+    }
+  });
+
+  it("os oito tipos resolvem identidade, e cada um produz uma chave distinta", () => {
+    const chaves = new Set<string>();
+    for (const tipo of PACKAGE_TYPES) {
+      const resultado = resolveExactIdentity(produto({ package_type: tipo }));
+      expect(resultado.status, `${tipo} deveria resolver`).toBe("resolved");
+      if (resultado.status === "resolved") chaves.add(identityKey(resultado.identity));
+    }
+    expect(chaves.size).toBe(PACKAGE_TYPES.length);
   });
 });

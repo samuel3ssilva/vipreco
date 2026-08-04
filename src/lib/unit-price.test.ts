@@ -181,3 +181,58 @@ describe("comparabilidade entre unitários", () => {
     expect(comparableUnitPrices(semCalculo, semCalculo)).toBe(false);
   });
 });
+
+describe("pack contado em unidade sem conteúdo declarado", () => {
+  const base = {
+    price: 18,
+    quantity: { value: 1, unit: "un" } as const,
+    provenance: "confirmed" as const,
+  };
+
+  it("bloqueia em vez de apresentar preço por pack como preço por unidade", () => {
+    // O estado `package_content_unknown` existia no tipo e não era produzido por caminho
+    // nenhum. É o único caso em que a base mente: "1 un" é o pack, não o item.
+    expect(computeUnitPrice({ ...base, packageType: "pack" })).toEqual({
+      status: "ambiguous",
+      ambiguity: "package_content_unknown",
+    });
+    expect(computeUnitPrice({ ...base, packageType: "pack", unitsPerPackage: 0 })).toEqual({
+      status: "ambiguous",
+      ambiguity: "package_content_unknown",
+    });
+  });
+
+  it("com conteúdo declarado, calcula normalmente", () => {
+    const resultado = computeUnitPrice({
+      ...base,
+      quantity: { value: 6, unit: "un" },
+      packageType: "pack",
+      unitsPerPackage: 6,
+    });
+    expect(resultado.status).toBe("ok");
+    if (resultado.status === "ok") {
+      expect(resultado.basis).toBe("per_un");
+      expect(resultado.display).toBe(3);
+    }
+  });
+
+  it("não bloqueia massa nem volume: 6 × 350 ml dá preço por litro sem saber a contagem", () => {
+    const resultado = computeUnitPrice({
+      price: 18,
+      quantity: { value: 2100, unit: "ml" },
+      provenance: "confirmed",
+      packageType: "pack",
+    });
+    expect(resultado.status).toBe("ok");
+    if (resultado.status === "ok") {
+      expect(resultado.basis).toBe("per_l");
+      expect(resultado.perPackageUnit).toBeNull();
+    }
+  });
+
+  it("sem packageType o comportamento não muda", () => {
+    expect(computeUnitPrice(base).status).toBe("ok");
+    expect(computeUnitPrice({ ...base, packageType: null }).status).toBe("ok");
+    expect(computeUnitPrice({ ...base, packageType: "unidade" }).status).toBe("ok");
+  });
+});

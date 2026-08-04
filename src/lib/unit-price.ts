@@ -24,9 +24,9 @@
  *
  * Erro não vira `0` nem `NaN` público: vira estado.
  */
-import { normalizeQuantity } from "@/lib/quantity";
+import { isValidUnitsPerPackage, normalizeQuantity } from "@/lib/quantity";
 import type { QuantityProvenance } from "@/lib/size-text";
-import type { DeclaredQuantity } from "@/types/domain";
+import type { DeclaredQuantity, PackageType } from "@/types/domain";
 
 /** Em que base o número está expresso. Vai sempre junto do valor. */
 export type UnitPriceBasis = "per_kg" | "per_l" | "per_un";
@@ -39,7 +39,16 @@ export type UnitPriceAmbiguity =
   | "quantity_not_approved"
   /** o texto de origem admitia mais de uma leitura */
   | "quantity_ambiguous"
-  /** pack sem conteúdo interno declarado: dá para calcular por litro, não por item */
+  /**
+   * Pack contado em `un` sem conteúdo interno declarado.
+   *
+   * É o único caso em que a base `per_un` mente: a quantidade diz "1 un", mas essa
+   * unidade é o pack, não o item que o consumidor compara. Preço por pack apresentado
+   * como preço por unidade é um número errado numa tela de comparação de preços.
+   *
+   * Não vale para massa e volume: `6 × 350 ml` dá 2100 ml, e o preço por litro está certo
+   * mesmo sem saber quantas latas são.
+   */
   | "package_content_unknown";
 
 export type UnitPriceUnavailability =
@@ -80,6 +89,11 @@ export interface UnitPriceInput {
   provenance: QuantityProvenance;
   /** Itens contáveis dentro do pack, quando declarados. */
   unitsPerPackage?: number | null;
+  /**
+   * Tipo de embalagem, quando conhecido. Só é lido para bloquear o caso em que a base
+   * `per_un` mentiria — ver `package_content_unknown`. Ausente, o cálculo segue como antes.
+   */
+  packageType?: PackageType | null;
 }
 
 const BASIS_BY_UNIT = Object.freeze({
@@ -138,11 +152,20 @@ export function computeUnitPrice(input: UnitPriceInput): UnitPriceResult {
   }
 
   const { basis, factor } = BASIS_BY_UNIT[normalized.quantity.unit];
+
+  const units = isValidUnitsPerPackage(input.unitsPerPackage) ? input.unitsPerPackage : null;
+
+  // Pack contado em `un` sem conteúdo interno: a única combinação em que a base mente. A
+  // quantidade diz "1 un", mas essa unidade é o pack, e mostrar preço por pack rotulado
+  // como preço por unidade é o número errado exatamente na tela em que ele mais importa.
+  if (input.packageType === "pack" && basis === "per_un" && units === null) {
+    return { status: "ambiguous", ambiguity: "package_content_unknown" };
+  }
+
   const value = (input.price / normalized.quantity.value) * factor;
 
-  const units = input.unitsPerPackage;
   const perPackageUnit =
-    typeof units === "number" && Number.isInteger(units) && units > 0 && basis !== "per_un"
+    units !== null && basis !== "per_un"
       ? { value: input.price / units, display: roundToCents(input.price / units) }
       : null;
 

@@ -180,6 +180,7 @@ COMMENT ON INDEX public.products_exact_identity_idx IS
 -- Totalmente reversivel enquanto nao houver dado nas colunas novas. Nada abaixo toca
 -- linha, coluna antiga ou indice antigo:
 --
+-- ROLLBACK-SQL-BEGIN
 --   DROP INDEX IF EXISTS public.products_exact_identity_idx;
 --   ALTER TABLE public.products
 --     DROP CONSTRAINT IF EXISTS products_quantity_pair_complete,
@@ -192,6 +193,7 @@ COMMENT ON INDEX public.products_exact_identity_idx IS
 --     DROP COLUMN IF EXISTS quantity_unit,
 --     DROP COLUMN IF EXISTS quantity_value,
 --     DROP COLUMN IF EXISTS package_type;
+-- ROLLBACK-SQL-END
 --
 -- Depois do backfill o rollback passa a APAGAR dado curado, e deixa de ser reversivel
 -- de verdade. Esse e o ponto sem volta, e ele fica no passo 4, nao aqui.

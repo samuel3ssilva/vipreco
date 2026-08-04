@@ -111,11 +111,11 @@ teste na suíte.
 
 ## 5. Medido depois de aplicar
 
-| Caso                      | Onde                                                    | Resultado                                                                                           |
-| ------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| PR que toca o drill       | [#62](https://github.com/samuel3ssilva/vipreco/pull/62) | drill executado (15 s), gate `success` — log: `detector: success · veredito: true · drill: success` |
-| PR que toca `scripts/r2/` | [#63](https://github.com/samuel3ssilva/vipreco/pull/63) | drill executado (13 s), gate `success`                                                              |
-| PR só de documentação     | _este PR_                                               | **a medir** — é o caso que antes travaria, e é o que fecha a prova                                  |
+| Caso                      | Onde                                                    | Resultado                                                                                                                    |
+| ------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| PR que toca o drill       | [#62](https://github.com/samuel3ssilva/vipreco/pull/62) | drill executado (15 s), gate `success` — log: `detector: success · veredito: true · drill: success`                          |
+| PR que toca `scripts/r2/` | [#63](https://github.com/samuel3ssilva/vipreco/pull/63) | drill executado (13 s), gate `success`                                                                                       |
+| PR só de documentação     | [#64](https://github.com/samuel3ssilva/vipreco/pull/64) | drill **`skipped`**, gate `success`, `mergeStateStatus: CLEAN` — log: `detector: success · veredito: false · drill: skipped` |
 
 O gate do #62 foi conferido no log, e não só pelo ✅: passar pelo motivo errado e passar pelo
 motivo certo têm exatamente a mesma aparência na lista de checks.

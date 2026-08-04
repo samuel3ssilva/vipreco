@@ -643,3 +643,114 @@ BEGIN
   RAISE NOTICE 'R2-B: GTIN invalido rejeitado, ausente aceito, unicidade parcial preservada, zero a esquerda distinto.';
 END
 $$;
+
+-- ----------------------------------------------------------------------------
+-- A afirmacao que sustenta o REVOKE, testada em vez de assumida.
+--
+-- A migration revoga EXECUTE de anon e authenticated e afirma, em comentario, que isso
+-- NAO quebra a constraint -- porque a expressao de um CHECK e avaliada como parte da
+-- definicao da tabela, e nao exige que o autor do INSERT possa chamar a funcao.
+--
+-- Se essa afirmacao fosse falsa, o efeito nao seria um GTIN invalido entrando: seria todo
+-- INSERT de um papel sem EXECUTE morrendo com insufficient_privilege. Ou seja, o risco e
+-- de disponibilidade, e nao de integridade -- mas continua sendo risco, e continua sendo
+-- uma afirmacao sobre o comportamento do Postgres que ninguem verificou.
+--
+-- O papel de teste existe so aqui dentro, e some ao fim do bloco. anon e authenticated
+-- nao serviriam para esta prova: eles nao tem INSERT em products desde a Onda 3, entao o
+-- INSERT pararia antes de chegar na constraint.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+BEGIN
+  -- BYPASSRLS de proposito. `products` tem RLS, e uma negacao de RLS levanta o MESMO
+  -- SQLSTATE 42501 (insufficient_privilege) que a falta de EXECUTE numa funcao. Sem isso
+  -- o teste confundiria uma coisa com a outra e acusaria a migration de um defeito que
+  -- ela nao tem. O papel existe para isolar exatamente uma variavel: o privilegio de
+  -- EXECUTE. Ele nao representa anon, nem authenticated, nem qualquer papel real.
+  CREATE ROLE drill_sem_execute NOLOGIN BYPASSRLS;
+  GRANT USAGE ON SCHEMA public TO drill_sem_execute;
+  GRANT INSERT, DELETE ON public.products TO drill_sem_execute;
+  REVOKE ALL ON FUNCTION public.pa_is_valid_gtin(text) FROM drill_sem_execute;
+
+  IF has_function_privilege('drill_sem_execute', 'public.pa_is_valid_gtin(text)', 'EXECUTE') THEN
+    failures := array_append(failures, 'o papel de teste ficou com EXECUTE -- a prova abaixo nao valeria nada');
+  END IF;
+
+  SET LOCAL ROLE drill_sem_execute;
+
+  -- GTIN invalido: precisa morrer por check_violation. Se vier insufficient_privilege, a
+  -- premissa da migration esta errada e o REVOKE quebra escrita legitima.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel sem execute invalido', '7896089012345', true);
+    failures := array_append(failures, 'a constraint nao rejeitou para um papel sem EXECUTE');
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+    WHEN insufficient_privilege THEN
+      failures := array_append(failures, 'INSERT falhou por falta de EXECUTE na funcao -- a premissa do REVOKE esta errada');
+  END;
+
+  -- E o GTIN valido precisa ENTRAR: a constraint roda, aprova, e ninguem precisou de
+  -- EXECUTE para isso.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel sem execute valido', '614141000036', true);
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      failures := array_append(failures, 'GTIN valido foi barrado por falta de EXECUTE -- o REVOKE quebrou escrita legitima');
+  END;
+
+  RESET ROLE;
+
+  DELETE FROM public.products WHERE name LIKE 'Drill papel sem execute%';
+  REVOKE ALL ON public.products FROM drill_sem_execute;
+  REVOKE USAGE ON SCHEMA public FROM drill_sem_execute;
+  DROP ROLE drill_sem_execute;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Premissa do REVOKE de EXECUTE (R2-B) errada em % ponto(s):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-B: a constraint valida GTIN mesmo para papel sem EXECUTE na funcao -- o REVOKE nao quebra escrita.';
+END
+$$;
+
+-- ----------------------------------------------------------------------------
+-- search_path fixado. Funcao usada em CHECK e resolvida com o search_path de quem
+-- escreve, se ela nao tiver o proprio -- e ai basta um schema na frente de public para
+-- que `substr` ou `length` passem a ser outra coisa. O drill nunca tinha conferido isso
+-- em funcao nenhuma; passa a conferir nas seis.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  fn text;
+  config text[];
+BEGIN
+  FOREACH fn IN ARRAY ARRAY[
+    'pa_is_valid_gtin', 'pa_gtin_check_digit', 'pa_normalize_text',
+    'pa_set_updated_at', 'pa_products_search_text', 'approve_submission'
+  ]
+  LOOP
+    SELECT p.proconfig INTO config
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public' AND p.proname = fn;
+
+    IF config IS NULL OR NOT (config && ARRAY['search_path=public']) THEN
+      failures := array_append(failures, format('public.%s nao fixa search_path=public (tem: %s)', fn, coalesce(array_to_string(config, ','), 'nada')));
+    END IF;
+  END LOOP;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'search_path nao fixado em % funcao(oes):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2-B: as seis funcoes do schema public fixam search_path.';
+END
+$$;

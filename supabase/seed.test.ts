@@ -67,3 +67,36 @@ describe("supabase/seed.sql — nunca pode parecer dado real", () => {
     expect(occurrences.length).toBe(3);
   });
 });
+
+describe("supabase/seed.sql — GTIN fictício nunca pode ser inválido", () => {
+  // Um GTIN inválido em dado de demonstração é uma bomba-relógio: hoje nada valida, e no
+  // dia em que MVP-E1-05 puser a constraint no banco o próprio seed deixa de aplicar. E
+  // trocar por um código válido seria pior — um GTIN válido pertence a algum produto real,
+  // e estes produtos são fictícios. GTIN é opcional: ausente é o estado honesto.
+  function gtinCheckDigit(body: string): number {
+    let sum = 0;
+    for (let i = 0; i < body.length; i++) {
+      const digit = body.charCodeAt(body.length - 1 - i) - 48;
+      sum += i % 2 === 0 ? digit * 3 : digit;
+    }
+    return (10 - (sum % 10)) % 10;
+  }
+
+  it("todo GTIN presente no seed passa no dígito verificador GS1", () => {
+    const rows = valuesBlocksFor("products");
+    expect(rows.length).toBeGreaterThan(0);
+
+    const encontrados = seedSql.match(/'(\d{8,14})'/g) ?? [];
+    for (const bruto of encontrados) {
+      const valor = bruto.slice(1, -1);
+      if (![8, 12, 13, 14].includes(valor.length)) continue;
+      const esperado = gtinCheckDigit(valor.slice(0, -1));
+      expect(Number(valor.slice(-1)), `GTIN ${valor} reprova no dígito verificador`).toBe(esperado);
+    }
+  });
+
+  it("os dois códigos inválidos removidos não voltaram", () => {
+    expect(seedSql).not.toContain("7896089012345");
+    expect(seedSql).not.toContain("7896089054321");
+  });
+});

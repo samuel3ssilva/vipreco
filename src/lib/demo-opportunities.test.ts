@@ -6,6 +6,8 @@ import {
   buildDemoOpportunities,
 } from "@/lib/demo-opportunities";
 import { isValidPrice } from "@/lib/comparison";
+import { isGtinWellFormed } from "@/lib/gtin";
+import { normalizeSearchText } from "@/lib/normalize";
 import { formatDate, formatRelativeDay } from "@/lib/format";
 
 const NOW = new Date("2026-07-31T02:30:00.000Z"); // 30/07 23:30 em America/Sao_Paulo
@@ -108,5 +110,31 @@ describe("fixture de demonstração da Home", () => {
     expect(primeiro).not.toBe(segundo);
     expect(primeiro[0]).not.toBe(segundo[0]);
     expect(primeiro).toEqual(segundo);
+  });
+});
+
+describe("fixture de demonstração — GTIN", () => {
+  it("nenhum GTIN do fixture reprova no dígito verificador", () => {
+    // O fixture espelha o seed. Um código inválido aqui é o mesmo defeito adiado: no dia
+    // em que a validação existir, o dado de demonstração deixa de passar.
+    for (const achado of buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"))) {
+      const gtin = achado.product.gtin;
+      if (gtin === null) continue;
+      expect(isGtinWellFormed(gtin), `GTIN ${gtin} reprova a validação GS1`).toBe(true);
+    }
+  });
+
+  it("produto sem GTIN continua sendo um produto normal, não um produto quebrado", () => {
+    const achados = buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"));
+    const semGtin = achados.filter((achado) => achado.product.gtin === null);
+    expect(semGtin.length).toBeGreaterThan(0);
+    for (const achado of semGtin) {
+      // GTIN é opcional: nome, marca e tamanho seguem exibíveis e a busca por texto,
+      // que é como o usuário realmente chega ao produto, não depende do código.
+      expect(achado.product.name).toBeTruthy();
+      expect(achado.product.brand).toBeTruthy();
+      expect(achado.product.size_text).toBeTruthy();
+      expect(normalizeSearchText(achado.product.name).length).toBeGreaterThan(0);
+    }
   });
 });

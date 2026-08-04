@@ -200,9 +200,13 @@ describe("GTIN — conflito e discordância", () => {
   it("GTIN inválido não é usado como prova de nada", () => {
     // Dois códigos reprovados no dígito verificador não fazem os itens serem o mesmo,
     // nem impedem que a tupla decida.
+    //
+    // Vetor sintético, exclusivo deste teste: `0000000000001` tem treze dígitos e reprova
+    // no dígito verificador (o correto seria 0). Não sai daqui e não descreve produto
+    // nenhum — dado de demonstração não serve como fixture de checksum.
     const resultado = classifyRelation(
-      cafe({ gtin: "7896089012345" }),
-      cafe({ gtin: "7896089012345" }),
+      cafe({ gtin: "0000000000001" }),
+      cafe({ gtin: "0000000000001" }),
     );
     expect(resultado.relation).toBe("exact");
     expect(resultado.reason).toBe("same_identity");

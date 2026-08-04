@@ -110,7 +110,11 @@ const PRODUCT_CAFE: Product = {
   brand: "Pilão",
   variant: "Tradicional",
   size_text: "500 g",
-  gtin: "7896089012345",
+  // Sem GTIN de propósito. O produto é fictício, e o valor que estava aqui reprovava no
+  // dígito verificador GS1: um código inválido em dado de demonstração vira defeito assim
+  // que a validação de MVP-E1-05 existir. Trocar por um código válido seria pior — um GTIN
+  // válido pertence a algum produto real. GTIN é opcional, e ausente é o estado honesto.
+  gtin: null,
   category: "Mercearia",
   is_active: true,
   is_demo: true,

@@ -118,8 +118,20 @@ COMMENT ON FUNCTION public.pa_is_valid_gtin(text) IS
 -- Isso foi confirmado ao vivo na Onda 3 (ver 20260730120000). REVOKE explicito nomeando
 -- anon e authenticated -- "FROM PUBLIC" sozinho nao alcanca um grant direto.
 --
--- Nao afeta a constraint: expressao de CHECK e avaliada como parte da definicao da
--- tabela, e nao depende de o autor do INSERT ter EXECUTE na funcao.
+-- E O GRANT PARA service_role NAO E DECORATIVO.
+--
+-- Uma versao anterior deste comentario afirmava que a expressao de CHECK e avaliada como
+-- parte da definicao da tabela e nao exigiria EXECUTE de quem escreve. ISSO ESTA ERRADO,
+-- e o drill provou contra Postgres 16 vivo: um papel com INSERT em products e sem EXECUTE
+-- em pa_is_valid_gtin recebe `permission denied for function pa_is_valid_gtin` -- em
+-- TODA escrita, com GTIN valido, invalido ou nulo.
+--
+-- A consequencia e operacional, e nao de seguranca: a constraint fica MAIS restritiva do
+-- que o documentado, nunca menos. Nenhum papel real e afetado hoje -- anon e authenticated
+-- nao escrevem em products desde a Onda 3, e service_role tem o GRANT abaixo justamente
+-- por isso. Mas quem for fazer o backfill de MVP-E1-08 precisa escrever como service_role
+-- (ou receber EXECUTE), sob pena de ver um "permission denied" apontando para uma funcao
+-- que ele nunca chamou. Esta escrito no runbook de rollout.
 REVOKE ALL ON FUNCTION public.pa_gtin_check_digit(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.pa_is_valid_gtin(text) FROM PUBLIC, anon, authenticated;
 

@@ -645,33 +645,38 @@ END
 $$;
 
 -- ----------------------------------------------------------------------------
--- A afirmacao que sustenta o REVOKE, testada em vez de assumida.
+-- QUEM ESCREVE EM products PRECISA DE EXECUTE EM pa_is_valid_gtin.
 --
--- A migration revoga EXECUTE de anon e authenticated e afirma, em comentario, que isso
--- NAO quebra a constraint -- porque a expressao de um CHECK e avaliada como parte da
--- definicao da tabela, e nao exige que o autor do INSERT possa chamar a funcao.
+-- Este bloco comecou como a verificacao de uma afirmacao da migration: que a expressao de
+-- um CHECK seria avaliada como parte da definicao da tabela e NAO exigiria EXECUTE de quem
+-- escreve. A afirmacao era FALSA, e o drill mostrou isso contra Postgres 16 vivo:
 --
--- Se essa afirmacao fosse falsa, o efeito nao seria um GTIN invalido entrando: seria todo
--- INSERT de um papel sem EXECUTE morrendo com insufficient_privilege. Ou seja, o risco e
--- de disponibilidade, e nao de integridade -- mas continua sendo risco, e continua sendo
--- uma afirmacao sobre o comportamento do Postgres que ninguem verificou.
+--   permission denied for function pa_is_valid_gtin
 --
--- O papel de teste existe so aqui dentro, e some ao fim do bloco. anon e authenticated
--- nao serviriam para esta prova: eles nao tem INSERT em products desde a Onda 3, entao o
--- INSERT pararia antes de chegar na constraint.
+-- em toda escrita do papel sem EXECUTE -- com GTIN valido, invalido ou nulo. A migration
+-- foi corrigida; este bloco passou a afirmar o comportamento real, e nao o suposto.
 --
--- ISOLAR A VARIAVEL DEU TRABALHO, E O TRABALHO ENSINOU ALGO
+-- A consequencia e OPERACIONAL, nao de seguranca: a constraint fica mais restritiva do que
+-- se documentava, nunca menos. Nenhum papel real e afetado hoje -- anon e authenticated nao
+-- escrevem em products desde a Onda 3, e service_role tem o GRANT. Mas quem for fazer o
+-- backfill de MVP-E1-08 precisa escrever como service_role, e a mensagem de erro apontaria
+-- para uma funcao que ele nunca chamou. Por isso isso e teste, e nao comentario.
 --
--- A primeira versao deste bloco reprovou, e a leitura ingenua seria "a premissa da
--- migration esta errada". Nao estava: `products` tem o trigger `products_search_text`, e
--- funcao de TRIGGER e chamada com o privilegio de quem escreve. O INSERT morria em
--- pa_products_search_text() -- que a Onda 3 revogou de PUBLIC -- antes de chegar perto do
--- CHECK. Dois caminhos diferentes para o mesmo SQLSTATE 42501.
+-- CHEGAR ATE AQUI EXIGIU ISOLAR A VARIAVEL, E O CAMINHO ENSINOU O RESTO
 --
--- Dai a assimetria que este bloco documenta, e que vale para o rollout: quem escreve em
--- products PRECISA de EXECUTE nas funcoes de TRIGGER, e NAO precisa nas funcoes usadas em
--- CHECK. Por isso o papel recebe as duas de trigger e continua sem a de GTIN: assim, um
--- 42501 que sobrar so pode ter vindo do CHECK.
+-- O mesmo SQLSTATE 42501 tem pelo menos quatro origens nesta tabela, e as tres primeiras
+-- precisaram ser eliminadas antes de a quarta ficar visivel:
+--
+--   1. RLS de products                  -> resolvido com BYPASSRLS no papel de teste;
+--   2. trigger products_search_text     -> funcao de TRIGGER *tambem* exige EXECUTE de quem
+--                                          escreve, e a Onda 3 a revogou de PUBLIC;
+--   3. DEFAULT gen_random_uuid()        -> pgcrypto vive no schema `extensions`, que exige
+--                                          USAGE proprio;
+--   4. o CHECK de GTIN                  -> o que este bloco realmente mede.
+--
+-- Por isso o papel recebe exatamente o que as tres primeiras exigem e nada do que a quarta
+-- exige. E por isso as mensagens de falha carregam SQLERRM: sem ele, cada uma das quatro
+-- se parece com as outras tres.
 -- ----------------------------------------------------------------------------
 
 DO $$
@@ -705,49 +710,72 @@ BEGIN
 
   SET LOCAL ROLE drill_sem_execute;
 
-  -- GTIN invalido: precisa morrer por check_violation. Se vier insufficient_privilege, a
-  -- premissa da migration esta errada e o REVOKE quebra escrita legitima.
-  BEGIN
-    INSERT INTO public.products (name, gtin, is_demo)
-    VALUES ('Drill papel sem execute invalido', '7896089012345', true);
-    failures := array_append(failures, 'a constraint nao rejeitou para um papel sem EXECUTE');
-  EXCEPTION
-    WHEN check_violation THEN NULL;
-    WHEN insufficient_privilege THEN
-      -- SQLERRM junto de proposito: 42501 tem varias origens (RLS, USAGE de schema,
-      -- funcao de trigger, funcao de CHECK) e uma mensagem generica manda o proximo
-      -- leitor adivinhar. A mensagem do Postgres diz exatamente qual objeto faltou.
-      failures := array_append(failures, format('INSERT de GTIN invalido falhou por privilegio, nao por CHECK -- %s', SQLERRM));
-  END;
-
-  -- E o GTIN valido precisa ENTRAR: a constraint roda, aprova, e ninguem precisou de
-  -- EXECUTE para isso.
+  -- Sem EXECUTE, NENHUMA escrita passa -- nem a que traz um GTIN perfeitamente valido.
+  -- SQLERRM entra na mensagem porque 42501 tem quatro origens nesta tabela, e so a
+  -- mensagem do Postgres diz qual delas foi.
   BEGIN
     INSERT INTO public.products (name, gtin, is_demo)
     VALUES ('Drill papel sem execute valido', '614141000036', true);
+    failures := array_append(failures, 'escrita passou sem EXECUTE em pa_is_valid_gtin -- o comportamento do Postgres mudou, e a migration precisa ser relida');
   EXCEPTION
     WHEN insufficient_privilege THEN
-      failures := array_append(failures, format('GTIN valido foi barrado por privilegio -- %s', SQLERRM));
+      IF SQLERRM NOT LIKE '%pa_is_valid_gtin%' THEN
+        failures := array_append(failures, format('42501 veio de outro objeto, nao do CHECK de GTIN -- %s', SQLERRM));
+      END IF;
+  END;
+
+  -- E o GTIN nulo tambem nao passa: o CHECK e avaliado de qualquer jeito, entao a barreira
+  -- nao depende de haver GTIN. E o que torna isso um requisito de escrita, e nao de dado.
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel sem execute nulo', NULL, true);
+    failures := array_append(failures, 'escrita sem GTIN passou sem EXECUTE -- entao a barreira dependeria do dado, e nao e o caso');
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
 
   RESET ROLE;
 
-  -- O drill nao deixa papel nem privilegio para tras. Todo GRANT precisa voltar antes do
-  -- DROP ROLE: privilegio pendente e uma dependencia, e o Postgres recusa remover o papel.
-  DELETE FROM public.products WHERE name LIKE 'Drill papel sem execute%';
-  -- DROP OWNED BY em vez de enumerar REVOKEs. Enumerar e o que acabou de falhar: a lista
-  -- esquecia o USAGE em `extensions`, e o Postgres recusou remover o papel por dependencia
-  -- pendente. Esta forma revoga tudo que foi concedido ao papel neste banco, entao ela nao
-  -- pode ficar desatualizada quando um GRANT novo entrar acima.
+  -- O contraste que fecha o argumento: COM EXECUTE, o mesmo papel escreve normalmente e a
+  -- constraint volta a se comportar como constraint -- aprova o valido e rejeita o
+  -- invalido por check_violation. E por isso que service_role recebe o GRANT.
+  GRANT EXECUTE ON FUNCTION public.pa_is_valid_gtin(text) TO drill_sem_execute;
+  GRANT EXECUTE ON FUNCTION public.pa_gtin_check_digit(text) TO drill_sem_execute;
+  SET LOCAL ROLE drill_sem_execute;
+
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel com execute valido', '614141000036', true);
+  EXCEPTION WHEN OTHERS THEN
+    failures := array_append(failures, format('com EXECUTE, o GTIN valido ainda foi barrado -- %s', SQLERRM));
+  END;
+
+  BEGIN
+    INSERT INTO public.products (name, gtin, is_demo)
+    VALUES ('Drill papel com execute invalido', '7896089012345', true);
+    failures := array_append(failures, 'com EXECUTE, o GTIN invalido entrou -- a constraint nao esta valendo');
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+    WHEN insufficient_privilege THEN
+      failures := array_append(failures, format('com EXECUTE ainda houve 42501 -- %s', SQLERRM));
+  END;
+
+  RESET ROLE;
+
+  -- O drill nao deixa papel nem privilegio para tras. DROP OWNED BY em vez de enumerar
+  -- REVOKEs: enumerar foi o que falhou antes, porque a lista esquecia o USAGE em
+  -- `extensions` e o Postgres recusa remover papel com privilegio pendente. Esta forma
+  -- revoga tudo que foi concedido ao papel neste banco, entao nao fica desatualizada
+  -- quando um GRANT novo entrar acima -- e agora ha seis deles.
+  DELETE FROM public.products WHERE name LIKE 'Drill papel %execute%';
   DROP OWNED BY drill_sem_execute;
   DROP ROLE drill_sem_execute;
 
   IF array_length(failures, 1) IS NOT NULL THEN
-    RAISE EXCEPTION E'Premissa do REVOKE de EXECUTE (R2-B) errada em % ponto(s):\n% ',
+    RAISE EXCEPTION E'EXECUTE de pa_is_valid_gtin na escrita (R2-B) divergiu em % ponto(s):\n% ',
       array_length(failures, 1), array_to_string(failures, E'\n');
   END IF;
 
-  RAISE NOTICE 'R2-B: a constraint valida GTIN mesmo para papel sem EXECUTE na funcao -- o REVOKE nao quebra escrita.';
+  RAISE NOTICE 'R2-B: sem EXECUTE em pa_is_valid_gtin nenhuma escrita em products passa; com EXECUTE, a constraint aprova o valido e rejeita o invalido.';
 END
 $$;
 

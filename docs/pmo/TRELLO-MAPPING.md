@@ -1,8 +1,18 @@
 # Mapa do Trello
 
-**Status: NORMATIVO** para a montagem do quadro. **O Trello não foi criado. Nenhuma API foi
-integrada.** Este documento existe para que o quadro seja montado sem nenhuma decisão paralela: tudo
-o que um card precisa já está decidido aqui ou aponta para o documento que decide.
+**Status: NORMATIVO** para o conteúdo do quadro. Este documento existe para que o quadro seja montado
+e reconciliado sem nenhuma decisão paralela: tudo o que um card precisa já está decidido aqui ou
+aponta para o documento que decide.
+
+**O quadro real existe e está sincronizado com este mapa.** Primeira sincronização em 03/08/2026,
+contra a `main` em `af624250b159039ac4922f6b0a3de5bfbe3c39e4`. Quadro oficial
+**ViPreço — MVP Artemis**, em
+[trello.com/b/ThzNvV2Y](https://trello.com/b/ThzNvV2Y/vipreco-mvp-artemis), workspace
+`Área de trabalho do Trello`. Estado registrado em [`trello/README.md`](trello/README.md) §14.
+
+**A `main` do GitHub continua sendo a fonte normativa; o Trello representa a execução.** Card não
+cria escopo: o caminho é este documento primeiro, quadro depois. Como usar o quadro no dia a dia —
+listas, etiquetas, `Ready`, cards UNMAPPED — está em [`trello/README.md`](trello/README.md).
 
 **Nenhum card abaixo está autorizado a virar código.** Autorizar implementação é ato separado do
 Founder/PMO.
@@ -633,7 +643,26 @@ decisão do Founder/PMO e **não** decorre de a trilha ter dado certo. **Gate:**
 | MVP-E2-01   | PR `fix/comparison-deterministic-tiebreaker`                                  |
 | MVP-DATA-01 | PR `fix/product-normalization-contract` — **migration criada e não aplicada** |
 
-Os três com PR entram no quadro na lista **Revisão do Founder**, não em Concluído: nenhum foi
-mergeado. Os dois de decisão vão para **Concluído** — decisão registrada não depende de merge.
+Os cinco foram para **Concluído**, com uma exceção deliberada: **MVP-DATA-01 está em `Bloqueado`**.
+O PR #47 foi mergeado, mas o **gate do card é aplicar a migration**
+`20260803000000_normalization_contract.sql`, e ela não foi aplicada em nenhum ambiente — antes de
+aplicar é obrigatório rodar MVP-DATA-02. Um card fecha quando o **gate** fecha, não quando o PR
+mergeia.
 
-**O quadro real não foi criado nem atualizado nesta missão.**
+## Estado do quadro
+
+Sincronizado em 03/08/2026 contra `af624250b159039ac4922f6b0a3de5bfbe3c39e4`:
+
+- **56 cards oficiais**, todos com ID único e com as etiquetas oficiais aplicadas conforme este mapa;
+- **19 cards UNMAPPED** preservados — manuais, anteriores à sincronização, não reconciliados;
+- **8 listas oficiais** abertas; `Em desenvolvimento` é a lista oficial e `Em andamento` foi
+  **arquivada** por estar vazia e duplicar o significado. Listas manuais preservadas;
+- **11 etiquetas oficiais**; as antigas permanecem intactas como apoio manual do Founder;
+- distribuição: `Inbox` 2 · `Backlog aprovado` 32 · `Ready` 1 · `Em desenvolvimento` 0 ·
+  `Em revisão técnica` 0 · `Revisão do Founder` 0 · `Bloqueado` 17 · `Concluído` 4;
+- **`Ready` contém apenas MVP-DATA-02**; **nenhum card `POST-MVP` está em `Ready`**;
+  **MVP-E3-04** permanece no `Backlog aprovado`; **MVP-BUSINESS-01** permanece pausado.
+
+**A sincronização é idempotente e não destrutiva.** Nada é apagado, arquivado sem autorização,
+renomeado por semelhança nem sobrescrito por suposição. Divergência vira registro, não conserto
+automático.

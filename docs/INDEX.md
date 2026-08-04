@@ -55,7 +55,8 @@ entram em nenhuma migration de R1/R2:
 | [`pmo/MVP-DECISION-LOG.md`](pmo/MVP-DECISION-LOG.md)               | **NORMATIVO** — matriz D1–D12, pendências e log                            |
 | [`pmo/MVP-EXECUTION-PLAN.md`](pmo/MVP-EXECUTION-PLAN.md)           | **NORMATIVO** — sequência R1–R9                                            |
 | [`pmo/TECHNICAL-DEBT-REGISTER.md`](pmo/TECHNICAL-DEBT-REGISTER.md) | **NORMATIVO**                                                              |
-| [`pmo/TRELLO-MAPPING.md`](pmo/TRELLO-MAPPING.md)                   | **NORMATIVO** — mapa do quadro; o quadro não existe                        |
+| [`pmo/TRELLO-MAPPING.md`](pmo/TRELLO-MAPPING.md)                   | **NORMATIVO** — conteúdo do quadro; sincronizado com o Trello real         |
+| [`pmo/trello/README.md`](pmo/trello/README.md)                     | **OPERACIONAL** — guia de uso do quadro; não decide escopo                 |
 | [`pmo/DEPENDENCY-POLICY.md`](pmo/DEPENDENCY-POLICY.md)             | **NORMATIVO** — política de dependências e inventário dos seis PRs abertos |
 
 ## Pós-MVP — registrado, não autorizado

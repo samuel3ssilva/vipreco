@@ -507,3 +507,43 @@ status.
   `PROMOTION-TYPES.md`, `CANONICAL-PRODUCT-SPEC.md`, `AUTOMATED-PRICE-INGESTION-ROADMAP.md`,
   `SOURCE-CONNECTOR-STATUS.md`, `TRELLO-MAPPING.md`, `TECHNICAL-DEBT-REGISTER.md`, `INDEX.md`
 - **Status:** ativa
+
+### DL-019 — Baseline operacional e guia do Trello
+
+- **Data:** 03/08/2026
+- **Decisão:** o quadro **ViPreço — MVP Artemis**
+  ([trello.com/b/ThzNvV2Y](https://trello.com/b/ThzNvV2Y/vipreco-mvp-artemis), workspace
+  `Área de trabalho do Trello`) é o quadro oficial e único do projeto. A **`main` do GitHub é a fonte
+  normativa; o Trello representa a execução.** A sincronização usa o **ID oficial** do card como
+  chave, é **idempotente** e **não destrutiva**. Cards sem ID permanecem **UNMAPPED**, preservados e
+  não reinterpretados. `Em desenvolvimento` é a lista oficial; `Em andamento` foi **arquivada**.
+  Existem **onze etiquetas oficiais**. `MVP-DATA-02` está em `Ready`; `MVP-E3-04` permanece no
+  `Backlog aprovado`; **R1 continua não iniciado**.
+- **Contexto:** o mapa do quadro existia desde R0.6, mas o quadro real não. R0.7 populou o Trello com
+  os 56 cards oficiais derivados de `TRELLO-MAPPING.md`, preservou os 19 cards manuais anteriores,
+  arquivou a lista vazia duplicada e aplicou as onze etiquetas. Sem um guia, um quadro com 75 cards e
+  20 etiquetas é ilegível para quem chega depois — daí `pmo/trello/README.md`.
+- **Por que ID como chave, e não título:** título parecido não é o mesmo item. Reconciliar por
+  semelhança faz um card manual ser silenciosamente tratado como oficial, e o histórico do Founder
+  desaparece dentro de um item de execução. Com ID, o que não casa vira **UNMAPPED** — registro, não
+  suposição.
+- **Por que não destrutiva:** o quadro tinha trabalho humano anterior à sincronização. Apagar o que
+  não é reconhecido troca um problema visível (cards a mais) por um invisível (contexto perdido).
+- **Por que `Em andamento` foi arquivada, e não apagada:** estava **vazia** e duplicava o significado
+  de `Em desenvolvimento`. Arquivar é reversível; apagar não é.
+- **Por que MVP-DATA-01 está em `Bloqueado` e não em `Concluído`:** o PR #47 foi mergeado, mas o gate
+  do card é **aplicar a migration**, e ela não foi aplicada. **Card fecha quando o gate fecha, não
+  quando o PR mergeia.** Regra geral, não exceção deste card.
+- **Alternativas:** (a) quadro novo do zero, descartando os cards manuais — rejeitada: destrói o
+  histórico do Founder; (b) reconciliar por similaridade de título — rejeitada, ver acima; (c) só o
+  mapa, sem quadro real — rejeitada: era o estado anterior, e ninguém enxergava a execução; (d) guia
+  dentro do próprio `TRELLO-MAPPING.md` — rejeitada: o mapa é lista de cards, o guia é operação;
+  misturar torna os dois piores.
+- **Limitação do conector, registrada:** a integração de Trello disponível **não expõe função de
+  renomear quadro nem de criar etiqueta**. As onze etiquetas foram criadas **manualmente** pelo
+  Founder; **anexar** etiqueta funciona por ferramenta, e foi assim que os 56 cards foram etiquetados.
+- **Consequência:** nenhum item do MVP muda. Nenhum schema nasce. Nenhum card entra em
+  `Em desenvolvimento`. Nenhum card `POST-MVP` entra em `Ready`. R1 continua dependendo de
+  autorização do Founder/PMO.
+- **Documentos:** `pmo/trello/README.md` (criado), `TRELLO-MAPPING.md`, `INDEX.md`
+- **Status:** ativa

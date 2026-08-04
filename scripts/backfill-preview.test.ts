@@ -4,6 +4,8 @@ import {
   formatarRelatorio,
   preverBackfill,
   proporLinha,
+  SAIDA,
+  validarEntrada,
   type LinhaProduto,
 } from "./backfill-preview";
 import { buildDemoOpportunities } from "@/lib/demo-opportunities";
@@ -244,5 +246,96 @@ describe("execução contra os dados versionados", () => {
     for (const proibido of [/@/, /\+55/, /\bcpf\b/i, /telefone/i]) {
       expect(texto).not.toMatch(proibido);
     }
+  });
+});
+
+describe("identificação do produto no relatório (R2.1 §7)", () => {
+  it("cada linha carrega nome, marca e variante — sem isso não dá para revisar", () => {
+    const [p] = preverBackfill([linha("p1", "500 g")]);
+    expect(p.name).toBe("Café");
+    expect(p.brand).toBe("Pilão");
+    expect(p.variant).toBe("Tradicional");
+  });
+
+  it("o texto do relatório mostra o produto, e não só o UUID", () => {
+    const texto = formatarRelatorio(preverBackfill([linha("p1", "500 g")]));
+    expect(texto).toContain("Café · Pilão · Tradicional");
+  });
+
+  it("marca e variante ausentes não viram string vazia nem quebram a linha", () => {
+    const [p] = preverBackfill([{ id: "p1", name: "Arroz", size_text: "5 kg" }]);
+    expect(p.brand).toBeNull();
+    expect(p.variant).toBeNull();
+    expect(formatarRelatorio([p])).toContain("produto:    Arroz");
+  });
+
+  it("os estados sem proposta também identificam o produto", () => {
+    // É justamente onde alguém precisa decidir olhando a embalagem.
+    const [p] = preverBackfill([linha("p1", null)]);
+    expect(p.estado).toBe("ausente");
+    expect(p.name).toBe("Café");
+  });
+});
+
+describe("chave de conflito — a fronteira entre campos é inequívoca", () => {
+  it("palavra que atravessa a fronteira de campo não cria conflito falso", () => {
+    // Com separador de espaço, ("Café Pilão", "Tradicional") e ("Café", "Pilão
+    // Tradicional") produziam a MESMA chave, e os dois produtos apareciam como conflito
+    // que não existe. NUL não aparece em nome, marca ou variante.
+    const relatorio = preverBackfill([
+      { id: "p1", name: "Café Pilão", brand: "Tradicional", variant: "", size_text: "500 g" },
+      { id: "p2", name: "Café", brand: "Pilão Tradicional", variant: "", size_text: "500 g" },
+    ]);
+    expect(relatorio.map((p) => p.estado)).toEqual(["proposta_segura", "proposta_segura"]);
+  });
+
+  it("e o conflito de verdade continua sendo detectado", () => {
+    const relatorio = preverBackfill([linha("p1", "500 g"), linha("p2", "0,5 kg")]);
+    expect(relatorio.map((p) => p.estado)).toEqual(["conflito", "conflito"]);
+  });
+
+  it("o separador está escrito como escape, e não como byte cru", () => {
+    // Um NUL literal no arquivo faz o Git classificá-lo como binário assim que ele cair
+    // nos primeiros 8000 bytes — e um script irrevisável no diff não serve. Mesmo motivo
+    // do commit 2acfead e de `src/lib/product-identity.ts`.
+    expect(fonte).not.toContain("\u0000");
+    expect(fonte).toContain('const SEPARADOR_DE_CAMPO = "\\u0000"');
+  });
+});
+
+describe("entrada e códigos de saída (R2.1 §7)", () => {
+  it("os quatro códigos são distintos, e revisão não é falha", () => {
+    expect(new Set(Object.values(SAIDA)).size).toBe(4);
+    expect(SAIDA.LIMPO).toBe(0);
+    // REVISAO precisa ser diferente de LIMPO para o runbook ramificar, e diferente dos
+    // dois códigos de erro para ninguém tratar ambiguidade como defeito.
+    expect(SAIDA.REVISAO).not.toBe(SAIDA.LIMPO);
+    expect(SAIDA.REVISAO).not.toBe(SAIDA.ENTRADA);
+    expect(SAIDA.REVISAO).not.toBe(SAIDA.OPERACIONAL);
+  });
+
+  it("recusa entrada que não é array", () => {
+    expect(validarEntrada({ id: "p1" })).toEqual({
+      ok: false,
+      erro: "o arquivo precisa conter um array de produtos",
+    });
+  });
+
+  it("recusa linha sem id — antes ela virava product_id undefined no relatório", () => {
+    const r = validarEntrada([{ name: "Café", size_text: "500 g" }]);
+    expect(r.ok).toBe(false);
+    expect(r.ok === false && r.erro).toContain('"id"');
+  });
+
+  it("recusa linha sem name, que é o que torna o relatório legível", () => {
+    const r = validarEntrada([{ id: "p1", size_text: "500 g" }]);
+    expect(r.ok).toBe(false);
+    expect(r.ok === false && r.erro).toContain('"name"');
+  });
+
+  it("aceita a forma válida e devolve as linhas", () => {
+    const r = validarEntrada([{ id: "p1", name: "Café", size_text: "500 g" }]);
+    expect(r.ok).toBe(true);
+    expect(r.ok === true && r.linhas.length).toBe(1);
   });
 });

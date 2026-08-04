@@ -38,6 +38,17 @@ import { normalizeQuantity } from "@/lib/quantity";
 import { parseSizeText } from "@/lib/size-text";
 import type { NormalizedQuantity, PackageType, QuantityUnit } from "@/types/domain";
 
+/**
+ * Separador de campo na chave de conflito. NUL nunca aparece em nome, marca ou variante,
+ * então a fronteira entre campos fica inequívoca.
+ *
+ * Escrito como escape, e não como byte literal, pelo mesmo motivo registrado em
+ * `src/lib/product-identity.ts` e no commit 2acfead: um NUL cru no arquivo faz o Git
+ * classificá-lo como binário assim que ele cair nos primeiros 8000 bytes, e um script que
+ * ninguém consegue revisar no diff não serve.
+ */
+const SEPARADOR_DE_CAMPO = "\u0000";
+
 export interface LinhaProduto {
   id: string;
   name: string;
@@ -66,6 +77,18 @@ export type EstadoProposta =
 
 export interface Proposta {
   product_id: string;
+  /**
+   * Identificação humana do produto. O mandato R2.1 §7 pede estes três campos no
+   * relatório, e o motivo é prático: uma tabela de UUIDs e tamanhos não é revisável.
+   * "22222222-…-0002 → 500 g" não diz a ninguém o que está sendo aprovado; "Café Pilão
+   * Tradicional → 500 g" diz. No estado `conflito` isso deixa de ser conforto e vira
+   * requisito — sem os nomes não dá para julgar se as duas linhas são o mesmo produto.
+   *
+   * Nome, marca e variante de produto não são dado pessoal.
+   */
+  name: string;
+  brand: string | null;
+  variant: string | null;
   texto_original: string | null;
   /** O que seria gravado, se aprovado. `null` em todo estado que não é `proposta_segura`. */
   proposta: {
@@ -109,6 +132,9 @@ export function proporLinha(linha: LinhaProduto): Proposta {
 
   const base = {
     product_id: linha.id,
+    name: linha.name,
+    brand: linha.brand ?? null,
+    variant: linha.variant ?? null,
     texto_original: texto,
     proposta: null,
     normalizado: null,
@@ -170,6 +196,9 @@ export function proporLinha(linha: LinhaProduto): Proposta {
 
       return {
         product_id: linha.id,
+        name: linha.name,
+        brand: linha.brand ?? null,
+        variant: linha.variant ?? null,
         texto_original: texto,
         proposta: {
           quantity_value: leitura.quantity.value,
@@ -200,6 +229,13 @@ export function proporLinha(linha: LinhaProduto): Proposta {
  * justamente por o modelo textual de hoje não conseguir uni-las.
  *
  * A comparação usa nome, marca, variante e a quantidade NORMALIZADA — não o texto.
+ *
+ * Os campos são juntados por NUL, e não por espaço, pelo mesmo motivo de `identityKey()`
+ * em `src/lib/product-identity.ts`: com espaço, uma palavra que atravessa a fronteira
+ * entre dois campos produz a mesma chave. `("Café Pilão", "Tradicional")` e
+ * `("Café", "Pilão Tradicional")` são dois produtos diferentes e viravam a mesma string —
+ * os dois marcados como conflito que não existe. NUL nunca aparece em nome, marca ou
+ * variante, então a fronteira fica inequívoca.
  */
 export function marcarConflitos(
   linhas: readonly LinhaProduto[],
@@ -217,7 +253,7 @@ export function marcarConflitos(
       proposta.proposta?.package_type ?? "",
       proposta.normalizado.unit,
       String(proposta.normalizado.value),
-    ].join(" ");
+    ].join(SEPARADOR_DE_CAMPO);
     porChave.set(chave, [...(porChave.get(chave) ?? []), proposta.product_id]);
   });
 
@@ -271,6 +307,9 @@ export function formatarRelatorio(propostas: readonly Proposta[]): string {
     linhas.push(`--- ${estado.toUpperCase()} (${doEstado.length}) ---`);
     for (const p of doEstado) {
       linhas.push(`  ${p.product_id}`);
+      linhas.push(
+        `    produto:    ${[p.name, p.brand, p.variant].filter(Boolean).join(" · ") || "—"}`,
+      );
       linhas.push(`    texto:      ${JSON.stringify(p.texto_original)}`);
       linhas.push(
         `    proposta:   ${
@@ -300,15 +339,77 @@ export function formatarRelatorio(propostas: readonly Proposta[]): string {
   return linhas.join("\n");
 }
 
+/**
+ * Códigos de saída (R2.1 §7). O runbook de rollout ramifica neles, então eles precisam
+ * distinguir quatro situações — e nenhuma delas é "o relatório apontou ambiguidade".
+ *
+ * `REVISAO` **não é falha**: um lote com linhas ambíguas é o resultado esperado, não um
+ * defeito. Ele é um código próprio só para que a FASE 1 do runbook saiba, sem ler o texto,
+ * que existe trabalho humano pendente. Tratá-lo como erro empurraria alguém a "consertar"
+ * o relatório em vez de lê-lo, que é exatamente o que esta ferramenta existe para evitar.
+ */
+export const SAIDA = {
+  /** todas as linhas produziram proposta única; nada bloqueia */
+  LIMPO: 0,
+  /** rodou bem, e há linhas que exigem decisão humana */
+  REVISAO: 10,
+  /** a entrada não é utilizável: arquivo ausente, JSON inválido, formato errado */
+  ENTRADA: 2,
+  /** qualquer outra falha */
+  OPERACIONAL: 1,
+} as const;
+
+/**
+ * Valida a forma da entrada antes de usá-la.
+ *
+ * O `JSON.parse(...) as LinhaProduto[]` anterior era uma promessa, não uma verificação:
+ * um objeto no lugar de um array estourava em `.map` com stack trace, e uma linha sem
+ * `id` virava `product_id: undefined` num relatório de aparência normal — o pior dos dois
+ * resultados, porque parece que funcionou.
+ */
+export function validarEntrada(
+  valor: unknown,
+): { ok: true; linhas: LinhaProduto[] } | { ok: false; erro: string } {
+  if (!Array.isArray(valor))
+    return { ok: false, erro: "o arquivo precisa conter um array de produtos" };
+  for (const [i, item] of valor.entries()) {
+    if (typeof item !== "object" || item === null)
+      return { ok: false, erro: `linha ${i}: não é um objeto` };
+    const linha = item as Record<string, unknown>;
+    if (typeof linha.id !== "string" || linha.id.length === 0) {
+      return { ok: false, erro: `linha ${i}: campo "id" ausente ou não textual` };
+    }
+    if (typeof linha.name !== "string") {
+      return { ok: false, erro: `linha ${i}: campo "name" ausente ou não textual` };
+    }
+  }
+  return { ok: true, linhas: valor as LinhaProduto[] };
+}
+
 if (import.meta.main) {
   const caminho = process.argv[2];
   if (caminho === undefined) {
     console.error("uso: bun scripts/backfill-preview.ts <arquivo.json>");
-    process.exit(2);
+    process.exit(SAIDA.ENTRADA);
   }
-  const linhas = JSON.parse(readFileSync(caminho, "utf-8")) as LinhaProduto[];
-  console.log(formatarRelatorio(preverBackfill(linhas)));
-  // Sempre 0: um relatório com linhas ambíguas não é uma falha, é o resultado esperado.
-  // Falhar aqui empurraria alguém a "consertar" o relatório em vez de lê-lo.
-  process.exit(0);
+
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(readFileSync(caminho, "utf-8"));
+  } catch (erro) {
+    console.error(`não foi possível ler ou interpretar ${caminho}: ${(erro as Error).message}`);
+    process.exit(SAIDA.ENTRADA);
+  }
+
+  const entrada = validarEntrada(bruto);
+  if (!entrada.ok) {
+    console.error(`entrada inválida: ${entrada.erro}`);
+    process.exit(SAIDA.ENTRADA);
+  }
+
+  const propostas = preverBackfill(entrada.linhas);
+  console.log(formatarRelatorio(propostas));
+  process.exit(
+    propostas.every((p) => p.estado === "proposta_segura") ? SAIDA.LIMPO : SAIDA.REVISAO,
+  );
 }

@@ -37,6 +37,17 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
 ALTER DATABASE postgres SET search_path TO public, extensions;
 
+-- Todo projeto Supabase tem o schema de historico de migrations, criado pela plataforma
+-- e nunca por uma migration deste repositorio. Replicado aqui (vazio) para que o
+-- preflight remoto de R2.3 -- que consulta este catalogo -- possa ser exercitado contra
+-- o banco do drill. Ver scripts/r2/preflight/10-migration-history.sql.
+CREATE SCHEMA IF NOT EXISTS supabase_migrations;
+CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (
+  version text PRIMARY KEY,
+  statements text[],
+  name text
+);
+
 -- Reproducao do ponto cego confirmado ao vivo na Onda 3: toda funcao nova criada no
 -- schema public recebe EXECUTE automatico para anon/authenticated, direto (nao via
 -- PUBLIC). Se uma migration futura criar uma funcao sensivel e confiar apenas em

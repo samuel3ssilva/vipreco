@@ -3,14 +3,19 @@
 Duas ferramentas, e as duas são **read-only**. Nenhuma delas escreve, aplica migration,
 faz backfill ou abre conexão sozinha com ambiente algum.
 
-| Arquivo | O que é | Onde roda |
-| --- | --- | --- |
-| [`target-readiness.sql`](./target-readiness.sql) | auditoria do ambiente alvo: quantos produtos, quais GTINs são inválidos, quais objetos de schema existem, quais colisões impediriam o backfill | editor SQL do ambiente alvo, como `service_role` |
-| [`target-readiness.test.ts`](./target-readiness.test.ts) | prova que o `.sql` acima é read-only, e que a aritmética GS1 duplicada nele não divergiu da função da migration | `bun run test` |
+| Arquivo                                                  | O que é                                                                                                                                        | Onde roda                                        |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| [`target-readiness.sql`](./target-readiness.sql)         | auditoria do ambiente alvo: quantos produtos, quais GTINs são inválidos, quais objetos de schema existem, quais colisões impediriam o backfill | editor SQL do ambiente alvo, como `service_role` |
+| [`target-readiness.test.ts`](./target-readiness.test.ts) | prova que o `.sql` acima é read-only, e que a aritmética GS1 duplicada nele não divergiu da função da migration                                | `bun run test`                                   |
 
 A terceira ferramenta do rollout vive fora desta pasta porque não é SQL:
 [`../backfill-preview.ts`](../backfill-preview.ts) lê `size_text` e devolve **propostas**
 classificadas, sem nunca escrever.
+
+E a quarta vive em [`preflight/`](./preflight/): a auditoria **remota** de staging, que
+roda por `workflow_dispatch` e responde o que a chave anônima não alcança — índices,
+constraints, funções, policies, grants, linhas inativas e o histórico de migrations. Também
+read-only, e com a garantia em três camadas em vez de uma.
 
 Procedimento: [`../../docs/data/R2-ROLLOUT-RUNBOOK.md`](../../docs/data/R2-ROLLOUT-RUNBOOK.md).
 Autorização: [`../../docs/data/R2-APPLICATION-GATE.md`](../../docs/data/R2-APPLICATION-GATE.md).

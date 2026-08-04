@@ -649,6 +649,11 @@ status.
   números — eles são o que o quadro tem. Nenhum `POST-MVP` ou não oficial foi alterado nesta
   missão.
 - **Documentos:** `TRELLO-MAPPING.md`, `trello/README.md`
+- **Delta registrado em 04/08/2026 (R2.2 §15):** criado **MVP-DOCS-07** em `Backlog aprovado`,
+  a partir de DL-022. A tabela acima é uma medição datada e não foi reescrita; o efeito é
+  `+1` em “cards oficiais”, levando 42 → 43, o subtotal oficial 56 → 57, o total aberto
+  76 → 77 e o total geral 77 → 78. Nenhum outro card foi criado, movido ou reclassificado, e
+  `Ready` continua vazia.
 - **Status:** ativa
 
 ---
@@ -716,5 +721,6 @@ status.
   `862a179` e produção em `b88e514`. MVP-E1-01, E1-02, E1-05 e E1-08 permanecem em `Bloqueado`.
 - **Documentos:** `evidence/r2/README.md` (criado), `evidence/r2/branch-protection.md` (criado),
   `evidence/r2/staging/README.md` (criado), `evidence/r2/staging/preflight.md` (criado),
-  `evidence/r2/staging/application.md` (criado), `data/R2-APPLICATION-GATE.md`, `INDEX.md`
+  `evidence/r2/staging/application.md` (criado), `data/R2-APPLICATION-GATE.md`, `INDEX.md`,
+  `TRELLO-MAPPING.md` (card **MVP-DOCS-07**, criado em `Backlog aprovado` — nunca em `Ready`)
 - **Status:** ativa

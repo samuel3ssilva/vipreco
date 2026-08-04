@@ -814,3 +814,61 @@ BEGIN
   RAISE NOTICE 'R2-B: as seis funcoes do schema public fixam search_path.';
 END
 $$;
+
+-- ----------------------------------------------------------------------------
+-- O script de auditoria de prontidao (scripts/r2/target-readiness.sql) precisa
+-- responder EXATAMENTE o mesmo que pa_is_valid_gtin().
+--
+-- Ele reimplementa a aritmetica GS1 em linha porque roda ANTES de a migration
+-- criar a funcao -- e algoritmo duplicado e algoritmo que diverge. A divergencia
+-- perigosa nao e a que reprova demais no VALIDATE (essa falha fechada): e a que
+-- reprova um GTIN valido na auditoria e manda alguem "corrigir" dado bom.
+--
+-- A expressao abaixo e a mesma do arquivo, e scripts/r2/target-readiness.test.ts
+-- confere que as duas nao divergiram no texto.
+-- ----------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  failures text[] := ARRAY[]::text[];
+  v record;
+  pela_funcao boolean;
+  pelo_script boolean;
+BEGIN
+  FOR v IN
+    SELECT * FROM (VALUES
+      ('1234567890128'), ('40063812'), ('614141000036'), ('01234567890128'),
+      ('0000000000000'), ('7896089012345'), ('7896089054321'), ('0000000000001'),
+      ('123456789013'), ('123456789012a'), ('123-4567-89012-8'), (''),
+      ('123456789'), ('123456789012345'), ('+123456789012'), ('1234567890128.0')
+    ) AS g(codigo)
+  LOOP
+    pela_funcao := public.pa_is_valid_gtin(v.codigo);
+
+    pelo_script := (
+      v.codigo ~ '^[0-9]+$'
+      AND length(v.codigo) IN (8, 12, 13, 14)
+      AND (
+        SELECT (10 - (SUM(
+          (substr(v.codigo, length(v.codigo) - 1 - i, 1))::integer
+            * CASE WHEN i % 2 = 0 THEN 3 ELSE 1 END
+        ) % 10)) % 10
+        FROM generate_series(0, length(v.codigo) - 2) AS i
+      ) = (substr(v.codigo, length(v.codigo), 1))::integer
+    );
+
+    IF pela_funcao IS DISTINCT FROM pelo_script THEN
+      failures := array_append(failures, format(
+        'para %L a funcao diz %s e o script de auditoria diz %s',
+        v.codigo, coalesce(pela_funcao::text, 'NULL'), coalesce(pelo_script::text, 'NULL')));
+    END IF;
+  END LOOP;
+
+  IF array_length(failures, 1) IS NOT NULL THEN
+    RAISE EXCEPTION E'Auditoria de prontidao diverge de pa_is_valid_gtin em % vetor(es):\n% ',
+      array_length(failures, 1), array_to_string(failures, E'\n');
+  END IF;
+
+  RAISE NOTICE 'R2: a auditoria read-only de prontidao concorda com pa_is_valid_gtin em todos os vetores.';
+END
+$$;

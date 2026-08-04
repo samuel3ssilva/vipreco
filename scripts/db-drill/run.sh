@@ -85,4 +85,10 @@ done
 
 psql_apply "assertions de autorizacao (90-assertions.sql)" "$SCRIPT_DIR/90-assertions.sql"
 
-echo "==> Drill de reconstrucao de schema concluido com sucesso: ${#migration_files[@]} migrations reproduzidas e verificadas contra banco vivo."
+# O script de auditoria de prontidao de R2 e read-only, entao rodar ele aqui nao muda
+# nada -- e prova que ele EXECUTA contra o schema real: sintaxe valida, e toda coluna,
+# funcao e indice que ele referencia existem de fato. Um runbook que manda rodar uma
+# consulta quebrada e pior do que um runbook sem consulta nenhuma.
+psql_apply "auditoria read-only de prontidao (scripts/r2/target-readiness.sql)" "$REPO_ROOT/scripts/r2/target-readiness.sql"
+
+echo "==> Drill de reconstrucao de schema concluido com sucesso: ${#migration_files[@]} migrations reproduzidas e verificadas contra banco vivo, e a auditoria de prontidao de R2 executada."

@@ -34,6 +34,17 @@ próprio documento.
 | [`data/OFFER-STATES.md`](data/OFFER-STATES.md)               | **NORMATIVO** |
 | [`data/IMAGE-POLICY.md`](data/IMAGE-POLICY.md)               | **NORMATIVO** |
 
+Operação de aplicação de R2 — como o dado **vai para o banco**. Os dois nascem da missão
+R2.1 e valem enquanto as migrations de R2 não estiverem aplicadas e validadas:
+
+| Documento                                                        | Estado                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------- |
+| [`data/R2-ROLLOUT-RUNBOOK.md`](data/R2-ROLLOUT-RUNBOOK.md)       | **NORMATIVO** — as oito fases da aplicação      |
+| [`data/R2-APPLICATION-GATE.md`](data/R2-APPLICATION-GATE.md)     | **NORMATIVO** — quem autoriza, e o que não é autorizado |
+
+As ferramentas read-only que as duas fases de auditoria usam estão em
+[`../scripts/r2/README.md`](../scripts/r2/README.md).
+
 Dois contratos de dados existem **fora do MVP**, em `data/` por assunto e não por fase. Não
 entram em nenhuma migration de R1/R2:
 

@@ -654,7 +654,10 @@ mergeia.
 Sincronizado em 03/08/2026 contra `af624250b159039ac4922f6b0a3de5bfbe3c39e4`:
 
 - **56 cards oficiais**, todos com ID único e com as etiquetas oficiais aplicadas conforme este mapa;
-- **19 cards UNMAPPED** preservados — manuais, anteriores à sincronização, não reconciliados;
+- **20 cards não oficiais** preservados — 9 cards de onda `R0`–`R8` criados manualmente, 7
+  cards que o próprio Trello cria ao abrir um quadro, e 4 manuais avulsos. A contagem
+  anterior registrava **19** e tratava as três categorias como uma só; a medição
+  discriminada de 04/08/2026 está em [`MVP-DECISION-LOG.md`](MVP-DECISION-LOG.md) DL-021;
 - **8 listas oficiais** abertas; `Em desenvolvimento` é a lista oficial e `Em andamento` foi
   **arquivada** por estar vazia e duplicar o significado. Listas manuais preservadas;
 - **11 etiquetas oficiais**; as antigas permanecem intactas como apoio manual do Founder;

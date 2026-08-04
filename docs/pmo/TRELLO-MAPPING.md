@@ -506,6 +506,20 @@ de sair da lista 5.
 - **Aceite:** os dez passos do fluxo com campo obrigatório, evidência e responsável.
 - **Gate:** nenhum. · **Evidência:** documento atualizado.
 
+### MVP-DOCS-07 — Tornar o `db-schema-drill` required check da `main`
+
+- **Objetivo:** o drill reconstrói o schema do zero contra Postgres vivo, mas **não** é required
+  check — nada impede um merge de migration com ele vermelho, além de conferência manual.
+- **Fonte:** `docs/evidence/r2/branch-protection.md` · **Decisão:** DL-022 · **Origem:** R2.2 §2 e §15
+- **Etapa:** fora da sequência R · **Etiquetas:** DOCS, SECURITY
+- **Por que não foi resolvido em R2.2:** o workflow é filtrado por caminho, e required check que não
+  é reportado deixa todo PR documental pendente para sempre. Medido nos PRs #58 (drill presente),
+  #48 e #60 (ausente). A correção completa precisa mexer no workflow.
+- **Aceite:** os dois checks atuais preservados; `strict=true` preservado; nenhuma proteção removida;
+  PR só de `docs/` continua chegando a `CLEAN`.
+- **Gate:** **sim** — mexe em workflow e em proteção de branch. · **Evidência:** proteção relida
+  depois da mudança, e um PR de cada tipo conferido.
+
 ---
 
 ## Trilha pós-MVP — automação complementar de ingestão

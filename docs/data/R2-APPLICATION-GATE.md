@@ -22,33 +22,56 @@ nenhuma quantidade de teste verde troca a segunda pela primeira.
 
 ## Estado atual
 
-| Item | Estado |
-| --- | --- |
-| `20260803010000_product_identity_quantity.sql` | versionada na `main`, **não aplicada** |
-| `20260803020000_gtin_integrity.sql` | versionada na `main`, **não aplicada** |
-| Backfill de quantidade (MVP-E1-08) | **não iniciado** |
-| `VALIDATE CONSTRAINT` | **não executado** em constraint nenhuma |
-| Conteúdo de `products` em staging | **NOT VERIFIED** — nunca consultado |
-| Conteúdo de `products` em produção | **NOT VERIFIED** — nunca consultado |
+| Item                                           | Estado                                             |
+| ---------------------------------------------- | -------------------------------------------------- |
+| `20260803010000_product_identity_quantity.sql` | versionada na `main`, **não aplicada**             |
+| `20260803020000_gtin_integrity.sql`            | versionada na `main`, **não aplicada**             |
+| Backfill de quantidade (MVP-E1-08)             | **não iniciado**                                   |
+| `VALIDATE CONSTRAINT`                          | **não executado** em constraint nenhuma            |
+| Conteúdo de `products` em staging              | **parcialmente medido em 04/08/2026** — ver abaixo |
+| Conteúdo de `products` em produção             | **NOT VERIFIED** — banco nunca contatado           |
 
 O último item é o motivo de **todas** as constraints nascerem `NOT VALID`. Sem saber o que
 existe no ambiente alvo, uma constraint validada na criação poderia falhar a aplicação
 inteira; `NOT VALID` passa a valer para escrita nova imediatamente e adia a conferência das
 linhas antigas para um passo que **pode falhar de propósito**.
 
+### O que o preflight de 04/08/2026 mediu em staging
+
+Medido só com `GET`/`HEAD` na Data API pública, com a chave _publishable_. Evidência completa
+em [`../evidence/r2/staging/`](../evidence/r2/staging/README.md); decisão em DL-022.
+
+| Achado                                                                   | Estado                                                         |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| colunas de `products`, `markets` e `prices`                              | **sem divergência** em relação às 8 migrations anteriores a R2 |
+| as 4 colunas de R2-A                                                     | **ausentes** (`42703`) — R2-A não foi aplicada                 |
+| GTIN inválido em `products`                                              | **2 linhas** — bloqueia a FASE 6, não a aplicação de R2-B      |
+| GTIN duplicado                                                           | 0                                                              |
+| preview de quantidade                                                    | 7 linhas, todas `proposta_segura`, nenhuma escrita             |
+| histórico de migrations, índices, constraints, funções, policies, grants | **NOT VERIFIED** — exigem catálogo do sistema                  |
+
+E o motivo de tudo acima parar aqui: **não existe credencial de escrita nem de leitura de
+catálogo** neste ambiente — sem `service_role`, sem senha de banco, sem access token, sem CLI.
+A aplicação em staging permanece bloqueada por `CREDENTIAL ACCESS REQUIRED`.
+
+Os dois GTINs inválidos **não são curadoria pendente**: são as duas linhas que o commit
+`1102967` já anulou no `supabase/seed.sql`, e que staging não recebeu porque foi semeado antes
+daquela correção. Realinhar staging com o seed versionado resolve o item — e é escrita, logo é
+decisão do Founder/PMO.
+
 ---
 
 ## Quem autoriza o quê
 
-| Ato | Quem decide | Quem executa |
-| --- | --- | --- |
-| escrever migration | CTO | CTO |
-| mergear na `main` | CTO, com CI verde | CTO |
-| **aplicar em staging** | **Founder/PMO** | quem o Founder/PMO nomear |
-| **aplicar em produção** | **Founder/PMO**, em decisão separada da de staging | idem |
-| aprovar linha de backfill | **Founder/PMO** | idem |
-| `VALIDATE CONSTRAINT` | **Founder/PMO** | idem |
-| tornar campos `NOT NULL` | **Founder/PMO**, com migration própria e gate próprio | idem |
+| Ato                       | Quem decide                                           | Quem executa              |
+| ------------------------- | ----------------------------------------------------- | ------------------------- |
+| escrever migration        | CTO                                                   | CTO                       |
+| mergear na `main`         | CTO, com CI verde                                     | CTO                       |
+| **aplicar em staging**    | **Founder/PMO**                                       | quem o Founder/PMO nomear |
+| **aplicar em produção**   | **Founder/PMO**, em decisão separada da de staging    | idem                      |
+| aprovar linha de backfill | **Founder/PMO**                                       | idem                      |
+| `VALIDATE CONSTRAINT`     | **Founder/PMO**                                       | idem                      |
+| tornar campos `NOT NULL`  | **Founder/PMO**, com migration própria e gate próprio | idem                      |
 
 Autorização para staging **não** se estende a produção. São dois atos, com dois registros.
 
@@ -87,13 +110,13 @@ Todas precisam estar satisfeitas. Qualquer uma em aberto mantém o gate fechado.
 
 ## Se algo falhar
 
-| Sintoma | Leitura | Ação |
-| --- | --- | --- |
-| `VALIDATE CONSTRAINT` falha | há linha antiga que viola a regra | olhar a linha; **não** afrouxar a constraint |
-| `unique_violation` no backfill | duas linhas aprovadas produzem a mesma identidade exata | voltar à FASE 2 para aquelas duas; consulta 6 lista os casos |
-| `permission denied for function pa_is_valid_gtin` | está escrevendo com papel sem `EXECUTE` | escrever como `service_role` (ver fato 1 do runbook) |
-| coluna nova já existe na FASE 3 | a migration já foi aplicada antes | parar e reconciliar o estado real antes de seguir |
-| consulta 3 devolve GTIN duplicado | `products_gtin_unique_idx` não está neste ambiente | é divergência de **schema**, não de dado — parar |
+| Sintoma                                           | Leitura                                                 | Ação                                                         |
+| ------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| `VALIDATE CONSTRAINT` falha                       | há linha antiga que viola a regra                       | olhar a linha; **não** afrouxar a constraint                 |
+| `unique_violation` no backfill                    | duas linhas aprovadas produzem a mesma identidade exata | voltar à FASE 2 para aquelas duas; consulta 6 lista os casos |
+| `permission denied for function pa_is_valid_gtin` | está escrevendo com papel sem `EXECUTE`                 | escrever como `service_role` (ver fato 1 do runbook)         |
+| coluna nova já existe na FASE 3                   | a migration já foi aplicada antes                       | parar e reconciliar o estado real antes de seguir            |
+| consulta 3 devolve GTIN duplicado                 | `products_gtin_unique_idx` não está neste ambiente      | é divergência de **schema**, não de dado — parar             |
 
 Em todos os casos: registrar, não improvisar. Um passo que falhou e foi contornado no
 improviso é pior do que um passo que falhou e parou.

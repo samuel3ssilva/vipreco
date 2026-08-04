@@ -610,6 +610,9 @@ status.
   (criado), `scripts/r2/README.md` (criado), `scripts/r2/target-readiness.sql` (criado),
   `INDEX.md`
 - **Status:** ativa
+- **Corrigida em 04/08/2026 por DL-022** no ponto “o conteúdo de `products` em staging nunca
+  foi consultado”. Passou a haver medida para **staging**; para **produção** a afirmação
+  continua verdadeira.
 
 ---
 
@@ -620,23 +623,23 @@ status.
   o número de 19 registrado em DL-019.
 - **Medição (04/08/2026, quadro `ViPreço - MVP Artemis`):**
 
-  | Categoria | Quantidade |
-  | --- | --- |
-  | cards oficiais com ID `MVP-…` / `POST-MVP-…` | 42 |
-  | cards oficiais da trilha pós-MVP, com ID `PM-DATA-…` | 14 |
-  | **subtotal oficial** (bate com os 56 de DL-019) | **56** |
-  | cards operacionais de onda, `R0`–`R8`, criados manualmente | 9 |
-  | cards do próprio Trello (lista “Guia de introdução ao Trello”) | 7 |
-  | outros cards manuais (2 em `Ideias`, 1 em `Precisa validar`, 1 em `Concluído`) | 4 |
-  | **subtotal não oficial** | **20** |
-  | **total aberto** | **76** |
-  | arquivados | 1 |
-  | **total geral** | **77** |
+  | Categoria                                                                      | Quantidade |
+  | ------------------------------------------------------------------------------ | ---------- |
+  | cards oficiais com ID `MVP-…` / `POST-MVP-…`                                   | 42         |
+  | cards oficiais da trilha pós-MVP, com ID `PM-DATA-…`                           | 14         |
+  | **subtotal oficial** (bate com os 56 de DL-019)                                | **56**     |
+  | cards operacionais de onda, `R0`–`R8`, criados manualmente                     | 9          |
+  | cards do próprio Trello (lista “Guia de introdução ao Trello”)                 | 7          |
+  | outros cards manuais (2 em `Ideias`, 1 em `Precisa validar`, 1 em `Concluído`) | 4          |
+  | **subtotal não oficial**                                                       | **20**     |
+  | **total aberto**                                                               | **76**     |
+  | arquivados                                                                     | 1          |
+  | **total geral**                                                                | **77**     |
 
 - **Por que 19 estava errado:** o número tratava como uma categoria só o que são três — os
   cards de onda `R0`–`R8` (trabalho do Founder), os cards que o próprio Trello cria ao abrir
   um quadro, e os cards manuais avulsos. Um número agregado não permite responder a pergunta
-  que interessa: *o que aqui é trabalho e o que é ruído de ferramenta?*
+  que interessa: _o que aqui é trabalho e o que é ruído de ferramenta?_
 - **Por que os 14 `PM-DATA-…` contam como oficiais:** eles têm ID e estão no mapeamento; o
   prefixo é diferente porque a trilha é pós-MVP. `42 + 14 = 56` fecha exatamente com o total
   oficial de DL-019, o que confirma que a divergência estava só na classificação do resto.
@@ -646,4 +649,72 @@ status.
   números — eles são o que o quadro tem. Nenhum `POST-MVP` ou não oficial foi alterado nesta
   missão.
 - **Documentos:** `TRELLO-MAPPING.md`, `trello/README.md`
+- **Status:** ativa
+
+---
+
+### DL-022 — Preflight remoto de staging: o que foi medido e por que R2 não foi aplicada
+
+- **Decisão:** o preflight remoto de staging é feito **com a menor credencial que responde à
+  pergunta**, e o resultado é registrado com a distinção explícita entre _o que o banco tem_ e
+  _o que a medição alcança_. R2 **não** foi aplicada em staging, e a causa raiz é ausência de
+  credencial, não prudência discricionária. Nenhuma escrita foi emitida contra ambiente algum.
+- **Contexto:** medido em 04/08/2026, com `main` em `e203887`. A auditoria usou **somente**
+  `GET`/`HEAD` na Data API pública de staging, com a chave _publishable_ (anônima) — a mesma
+  que qualquer visitante carrega. Evidência completa em `evidence/r2/staging/`.
+- **Gate G1–G15:** 8 `PASS`, 3 `UNKNOWN`, **4 `FAIL`** (G3 histórico, G6 backup, G8 GTIN,
+  G15 credencial). O §10 do mandato exige `PASS` em todos os quinze; portanto a aplicação
+  não estava autorizada e não ocorreu.
+- **Por que a causa raiz é uma só:** não existe neste ambiente `SUPABASE_SERVICE_ROLE_KEY`,
+  senha de banco, `SUPABASE_ACCESS_TOKEN` nem a CLI `supabase`. Sem isso não há como escrever
+  **nem como ler o catálogo do sistema** — e é do catálogo que vêm o histórico de migrations
+  (G3), os índices, constraints, funções, policies e grants (G4) e as linhas inativas (G5).
+  Três dos quatro `FAIL` são consequência da mesma ausência. Nenhuma credencial alternativa
+  foi criada, e nenhum segredo foi pedido no chat.
+- **O que a Data API pública provou mesmo assim:** as colunas de `products`, `markets` e
+  `prices` batem **exatamente** com o esperado depois das oito migrations anteriores a R2 — o
+  `GRANT SELECT` é de tabela inteira, então o conjunto devolvido _é_ o conjunto de colunas. E
+  as quatro colunas de R2-A respondem `42703` (_undefined_column_), não `42501`
+  (_insufficient_privilege_): o erro diz que a coluna **não existe**, e não que existe e está
+  negada. É essa distinção que transforma a leitura em prova.
+- **Achado sobre o dado, e não sobre a medição:** dois produtos fictícios em staging
+  (`…000000000002` e `…000000000007`, Café Pilão 500 g e 250 g) carregam GTIN com dígito
+  verificador GS1 inválido. São **os mesmos dois** que o commit `1102967` (PR #53, 03/08/2026)
+  anulou no `supabase/seed.sql`. Staging foi semeado em 27/07 e nunca re-semeado: o
+  repositório está certo, o ambiente está velho. **Não é curadoria de GTIN** — o valor correto
+  para essas duas linhas já foi decidido, está versionado, e é a ausência de código.
+- **Por que isso bloqueia R2-B, e o que exatamente ele bloqueia:** aplicar R2-B **passaria**,
+  porque a constraint nasce `NOT VALID` e `NOT VALID` não confere linha existente. Quem
+  falharia é a **FASE 6**, no `VALIDATE CONSTRAINT` — exatamente o que aquele commit previu:
+  _“no dia em que essa constraint existir o próprio seed deixa de aplicar”_. O Gate G8 antecipa
+  essa falha para um relatório, em vez de deixá-la aparecer numa janela de manutenção.
+- **Correção factual a DL-020:** aquela entrada registra que o conteúdo de `products` em
+  staging e em produção “nunca foi consultado”. Isso **deixou de ser verdade para staging** em
+  04/08/2026, na medida descrita aqui. Continua verdadeiro para **produção**, cujo banco não
+  foi contatado em nenhum momento — a única interação com produção foi um `GET` no Worker
+  público. DL-020 não foi reescrita; esta entrada é a correção, como DL-017 fez com DL-016.
+- **Backup (G6):** nada mudou desde a Onda 4 — plano Free, **nenhum backup automático existe**.
+  O risco segue aceito enquanto o banco só tiver dado fictício, e deixa de ser aceitável no dia
+  em que houver dado de piloto. Ressalva nova: reconstruir staging pelas migrations e pelo seed
+  produziria o seed **corrigido**, não uma cópia de staging — “reconstruível” e “idêntico” não
+  são a mesma afirmação, e só a primeira é verdadeira.
+- **Alternativas:** (a) aplicar mesmo assim, já que `NOT VALID` passaria — rejeitada: passar na
+  aplicação e falhar na validação é o pior dos dois mundos, porque troca um relatório barato
+  por uma falha cara; (b) corrigir os dois GTINs — impossível aqui (é escrita, sem credencial)
+  e, mesmo com credencial, é decisão do Founder; (c) pedir a credencial no chat — proibido pelo
+  mandato e pelo princípio 6 do `CLAUDE.md`; (d) tratar `UNKNOWN` como `PASS` porque “o
+  provável é que esteja tudo certo” — rejeitada: é precisamente a verificação que mede a coisa
+  errada e responde OK.
+- **`db-schema-drill` como required check:** **não** foi tornado obrigatório. A escrita na
+  proteção da `main` foi negada pela camada de permissão da sessão, e — mais importante —
+  aplicá-la sozinha seria errado: o workflow é filtrado por caminho, e um required check que
+  não é reportado deixa todo PR documental pendente para sempre. Medido nos PRs #58 (drill
+  presente), #48 e #60 (ausentes). A ação humana completa está em
+  `evidence/r2/branch-protection.md`. A proteção da `main` **não foi alterada**.
+- **Consequência:** nenhuma migration aplicada, nenhum backfill, nenhum `VALIDATE CONSTRAINT`,
+  nenhum `NOT NULL`, nenhuma RLS, nenhum deploy, nenhum dado real. Staging segue no deployment
+  `862a179` e produção em `b88e514`. MVP-E1-01, E1-02, E1-05 e E1-08 permanecem em `Bloqueado`.
+- **Documentos:** `evidence/r2/README.md` (criado), `evidence/r2/branch-protection.md` (criado),
+  `evidence/r2/staging/README.md` (criado), `evidence/r2/staging/preflight.md` (criado),
+  `evidence/r2/staging/application.md` (criado), `data/R2-APPLICATION-GATE.md`, `INDEX.md`
 - **Status:** ativa

@@ -9,23 +9,23 @@ Evidência que sustenta cada linha: [`preflight.md`](./preflight.md).
 
 ## 1. Gate consolidado G1–G15 (§10 do mandato)
 
-| # | Condição | Estado | Base |
-| --- | --- | --- | --- |
-| G1 | staging identificado sem ambiguidade | **PASS** | preflight §1 — cinco fontes independentes concordam |
-| G2 | production identificada e comprovadamente diferente | **PASS** | preflight §1 — refs e Workers distintos; banco de produção nunca contatado |
-| G3 | histórico remoto classificado como `ALIGNED` | **FAIL** | preflight §3 — estado **E. UNKNOWN**: o histórico é ilegível pelo anônimo |
-| G4 | schema anterior a R2 compatível | **UNKNOWN** | preflight §4 — colunas sem divergência; índices, constraints, funções, triggers, policies e grants `NOT VERIFIED` |
-| G5 | dados `DEMO ONLY` ou `EMPTY` | **UNKNOWN** | preflight §5 — tudo que é visível é demo; as linhas inativas não são enumeráveis sem `service_role` |
-| G6 | backup e restauração verificados | **FAIL** | preflight §9 — plano Free, **nenhum backup existe** |
-| G7 | `target-readiness` executado | **PARCIAL** | preflight §4 e §6 — consultas 1, 2 e 3 rodaram em equivalente pela Data API; a 4 só na parte de colunas; o `.sql` em si não rodou no editor do alvo |
-| G8 | zero GTIN inválido ou duplicado | **FAIL** | preflight §6 — **2 GTINs com dígito verificador errado**; 0 duplicados |
-| G9 | preview executado sem escrita | **PASS** | preflight §7 — 7 linhas, exit 0, nenhuma escrita, determinístico |
-| G10 | migrations e rollback verdes no schema drill | **PASS** | check `reconstruir schema e validar autorizacao` verde em `e203887`; rollback executável desde o PR #59 |
-| G11 | CI e CodeQL verdes | **PASS** | `lint, test, build` e `Analyze (javascript-typescript)` verdes em `e203887`; 0 alertas Dependabot, 0 CodeQL |
-| G12 | nenhum deploy automático | **PASS** | nenhum deployment novo; staging segue em `862a179`, produção em `b88e514` |
-| G13 | nenhum dado real | **PASS** | nenhum dado real foi cadastrado, e nenhum foi observado — com o mesmo limite de medição de G5 |
-| G14 | nenhuma alteração de RLS | **PASS** | nada foi alterado em ambiente algum |
-| G15 | credencial de staging segura e inequívoca | **FAIL** | preflight §2 — **não existe credencial de escrita**: sem `service_role`, sem senha de banco, sem access token, sem CLI |
+| #   | Condição                                            | Estado      | Base                                                                                                                                                |
+| --- | --------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G1  | staging identificado sem ambiguidade                | **PASS**    | preflight §1 — cinco fontes independentes concordam                                                                                                 |
+| G2  | production identificada e comprovadamente diferente | **PASS**    | preflight §1 — refs e Workers distintos; banco de produção nunca contatado                                                                          |
+| G3  | histórico remoto classificado como `ALIGNED`        | **FAIL**    | preflight §3 — estado **E. UNKNOWN**: o histórico é ilegível pelo anônimo                                                                           |
+| G4  | schema anterior a R2 compatível                     | **UNKNOWN** | preflight §4 — colunas sem divergência; índices, constraints, funções, triggers, policies e grants `NOT VERIFIED`                                   |
+| G5  | dados `DEMO ONLY` ou `EMPTY`                        | **UNKNOWN** | preflight §5 — tudo que é visível é demo; as linhas inativas não são enumeráveis sem `service_role`                                                 |
+| G6  | backup e restauração verificados                    | **FAIL**    | preflight §9 — plano Free, **nenhum backup existe**                                                                                                 |
+| G7  | `target-readiness` executado                        | **PARCIAL** | preflight §4 e §6 — consultas 1, 2 e 3 rodaram em equivalente pela Data API; a 4 só na parte de colunas; o `.sql` em si não rodou no editor do alvo |
+| G8  | zero GTIN inválido ou duplicado                     | **FAIL**    | preflight §6 — **2 GTINs com dígito verificador errado**; 0 duplicados                                                                              |
+| G9  | preview executado sem escrita                       | **PASS**    | preflight §7 — 7 linhas, exit 0, nenhuma escrita, determinístico                                                                                    |
+| G10 | migrations e rollback verdes no schema drill        | **PASS**    | check `reconstruir schema e validar autorizacao` verde em `e203887`; rollback executável desde o PR #59                                             |
+| G11 | CI e CodeQL verdes                                  | **PASS**    | `lint, test, build` e `Analyze (javascript-typescript)` verdes em `e203887`; 0 alertas Dependabot, 0 CodeQL                                         |
+| G12 | nenhum deploy automático                            | **PASS**    | nenhum deployment novo; staging segue em `862a179`, produção em `b88e514`                                                                           |
+| G13 | nenhum dado real                                    | **PASS**    | nenhum dado real foi cadastrado, e nenhum foi observado — com o mesmo limite de medição de G5                                                       |
+| G14 | nenhuma alteração de RLS                            | **PASS**    | nada foi alterado em ambiente algum                                                                                                                 |
+| G15 | credencial de staging segura e inequívoca           | **FAIL**    | preflight §2 — **não existe credencial de escrita**: sem `service_role`, sem senha de banco, sem access token, sem CLI                              |
 
 **4 FAIL, 3 UNKNOWN.** O §10 é explícito: só com G1–G15 todos em `PASS` a aplicação está
 autorizada. Ela não está.
@@ -66,10 +66,10 @@ correto para essas duas linhas já foi decidido, está versionado, e é a ausên
 
 Consequência prática, e a distinção que não pode ser perdida:
 
-| Passo | O que aconteceria hoje |
-| --- | --- |
-| aplicar R2-B | **passaria** — a constraint nasce `NOT VALID` e não confere linha existente |
-| FASE 6, `VALIDATE CONSTRAINT` | **falharia** nessas duas linhas |
+| Passo                         | O que aconteceria hoje                                                      |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| aplicar R2-B                  | **passaria** — a constraint nasce `NOT VALID` e não confere linha existente |
+| FASE 6, `VALIDATE CONSTRAINT` | **falharia** nessas duas linhas                                             |
 
 O Gate G8 bloqueia por causa da segunda linha da tabela, e faz isso no momento certo: um
 relatório agora custa menos do que a mesma descoberta no meio de uma janela de manutenção.
@@ -101,7 +101,7 @@ relatório agora custa menos do que a mesma descoberta no meio de uma janela de 
    escrita, exige `service_role`, e é decisão do Founder. Duas formas:
    - re-semear staging a partir do arquivo versionado (mais limpo, e alinha tudo de uma vez);
    - ou anular o `gtin` das duas linhas nomeadas no §3 — e **só** dessas duas.
-   Depois, rodar a consulta 2 de novo e conferir que voltou vazia.
+     Depois, rodar a consulta 2 de novo e conferir que voltou vazia.
 3. **Reavaliar G3, G4 e G5** com a credencial obtida: histórico de migrations, catálogo de
    índices/constraints/funções/policies/grants, e contagem das linhas inativas.
 4. **Decidir sobre backup (G6)** — é decisão de custo, não técnica, e a nota completa está em

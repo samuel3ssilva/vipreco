@@ -5,12 +5,12 @@ limitação. Não decide nada: a norma está em
 [`../../data/R2-APPLICATION-GATE.md`](../../data/R2-APPLICATION-GATE.md) e o procedimento em
 [`../../data/R2-ROLLOUT-RUNBOOK.md`](../../data/R2-ROLLOUT-RUNBOOK.md).
 
-| Arquivo | O que registra |
-| --- | --- |
-| [`staging/README.md`](./staging/README.md) | índice e veredito do preflight de staging |
-| [`staging/preflight.md`](./staging/preflight.md) | ambientes, schema, dados, GTIN, backup, preview e smoke test |
-| [`staging/application.md`](./staging/application.md) | o gate G1–G15 e o registro de que **nada foi aplicado** |
-| [`branch-protection.md`](./branch-protection.md) | por que o `db-schema-drill` ainda não é required check |
+| Arquivo                                              | O que registra                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
+| [`staging/README.md`](./staging/README.md)           | índice e veredito do preflight de staging                    |
+| [`staging/preflight.md`](./staging/preflight.md)     | ambientes, schema, dados, GTIN, backup, preview e smoke test |
+| [`staging/application.md`](./staging/application.md) | o gate G1–G15 e o registro de que **nada foi aplicado**      |
+| [`branch-protection.md`](./branch-protection.md)     | por que o `db-schema-drill` ainda não é required check       |
 
 ---
 

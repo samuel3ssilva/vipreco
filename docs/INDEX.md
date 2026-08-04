@@ -37,10 +37,10 @@ próprio documento.
 Operação de aplicação de R2 — como o dado **vai para o banco**. Os dois nascem da missão
 R2.1 e valem enquanto as migrations de R2 não estiverem aplicadas e validadas:
 
-| Documento                                                        | Estado                                          |
-| ---------------------------------------------------------------- | ----------------------------------------------- |
-| [`data/R2-ROLLOUT-RUNBOOK.md`](data/R2-ROLLOUT-RUNBOOK.md)       | **NORMATIVO** — as oito fases da aplicação      |
-| [`data/R2-APPLICATION-GATE.md`](data/R2-APPLICATION-GATE.md)     | **NORMATIVO** — quem autoriza, e o que não é autorizado |
+| Documento                                                    | Estado                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------- |
+| [`data/R2-ROLLOUT-RUNBOOK.md`](data/R2-ROLLOUT-RUNBOOK.md)   | **NORMATIVO** — as oito fases da aplicação              |
+| [`data/R2-APPLICATION-GATE.md`](data/R2-APPLICATION-GATE.md) | **NORMATIVO** — quem autoriza, e o que não é autorizado |
 
 As ferramentas read-only que as duas fases de auditoria usam estão em
 [`../scripts/r2/README.md`](../scripts/r2/README.md).
@@ -84,9 +84,13 @@ Gate humano.
 
 ## Evidências
 
-| Documento                                                              | Estado                                                                                                                                                                              |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`evidence/price-sources/README.md`](evidence/price-sources/README.md) | **NORMATIVO como protocolo** — define os marcadores `[C] [H] [F] [D] [J]`, os metadados obrigatórios e a expiração. **A pasta está vazia de evidências, e esse é o estado correto** |
+| Documento                                                                  | Estado                                                                                                                                                                              |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`evidence/price-sources/README.md`](evidence/price-sources/README.md)     | **NORMATIVO como protocolo** — define os marcadores `[C] [H] [F] [D] [J]`, os metadados obrigatórios e a expiração. **A pasta está vazia de evidências, e esse é o estado correto** |
+| [`evidence/r2/README.md`](evidence/r2/README.md)                           | **DESCRITIVO** — índice das evidências da aplicação remota de R2                                                                                                                    |
+| [`evidence/r2/staging/preflight.md`](evidence/r2/staging/preflight.md)     | **DESCRITIVO** — o que foi medido em staging em 04/08/2026, e com qual limite                                                                                                       |
+| [`evidence/r2/staging/application.md`](evidence/r2/staging/application.md) | **DESCRITIVO** — gate G1–G15 e o registro de que **nada foi aplicado**                                                                                                              |
+| [`evidence/r2/branch-protection.md`](evidence/r2/branch-protection.md)     | **DESCRITIVO** — por que o `db-schema-drill` ainda não é required check, e a ação humana exata                                                                                      |
 
 ## Governança e estratégia
 

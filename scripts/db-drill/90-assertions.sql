@@ -735,10 +735,11 @@ BEGIN
   -- O drill nao deixa papel nem privilegio para tras. Todo GRANT precisa voltar antes do
   -- DROP ROLE: privilegio pendente e uma dependencia, e o Postgres recusa remover o papel.
   DELETE FROM public.products WHERE name LIKE 'Drill papel sem execute%';
-  REVOKE ALL ON public.products FROM drill_sem_execute;
-  REVOKE ALL ON FUNCTION public.pa_products_search_text() FROM drill_sem_execute;
-  REVOKE ALL ON FUNCTION public.pa_normalize_text(text) FROM drill_sem_execute;
-  REVOKE USAGE ON SCHEMA public FROM drill_sem_execute;
+  -- DROP OWNED BY em vez de enumerar REVOKEs. Enumerar e o que acabou de falhar: a lista
+  -- esquecia o USAGE em `extensions`, e o Postgres recusou remover o papel por dependencia
+  -- pendente. Esta forma revoga tudo que foi concedido ao papel neste banco, entao ela nao
+  -- pode ficar desatualizada quando um GRANT novo entrar acima.
+  DROP OWNED BY drill_sem_execute;
   DROP ROLE drill_sem_execute;
 
   IF array_length(failures, 1) IS NOT NULL THEN

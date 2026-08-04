@@ -12,12 +12,12 @@ ON CONFLICT (id) DO NOTHING;
 -- Produtos fictícios
 INSERT INTO public.products (id, name, brand, variant, size_text, gtin, category, is_active, is_demo) VALUES
   ('22222222-2222-2222-2222-000000000001', 'Arroz', 'Camil', 'Tipo 1', '5 kg', '7896006711117', 'Mercearia', true, true),
-  ('22222222-2222-2222-2222-000000000002', 'Café', 'Pilão', 'Tradicional', '500 g', '7896089012345', 'Mercearia', true, true),
+  ('22222222-2222-2222-2222-000000000002', 'Café', 'Pilão', 'Tradicional', '500 g', NULL, 'Mercearia', true, true),
   ('22222222-2222-2222-2222-000000000003', 'Leite', 'Italac', 'Integral', '1 L', '7898080640611', 'Laticínios', true, true),
   ('22222222-2222-2222-2222-000000000004', 'Óleo de Soja', 'Liza', 'Tradicional', '900 ml', '7896036090015', 'Mercearia', true, true),
   ('22222222-2222-2222-2222-000000000005', 'Detergente', 'Ypê', 'Neutro', '500 ml', '7896098900116', 'Limpeza', true, true),
   ('22222222-2222-2222-2222-000000000006', 'Papel Higiênico', 'Neve', 'Folha Dupla', '12 rolos', '7891008140019', 'Higiene', true, true),
-  ('22222222-2222-2222-2222-000000000007', 'Café', 'Pilão', 'Tradicional', '250 g', '7896089054321', 'Mercearia', true, true)
+  ('22222222-2222-2222-2222-000000000007', 'Café', 'Pilão', 'Tradicional', '250 g', NULL, 'Mercearia', true, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Preços fictícios

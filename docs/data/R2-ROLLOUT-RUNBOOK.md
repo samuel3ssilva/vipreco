@@ -10,10 +10,10 @@ Gate humano e critérios de autorização: [`R2-APPLICATION-GATE.md`](./R2-APPLI
 
 Duas migrations existem versionadas na `main` e **não foram aplicadas em ambiente nenhum**:
 
-| Migration | O que faz | Card |
-| --- | --- | --- |
+| Migration                                      | O que faz                                                                                                                                 | Card                 |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | `20260803010000_product_identity_quantity.sql` | acrescenta `package_type`, `quantity_value`, `quantity_unit`, `units_per_package` (todas nullable) e o índice parcial de identidade exata | MVP-E1-01, MVP-E1-02 |
-| `20260803020000_gtin_integrity.sql` | valida formato e dígito verificador GS1 de `products.gtin`, sem tocar no valor de nenhuma linha | MVP-E1-05 |
+| `20260803020000_gtin_integrity.sql`            | valida formato e dígito verificador GS1 de `products.gtin`, sem tocar no valor de nenhuma linha                                           | MVP-E1-05            |
 
 **Merge não é aplicação.** As duas estão no Git porque o Git é o lugar delas; aplicar em
 staging ou em produção é decisão do Founder/PMO, sempre (princípio 14 do `CLAUDE.md`).
@@ -92,15 +92,36 @@ Nada começa sem estes itens confirmados **por escrito**, no registro da execuç
 
 ## FASE 1 — Auditoria read-only
 
-**Nada é escrito nesta fase.** Rodar [`../../scripts/r2/target-readiness.sql`](../../scripts/r2/target-readiness.sql)
-no ambiente alvo, na ordem, e guardar a saída inteira como evidência.
+**Nada é escrito nesta fase.**
 
-| Consulta | Pergunta | O que fazer com a resposta |
-| --- | --- | --- |
-| 1 | quantos produtos, quantos com GTIN, quantos com `size_text` | dá tamanho ao trabalho da FASE 2 |
-| 2 | **quais GTINs são inválidos** | se vier qualquer linha → **PARAR**, ver abaixo |
-| 3 | há GTIN duplicado? | esperado vazio; linha aqui = divergência de schema, não de dado |
-| 4 | os objetos que R2 espera existem, e os que ela vai criar ainda não? | qualquer "presente" onde se espera ausente = migration já aplicada antes |
+Em **staging**, o caminho preferido é o workflow, não o editor SQL: disparar
+[`r2-staging-preflight.yml`](../../.github/workflows/r2-staging-preflight.yml) por
+`workflow_dispatch`. Ele responde as consultas abaixo e mais o que elas não alcançam — índices,
+constraints, funções, policies, grants, linhas inativas e o histórico de migrations —, e devolve
+tudo num Job Summary sanitizado, com os gates verificáveis por leitura já avaliados.
+
+Três razões para preferi-lo a rodar SQL à mão:
+
+- o read-only é **estrutural** (guarda estática, transação `READ ONLY`, verificação no banco),
+  em vez de depender de quem executa colar a consulta certa;
+- o runner **recusa** a execução se a connection string não for comprovadamente a de staging;
+- a saída é sanitizada por construção: GTIN mascarado, nenhuma linha de tabela, nenhum host.
+
+Pré-requisito: o Environment Secret `SUPABASE_DB_URL` no ambiente `staging`. Sem ele o
+workflow para com `STAGING DATABASE SECRET REQUIRED` e não abre conexão. Ver
+[`../evidence/r2/automation.md`](../evidence/r2/automation.md).
+
+Para **produção** — e para staging, se por algum motivo o workflow não puder ser usado — rodar
+[`../../scripts/r2/target-readiness.sql`](../../scripts/r2/target-readiness.sql) no ambiente
+alvo, na ordem, e guardar a saída inteira como evidência. Note que a **consulta 2 devolve GTIN
+completo**: essa saída é evidência interna, não vai para log de CI nem para issue.
+
+| Consulta | Pergunta                                                            | O que fazer com a resposta                                               |
+| -------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| 1        | quantos produtos, quantos com GTIN, quantos com `size_text`         | dá tamanho ao trabalho da FASE 2                                         |
+| 2        | **quais GTINs são inválidos**                                       | se vier qualquer linha → **PARAR**, ver abaixo                           |
+| 3        | há GTIN duplicado?                                                  | esperado vazio; linha aqui = divergência de schema, não de dado          |
+| 4        | os objetos que R2 espera existem, e os que ela vai criar ainda não? | qualquer "presente" onde se espera ausente = migration já aplicada antes |
 
 Em seguida, o preview de backfill (read-only, sem credencial, sem conexão):
 

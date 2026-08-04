@@ -724,3 +724,89 @@ status.
   `evidence/r2/staging/application.md` (criado), `data/R2-APPLICATION-GATE.md`, `INDEX.md`,
   `TRELLO-MAPPING.md` (card **MVP-DOCS-07**, criado em `Backlog aprovado` — nunca em `Ready`)
 - **Status:** ativa
+
+---
+
+### DL-023 — O required check que não podia ser exigido, e o preflight que virou workflow
+
+- **Data:** 04/08/2026 · **Origem:** mandato R2.3 · **Decide:** CTO, sob mandato do Founder/PMO
+- **Evidência:** `evidence/r2/branch-protection.md` e `evidence/r2/automation.md`
+- **Contexto:** DL-022 fechou R2.2 com dois bloqueios de ferramenta, não de banco. O
+  `db-schema-drill` não era required check, e não existia caminho seguro para ler o catálogo de
+  staging. Os dois foram resolvidos aqui, e nenhum deles do jeito óbvio.
+
+**1. O `db-schema-drill` é required check desde os PRs #62 e #63.**
+
+A versão óbvia — exigir o check como ele estava — teria trancado a `main` para todo PR que não
+mexe em migration. O workflow tinha filtro `paths:`, e workflow filtrado por caminho **não é
+executado e não é reportado**; um required check que nunca é reportado não fica verde por
+omissão, fica pendente para sempre. Medido nos PRs #58 (presente), #48 e #60 (ausentes), e na
+`main` entre `e203887` e `a0be553`.
+
+A distinção que decide: job pulado por `if:` reporta `skipped`, e o GitHub aceita `skipped`.
+Workflow pulado por `paths:` não reporta nada. Só o segundo trava.
+
+E travar não seria o pior. Com `enforce_admins = false`, cada PR de documentação viraria um
+merge por bypass de administrador — bypass rotineiro deixa de ser exceção e vira o
+procedimento.
+
+A correção separou o barato do caro: um detector que sempre roda, o drill pesado só quando há
+schema a reconstruir, e um **gate que sempre reporta** (`db-schema-drill-required`) consolidando
+os dois. O detector falha para o lado seguro — sem base de comparação confiável, o drill roda.
+
+A proteção foi montada a partir da leitura da proteção vigente, e os dois estados comparados
+campo a campo depois: **só a lista de checks mudou**, e só por acréscimo. `strict`, aprovações,
+`enforce_admins`, force push e deleção seguem exatamente como estavam.
+
+**2. O preflight remoto de staging virou workflow manual e read-only.**
+
+A R2.2 mediu staging com a chave anônima e bateu no teto dela. Índices, constraints, funções,
+policies, grants, linhas inativas e o histórico de migrations são invisíveis para `anon` — e
+isso é o comportamento correto. G3, G4 e G5 ficaram indeterminados pela **medição**, não pelo
+banco.
+
+`r2-staging-preflight.yml` fecha essa lacuna: só `workflow_dispatch`, environment `staging`,
+`permissions: contents: read`, concorrência exclusiva, timeout. **Não existe modo `apply`**, e
+isso é desenho — escrever em staging é missão própria, com gate próprio.
+
+A garantia de read-only é estrutural e tem três camadas independentes, porque a suposição
+perigosa seria "a credencial é read-only" — ela não é: o único papel que enxerga o histórico de
+migrations também escreve em tudo. As camadas são a estática (nenhum verbo de escrita nos
+`.sql`, verificada também **dentro** do workflow, antes de abrir conexão), a transacional
+(`BEGIN; SET TRANSACTION READ ONLY;`) e a de verificação (o banco confirma, e o runner aborta se
+a resposta não for `on`).
+
+Produção é inalcançável **por recusa**, não por omissão: o runner lê os dois project refs do
+`config/environments.json` versionado e aborta se a URL apontar para produção, se não confirmar
+que é staging, ou se não conseguir ler os refs. O terceiro caso não é zelo — sem ele a guarda
+falharia aberta, e uma checagem que parece existir é pior do que nenhuma.
+
+O workflow **não instala a CLI do Supabase**, de propósito: o histórico sai de `SELECT` direto,
+e assim o runner nunca carrega uma ferramenta que também saiba aplicar migration.
+
+- **Alternativas rejeitadas:** (a) exigir o check como estava e mergear documentação por bypass
+  de admin — rejeitada, ver acima; (b) manter `enforce_admins = true` como saída — não resolveria
+  nada: o PR continuaria pendente, e ninguém conseguiria mergear; (c) pedir ao Founder que rode
+  SQL à mão e cole a saída — rejeitada pelo mandato, e pior tecnicamente: o read-only passaria a
+  depender de quem executa colar a consulta certa; (d) usar a CLI do Supabase por conveniência —
+  rejeitada: carregaria capacidade de escrita num job que só precisa ler.
+- **O que não muda:** nada disso aplica migration. O gate de `R2-APPLICATION-GATE.md` continua
+  fechado e continua sendo decisão do Founder/PMO, ambiente por ambiente (princípio 14).
+- **Estado:** o segredo `SUPABASE_DB_URL` **não existe** no Environment `staging` — verificado
+  pela presença do nome, nunca pelo valor. O workflow foi disparado uma vez, deliberadamente sem
+  o segredo, e parou em `STAGING DATABASE SECRET REQUIRED` sem abrir conexão: valida a mecânica,
+  não mede o banco. Nenhuma auditoria remota foi executada.
+- **O bloqueio mudou de natureza:** de `CREDENTIAL ACCESS REQUIRED`, que era sobre não haver
+  caminho, para `STAGING SECRET REQUIRED`, que é sobre uma decisão do Founder ainda não tomada.
+- **Não reabre:** os achados de DL-022 seguem de pé, inclusive os dois GTINs inválidos em
+  staging — que não são curadoria pendente, e cuja correção continua sendo escrita, logo continua
+  sendo decisão do Founder/PMO.
+- **Consequência:** nenhuma migration aplicada, nenhuma escrita, nenhum backfill, nenhum
+  `VALIDATE CONSTRAINT`, nenhum `NOT NULL`, nenhuma RLS, nenhum deploy, nenhum dado real. Staging
+  segue em `862a179` e produção em `b88e514`; o banco de produção não foi contatado. MVP-E1-01,
+  E1-02, E1-05 e E1-08 permanecem em `Bloqueado`.
+- **Documentos:** `evidence/r2/automation.md` (criado), `evidence/r2/branch-protection.md`
+  (reescrito — a medida dos PRs #58/#48/#60 foi preservada, porque é a razão do desenho),
+  `evidence/r2/README.md`, `data/R2-APPLICATION-GATE.md`, `data/R2-ROLLOUT-RUNBOOK.md` (FASE 1),
+  `INDEX.md`, `TRELLO-MAPPING.md` (**MVP-DOCS-07** concluído)
+- **Status:** ativa

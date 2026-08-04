@@ -5,12 +5,13 @@ limitação. Não decide nada: a norma está em
 [`../../data/R2-APPLICATION-GATE.md`](../../data/R2-APPLICATION-GATE.md) e o procedimento em
 [`../../data/R2-ROLLOUT-RUNBOOK.md`](../../data/R2-ROLLOUT-RUNBOOK.md).
 
-| Arquivo                                              | O que registra                                               |
-| ---------------------------------------------------- | ------------------------------------------------------------ |
-| [`staging/README.md`](./staging/README.md)           | índice e veredito do preflight de staging                    |
-| [`staging/preflight.md`](./staging/preflight.md)     | ambientes, schema, dados, GTIN, backup, preview e smoke test |
-| [`staging/application.md`](./staging/application.md) | o gate G1–G15 e o registro de que **nada foi aplicado**      |
-| [`branch-protection.md`](./branch-protection.md)     | por que o `db-schema-drill` ainda não é required check       |
+| Arquivo                                              | O que registra                                                                           |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [`staging/README.md`](./staging/README.md)           | índice e veredito do preflight de staging                                                |
+| [`staging/preflight.md`](./staging/preflight.md)     | ambientes, schema, dados, GTIN, backup, preview e smoke test                             |
+| [`staging/application.md`](./staging/application.md) | o gate G1–G15 e o registro de que **nada foi aplicado**                                  |
+| [`branch-protection.md`](./branch-protection.md)     | o `db-schema-drill` como required check, e por que a versão óbvia teria travado a `main` |
+| [`automation.md`](./automation.md)                   | o workflow de preflight remoto: read-only em três camadas, e por que ele ainda não rodou |
 
 ---
 

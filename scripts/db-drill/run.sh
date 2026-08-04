@@ -91,6 +91,24 @@ psql_apply "assertions de autorizacao (90-assertions.sql)" "$SCRIPT_DIR/90-asser
 # consulta quebrada e pior do que um runbook sem consulta nenhuma.
 psql_apply "auditoria read-only de prontidao (scripts/r2/target-readiness.sql)" "$REPO_ROOT/scripts/r2/target-readiness.sql"
 
+# R2.3 - o preflight remoto (scripts/r2/preflight/) le staging por psql, e sem isto aqui
+# a unica forma de descobrir que uma consulta dele nao compila seria ao vivo, contra o
+# banco de staging, com o Founder olhando. Rodar os mesmos .sql contra o Postgres do
+# drill -- embrulhados pelo mesmo prologo READ ONLY que o runner usa -- prova o que a
+# leitura estatica nao alcanca: sintaxe valida, todo objeto de catalogo referenciado
+# existente, e a transacao read-only aceitando cada consulta.
+echo "==> Preflight remoto de R2: executando os .sql contra o banco vivo do drill..."
+PREFLIGHT_DIR="$REPO_ROOT/scripts/r2/preflight"
+for preflight_sql in 00-structure.sql 10-migration-history.sql 20-content.sql 30-quantity-input.sql; do
+  echo "  -> $preflight_sql"
+  if ! cat "$PREFLIGHT_DIR/_prologue.sql" "$PREFLIGHT_DIR/$preflight_sql" "$PREFLIGHT_DIR/_epilogue.sql" |
+    docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+      --quiet --no-align --tuples-only --field-separator='|' >/dev/null; then
+    echo "::error::O preflight remoto nao executa contra o schema real: $preflight_sql" >&2
+    exit 1
+  fi
+done
+
 # Por ultimo, porque e o unico estagio que muda o schema: executa o rollback DOCUMENTADO
 # das migrations de R2 -- extraido do proprio arquivo, e nao copiado -- e reaplica. Bloco
 # de rollback que nunca rodou e alegacao, nao fato.

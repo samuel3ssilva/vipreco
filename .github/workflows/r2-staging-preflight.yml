@@ -1,0 +1,76 @@
+name: R2 staging preflight
+
+# R2.3 - auditoria REMOTA e READ-ONLY do banco de staging, antes de qualquer aplicacao
+# de R2. Le; nao escreve. Nao aplica migration, nao faz backfill, nao valida constraint,
+# nao mexe em RLS, nao faz deploy, e nao existe caminho neste workflow que alcance
+# producao -- o runner recusa a execucao se a connection string apontar para la.
+#
+# Existe porque a R2.2 mediu staging com a chave ANONIMA e bateu no teto dela: indices,
+# constraints, funcoes, policies, grants, linhas inativas e o historico de migrations
+# sao todos invisiveis para `anon`. Ver docs/evidence/r2/staging/preflight.md.
+#
+# NAO EXISTE MODO `apply` AQUI, e isso e desenho, nao lacuna. Escrever em staging e
+# missao propria, com gate humano proprio (docs/data/R2-APPLICATION-GATE.md).
+#
+# Deliberadamente NAO instala a CLI do Supabase. O historico de migrations e lido por
+# SELECT direto em `supabase_migrations.schema_migrations`, que responde a mesma
+# pergunta que `supabase migration list`. A diferenca importa: assim o runner nunca
+# carrega uma ferramenta que tambem saiba aplicar migration.
+
+on:
+  workflow_dispatch: {}
+
+# Exclusiva de propósito, e sem cancel-in-progress: duas auditorias simultâneas contra o
+# mesmo banco produziriam dois relatorios com horarios diferentes e nenhuma forma de
+# saber qual e o atual.
+concurrency:
+  group: r2-staging-preflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: auditoria read-only de staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Garantir cliente psql
+        run: |
+          set -euo pipefail
+          if command -v psql >/dev/null 2>&1; then
+            psql --version
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends postgresql-client
+            psql --version
+          fi
+
+      # A guarda estatica roda de novo dentro de run.sh, antes de abrir conexao. Aqui
+      # ela e um passo proprio para que, quando reprovar, o log diga qual passo falhou
+      # sem ninguem precisar ler o script.
+      - name: Guarda estatica de read-only
+        run: bun scripts/r2/preflight/read-only-guard.ts
+
+      - name: Preflight read-only de staging
+        env:
+          # Unica leitura do secret em todo o workflow. Nunca interpolado em `echo`, em
+          # `run:` com debug, no Job Summary nem em artefato. O runner decompoe a URL em
+          # variaveis libpq -- para a senha nao entrar na linha de comando do psql -- e
+          # registra `::add-mask::` para cada pedaco.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: bash scripts/r2/preflight/run.sh

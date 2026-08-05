@@ -322,22 +322,85 @@ versionado, em `VITE_*` ou em issue. Depois disso, basta redisparar o workflow.
 
 ---
 
+## 8C. R2.3C — a senha foi redefinida, e continuou recusada (05/08/2026)
+
+O Founder redefiniu a senha do banco de staging, informou que ela contém **somente letras e
+números** e regravou o Environment Secret. O preflight foi executado mais **três** vezes.
+
+| Run                                                                              | Resultado                           |
+| -------------------------------------------------------------------------------- | ----------------------------------- |
+| [30968428118](https://github.com/samuel3ssilva/vipreco/actions/runs/30968428118) | as duas leituras da senha recusadas |
+| [30968511563](https://github.com/samuel3ssilva/vipreco/actions/runs/30968511563) | idem                                |
+| [30968940937](https://github.com/samuel3ssilva/vipreco/actions/runs/30968940937) | idem, ~13 min depois                |
+
+**Nenhuma alteração foi feita no parser.** O mandato pediu confirmação antes de mexer nele, e a
+confirmação foi obtida por leitura, não por suposição: a versão em `main` já cobre URL crua e
+percent-encoded, escreve a senha em `.pgpass` `0600`, não imprime segredo e tem os testes de
+costura verdes (`bun run test`, 872). Trocar um parser provado por outro seria repetir o erro
+de R2.3B na direção oposta.
+
+### Propagação foi descartada por medição, não por espera
+
+| Fato                            | Valor       |
+| ------------------------------- | ----------- |
+| `SUPABASE_DB_URL` atualizado em | `02:05:47Z` |
+| Run 1 iniciado em               | `02:07:20Z` |
+| Diferença                       | **93 s**    |
+
+O secret **foi** regravado, e o run leu o valor novo. A terceira execução, treze minutos
+depois, descarta também qualquer atraso do lado do Supabase. Verificado pelo campo `updated_at`
+da API — **a presença e a data do segredo, nunca o valor**.
+
+### O diagnóstico que aponta para onde procurar
+
+As três execuções imprimiram:
+
+```
+forma da URL: senha:percent-encoded
+```
+
+Esse rótulo só aparece quando `decodeURIComponent(senha) !== senha` — ou seja, quando a senha
+**como está gravada no secret** contém uma sequência `%XX`, ou um caractere que o parser de URL
+precisa escapar. Uma senha puramente alfanumérica não produz esse rótulo.
+
+**Isso contradiz a descrição.** A leitura mais provável é que o valor gravado não seja o valor
+pretendido: a URI antiga pode ter sido regravada, ou a senha nova colada dentro de uma URI que
+ainda carregava a antiga.
+
+O diagnóstico não prova qual das duas — prova apenas que **o conteúdo do secret não é
+alfanumérico puro**, e isso já basta para saber onde olhar. É o oposto do que acontecia antes
+da R2.3B, quando a mesma mensagem podia vir de cinco defeitos meus.
+
+### Veredito
+
+**`STAGING DATABASE PASSWORD STILL REJECTED`**
+
+Nenhuma consulta foi executada. G3, G4, G5 e G7 continuam `UNKNOWN` por **limite de medição**.
+Nenhuma escrita, nenhum deploy, produção não contatada.
+
+**Ação mínima:** conferir o valor do secret. Ele precisa ser a URI completa
+`postgresql://postgres:SENHA@db.<ref>.supabase.co:5432/postgres`, com a senha nova no lugar —
+e, se ela tiver qualquer caractere especial, percent-encoded (`%` → `%25`).
+
+---
+
 ## 9. Onde o gate ficou
 
-| Item                                 | Estado                                                   |
-| ------------------------------------ | -------------------------------------------------------- |
-| Migrations aplicadas                 | **nenhuma**                                              |
-| Escritas emitidas                    | **nenhuma**                                              |
-| Banco de produção                    | **não contatado**                                        |
-| Backfill                             | **não iniciado**                                         |
-| Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514` |
-| `db-schema-drill-required` na `main` | **obrigatório**                                          |
-| Preflight remoto                     | **executado 4×** — mecânica provada, banco não auditado  |
-| Auditoria de staging                 | **não realizada** — `STAGING CREDENTIAL REJECTED` (§8B)  |
+| Item                                 | Estado                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| Migrations aplicadas                 | **nenhuma**                                                                    |
+| Escritas emitidas                    | **nenhuma**                                                                    |
+| Banco de produção                    | **não contatado**                                                              |
+| Backfill                             | **não iniciado**                                                               |
+| Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514`                       |
+| `db-schema-drill-required` na `main` | **obrigatório**                                                                |
+| Preflight remoto                     | **executado 7×** — mecânica provada, banco não auditado                        |
+| Auditoria de staging                 | **não realizada** — `STAGING DATABASE PASSWORD STILL REJECTED` (§8C)           |
+| Recuperação de staging               | metade versionada **provada** ([`staging/recovery.md`](./staging/recovery.md)) |
 
-A ação mínima do Founder mudou: o segredo já existe, então não é mais cadastrá-lo, é
-**reemitir a senha do banco** e regravar `SUPABASE_DB_URL` com ela percent-encoded. O detalhe
-está em §8B.
+A ação mínima do Founder mudou de novo: a senha já foi reemitida, e o secret continua com um
+valor que **não é alfanumérico puro**. Falta conferir o conteúdo do segredo. O detalhe está em
+§8C.
 
 Nada disso reabre decisão resolvida. Os achados de R2.2 continuam de pé, inclusive os dois
 GTINs inválidos em staging — que não são curadoria pendente, e cuja correção continua sendo

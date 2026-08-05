@@ -128,7 +128,6 @@ aplicar_efemero() {
 
 echo "==> Baseline de plataforma"
 aplicar_efemero "00-platform-baseline.sql" "$DRILL_DIR/00-platform-baseline.sql"
-aplicar_efemero "01-supabase-table-grants.sql" "$EQUIV_DIR/01-supabase-table-grants.sql"
 
 echo "==> Aplicando SOMENTE as $MIGRATIONS_DO_BASELINE migrations do baseline historico"
 aplicadas=0

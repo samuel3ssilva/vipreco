@@ -251,6 +251,24 @@ else
   aviso "A auditoria de product_watch_requests nao pode ser lida; a telemetria sera classificada como B."
 fi
 
+# -----------------------------------------------------------------------------
+# R2.5 §6 -- OWNER, GRANTOR E DEFAULT PRIVILEGES.
+#
+# A migration de hardening precisa emitir `ALTER DEFAULT PRIVILEGES FOR ROLE <papel>`, e
+# esse papel nao pode ser chutado: sem `FOR ROLE` o comando aplica ao papel da SESSAO, e se
+# o papel que criou as tabelas for outro ele roda, devolve sucesso e nao desfaz nada. O
+# mandato e explicito -- "nao presumir o papel sem medir". Isto e a medicao.
+#
+# Sai so metadado de catalogo: nome de papel, nome de tabela, tipo de privilegio. Nenhuma
+# linha de dado atravessa esta consulta.
+# -----------------------------------------------------------------------------
+echo "==> 50-privileges.sql (owner, grantor e default privileges)"
+if consultar "50-privileges.sql" "$TRABALHO/priv.txt"; then
+  cat "$TRABALHO/priv.txt" >>"$FATOS"
+else
+  aviso "A auditoria de privilegios nao pode ser lida; o hardening nao pode afirmar qual papel corrigir."
+fi
+
 # Fato ESTATICO, e nao consulta: a pergunta "alguma migration de R2 toca esta tabela" se
 # responde no repositorio, e nao no banco. Medir no banco seria medir o efeito de algo
 # que ainda nao aconteceu.

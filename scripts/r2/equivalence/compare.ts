@@ -186,9 +186,24 @@ export function classificarGrants(fingerprintStaging: string): GrantClassificado
         privilegio === "TRUNCATE"
           ? "a RLS NÃO se aplica a TRUNCATE — o privilégio é a única barreira"
           : "escrita pública em tabela central nunca teve contrato; hoje só a RLS nega";
-    } else if (contribuicao && escrita) {
+    } else if (contribuicao && privilegio === "INSERT") {
+      // SÓ o INSERT é intencional aqui, e é literal: as policies dessas três tabelas são
+      // `cmd=a` — inserção. Nunca houve contrato de apagar nem de alterar sugestão alheia.
       categoria = "B. intencional do aplicativo";
-      porque = "tabela de contribuição tem contrato e policy próprios";
+      porque = "a policy de contribuição é de INSERT, e é esta que ela cobre";
+    } else if (contribuicao && escrita) {
+      // A primeira versão desta função devolvia B para qualquer escrita em tabela de
+      // contribuição, e o relatório saiu afirmando que `anon TRUNCATE decision_feedback`
+      // era "intencional do aplicativo". Não é: é sobra da plataforma, igual às outras.
+      //
+      // O erro era do tipo que este arquivo tem um comentário inteiro condenando —
+      // classificar de um jeito que faz o achado sumir. Ter escrito o comentário não me
+      // impediu de cometê-lo; o relatório de verdade é que mostrou.
+      categoria = "C. inseguro — exige hardening";
+      porque =
+        privilegio === "TRUNCATE"
+          ? "a RLS NÃO se aplica a TRUNCATE, e apagar contribuição alheia nunca teve contrato"
+          : "a policy de contribuição cobre INSERT, não este privilégio";
     } else {
       categoria = "A. padrão da plataforma";
       porque = "concedido pelo provisionamento do Supabase, sem efeito de escrita";

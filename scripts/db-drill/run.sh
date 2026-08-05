@@ -70,6 +70,9 @@ psql_apply() {
 }
 
 psql_apply "baseline de plataforma (00-platform-baseline.sql)" "$SCRIPT_DIR/00-platform-baseline.sql"
+# Controle positivo do ACL. Fica fora do baseline porque o baseline tambem alimenta o
+# lado esperado da comparacao de equivalencia, e uma tabela de andaime la viraria drift.
+psql_apply "controle positivo de ACL (01-acl-control.sql)" "$SCRIPT_DIR/01-acl-control.sql"
 
 shopt -s nullglob
 migration_files=("$MIGRATIONS_DIR"/*.sql)
@@ -122,7 +125,7 @@ psql_apply "prontidao POST, pos-aplicacao (scripts/r2/target-readiness-post.sql)
 # existente, e a transacao read-only aceitando cada consulta.
 echo "==> Preflight remoto de R2: executando os .sql contra o banco vivo do drill..."
 PREFLIGHT_DIR="$REPO_ROOT/scripts/r2/preflight"
-for preflight_sql in 00-structure.sql 10-migration-history.sql 20-content.sql 30-quantity-input.sql 40-watch-requests.sql; do
+for preflight_sql in 00-structure.sql 10-migration-history.sql 20-content.sql 30-quantity-input.sql 40-watch-requests.sql 50-privileges.sql; do
   echo "  -> $preflight_sql"
   if ! cat "$PREFLIGHT_DIR/_prologue.sql" "$PREFLIGHT_DIR/$preflight_sql" "$PREFLIGHT_DIR/_epilogue.sql" |
     docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \

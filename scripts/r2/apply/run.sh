@@ -318,39 +318,75 @@ montar_workdir() {
 supabase_cli() { supabase "$@"; }
 
 # -----------------------------------------------------------------------------
+# 9B. RELATORIO DE COLISOES DE NORMALIZACAO.
+#
+# `products_canonical_identity_idx` e um indice UNICO e FUNCIONAL sobre
+# `pa_normalize_text()`. A migration 20260803000000 troca essa funcao por uma que colapsa
+# espaco em branco -- e duas linhas que hoje o banco aceita como produtos distintos, porque
+# so diferem no espacamento, passariam a ser a mesma chave. O `REINDEX` FALHA nesse caso, e
+# falhar e o comportamento certo: o banco recusa a mudanca em vez de aceitar uma uniao
+# silenciosa.
+#
+# Roda no `plan` E imediatamente antes de `apply-normalization`. A diferenca entre os dois
+# nao e formal: entre um plano e a aplicacao pode passar tempo, e nesse tempo alguem pode
+# cadastrar um produto pelo painel. O relatorio que autoriza a aplicacao precisa ser o da
+# aplicacao.
+#
+# O CONTROLE POSITIVO vem junto, sempre. Sem ele, "0 colisoes" e indistinguivel de "o
+# detector nao funciona" -- e as duas leituras passariam verdes exatamente iguais. Mesma
+# licao do controle de ACL do drill.
+#
+# Unir ou excluir produto e decisao do Founder/PMO, nunca do CTO. Por isso a colisao ABORTA
+# em vez de tentar resolver.
+# -----------------------------------------------------------------------------
+relatorio_de_colisoes() {
+  local exigir="$1" status="nao_medido"
+
+  titulo "Controle positivo do detector de colisoes"
+  printf '%s\n' '[{"id":"a","name":"cafe  torrado","brand":"x","variant":null,"size_text":"500 g"},{"id":"b","name":"cafe torrado","brand":"x","variant":null,"size_text":"500 g"}]' >"$TRABALHO/sintetico.json"
+  if bun "$REPO_ROOT/scripts/normalization-collisions.ts" "$TRABALHO/sintetico.json" >/dev/null 2>&1; then
+    abortar "COLLISION DETECTOR BROKEN" \
+      "O detector de colisoes aceitou um par sinteticamente colidente. Enquanto ele nao reprovar esse par, um relatorio vazio contra staging nao prova nada."
+  fi
+  echo "controle positivo: o detector reprovou o par sintetico, como deve"
+
+  titulo "Relatorio de colisoes de normalizacao contra staging"
+  if consultar "30-quantity-input.sql" "$TRABALHO/produtos.json" '^\['; then
+    if bun "$REPO_ROOT/scripts/normalization-collisions.ts" "$TRABALHO/produtos.json" >"$TRABALHO/colisoes.txt" 2>&1; then
+      status="vazio"
+    else
+      status="encontradas"
+    fi
+    # O relatorio traz nome, marca e variante de produto. Nao e dado pessoal, mas tambem nao
+    # precisa ir para o Job Summary: o que decide o gate e o status.
+    rm -f "$TRABALHO/produtos.json"
+  fi
+  fato "colisoes.status" "$status"
+  relatar ""
+  relatar "**Relatório de colisões de normalização:** \`$status\` (controle positivo do detector: OK)."
+
+  if [ "$exigir" = "exigir_vazio" ]; then
+    case "$status" in
+      vazio) echo "zero colisoes: a normalizacao pode ser aplicada" ;;
+      encontradas)
+        abortar "NORMALIZATION COLLISION HUMAN DECISION REQUIRED" \
+          "O relatorio de colisoes NAO veio vazio. Aplicar a normalizacao agora faria o REINDEX falhar no meio da migration. Unir ou excluir produto e decisao do Founder/PMO, nunca do CTO -- o detalhe fica no log deste passo e nao e publicado."
+        ;;
+      *)
+        abortar "NORMALIZATION COLLISION REPORT UNAVAILABLE" \
+          "O relatorio de colisoes nao pode ser medido. 'Sem colisoes' e 'ninguem olhou' nao sao a mesma coisa, e so o primeiro autoriza a aplicacao."
+        ;;
+    esac
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # 10. EXECUCAO.
 # -----------------------------------------------------------------------------
 case "$OPERACAO" in
   plan)
     titulo "PLAN — auditoria read-only; nenhuma escrita"
-
-    # Colisoes de normalizacao. O `REINDEX` de 20260803000000 FALHA se duas linhas so forem
-    # distintas pelo espacamento -- e falhar e o comportamento certo. Descobrir isso aqui,
-    # com calma, e o proposito.
-    titulo "Relatorio de colisoes de normalizacao"
-    if consultar "30-quantity-input.sql" "$TRABALHO/produtos.json" '^\['; then
-      if bun "$REPO_ROOT/scripts/normalization-collisions.ts" "$TRABALHO/produtos.json" >"$TRABALHO/colisoes.txt" 2>&1; then
-        fato "colisoes.status" "vazio"
-      else
-        fato "colisoes.status" "encontradas"
-      fi
-      # O relatorio traz nome, marca e variante de produto. Nao e dado pessoal, mas tambem
-      # nao precisa ir para o Job Summary: o que decide o gate e o status.
-      grep -cE '^' "$TRABALHO/colisoes.txt" >/dev/null 2>&1 || true
-      rm -f "$TRABALHO/produtos.json"
-    else
-      fato "colisoes.status" "nao_medido"
-    fi
-
-    # CONTROLE POSITIVO do relatorio de colisoes. Sem ele, "0 colisoes" e indistinguivel de
-    # "o detector nao funciona" -- e a segunda leitura passaria verde exatamente igual.
-    titulo "Controle positivo do detector de colisoes"
-    printf '%s\n' '[{"id":"a","name":"cafe  torrado","brand":"x","variant":null,"size_text":"500 g"},{"id":"b","name":"cafe torrado","brand":"x","variant":null,"size_text":"500 g"}]' >"$TRABALHO/sintetico.json"
-    if bun "$REPO_ROOT/scripts/normalization-collisions.ts" "$TRABALHO/sintetico.json" >/dev/null 2>&1; then
-      abortar "COLLISION DETECTOR BROKEN" \
-        "O detector de colisoes aceitou um par sinteticamente colidente. Enquanto ele nao reprovar esse par, um relatorio vazio contra staging nao prova nada."
-    fi
-    echo "controle positivo: o detector reprovou o par sintetico, como deve"
+    relatorio_de_colisoes "so_reportar"
 
     titulo "Migrations pendentes segundo a CLI oficial (dry-run)"
     if supabase_cli db push --db-url "$DB_URL" --dry-run --yes >"$TRABALHO/pendentes.txt" 2>&1; then
@@ -374,6 +410,14 @@ case "$OPERACAO" in
     ;;
 
   apply-normalization | apply-core-hardening | apply-contribution-hardening | apply-r2a | apply-r2b)
+    # A normalizacao -- e so ela -- exige o relatorio de colisoes VAZIO imediatamente antes.
+    # Nao vale o relatorio do `plan`: entre um plano e a aplicacao pode passar tempo, e nesse
+    # tempo alguem pode cadastrar um produto pelo painel. O relatorio que autoriza a
+    # aplicacao precisa ser o da aplicacao.
+    if [ "$OPERACAO" = "apply-normalization" ]; then
+      relatorio_de_colisoes "exigir_vazio"
+    fi
+
     titulo "APLICACAO DE UMA migration: $VERSAO_ALVO"
     WORKDIR="$(montar_workdir "$VERSAO_ALVO" | tail -1)"
     supabase_cli db push --workdir "$WORKDIR" --db-url "$DB_URL" --yes

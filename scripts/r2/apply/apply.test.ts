@@ -373,3 +373,30 @@ describe("o SQL de remediação dos GTINs", () => {
     expect(REMEDIACAO).toContain("length(c.gtin) IN (8, 12, 13, 14)");
   });
 });
+
+describe("o relatório de colisões", () => {
+  it("roda também imediatamente antes da normalização, e exige vazio", () => {
+    // Não vale o relatório do `plan`: entre um plano e a aplicação pode passar tempo, e
+    // nesse tempo alguém pode cadastrar um produto pelo painel. O relatório que autoriza a
+    // aplicação precisa ser o da aplicação.
+    expect(runnerExecutavel).toContain('relatorio_de_colisoes "exigir_vazio"');
+    expect(runnerExecutavel).toContain('OPERACAO" = "apply-normalization"');
+    expect(runnerExecutavel).toContain("NORMALIZATION COLLISION HUMAN DECISION REQUIRED");
+  });
+
+  it("distingue `sem colisões` de `não pôde medir`", () => {
+    // Só o primeiro autoriza a aplicação. Tratar os dois igual é como uma medição que
+    // falhou vira uma autorização.
+    expect(runnerExecutavel).toContain("NORMALIZATION COLLISION REPORT UNAVAILABLE");
+  });
+
+  it("o controle positivo roda em toda invocação, e não só no plan", () => {
+    const chamadas = runnerExecutavel.match(/relatorio_de_colisoes "/g) ?? [];
+    expect(chamadas.length).toBe(2);
+    const corpo = /relatorio_de_colisoes\(\) \{([\s\S]*?)\n\}/.exec(runnerExecutavel)?.[1] ?? "";
+    expect(corpo).toContain("COLLISION DETECTOR BROKEN");
+    // O controle positivo vem ANTES da medição real: um detector quebrado não pode produzir
+    // um relatório vazio que alguém leia como autorização.
+    expect(corpo.indexOf("COLLISION DETECTOR BROKEN")).toBeLessThan(corpo.indexOf("produtos.json"));
+  });
+});

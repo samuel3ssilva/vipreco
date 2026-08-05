@@ -110,7 +110,13 @@ describe("20260803007500 — o que a migration faz", () => {
 
 describe("20260803007500 — o que a migration não pode fazer", () => {
   it("não concede privilégio nenhum", () => {
-    expect(executavel).not.toMatch(/\bGRANT\b/i);
+    // A palavra `GRANT` passou a aparecer no texto do `RAISE WARNING` que R2.6 acrescentou
+    // ("GRANT da plataforma"), e uma mensagem não concede nada. O que não pode existir é um
+    // GRANT como STATEMENT — nem solto, nem dentro do `format()` de um `EXECUTE`.
+    expect(executavel, "há um GRANT como statement").not.toMatch(/(^|;)\s*GRANT\b/im);
+    expect(executavel, "há um GRANT dentro de um EXECUTE").not.toMatch(
+      /EXECUTE\s+format\(\s*\n?\s*'[^']*\bGRANT\b/i,
+    );
   });
 
   it("não toca em RLS nem em policy", () => {

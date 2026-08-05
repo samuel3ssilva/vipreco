@@ -9,7 +9,7 @@
  * Compara os fatos de antes e de depois, medidos pelos mesmos `.sql`. Sai em 1 quando o
  * estado posterior não é o previsto, e nesse caso o runner PARA a sequência.
  */
-import { lerFatos, medir } from "./fatos";
+import { lerFatos, medir, todos } from "./fatos";
 import { OPERACOES, ehOperacao } from "./operations";
 
 const [operacao = "", caminhoAntes = "", caminhoDepois = ""] = process.argv.slice(2);
@@ -90,6 +90,21 @@ process.stdout.write(
       ([tabela, valor]) =>
         `| linhas em \`${tabela}\` | ${valor ?? "—"} | ${depois.linhas[tabela] ?? "—"} |`,
     ),
+    "",
+    // O default privilege medido, sempre — e não só quando alguém lembra de olhar.
+    //
+    // A primeira aplicação do hardening central em staging falhou em
+    // `permission denied to change default privileges`: o usuário da conexão não é membro
+    // do papel administrativo do Supabase que possui o default de `public`. As migrations
+    // passaram a tratar isso por papel, aplicando onde conseguem — o que significa que a
+    // herança pode continuar aberta, e "pode" não é resposta para uma pergunta de
+    // segurança. Publicar o estado a cada operação transforma o resíduo em fato visível
+    // em vez de um `RAISE WARNING` que ninguém lê.
+    "### Default privileges de tabela em `public`, medidos agora",
+    "",
+    ...(todos(lerFatos(caminhoDepois), "priv.default_acl").length === 0
+      ? ["Nenhuma entrada em `pg_default_acl` para tabelas em `public`."]
+      : todos(lerFatos(caminhoDepois), "priv.default_acl").map((linha) => `- \`${linha}\``)),
     "",
   ].join("\n"),
 );

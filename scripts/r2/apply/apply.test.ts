@@ -400,3 +400,56 @@ describe("o relatório de colisões", () => {
     expect(corpo.indexOf("COLLISION DETECTOR BROKEN")).toBeLessThan(corpo.indexOf("produtos.json"));
   });
 });
+
+describe("o limite de plataforma no ALTER DEFAULT PRIVILEGES", () => {
+  const HARDENINGS = [
+    "20260803005000_core_table_privilege_hardening.sql",
+    "20260803007500_contribution_table_privilege_hardening.sql",
+  ];
+
+  for (const arquivo of HARDENINGS) {
+    const sql = readFileSync(join(RAIZ, "supabase/migrations", arquivo), "utf-8");
+    // Sem comentário. É a terceira vez nesta missão que uma verificação lê a explicação em
+    // vez do programa — aqui as migrations EXPLICAM por que não usam `WHEN OTHERS`, e a
+    // explicação contém as duas palavras.
+    const executavelDoArquivo = sql
+      .split("\n")
+      .filter((linha) => !linha.trimStart().startsWith("--"))
+      .join("\n");
+
+    it(`${arquivo} trata insufficient_privilege por papel`, () => {
+      // Medido ao vivo: `permission denied to change default privileges (SQLSTATE 42501)`.
+      // Medir o papel respondia "QUAL papel"; não respondia "posso alterar esse papel". Na
+      // plataforma Supabase o default de `public` pertence a um papel administrativo do
+      // qual o usuário da conexão não é membro.
+      expect(sql).toContain("WHEN insufficient_privilege THEN");
+      expect(sql).toContain("sem_permissao");
+    });
+
+    it(`${arquivo} NÃO usa WHEN OTHERS`, () => {
+      // `WHEN OTHERS` transformaria qualquer defeito futuro em aviso — e aviso é
+      // exatamente o que ninguém lê.
+      expect(executavelDoArquivo).not.toMatch(/WHEN\s+OTHERS/i);
+    });
+
+    it(`${arquivo} avisa nomeando os papéis que não conseguiu alterar`, () => {
+      expect(sql).toMatch(/RAISE WARNING/);
+      expect(sql).toContain("HERANCA NAO CORRIGIDA");
+    });
+
+    it(`${arquivo} mantém as revogações de tabela FORA do bloco tolerante`, () => {
+      // Esta é a razão inteira da mudança: a migration é transacional, então deixar o erro
+      // subir revertia TAMBÉM os REVOKE — trocando a correção P0, que fecha o TRUNCATE, por
+      // uma proteção acessória contra tabelas que ainda não existem.
+      const antesDoBloco = sql.slice(0, sql.indexOf("DO $$"));
+      expect(antesDoBloco).toMatch(/REVOKE .* ON public\.\w+\s+FROM anon, authenticated;/);
+      expect(antesDoBloco).toMatch(/REVOKE .* ON public\.\w+\s+FROM PUBLIC;/);
+    });
+  }
+
+  it("o resumo publica o default privilege medido a cada operação", () => {
+    const checkAfter = readFileSync(join(RAIZ, "scripts/r2/apply/check-after.ts"), "utf-8");
+    expect(checkAfter).toContain("priv.default_acl");
+    expect(checkAfter).toContain("Default privileges de tabela");
+  });
+});

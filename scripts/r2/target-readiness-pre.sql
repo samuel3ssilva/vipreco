@@ -1,27 +1,52 @@
 -- =============================================================================
--- R2 - AUDITORIA READ-ONLY DO AMBIENTE ALVO
+-- R2 - PRONTIDAO DO AMBIENTE ALVO, PARTE **PRE**: SO O SCHEMA LEGADO
 --
--- Responde, sem escrever nada, se o ambiente esta pronto para receber as
--- migrations 20260803010000 (identidade e quantidade) e 20260803020000 (GTIN).
+-- Responde, sem escrever nada, se o ambiente esta pronto para RECEBER as migrations
+-- 20260803010000 (identidade e quantidade) e 20260803020000 (GTIN).
 --
--- ESTE ARQUIVO E ESTRITAMENTE READ-ONLY.
+-- =============================================================================
+-- POR QUE ESTE ARQUIVO EXISTE SEPARADO -- A CIRCULARIDADE DO G7
+-- =============================================================================
+--
+-- Ate R2.4 havia um unico `target-readiness.sql` com sete consultas, e o gate G7 dizia
+-- "target-readiness executado por inteiro no ambiente alvo". As consultas 5 a 7
+-- referenciam `package_type`, `quantity_value` e `pa_is_valid_gtin` -- objetos que a
+-- migration CRIA. Antes de aplicar, o script interrompia em `42703 column does not
+-- exist`, o gate marcava FAIL, e o FAIL bloqueava a aplicacao.
+--
+-- Ou seja: G7 exigia, para autorizar a migration, uma prova que so a migration podia
+-- produzir. Isso nao e um ambiente reprovado -- e um gate que nao tem como passar. O
+-- FAIL nao media staging; media o proprio gate.
+--
+-- A separacao desfaz a circularidade na ESTRUTURA, e nao num comentario pedindo
+-- tolerancia. Este arquivo contem exatamente as consultas que respondem sobre o schema
+-- LEGADO; `target-readiness-post.sql` contem as que so respondem depois de R2-A, e
+-- `target-readiness-post-gtin.sql` a que so responde depois de R2-B.
+--
+--   G7-PRE   roda ANTES de aplicar   -- precisa passar para autorizar
+--   G7-POST  roda DEPOIS de aplicar  -- verifica o que a aplicacao produziu
+--   G7       consolidado: PASS quando os dois passaram, cada um no seu momento
+--
+-- Antes da aplicacao, o estado correto e `G7-PRE PASS - G7-POST PENDING BY DESIGN`.
+-- `PENDING BY DESIGN` nao e um FAIL disfarcado: e a afirmacao de que a pergunta ainda
+-- nao pode ser feita. Confundir "ainda nao da para perguntar" com "a resposta foi nao"
+-- e o que produziu a circularidade.
+--
+-- `scripts/r2/target-readiness.test.ts` reprova se qualquer identificador futuro voltar
+-- a aparecer aqui como referencia -- e nao apenas como literal de texto numa consulta
+-- ao catalogo, que e legitima e e o que a consulta 4 faz.
+--
+-- =============================================================================
+-- ESTE ARQUIVO E ESTRITAMENTE READ-ONLY
 --   - so SELECT e WITH sobre SELECT;
 --   - nenhum UPDATE, INSERT, DELETE, MERGE, TRUNCATE, COPY;
 --   - nenhum ALTER, CREATE, DROP, GRANT, REVOKE;
 --   - nenhuma chamada remota, nenhum secret, nenhum dado pessoal na saida.
 --
--- `scripts/r2/target-readiness.test.ts` le este arquivo e FALHA se qualquer verbo
--- de escrita aparecer. Nao e disciplina: e teste.
---
--- COMO RODAR
---   No editor SQL do ambiente alvo (staging ou producao), como service_role ou
---   postgres. Cada consulta e independente; rode todas e guarde a saida como
---   evidencia da FASE 1 do runbook (docs/data/R2-ROLLOUT-RUNBOOK.md).
---
--- QUANDO RODAR
---   ANTES de aplicar qualquer migration. As consultas 1 a 4 nao dependem das
---   colunas novas. As consultas 5 a 7 so respondem depois da migration aplicada,
---   e estao aqui porque a FASE 3 tambem precisa de verificacao.
+-- COMO RODA
+--   Automaticamente, pelo preflight remoto (scripts/r2/preflight/run.sh), dentro da
+--   transacao READ ONLY. Tambem pode ser rodado a mao no editor SQL do ambiente alvo.
+--   A saida NAO e publicada em log: a consulta 2 devolve GTIN completo.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -46,8 +71,8 @@ FROM public.products;
 --    Founder/PMO, nunca do CTO, e nunca automatica. O ViPreco nao inventa GTIN.
 --
 --    Aritmetica GS1 escrita aqui em linha, DE PROPOSITO: esta consulta precisa
---    rodar ANTES da migration que cria pa_is_valid_gtin(). Depois de aplicada,
---    a mesma pergunta se responde com `NOT public.pa_is_valid_gtin(gtin)`.
+--    rodar ANTES da migration que cria a funcao de validacao. Depois de aplicada,
+--    a mesma pergunta se responde pela funcao -- e e isso que a parte POST faz.
 -- -----------------------------------------------------------------------------
 WITH candidatos AS (
   SELECT id, gtin
@@ -110,6 +135,11 @@ ORDER BY gtin;
 --    indice de que R2 depende existem, e as colunas que R2 vai criar ainda NAO.
 --    Uma coluna nova ja presente significa que a migration foi aplicada antes, e
 --    a FASE 3 precisa saber disso.
+--
+--    OS NOMES DOS OBJETOS FUTUROS APARECEM AQUI COMO LITERAL DE TEXTO, e nunca como
+--    referencia. `column_name = 'package_type'` e uma pergunta ao catalogo; ela
+--    responde `false` num banco onde a coluna nao existe, em vez de abortar. E essa
+--    a diferenca entre uma consulta que PODE rodar antes da migration e uma que nao.
 -- -----------------------------------------------------------------------------
 SELECT
   'coluna products.gtin'                AS objeto,
@@ -153,62 +183,3 @@ UNION ALL SELECT
   EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
            WHERE n.nspname = 'public' AND p.proname = 'pa_is_valid_gtin'),
   'esperado AUSENTE antes de R2-B';
-
--- -----------------------------------------------------------------------------
--- 5. DEPOIS DE R2-A: as colunas nasceram vazias?
---
---    A migration nao faz backfill. Toda linha existente tem de estar com NULL nos
---    quatro campos. Qualquer numero diferente de zero aqui significa que alguem
---    escreveu fora do fluxo de revisao de MVP-E1-08.
--- -----------------------------------------------------------------------------
-SELECT
-  count(*) FILTER (WHERE package_type      IS NOT NULL) AS com_package_type,
-  count(*) FILTER (WHERE quantity_value    IS NOT NULL) AS com_quantity_value,
-  count(*) FILTER (WHERE quantity_unit     IS NOT NULL) AS com_quantity_unit,
-  count(*) FILTER (WHERE units_per_package IS NOT NULL) AS com_units_per_package
-FROM public.products;
-
--- -----------------------------------------------------------------------------
--- 6. DEPOIS DE R2-A: colisoes que impediriam o backfill.
---
---    O indice de identidade exata e unico. Duas linhas preenchidas que produzam a
---    mesma tupla nao podem coexistir -- e o backfill precisa descobrir isso ANTES
---    de escrever, nao no meio do UPDATE. A conversao repete a do indice.
--- -----------------------------------------------------------------------------
-SELECT
-  public.pa_normalize_text(name)                     AS nome,
-  public.pa_normalize_text(coalesce(brand, ''))      AS marca,
-  public.pa_normalize_text(coalesce(variant, ''))    AS variante,
-  package_type,
-  quantity_value * CASE quantity_unit
-    WHEN 'kg' THEN 1000 WHEN 'l' THEN 1000 ELSE 1 END AS quantidade_base,
-  CASE quantity_unit
-    WHEN 'kg' THEN 'g' WHEN 'l' THEN 'ml' ELSE quantity_unit END AS unidade_base,
-  count(*)                                            AS quantidade,
-  array_agg(id ORDER BY id)                           AS produtos
-FROM public.products
-WHERE package_type IS NOT NULL
-  AND quantity_value IS NOT NULL
-  AND quantity_unit IS NOT NULL
-GROUP BY 1, 2, 3, 4, 5, 6
-HAVING count(*) > 1
-ORDER BY 1, 2, 3;
-
--- -----------------------------------------------------------------------------
--- 7. DEPOIS DE R2-A e R2-B: estado das constraints.
---
---    `convalidated = false` significa NOT VALID: a constraint vale para escrita
---    nova, e as linhas antigas ainda nao foram conferidas. E o estado correto
---    ate a FASE 6, e so ela troca isso.
--- -----------------------------------------------------------------------------
-SELECT
-  con.conname                            AS constraint_nome,
-  con.convalidated                       AS ja_validada,
-  pg_get_constraintdef(con.oid)          AS definicao
-FROM pg_constraint con
-JOIN pg_class rel ON rel.oid = con.conrelid
-JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
-WHERE nsp.nspname = 'public'
-  AND rel.relname = 'products'
-  AND con.contype = 'c'
-ORDER BY con.conname;

@@ -66,7 +66,29 @@ export const ARQUIVOS_DE_AUDITORIA = [
   "10-migration-history.sql",
   "20-content.sql",
   "30-quantity-input.sql",
+  "40-watch-requests.sql",
+  "50-privileges.sql",
 ] as const;
+
+/**
+ * `.sql` de auditoria que rodam contra staging pela mesma credencial e pelas mesmas três
+ * camadas, mas que **não** pertencem ao preflight.
+ *
+ * Guardados aqui, e não por uma segunda ferramenta: uma guarda paralela teria a própria
+ * lista de verbos, e duas listas divergem — sempre na direção de a mais nova esquecer um
+ * verbo. É a mesma razão pela qual R2.3D recusou manter dois caminhos de autenticação.
+ *
+ * Lista separada, e não a mesma, porque `ARQUIVOS_DE_AUDITORIA` sustenta um invariante
+ * próprio: ela é exatamente o conjunto que `preflight/run.sh` executa. Misturar os dois
+ * conjuntos apagaria esse invariante em silêncio.
+ */
+export const ARQUIVOS_DE_AUDITORIA_EXTERNOS = ["../equivalence/fingerprint.sql"] as const;
+
+/** Todo `.sql` que a guarda cobre, venha de onde vier. */
+export const TODOS_OS_ARQUIVOS_DE_AUDITORIA: readonly string[] = [
+  ...ARQUIVOS_DE_AUDITORIA,
+  ...ARQUIVOS_DE_AUDITORIA_EXTERNOS,
+];
 
 /**
  * Prólogo e epílogo. Não são consultas: abrem e fecham a transação read-only. Por isso
@@ -112,7 +134,7 @@ export function auditar(arquivos: readonly { nome: string; conteudo: string }[])
       continue;
     }
 
-    const ehAuditoria = (ARQUIVOS_DE_AUDITORIA as readonly string[]).includes(nome);
+    const ehAuditoria = TODOS_OS_ARQUIVOS_DE_AUDITORIA.includes(nome);
     for (const statement of statements) {
       const inicio = statement.slice(0, 60).replace(/\s+/g, " ");
       if (ehAuditoria) {
@@ -148,7 +170,7 @@ export function auditar(arquivos: readonly { nome: string; conteudo: string }[])
 }
 
 export function lerArquivos(): { nome: string; conteudo: string }[] {
-  return [...ARQUIVOS_DE_AUDITORIA, ...ARQUIVOS_DE_TRANSACAO].map((nome) => ({
+  return [...TODOS_OS_ARQUIVOS_DE_AUDITORIA, ...ARQUIVOS_DE_TRANSACAO].map((nome) => ({
     nome,
     conteudo: readFileSync(new URL(`./${nome}`, import.meta.url), "utf-8"),
   }));
@@ -166,6 +188,6 @@ if (import.meta.main) {
     process.exit(1);
   }
   console.log(
-    `guarda de read-only aprovou os ${ARQUIVOS_DE_AUDITORIA.length + ARQUIVOS_DE_TRANSACAO.length} arquivos SQL do preflight.`,
+    `guarda de read-only aprovou os ${TODOS_OS_ARQUIVOS_DE_AUDITORIA.length + ARQUIVOS_DE_TRANSACAO.length} arquivos SQL.`,
   );
 }

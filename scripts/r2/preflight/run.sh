@@ -237,6 +237,50 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# 5B. A linha de product_watch_requests (R2.4 §3).
+#
+# Roda como consulta propria porque a pergunta e outra: 20-content.sql conta linhas, e
+# uma contagem nao classifica nada. O que decide se aquela linha reprova o gate e a
+# ESTRUTURA da tabela -- se nao ha coluna capaz de guardar identificador de pessoa,
+# nenhuma linha dela pode conter um.
+# -----------------------------------------------------------------------------
+echo "==> 40-watch-requests.sql (classificacao da telemetria anonima)"
+if consultar "40-watch-requests.sql" "$TRABALHO/watch.txt"; then
+  cat "$TRABALHO/watch.txt" >>"$FATOS"
+else
+  aviso "A auditoria de product_watch_requests nao pode ser lida; a telemetria sera classificada como B."
+fi
+
+# -----------------------------------------------------------------------------
+# R2.5 §6 -- OWNER, GRANTOR E DEFAULT PRIVILEGES.
+#
+# A migration de hardening precisa emitir `ALTER DEFAULT PRIVILEGES FOR ROLE <papel>`, e
+# esse papel nao pode ser chutado: sem `FOR ROLE` o comando aplica ao papel da SESSAO, e se
+# o papel que criou as tabelas for outro ele roda, devolve sucesso e nao desfaz nada. O
+# mandato e explicito -- "nao presumir o papel sem medir". Isto e a medicao.
+#
+# Sai so metadado de catalogo: nome de papel, nome de tabela, tipo de privilegio. Nenhuma
+# linha de dado atravessa esta consulta.
+# -----------------------------------------------------------------------------
+echo "==> 50-privileges.sql (owner, grantor e default privileges)"
+if consultar "50-privileges.sql" "$TRABALHO/priv.txt"; then
+  cat "$TRABALHO/priv.txt" >>"$FATOS"
+else
+  aviso "A auditoria de privilegios nao pode ser lida; o hardening nao pode afirmar qual papel corrigir."
+fi
+
+# Fato ESTATICO, e nao consulta: a pergunta "alguma migration de R2 toca esta tabela" se
+# responde no repositorio, e nao no banco. Medir no banco seria medir o efeito de algo
+# que ainda nao aconteceu.
+if grep -q 'product_watch_requests' \
+  "$REPO_ROOT/supabase/migrations/20260803010000_product_identity_quantity.sql" \
+  "$REPO_ROOT/supabase/migrations/20260803020000_gtin_integrity.sql" 2>/dev/null; then
+  fato "watch.tocada_por_r2" "true"
+else
+  fato "watch.tocada_por_r2" "false"
+fi
+
+# -----------------------------------------------------------------------------
 # 6. Preview de quantidade. O dump de produtos NUNCA e publicado nem vira artefato:
 #    so a contagem por estado entra no resumo.
 # -----------------------------------------------------------------------------
@@ -253,24 +297,33 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 7. target-readiness.sql (§5.7).
+# 7. target-readiness-pre.sql -- G7-PRE.
 #
 # A SAIDA DELE NAO E PUBLICADA. A consulta 2 devolve GTIN COMPLETO, e o §6.D proibe
 # isso -- entao o que se registra e o status, nao o conteudo. A auditoria mascarada
 # equivalente ja saiu de 20-content.sql.
 #
-# Falhar aqui e o resultado ESPERADO antes de R2-A: as consultas 5 a 7 referenciam
-# colunas que ainda nao existem. Nao e defeito do script; e a resposta.
+# R2.4 - AQUI ESTAVA A CIRCULARIDADE DO G7, E ELA ERA DO GATE, NAO DO AMBIENTE.
+#
+# Ate aqui este passo rodava o `target-readiness.sql` inteiro, cujas consultas 5 a 7
+# referenciam colunas que a migration CRIA. Antes da aplicacao ele interrompia em
+# `42703`, o gate marcava FAIL, e o FAIL bloqueava a aplicacao -- ou seja, G7 exigia
+# uma prova que so a migration podia produzir. O run 31032153539 reprovou exatamente
+# assim, e reprovar assim nao mede staging: mede o gate.
+#
+# Agora roda so a parte PRE, que responde sobre o schema LEGADO e portanto PODE passar
+# antes da aplicacao. A parte POST roda depois, pelo runner de aplicacao. Um FAIL aqui
+# volta a significar o que deveria: o ambiente nao esta pronto.
 # -----------------------------------------------------------------------------
-echo "==> target-readiness.sql (saida nao publicada: contem GTIN completo)"
-if psql_transacao "$REPO_ROOT/scripts/r2/target-readiness.sql" "$TRABALHO/readiness.txt" \
+echo "==> target-readiness-pre.sql (G7-PRE; saida nao publicada: contem GTIN completo)"
+if psql_transacao "$REPO_ROOT/scripts/r2/target-readiness-pre.sql" "$TRABALHO/readiness.txt" \
   2>"$TRABALHO/readiness.err"; then
   fato "readiness.status" "ok"
-  fato "readiness.detalhe" "executado por inteiro; saida retida por conter GTIN completo"
+  fato "readiness.detalhe" "as quatro consultas do schema legado rodaram por inteiro; saida retida por conter GTIN completo"
 else
-  fato "readiness.status" "parcial"
+  fato "readiness.status" "falhou"
   if grep -qiE '42703|does not exist' "$TRABALHO/readiness.err"; then
-    fato "readiness.detalhe" "interrompeu numa coluna inexistente — esperado antes de R2-A, ja que as consultas 5 a 7 so respondem depois da migration"
+    fato "readiness.detalhe" "interrompeu numa coluna inexistente — e isso agora e um ACHADO, e nao o esperado: a parte PRE so referencia objetos do schema legado, entao uma coluna faltando significa que o ambiente nao esta no estado da main"
   else
     fato "readiness.detalhe" "interrompeu antes do fim; saida e erro retidos por poderem conter GTIN completo"
   fi

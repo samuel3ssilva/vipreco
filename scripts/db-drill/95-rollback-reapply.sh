@@ -27,6 +27,7 @@ MIGRATIONS_DIR="$2"
 
 R2A="$MIGRATIONS_DIR/20260803010000_product_identity_quantity.sql"
 R2B="$MIGRATIONS_DIR/20260803020000_gtin_integrity.sql"
+HARDENING_CONTRIB="$MIGRATIONS_DIR/20260803007500_contribution_table_privilege_hardening.sql"
 
 psql_run() {
   docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -q -U postgres -d postgres
@@ -98,3 +99,54 @@ if [ "$final" != "13" ]; then
 fi
 
 echo "==> Rollback e reaplicacao de R2 confirmados contra banco vivo."
+
+# ============================================================================
+# R2.6 - a mesma prova, para o hardening de privilegio das tabelas de contribuicao.
+#
+# Uma migration que so REVOGA tem um modo de falha silencioso proprio: `REVOKE` nao levanta
+# erro quando nao ha o que revogar, nem quando revoga do papel errado. Um drill que so mede
+# o estado final nao distingue "revogou" de "nunca teve" -- foi exatamente esse o defeito
+# que deixou o drill verde por dois meses enquanto staging tinha 42 privilegios de escrita
+# por papel.
+#
+# O ciclo abaixo elimina a ambiguidade medindo os TRES estados: 0 privilegios publicos
+# depois da migration, 36 depois do rollback documentado, 0 de novo depois da reaplicacao.
+# 36 = 3 tabelas x 2 papeis x 6 privilegios -- todos menos INSERT, que a Onda 3 revogou e
+# que o rollback DESTA migration nao pode devolver.
+# ============================================================================
+privilegios_publicos_de_contribuicao() {
+  psql_valor <<'SQL'
+SELECT count(*)
+FROM unnest(ARRAY['price_submissions','product_watch_requests','decision_feedback']) AS t(tabela)
+CROSS JOIN unnest(ARRAY['anon','authenticated']) AS p(papel)
+CROSS JOIN unnest(ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) AS v(priv)
+WHERE has_table_privilege(p.papel, format('public.%I', t.tabela), v.priv);
+SQL
+}
+
+conferir_privilegios() {
+  local esperado="$1" momento="$2" atual
+  atual=$(privilegios_publicos_de_contribuicao | tr -d ' \n')
+  echo "==> $momento: $atual privilegio(s) publico(s) nas tabelas de contribuicao (esperado $esperado)."
+  if [ "$atual" != "$esperado" ]; then
+    echo "::error::$momento: esperado $esperado, medido $atual." >&2
+    exit 1
+  fi
+}
+
+conferir_privilegios 0 "Antes do rollback do hardening"
+
+echo "==> Executando o rollback DOCUMENTADO do hardening de contribuicao (extraido do proprio arquivo)..."
+extrair_rollback "$HARDENING_CONTRIB" | psql_run
+
+# Este numero e o coracao do estagio. Se ele desse 0, o rollback nao teria devolvido nada --
+# e a passagem seguinte, de volta a 0, seria indistinguivel de um banco onde a migration
+# nunca precisou fazer coisa alguma.
+conferir_privilegios 36 "Depois do rollback do hardening"
+
+echo "==> Reaplicando o hardening de contribuicao sobre o banco revertido..."
+psql_run < "$HARDENING_CONTRIB"
+
+conferir_privilegios 0 "Depois da reaplicacao do hardening"
+
+echo "==> Rollback e reaplicacao do hardening de privilegio confirmados contra banco vivo."

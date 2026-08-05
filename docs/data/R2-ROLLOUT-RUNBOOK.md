@@ -120,9 +120,23 @@ para decompô-los depois produziu cinco defeitos que devolviam sempre
 §8D.
 
 Para **produção** — e para staging, se por algum motivo o workflow não puder ser usado — rodar
-[`../../scripts/r2/target-readiness.sql`](../../scripts/r2/target-readiness.sql) no ambiente
-alvo, na ordem, e guardar a saída inteira como evidência. Note que a **consulta 2 devolve GTIN
-completo**: essa saída é evidência interna, não vai para log de CI nem para issue.
+[`../../scripts/r2/target-readiness-pre.sql`](../../scripts/r2/target-readiness-pre.sql) no
+ambiente alvo, na ordem, e guardar a saída inteira como evidência. Note que a **consulta 2
+devolve GTIN completo**: essa saída é evidência interna, não vai para log de CI nem para issue.
+
+**R2.4 — o arquivo virou dois, e isso desfez a circularidade do gate G7.** As consultas 5 a 7
+referenciam colunas e funções que as migrations _criam_; rodá-las antes da aplicação devolvia
+`42703`, o gate marcava `FAIL`, e o `FAIL` bloqueava a aplicação. G7 exigia, para autorizar a
+migration, uma prova que só a migration podia produzir.
+
+| Arquivo                          | Quando roda              | Gate         |
+| -------------------------------- | ------------------------ | ------------ |
+| `target-readiness-pre.sql`       | **antes** (1–4)          | G7-PRE       |
+| `target-readiness-post.sql`      | **depois de R2-A** (5–7) | G7-POST      |
+| `target-readiness-post-gtin.sql` | **depois de R2-B** (8)   | G7-POST-GTIN |
+
+Antes da aplicação, o estado permitido é `G7-PRE PASS — G7-POST PENDING BY DESIGN`. Pendente
+por desenho não é reprovado: é uma pergunta que ainda não pode ser feita.
 
 | Consulta | Pergunta                                                            | O que fazer com a resposta                                               |
 | -------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |

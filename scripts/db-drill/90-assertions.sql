@@ -8,6 +8,8 @@ DO $$
 DECLARE
   failures text[] := ARRAY[]::text[];
   tbl text;
+  priv text;
+  papel text;
   fn record;
 BEGIN
   -- 1. Tabelas de negocio existem e tem RLS habilitado.
@@ -28,14 +30,183 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 3. As tres superficies de escrita publica fechadas na Onda 3 continuam fechadas.
+  -- 3. As tres tabelas de contribuicao nao dao privilegio NENHUM a papel publico.
+  --
+  -- A versao anterior deste bloco perguntava so por INSERT, porque INSERT era o unico
+  -- privilegio que uma migration havia concedido -- e portanto o unico que alguem sabia
+  -- existir. R2.5 mediu staging e achou o resto: SELECT, UPDATE, DELETE e TRUNCATE seguiam
+  -- concedidos nas tres, herdados do `GRANT ALL ON TABLES` da plataforma, invisiveis
+  -- porque nenhuma migration os havia pedido.
+  --
+  -- Contrato destas tabelas depois de 20260803007500: anon e authenticated nao precisam de
+  -- nada nelas. Sem policy de SELECT, sem contrato de leitura no aplicativo, sem submissao
+  -- publica (Onda 3), e sem nunca ter havido contrato de alterar ou apagar contribuicao
+  -- alheia. Leitura e escrita legitimas sao trabalho de `service_role`, verificado em 3F.
   FOREACH tbl IN ARRAY ARRAY['price_submissions', 'product_watch_requests', 'decision_feedback']
   LOOP
-    IF has_table_privilege('anon', format('public.%s', tbl), 'INSERT') THEN
-      failures := array_append(failures, format('anon tem INSERT em public.%s -- superficie fechada na Onda 3 reaberta sem gate', tbl));
+    FOREACH priv IN ARRAY ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']
+    LOOP
+      FOREACH papel IN ARRAY ARRAY['anon', 'authenticated']
+      LOOP
+        IF has_table_privilege(papel, format('public.%s', tbl), priv) THEN
+          failures := array_append(failures, format(
+            '%s tem %s em public.%s -- tabela de contribuicao nao da privilegio a papel publico; ver 20260803007500_contribution_table_privilege_hardening.sql',
+            papel, priv, tbl));
+        END IF;
+      END LOOP;
+    END LOOP;
+  END LOOP;
+
+  -- 3B. R2.5 -- ESCRITA PUBLICA NAS TRES TABELAS CENTRAIS.
+  --
+  -- Esta assercao so significa alguma coisa porque `00-platform-baseline.sql` passou a
+  -- conceder GRANT ALL automatico em tabela nova, como a plataforma faz. Antes disso ela
+  -- passaria por ausencia de grant -- nunca houve o que revogar num Postgres virgem --
+  -- e foi exatamente assim que o drill ficou verde enquanto staging tinha 42 privilegios
+  -- de escrita por papel nessas tabelas.
+  --
+  -- TRUNCATE esta na lista e e o mais importante dos quatro: no PostgreSQL a RLS NAO se
+  -- aplica a TRUNCATE. Para os outros tres, a ausencia de policy ainda nega a operacao;
+  -- para TRUNCATE, o privilegio e a unica barreira que existe.
+  FOREACH tbl IN ARRAY ARRAY['markets', 'products', 'prices']
+  LOOP
+    FOREACH priv IN ARRAY ARRAY['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']
+    LOOP
+      FOREACH papel IN ARRAY ARRAY['anon', 'authenticated']
+      LOOP
+        IF has_table_privilege(papel, format('public.%s', tbl), priv) THEN
+          failures := array_append(failures, format(
+            '%s tem %s em public.%s -- escrita publica em tabela central; ver 20260803005000_core_table_privilege_hardening.sql',
+            papel, priv, tbl));
+        END IF;
+      END LOOP;
+    END LOOP;
+  END LOOP;
+
+  -- 3C. PUBLIC -- o papel implicito do qual todo mundo herda.
+  --
+  -- `has_table_privilege('anon', ...)` ja soma o que estiver em PUBLIC, entao os blocos
+  -- acima pegariam um grant a PUBLIC por tabela nomeada. Este bloco existe porque a
+  -- pergunta e outra: a de saber se PUBLIC detem escrita DIRETA, independentemente de
+  -- qualquer papel. Le `relacl` com `grantee = 0`, que e como PUBLIC aparece no catalogo.
+  FOR fn IN
+    SELECT c.relname AS tabela, a.privilege_type AS privilegio
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    CROSS JOIN LATERAL aclexplode(c.relacl) a
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'r'
+      AND c.relname IN ('markets', 'products', 'prices', 'price_submissions', 'product_watch_requests', 'decision_feedback')
+      AND a.grantee = 0
+      AND a.privilege_type IN ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')
+  LOOP
+    failures := array_append(failures, format(
+      'PUBLIC tem %s em public.%s -- escrita concedida a todo mundo, sem papel nomeado',
+      fn.privilegio, fn.tabela));
+  END LOOP;
+
+  -- 3D. O grant automatico da plataforma foi desarmado para TABELA FUTURA.
+  --
+  -- Revogar das tabelas que existem nao impede a proxima de nascer aberta. Este bloco cria
+  -- uma tabela depois do hardening e pergunta o que ela herdou.
+  --
+  -- R2.6 acrescentou SELECT, REFERENCES e TRIGGER a lista: 20260803005000 cortou do default
+  -- apenas os quatro de escrita, e 20260803007500 cortou a heranca inteira
+  -- (`REVOKE ALL ON TABLES`). A consequencia -- tabela nova nao aparece na API ate alguem
+  -- escrever `GRANT SELECT` explicito na migration -- e deliberada, e este bloco e o lugar
+  -- onde ela fica provada em vez de suposta.
+  CREATE TABLE public._drill_tabela_futura (id int PRIMARY KEY);
+  FOREACH priv IN ARRAY ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']
+  LOOP
+    FOREACH papel IN ARRAY ARRAY['anon', 'authenticated']
+    LOOP
+      IF has_table_privilege(papel, 'public._drill_tabela_futura', priv) THEN
+        failures := array_append(failures, format(
+          'tabela criada APOS o hardening ainda nasce com %s para %s -- o default privilege nao foi corrigido',
+          priv, papel));
+      END IF;
+    END LOOP;
+  END LOOP;
+  DROP TABLE public._drill_tabela_futura;
+
+  -- 3E. CONTROLE POSITIVO -- a prova de que os blocos acima medem o efeito das migrations,
+  --     e nao um banco que nunca teve o grant.
+  --
+  -- `_drill_controle_de_acl` nasceu no baseline, sob o mesmo `ALTER DEFAULT PRIVILEGES
+  -- GRANT ALL ON TABLES` que as seis tabelas reais, e nenhuma migration a toca. Ela e,
+  -- portanto, uma fotografia do estado em que as seis nasceram.
+  --
+  -- Se ela AINDA tem os privilegios e as seis NAO tem, a diferenca e obra das migrations.
+  -- Se ela tambem os perdeu, alguma coisa revogou em bloco e as assercoes acima passariam
+  -- por um motivo que nao e o pretendido -- que e exatamente o modo de falha que fez o
+  -- drill ficar verde por dois meses enquanto staging tinha 42 privilegios de escrita por
+  -- papel.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = '_drill_controle_de_acl'
+  ) THEN
+    failures := array_append(failures, 'o controle positivo de ACL sumiu: sem ele nao da para afirmar que o baseline reproduziu o grant da plataforma');
+  ELSE
+    FOREACH priv IN ARRAY ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']
+    LOOP
+      FOREACH papel IN ARRAY ARRAY['anon', 'authenticated']
+      LOOP
+        IF NOT has_table_privilege(papel, 'public._drill_controle_de_acl', priv) THEN
+          failures := array_append(failures, format(
+            'CONTROLE POSITIVO PERDIDO: %s nao tem %s na tabela de controle. As assercoes de privilegio deste arquivo passam a nao provar nada -- elas mediriam ausencia de grant, e nao revogacao.',
+            papel, priv));
+        END IF;
+      END LOOP;
+    END LOOP;
+  END IF;
+
+  -- 3F. CONTROLE NEGATIVO -- o hardening nao pode ter revogado alem do escopo.
+  --
+  -- `service_role` e quem opera o backoffice: aprova submissao, le contribuicao, cadastra
+  -- preco. Uma migration de revogacao que o atingisse tambem passaria em todos os blocos
+  -- acima, porque todos eles perguntam por ausencia.
+  FOREACH tbl IN ARRAY ARRAY['markets', 'products', 'prices', 'price_submissions', 'product_watch_requests', 'decision_feedback']
+  LOOP
+    FOREACH priv IN ARRAY ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']
+    LOOP
+      IF NOT has_table_privilege('service_role', format('public.%s', tbl), priv) THEN
+        failures := array_append(failures, format(
+          'service_role perdeu %s em public.%s -- o hardening revogou alem do escopo e quebraria a operacao manual',
+          priv, tbl));
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  -- 3G. Leitura publica preservada tambem para `authenticated` nas tabelas de catalogo.
+  --     O bloco 2 cobre `anon`; sem este, uma revogacao que atingisse so o outro papel
+  --     publico passaria despercebida.
+  FOREACH tbl IN ARRAY ARRAY['markets', 'products', 'prices']
+  LOOP
+    IF NOT has_table_privilege('authenticated', format('public.%s', tbl), 'SELECT') THEN
+      failures := array_append(failures, format('authenticated perdeu SELECT em public.%s', tbl));
     END IF;
-    IF has_table_privilege('authenticated', format('public.%s', tbl), 'INSERT') THEN
-      failures := array_append(failures, format('authenticated tem INSERT em public.%s -- superficie fechada na Onda 3 reaberta sem gate', tbl));
+  END LOOP;
+
+  -- 3H. As policies continuam intactas. Nenhuma das migrations de hardening pode criar,
+  --     alterar ou remover policy -- e "nao mexeu" e uma afirmacao que so vale medida.
+  --     Sao seis: uma por tabela. `cmd` = 'r' e SELECT (catalogo), 'a' e INSERT
+  --     (contribuicao, dormente desde a Onda 3 -- a policy existe, o privilegio nao).
+  FOR fn IN
+    SELECT t.tabela, t.cmd_esperado
+    FROM unnest(
+      ARRAY['markets', 'products', 'prices', 'price_submissions', 'product_watch_requests', 'decision_feedback'],
+      ARRAY['r', 'r', 'r', 'a', 'a', 'a']
+    ) AS t(tabela, cmd_esperado)
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_policy p
+      JOIN pg_class c ON c.oid = p.polrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relname = fn.tabela AND p.polcmd = fn.cmd_esperado
+    ) THEN
+      failures := array_append(failures, format(
+        'public.%s perdeu a policy de cmd=%s -- nenhuma migration de hardening pode alterar policy',
+        fn.tabela, fn.cmd_esperado));
     END IF;
   END LOOP;
 
@@ -816,7 +987,7 @@ END
 $$;
 
 -- ----------------------------------------------------------------------------
--- O script de auditoria de prontidao (scripts/r2/target-readiness.sql) precisa
+-- O script de auditoria de prontidao (scripts/r2/target-readiness-pre.sql) precisa
 -- responder EXATAMENTE o mesmo que pa_is_valid_gtin().
 --
 -- Ele reimplementa a aritmetica GS1 em linha porque roda ANTES de a migration

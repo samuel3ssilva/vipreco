@@ -18,12 +18,19 @@
 //    permissão mínima, e nenhum caminho que alcance produção.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ARQUIVOS_DE_AUDITORIA, VERBOS_PROIBIDOS, auditar, lerArquivos } from "./read-only-guard";
+import {
+  ARQUIVOS_DE_AUDITORIA,
+  ARQUIVOS_DE_AUDITORIA_EXTERNOS,
+  VERBOS_PROIBIDOS,
+  auditar,
+  lerArquivos,
+} from "./read-only-guard";
 import {
   avaliarGates,
   campos,
   classificarDados,
   classificarHistorico,
+  classificarTelemetria,
   lerFatos,
   renderizar,
 } from "./render-summary";
@@ -80,15 +87,19 @@ describe("guarda de read-only — camada A (estática)", () => {
   it("o drill executa todo .sql do preflight contra Postgres vivo", () => {
     const drill = readFileSync(new URL("../../db-drill/run.sh", import.meta.url), "utf-8");
     expect(drill).toContain("scripts/r2/preflight");
-    for (const nome of ARQUIVOS_DE_AUDITORIA) {
-      expect(drill, `o drill não executa ${nome}`).toContain(nome);
+    for (const nome of [...ARQUIVOS_DE_AUDITORIA, ...ARQUIVOS_DE_AUDITORIA_EXTERNOS]) {
+      // Pelo nome do arquivo, e não pelo caminho: o drill alcança os externos por outro
+      // caminho relativo, e o que este teste protege é que nenhum `.sql` chegue a staging
+      // sem antes ter rodado contra um Postgres vivo.
+      const base = nome.slice(nome.lastIndexOf("/") + 1);
+      expect(drill, `o drill não executa ${base}`).toContain(base);
     }
     expect(drill).toContain("_prologue.sql");
   });
 
   it("todo arquivo de auditoria está na lista verificada", () => {
     // Um `.sql` novo que ninguém acrescentasse aqui rodaria contra staging sem guarda.
-    for (const nome of ARQUIVOS_DE_AUDITORIA) {
+    for (const nome of [...ARQUIVOS_DE_AUDITORIA, ...ARQUIVOS_DE_AUDITORIA_EXTERNOS]) {
       expect(() => readFileSync(new URL(`./${nome}`, import.meta.url))).not.toThrow();
     }
     // Nomes DISTINTOS, e não ocorrências. Hoje cada `.sql` aparece uma vez só — a
@@ -100,6 +111,15 @@ describe("guarda de read-only — camada A (estática)", () => {
       [...RUNNER.matchAll(/consultar "([\w-]+\.sql)"/g)].map((m) => m[1]),
     );
     expect([...consultados].sort()).toEqual([...ARQUIVOS_DE_AUDITORIA].sort());
+  });
+
+  it("os `.sql` externos também passam pela guarda, e por ela mesma", () => {
+    // Uma segunda guarda para eles teria a própria lista de verbos, e duas listas
+    // divergem — sempre na direção de a mais nova esquecer um verbo.
+    const guardados = new Set(lerArquivos().map((a) => a.nome));
+    for (const nome of ARQUIVOS_DE_AUDITORIA_EXTERNOS) {
+      expect(guardados, `${nome} não é lido pela guarda`).toContain(nome);
+    }
   });
 });
 
@@ -206,7 +226,7 @@ describe("o segredo nunca é impresso", () => {
     expect(WORKFLOW).not.toContain("actions/cache");
   });
 
-  it("a saída de target-readiness.sql é retida, porque contém GTIN completo", () => {
+  it("a saída de target-readiness-pre.sql é retida, porque contém GTIN completo", () => {
     expect(RUNNER).toMatch(/saida nao publicada: contem GTIN completo/);
     expect(RUNNER).toMatch(/rm -f "\$TRABALHO\/readiness\.txt"/);
   });
@@ -387,10 +407,12 @@ describe("classificarHistorico", () => {
 
 describe("classificarDados", () => {
   const fatosDe = (linhas: string[]) => lerFatos(linhas.join("\n"));
+  const classificar = (f: ReturnType<typeof lerFatos>) =>
+    classificarDados(f, classificarTelemetria(f));
 
   it("EMPTY quando tudo está zerado", () => {
     expect(
-      classificarDados(
+      classificar(
         fatosDe([
           "count.markets|total=0,demo=0,real=0,ativos=0",
           "count.products|total=0,demo=0,real=0,ativos=0",
@@ -405,7 +427,7 @@ describe("classificarDados", () => {
 
   it("DEMO ONLY quando toda linha é demo e não há submissão", () => {
     expect(
-      classificarDados(
+      classificar(
         fatosDe([
           "count.markets|total=4,demo=4,real=0,ativos=4",
           "count.products|total=7,demo=7,real=0,ativos=7",
@@ -419,7 +441,7 @@ describe("classificarDados", () => {
   });
 
   it("MIXED OR UNKNOWN quando aparece uma linha não-demo", () => {
-    const r = classificarDados(
+    const r = classificar(
       fatosDe([
         "count.markets|total=4,demo=4,real=0,ativos=4",
         "count.products|total=8,demo=7,real=1,ativos=8",
@@ -431,7 +453,7 @@ describe("classificarDados", () => {
   });
 
   it("MIXED OR UNKNOWN quando uma tabela de submissão tem conteúdo", () => {
-    const r = classificarDados(
+    const r = classificar(
       fatosDe([
         "count.markets|total=4,demo=4,real=0,ativos=4",
         "count.products|total=7,demo=7,real=0,ativos=7",
@@ -445,9 +467,145 @@ describe("classificarDados", () => {
 
   it("UNKNOWN, e não EMPTY, quando nenhuma contagem foi lida", () => {
     // A confusão perigosa: "não consegui ler" parecendo "está vazio".
-    const r = classificarDados(fatosDe(["db.name|postgres"]));
+    const r = classificar(fatosDe(["db.name|postgres"]));
     expect(r.classe).toBe("MIXED OR UNKNOWN");
     expect(r.explicacao).toContain("honesta");
+  });
+});
+
+describe("classificarTelemetria — a linha de product_watch_requests", () => {
+  const fatosDe = (linhas: string[]) => lerFatos(linhas.join("\n"));
+
+  /** A tabela como ela é em `supabase/migrations/20260727005424_*.sql`. */
+  const ESTRUTURA_REAL = [
+    "watch.total|1",
+    "watch.column|id:uuid:NOT NULL",
+    "watch.column|product_id:uuid:NOT NULL",
+    "watch.column|created_at:timestamp with time zone:NOT NULL",
+    "watch.instante|primeiro=2026-07-28T14:03:11Z,ultimo=2026-07-28T14:03:11Z",
+    "watch.tocada_por_r2|false",
+  ];
+
+  it("classifica A quando não há coluna capaz de guardar dado pessoal", () => {
+    const r = classificarTelemetria(fatosDe(ESTRUTURA_REAL));
+    expect(r.classe).toBe("A. ANONYMOUS NONCRITICAL TELEMETRY");
+    expect(r.suspeitas).toEqual([]);
+    expect(r.linhas).toBe(1);
+  });
+
+  it("a classificação A não depende de a tabela estar vazia", () => {
+    // O ponto inteiro: uma linha anônima e mil linhas anônimas são a mesma classe. O que
+    // decide é a estrutura, não a contagem.
+    const r = classificarTelemetria(fatosDe([...ESTRUTURA_REAL.slice(1), "watch.total|1000"]));
+    expect(r.classe).toBe("A. ANONYMOUS NONCRITICAL TELEMETRY");
+  });
+
+  it("classifica B quando existe coluna de texto livre — mesmo com nome inocente", () => {
+    const r = classificarTelemetria(
+      fatosDe([...ESTRUTURA_REAL, "watch.column|observacao:text:nullable"]),
+    );
+    expect(r.classe).toBe("B. PERSONAL OR UNKNOWN DATA");
+    expect(r.suspeitas.join(" ")).toContain("aceita texto livre");
+  });
+
+  it.each([
+    "email:uuid:nullable",
+    "telefone:uuid:nullable",
+    "user_id:uuid:nullable",
+    "ip:inet:nullable",
+    "session_id:uuid:nullable",
+    "device:uuid:nullable",
+  ])("classifica B quando aparece a coluna %s, mesmo com tipo não textual", (coluna) => {
+    const r = classificarTelemetria(fatosDe([...ESTRUTURA_REAL, `watch.column|${coluna}`]));
+    expect(r.classe).toBe("B. PERSONAL OR UNKNOWN DATA");
+  });
+
+  it("classifica B quando as colunas não foram lidas — a dúvida pesa para o lado protegido", () => {
+    const r = classificarTelemetria(fatosDe(["watch.total|1"]));
+    expect(r.classe).toBe("B. PERSONAL OR UNKNOWN DATA");
+    expect(r.explicacao).toContain("não foram lidas");
+  });
+
+  it("classifica B quando alguma migration de R2 alcança a tabela", () => {
+    const comR2 = ESTRUTURA_REAL.map((f) =>
+      f.startsWith("watch.tocada_por_r2") ? "watch.tocada_por_r2|true" : f,
+    );
+    expect(classificarTelemetria(fatosDe(comR2)).classe).toBe("B. PERSONAL OR UNKNOWN DATA");
+  });
+
+  it("classifica B quando ninguém verificou se R2 alcança a tabela", () => {
+    const semFato = ESTRUTURA_REAL.filter((f) => !f.startsWith("watch.tocada_por_r2"));
+    expect(classificarTelemetria(fatosDe(semFato)).classe).toBe("B. PERSONAL OR UNKNOWN DATA");
+  });
+
+  it("a explicação nunca cita conteúdo de linha, só estrutura e instante", () => {
+    const r = classificarTelemetria(fatosDe(ESTRUTURA_REAL));
+    expect(r.explicacao).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/i);
+  });
+});
+
+describe("a classificação A muda o veredito de G5 e G13, e a B não", () => {
+  const CONTEUDO_DEMO = [
+    "count.markets|total=4,demo=4,real=0,ativos=4",
+    "count.products|total=7,demo=7,real=0,ativos=7",
+    "count.prices|total=22,demo=22,real=0,ativos=22",
+    "count.price_submissions|0",
+    "count.product_watch_requests|1",
+    "count.decision_feedback|0",
+  ];
+  const ANONIMA = [
+    "watch.total|1",
+    "watch.column|id:uuid:NOT NULL",
+    "watch.column|product_id:uuid:NOT NULL",
+    "watch.column|created_at:timestamp with time zone:NOT NULL",
+    "watch.tocada_por_r2|false",
+  ];
+
+  const vereditos = (linhas: string[]) => {
+    const fatos = lerFatos(linhas.join("\n"));
+    const telemetria = classificarTelemetria(fatos);
+    const dados = classificarDados(fatos, telemetria);
+    const gates = avaliarGates(
+      fatos,
+      classificarHistorico("true", [...LOCAIS], LOCAIS),
+      dados,
+      telemetria,
+    );
+    return {
+      dados: dados.classe,
+      g5: gates.find((g) => g.id === "G5")!.veredito,
+      g13: gates.find((g) => g.id === "G13")!.veredito,
+    };
+  };
+
+  it("com a linha classificada como A, G5 e G13 passam", () => {
+    expect(vereditos([...CONTEUDO_DEMO, ...ANONIMA])).toEqual({
+      dados: "DEMO ONLY",
+      g5: "PASS",
+      g13: "PASS",
+    });
+  });
+
+  it("sem classificação, a mesma linha continua reprovando — como reprovou em R2.3E", () => {
+    expect(vereditos(CONTEUDO_DEMO)).toEqual({
+      dados: "MIXED OR UNKNOWN",
+      g5: "FAIL",
+      g13: "FAIL",
+    });
+  });
+
+  it("a absolvição vale só para product_watch_requests, e não para as outras duas", () => {
+    const comSubmissao = CONTEUDO_DEMO.map((f) =>
+      f.startsWith("count.price_submissions") ? "count.price_submissions|3" : f,
+    );
+    expect(vereditos([...comSubmissao, ...ANONIMA]).g5).toBe("FAIL");
+  });
+
+  it("e não absolve dado real: uma linha com is_demo = false continua reprovando", () => {
+    const comReal = CONTEUDO_DEMO.map((f) =>
+      f.startsWith("count.products") ? "count.products|total=8,demo=7,real=1,ativos=8" : f,
+    );
+    expect(vereditos([...comReal, ...ANONIMA]).g5).toBe("FAIL");
   });
 });
 
@@ -482,7 +640,10 @@ describe("avaliarGates", () => {
 
   const gate = (fatos: ReturnType<typeof lerFatos>, id: string) => {
     const historico = classificarHistorico("true", [...LOCAIS], LOCAIS);
-    return avaliarGates(fatos, historico, classificarDados(fatos)).find((g) => g.id === id)!;
+    const telemetria = classificarTelemetria(fatos);
+    return avaliarGates(fatos, historico, classificarDados(fatos, telemetria), telemetria).find(
+      (g) => g.id === id,
+    )!;
   };
 
   it("G4 passa quando nenhuma coluna de R2-A está presente", () => {
@@ -517,10 +678,12 @@ describe("avaliarGates", () => {
 
   it("G3 acompanha o estado do histórico", () => {
     const fatos = fatosPreR2;
+    const telemetria = classificarTelemetria(fatos);
     const desalinhado = avaliarGates(
       fatos,
       classificarHistorico("false", [], LOCAIS),
-      classificarDados(fatos),
+      classificarDados(fatos, telemetria),
+      telemetria,
     ).find((g) => g.id === "G3")!;
     expect(desalinhado.veredito).toBe("FAIL");
     expect(gate(fatos, "G3").veredito).toBe("PASS");
@@ -534,10 +697,34 @@ describe("avaliarGates", () => {
     expect(gate(comReal, "G13").veredito).toBe("FAIL");
   });
 
-  it("G7 fica UNKNOWN sem status e reprova quando parcial", () => {
-    expect(gate(lerFatos("db.name|postgres"), "G7").veredito).toBe("UNKNOWN");
-    expect(gate(lerFatos("readiness.status|parcial"), "G7").veredito).toBe("FAIL");
-    expect(gate(lerFatos("readiness.status|ok"), "G7").veredito).toBe("PASS");
+  it("G7-PRE fica UNKNOWN sem status e reprova quando falhou", () => {
+    expect(gate(lerFatos("db.name|postgres"), "G7-PRE").veredito).toBe("UNKNOWN");
+    expect(gate(lerFatos("readiness.status|falhou"), "G7-PRE").veredito).toBe("FAIL");
+    expect(gate(lerFatos("readiness.status|ok"), "G7-PRE").veredito).toBe("PASS");
+  });
+
+  it("G7-POST é PENDING BY DESIGN, e nunca FAIL, antes da aplicação", () => {
+    // A circularidade que R2.4 desfez vivia exatamente aqui: o gate rodava as consultas
+    // que dependem das colunas que a migration cria, elas falhavam por ausência das
+    // colunas, e o FAIL bloqueava a migration. O gate media a si mesmo.
+    for (const fatos of [lerFatos("db.name|postgres"), lerFatos("readiness.status|ok")]) {
+      expect(gate(fatos, "G7-POST").veredito).toBe("PENDING BY DESIGN");
+    }
+  });
+
+  it("nenhum gate deste relatório se chama G7 sem sufixo", () => {
+    // Um `G7` solto voltaria a misturar as duas perguntas, que é o defeito original.
+    const historico = classificarHistorico("true", [...LOCAIS], LOCAIS);
+    const telemetria = classificarTelemetria(fatosPreR2);
+    const ids = avaliarGates(
+      fatosPreR2,
+      historico,
+      classificarDados(fatosPreR2, telemetria),
+      telemetria,
+    ).map((g) => g.id);
+    expect(ids).not.toContain("G7");
+    expect(ids).toContain("G7-PRE");
+    expect(ids).toContain("G7-POST");
   });
 });
 
@@ -663,14 +850,14 @@ describe("a aritmética GS1 de 20-content.sql não divergiu", () => {
   // Mesmo raciocínio de `target-readiness.test.ts`: a divergência perigosa não é a que
   // reprova demais — essa falha fechada. É a que reprova um GTIN VÁLIDO e manda alguém
   // "corrigir" dado bom. Um GTIN válido pertence a um produto real.
-  const alvo = readFileSync(new URL("../target-readiness.sql", import.meta.url), "utf-8");
+  const alvo = readFileSync(new URL("../target-readiness-pre.sql", import.meta.url), "utf-8");
   const drill = readFileSync(new URL("../../db-drill/90-assertions.sql", import.meta.url), "utf-8");
 
   const NUCLEO = ["(10 - (SUM(", "* CASE WHEN i % 2 = 0 THEN 3 ELSE 1 END", ") % 10)) % 10"];
 
   it.each(NUCLEO)("o trecho %j aparece nos três arquivos", (trecho) => {
     expect(CONTEUDO, "ausente em 20-content.sql").toContain(trecho);
-    expect(alvo, "ausente em target-readiness.sql").toContain(trecho);
+    expect(alvo, "ausente em target-readiness-pre.sql").toContain(trecho);
     expect(drill, "ausente em 90-assertions.sql").toContain(trecho);
   });
 

@@ -72,7 +72,7 @@ project ref: dá para conferir **qual** ambiente foi lido, não dá para alcanç
 
 Duas consequências práticas que talvez surpreendam:
 
-- a saída de [`../target-readiness.sql`](../target-readiness.sql) **não é publicada**. A
+- a saída de [`../target-readiness-pre.sql`](../target-readiness-pre.sql) **não é publicada**. A
   consulta 2 dele devolve GTIN completo. O script roda (é o §5.7 do mandato), mas o que
   se registra é o status; a auditoria equivalente, mascarada, sai de `20-content.sql`;
 - o dump de produtos do preview é apagado, e só a **contagem por estado** entra no

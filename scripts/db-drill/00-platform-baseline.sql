@@ -53,3 +53,25 @@ CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (
 -- PUBLIC). Se uma migration futura criar uma funcao sensivel e confiar apenas em
 -- "REVOKE ALL ... FROM PUBLIC", a assertion em 90-assertions.sql deve falhar o drill.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated;
+
+-- R2.5: a OUTRA METADE do mesmo ponto cego, e ela ficou dois meses sem ser reproduzida.
+--
+-- A linha acima nasceu do achado da Onda 3 -- EXECUTE automatico em FUNCAO -- e parou ali.
+-- A plataforma faz a mesma coisa com TABELA, e ninguem tinha modelado: `GRANT ALL ON
+-- TABLES` para anon/authenticated/service_role, via default privilege do papel que cria os
+-- objetos.
+--
+-- A consequencia era um drill que passava pelo motivo errado. `90-assertions.sql` afirma
+-- que `anon` nao tem INSERT em tabela nenhuma; contra este banco, antes desta linha, a
+-- afirmacao passava porque NUNCA HOUVE grant nenhum para revogar. Contra a plataforma real
+-- ela era FALSA para markets, products e prices -- medido em staging, 42 privilegios por
+-- papel alem dos tres SELECT que as migrations concedem.
+--
+-- Um teste que passa por ausencia do que deveria testar nao e um teste; e uma frase.
+--
+-- Com esta linha, o drill parte do mundo real: as tabelas nascem com escrita publica, as
+-- migrations da Onda 3 revogam nas de submissao, e
+-- 20260803005000_core_table_privilege_hardening.sql revoga nas tres centrais. A assercao
+-- passa a medir o efeito das migrations em vez de medir um banco limpo demais.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON TABLES TO anon, authenticated, service_role;

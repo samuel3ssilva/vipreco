@@ -138,10 +138,32 @@ if (!url.port) forma.push("url:sem-porta-explicita");
 // barra do proprio escape ser escapada depois. E exatamente a familia de erro que
 // motivou este arquivo: transformacao de string que corrompe em silencio.
 // -----------------------------------------------------------------------------
-const senhaEscapada = senha.replace(/\\/g, "\\\\").replace(/:/g, "\\:");
-const caminhoPgpass = join(diretorio, ".pgpass");
-writeFileSync(caminhoPgpass, `*:*:*:*:${senhaEscapada}\n`, { encoding: "utf-8", mode: 0o600 });
-chmodSync(caminhoPgpass, 0o600);
+function escreverPgpass(nome: string, valor: string): string {
+  const escapada = valor.replace(/\\/g, "\\\\").replace(/:/g, "\\:");
+  const caminho = join(diretorio, nome);
+  writeFileSync(caminho, `*:*:*:*:${escapada}\n`, { encoding: "utf-8", mode: 0o600 });
+  chmodSync(caminho, 0o600);
+  return caminho;
+}
+
+const caminhoPgpass = escreverPgpass(".pgpass", senha);
+
+// -----------------------------------------------------------------------------
+// O candidato alternativo, e por que ele existe.
+//
+// Quando a senha vem percent-encoded, decodificar e o certo -- e o que o libpq faz
+// com uma URI. Mas ha um caso em que decodificar e o ERRADO: uma senha que contem
+// literalmente `%40` e foi colada crua. As duas situacoes sao indistinguiveis olhando
+// so para o texto, e as duas terminam no mesmo `password authentication failed`.
+//
+// Nao da para adivinhar qual e. Da para eliminar a duvida: quando a decodificacao
+// mudou alguma coisa, o outro candidato e escrito tambem, e o runner tenta o segundo
+// se o primeiro for recusado. Nao e adivinhar senha -- os dois candidatos saem, de
+// forma deterministica, do mesmo valor que o Founder cadastrou. E a diferenca entre
+// dizer "a credencial esta errada" e ter PROVADO que esta.
+// -----------------------------------------------------------------------------
+const caminhoAlternativo =
+  senha !== url.password ? escreverPgpass(".pgpass-alt", url.password) : "";
 
 const b64 = (v: string) => Buffer.from(v, "utf-8").toString("base64");
 
@@ -151,6 +173,7 @@ const linhas = [
   `PGUSER=${b64(usuario)}`,
   `PGDATABASE=${b64(banco)}`,
   `PGPASSFILE=${b64(caminhoPgpass)}`,
+  `PGPASSFILE_ALT=${caminhoAlternativo ? b64(caminhoAlternativo) : ""}`,
   `FORMA=${forma.join(",")}`,
 ];
 

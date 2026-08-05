@@ -35,6 +35,15 @@ carregar_componentes() {
     chave="${linha%%=*}"
     valor="${linha#*=}"
     case "$chave" in
+      # O alternativo pode vir vazio de proposito (so existe quando a decodificacao
+      # percent mudou alguma coisa), entao ele nao passa pela exigencia de nao-vazio.
+      PGPASSFILE_ALT)
+        if [ -n "$valor" ]; then
+          PGPASSFILE_ALT="$(printf '%s' "$valor" | base64 --decode 2>/dev/null)" || return 1
+        else
+          PGPASSFILE_ALT=""
+        fi
+        ;;
       PGHOST | PGPORT | PGUSER | PGDATABASE | PGPASSFILE)
         # Falhar aqui e obrigatorio: um componente vazio nao para nada sozinho, ele
         # so muda para onde o psql tenta conectar -- e depois se apresenta como erro

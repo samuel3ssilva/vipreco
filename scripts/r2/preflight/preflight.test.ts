@@ -91,9 +91,14 @@ describe("guarda de read-only — camada A (estática)", () => {
     for (const nome of ARQUIVOS_DE_AUDITORIA) {
       expect(() => readFileSync(new URL(`./${nome}`, import.meta.url))).not.toThrow();
     }
-    expect(RUNNER.match(/consultar "([\w-]+\.sql)"/g) ?? []).toHaveLength(
-      ARQUIVOS_DE_AUDITORIA.length,
+    // Nomes DISTINTOS, não ocorrências: o runner consulta `00-structure.sql` duas
+    // vezes de propósito (a segunda com a leitura alternativa da senha), e contar
+    // ocorrências transformaria uma repetição legítima em falha — sem que nenhum
+    // `.sql` tivesse escapado da guarda, que é a única coisa que este teste protege.
+    const consultados = new Set(
+      [...RUNNER.matchAll(/consultar "([\w-]+\.sql)"/g)].map((m) => m[1]),
     );
+    expect([...consultados].sort()).toEqual([...ARQUIVOS_DE_AUDITORIA].sort());
   });
 });
 

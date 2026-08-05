@@ -16,13 +16,17 @@ próprio documento.
 
 ## Produto — o que construir
 
-| Documento                                                                | Estado                                             |
-| ------------------------------------------------------------------------ | -------------------------------------------------- |
-| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                 | **NORMATIVO** — fonte oficial do escopo de produto |
-| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)         | **NORMATIVO** — critérios de desempate             |
-| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md) | **NORMATIVO** — E1                                 |
-| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)               | **NORMATIVO** — E2                                 |
-| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                     | **NORMATIVO** — alvo do card                       |
+| Documento                                                                                | Estado                                                                 |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO** — fonte oficial do escopo de produto                     |
+| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                 |
+| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                     |
+| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                     |
+| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                           |
+| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo |
+| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                          |
+| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                            |
+| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA** — o PNG aprovado; **não é fonte de dado**               |
 
 ## Dados — como o dado é
 

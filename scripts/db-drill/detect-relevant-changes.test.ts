@@ -54,8 +54,9 @@ describe("detect-relevant-changes.sh — quando o drill pesado deve rodar", () =
     expect(classificar(["scripts/db-drill/90-assertions.sql"])).toBe("true");
   });
 
-  it("roda quando as ferramentas de R2 mudam (o drill executa target-readiness.sql)", () => {
-    expect(classificar(["scripts/r2/target-readiness.sql"])).toBe("true");
+  it("roda quando as ferramentas de R2 mudam (o drill executa os target-readiness)", () => {
+    expect(classificar(["scripts/r2/target-readiness-pre.sql"])).toBe("true");
+    expect(classificar(["scripts/r2/target-readiness-post.sql"])).toBe("true");
   });
 
   it("roda quando o seed ou a config do Supabase mudam", () => {

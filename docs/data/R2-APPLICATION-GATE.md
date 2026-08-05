@@ -75,15 +75,22 @@ O que **não** muda: nada disso aplica migration. O workflow não tem modo `appl
 autorização continua sendo do Founder/PMO, ambiente por ambiente, como manda o princípio 14 do
 `CLAUDE.md`.
 
-**Estado em 05/08/2026:** o preflight ainda não leu o banco. O bloqueio já mudou de natureza
-três vezes, e o registro dessas mudanças é o que impede repetir a investigação errada:
+**Estado em 05/08/2026:** o preflight **leu o banco** (run `31032153539`). O bloqueio mudou de
+natureza cinco vezes antes disso, e o registro dessas mudanças é o que impede repetir a
+investigação errada:
 
-| Data  | Bloqueio                           | O que era                                                    |
-| ----- | ---------------------------------- | ------------------------------------------------------------ |
-| 03/08 | `CREDENTIAL ACCESS REQUIRED`       | não existia caminho automatizado nenhum                      |
-| 04/08 | `STAGING SECRET REQUIRED`          | o caminho existia, e o segredo não estava cadastrado         |
-| 05/08 | `STAGING CREDENTIAL REJECTED`      | o segredo existia, e cinco defeitos do runner o corrompiam   |
-| 05/08 | `STAGING PASSWORD SECRET REQUIRED` | o runner foi refeito; falta cadastrar `SUPABASE_DB_PASSWORD` |
+| Data  | Bloqueio                           | O que era                                                        |
+| ----- | ---------------------------------- | ---------------------------------------------------------------- |
+| 03/08 | `CREDENTIAL ACCESS REQUIRED`       | não existia caminho automatizado nenhum                          |
+| 04/08 | `STAGING SECRET REQUIRED`          | o caminho existia, e o segredo não estava cadastrado             |
+| 05/08 | `STAGING CREDENTIAL REJECTED`      | o segredo existia, e cinco defeitos do runner o corrompiam       |
+| 05/08 | `STAGING PASSWORD SECRET REQUIRED` | o runner foi refeito; faltava cadastrar `SUPABASE_DB_PASSWORD`   |
+| 05/08 | `Network is unreachable`           | o host derivado era o da conexão direta, IPv6-only               |
+| 05/08 | **lido**                           | pooler IPv4, usuário `postgres.<ref>`: 9 PASS, 6 FAIL, 0 UNKNOWN |
+
+**Nenhum dos seis bloqueios foi do banco.** Todos foram da ferramenta, e é por isso que a
+linha final importa mais do que parece: a partir dela, um `FAIL` volta a ser uma afirmação
+sobre staging.
 
 A R2.3D trocou o segredo composto pelo **atômico**: `SUPABASE_DB_PASSWORD` carrega só a senha,
 e host, porta, usuário e banco são derivados de `config/environments.json`. A montagem manual de
@@ -96,6 +103,103 @@ Os dois GTINs inválidos **não são curadoria pendente**: são as duas linhas q
 `1102967` já anulou no `supabase/seed.sql`, e que staging não recebeu porque foi semeado antes
 daquela correção. Realinhar staging com o seed versionado resolve o item — e é escrita, logo é
 decisão do Founder/PMO.
+
+---
+
+## Gate consolidado G1–G15 (R2.4, 05/08/2026)
+
+Todos precisam estar `PASS` antes da aplicação. Os vereditos decidíveis por leitura saem do
+preflight; os demais são decisão humana registrada aqui.
+
+| #          | Condição                                                          | Como se decide                                                    |
+| ---------- | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| G1         | staging identificado sem ambiguidade                              | usuário `postgres.<ref>` derivado de `config/environments.json`   |
+| G2         | production é outro projeto, e não foi contatada                    | refs diferentes provados; a conexão aborta se mencionar produção  |
+| G3         | baseline histórico adotado **com equivalência comprovada**         | `r2-schema-equivalence.yml` + `migration repair` das 8 versões    |
+| G4         | schema legado equivalente                                          | nenhuma coluna de R2-A presente                                   |
+| G5         | dados afetados `DEMO ONLY`                                         | contagens, incluindo linhas inativas — ver a ressalva abaixo      |
+| G6-STAGING | staging reconstruível segundo a política aprovada                  | ver **STAGING DISPOSABLE REBUILD POLICY**, abaixo                 |
+| G7-PRE     | prontidão do schema legado                                         | `target-readiness-pre.sql` roda por inteiro **antes** de aplicar  |
+| G7-POST    | verificação pós-aplicação                                          | `target-readiness-post.sql`, **depois** de aplicar                |
+| G8         | zero GTIN inválido ou duplicado                                    | aritmética GS1 em linha, sobre os GTINs que existem               |
+| G9         | preview read-only de quantidade                                    | `preview-counts.ts`, sem escrever                                 |
+| G10        | drill e rollback                                                   | `db-schema-drill-required` verde                                  |
+| G11        | CI e CodeQL                                                        | verdes na revisão aplicada                                        |
+| G12        | nenhum deploy automático                                           | R2 não tem superfície de interface                                |
+| G13        | nenhum dado pessoal ou crítico afetado                             | ver a ressalva abaixo                                             |
+| G14        | RLS, policies e grants equivalentes                                | fingerprint de equivalência                                       |
+| G15        | credencial segura                                                  | segredo atômico, `.pgpass` 0600, apagado no fim do job            |
+
+### G7 deixou de ser circular
+
+Até R2.4, G7 dizia "`target-readiness` executado por inteiro". As consultas 5 a 7 daquele
+arquivo referenciam `package_type`, `quantity_value` e `pa_is_valid_gtin` — objetos que a
+migration **cria**. Antes de aplicar, o script parava em `42703`, o gate marcava `FAIL`, e o
+`FAIL` bloqueava a aplicação.
+
+Ou seja: G7 exigia, para autorizar a migration, uma prova que só a migration podia produzir.
+Isso não é um ambiente reprovado — é um gate que não tem como passar. O `FAIL` do run
+`31032153539` não media staging; media o gate.
+
+A separação em `target-readiness-pre.sql` e `target-readiness-post.sql` desfaz a
+circularidade na **estrutura**, e não num comentário pedindo tolerância:
+
+> Antes de aplicar, o estado permitido é **`G7-PRE PASS` — `G7-POST PENDING BY DESIGN`**.
+>
+> `PENDING BY DESIGN` não é um `FAIL` educado: é a afirmação de que a pergunta ainda não pode
+> ser feita. Confundir "ainda não dá para perguntar" com "a resposta foi não" é exatamente o
+> que produziu a circularidade.
+
+`scripts/r2/target-readiness.test.ts` reprova se qualquer identificador futuro voltar a
+aparecer na parte PRE como referência — e continua exigindo que ele apareça como **literal de
+texto** na consulta ao catálogo, que é legítima. Sem essa segunda metade, apagar a consulta 4
+inteira faria o teste passar, e o gate perderia a verificação de que R2 ainda não foi aplicada.
+
+### G5 e G13, e a linha de `product_watch_requests`
+
+A auditoria de R2.3E achou **uma** linha em `product_watch_requests`, e ela reprovou G5 e G13.
+Reprovar foi correto: a regra dizia "as três tabelas de submissão vazias", e uma não estava.
+
+Mas "existe uma linha" é um número, não uma classificação. A partir de R2.4, essa linha **não
+reprova G5/G13** quando classificada como `A. ANONYMOUS NONCRITICAL TELEMETRY` — e a
+classificação se decide pela **estrutura** da tabela, não pelo conteúdo das linhas:
+
+- nenhuma coluna capaz de guardar identificador de pessoa;
+- nenhuma coluna de texto livre;
+- nenhuma migration de R2 alcança a tabela;
+- a linha é preservada: não é apagada, não é alterada, não é exportada.
+
+Se não existe coluna capaz de guardar dado pessoal, nenhuma linha pode conter um — e afirmar
+isso **não exige ler linha nenhuma**. É a única forma de responder "há dado pessoal aqui?" sem
+que responder já seja uma leitura de dado pessoal.
+
+A absolvição vale só para essa tabela. `price_submissions` e `decision_feedback` têm coluna de
+texto livre e de escolha, e continuam contando integralmente. Dado com `is_demo = false`
+também: nada aqui absolve dado real.
+
+### STAGING DISPOSABLE REBUILD POLICY
+
+**Staging não é sistema de registro.** O objetivo de recuperação é reconstruir schema,
+reconstruir os dados de demonstração, recuperar a configuração necessária e preservar
+contratos e evidências — **não** reter telemetria anônima não crítica.
+
+G6-STAGING é `PASS` quando:
+
+1. o schema é reconstruível a partir de `supabase/migrations/`;
+2. o seed de demonstração é reconstruível a partir de `supabase/seed.sql`;
+3. as migrations são reproduzíveis, e o rollback documentado foi executado;
+4. as configurações necessárias estão documentadas;
+5. nenhum dado pessoal ou crítico existe no ambiente;
+6. o drill reconstrói tudo desde zero, com contagens exatas;
+7. a única divergência aceita é telemetria anônima não crítica.
+
+Os itens 1, 2, 3 e 6 são provados pelo `db-schema-drill`, que roda em CI e é required check.
+O item 5 é provado pela classificação acima. O item 7 é a decisão que o Founder tomou, e ela
+tem limite explícito:
+
+> Isto **não** é política de backup de produção, **não** encerra o passo geral de backup,
+> **não** autoriza perda de dado de piloto, **não** autoriza perda de dado pessoal e **não**
+> autoriza tratar produção como descartável.
 
 ---
 

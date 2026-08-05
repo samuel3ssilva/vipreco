@@ -1,0 +1,307 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { comparar, lerFingerprint, normalizar, renderizar } from "./compare";
+
+/**
+ * R2.4 §5 — o comparador de equivalência de schema.
+ *
+ * O que este arquivo protege, em ordem de gravidade se quebrar:
+ *
+ * 1. QUE `EXACT EQUIVALENT` SEJA DIFÍCIL. Ele é o único veredito que autoriza adotar as
+ *    oito versões como baseline histórico. Um comparador que normaliza demais devolve
+ *    "equivalente" para bancos diferentes, e o resultado seria carimbar como aplicadas
+ *    dez migrations cujo efeito não está lá — trocar uma incerteza conhecida por uma
+ *    certeza falsa.
+ *
+ * 2. QUE `UNKNOWN` NÃO VIRE `MATERIAL DRIFT`. Falhar por fato medido e falhar por não ter
+ *    conseguido medir levam a decisões diferentes, e o relatório precisa dizer qual é.
+ *
+ * 3. QUE O `.sql` CONTINUE READ-ONLY. Ele roda contra staging.
+ */
+
+const FINGERPRINT_SQL = readFileSync(new URL("./fingerprint.sql", import.meta.url), "utf-8");
+
+/** Um schema mínimo, mas com um objeto de cada categoria que importa. */
+const BASE = [
+  "fp.guard.read_only|on",
+  "fp.db.version|17.6",
+  "fp.tabela|products|kind=r,rls=true,forcada=false",
+  "fp.coluna|products.gtin|pos=7,tipo=text,notnull=false,default=(nenhum)",
+  "fp.coluna|products.id|pos=1,tipo=uuid,notnull=true,default=gen_random_uuid()",
+  "fp.constraint|products.products_pkey|tipo=p,validada=true,def=PRIMARY KEY (id)",
+  "fp.indice|products.products_gtin_unique_idx|CREATE UNIQUE INDEX products_gtin_unique_idx ON public.products USING btree (gtin) WHERE (gtin IS NOT NULL)",
+  "fp.funcao|pa_normalize_text(text)|volatil=i,secdef=false,kind=f,def=CREATE OR REPLACE FUNCTION public.pa_normalize_text(t text) RETURNS text",
+  "fp.policy|products.leitura_publica|cmd=r,permissiva=t,papeis=anon,using=(is_active),check=(nenhum)",
+  "fp.grant_tabela|products:anon:SELECT|concedido",
+  "fp.grant_funcao|pa_normalize_text(text):service_role:EXECUTE|concedido",
+  "fp.comentario|coluna:products.size_text|Texto de exibicao, nunca fonte de calculo.",
+  "fp.extensao|pg_trgm|schema=extensions",
+].join("\n");
+
+const trocar = (de: string, para: string) => BASE.replace(de, para);
+
+describe("lerFingerprint", () => {
+  it("separa categoria, identidade e assinatura", () => {
+    const m = lerFingerprint("fp.coluna|products.gtin|pos=7,tipo=text");
+    expect([...m.values()]).toEqual([
+      { categoria: "fp.coluna", identidade: "products.gtin", assinatura: "pos=7,tipo=text" },
+    ]);
+  });
+
+  it("ignora linha em branco e linha que não é fato", () => {
+    const m = lerFingerprint("\nBEGIN\nSET\nfp.tabela|products|kind=r\nROLLBACK\n");
+    expect(m.size).toBe(1);
+  });
+
+  it("aceita fato sem assinatura, como as linhas de contexto", () => {
+    const m = lerFingerprint("fp.db.version|17.6");
+    expect([...m.values()][0]).toEqual({
+      categoria: "fp.db.version",
+      identidade: "17.6",
+      assinatura: "",
+    });
+  });
+});
+
+describe("normalizar — só o que o mandato permite", () => {
+  it("remove qualificação de schema equivalente", () => {
+    expect(normalizar("SELECT public.f(extensions.g(x))")).toBe("SELECT f(g(x))");
+    expect(normalizar("pg_catalog.now()")).toBe("now()");
+  });
+
+  it("colapsa espaço em branco", () => {
+    expect(normalizar("CREATE   INDEX\n  x")).toBe("CREATE INDEX x");
+  });
+
+  it("NÃO remove qualificação de schema inesperado", () => {
+    // Uma função que migrou para outro schema é drift, e precisa aparecer como tal.
+    expect(normalizar("auth.uid()")).toBe("auth.uid()");
+  });
+
+  it("NÃO toca em nada além disso", () => {
+    for (const original of [
+      "notnull=true",
+      "validada=false",
+      "WHERE (gtin IS NOT NULL)",
+      "USING btree (gtin)",
+      "papeis=anon,authenticated",
+      "volatil=i",
+    ]) {
+      expect(normalizar(original)).toBe(original);
+    }
+  });
+});
+
+describe("comparar", () => {
+  it("EXACT EQUIVALENT quando os dois lados são idênticos", () => {
+    const c = comparar(BASE, BASE);
+    expect(c.classificacao).toBe("EXACT EQUIVALENT");
+    expect(c.diferencas).toEqual([]);
+    expect(c.objetosComparados).toBe(11);
+  });
+
+  it("EXACT EQUIVALENT quando a única diferença é qualificação ou espaço", () => {
+    const outroLado = BASE.replace("ON public.products USING btree", "ON products   USING  btree");
+    expect(comparar(BASE, outroLado).classificacao).toBe("EXACT EQUIVALENT");
+  });
+
+  it("EXACT EQUIVALENT sobrevive a patch diferente do PostgreSQL", () => {
+    expect(comparar(BASE, trocar("fp.db.version|17.6", "fp.db.version|17.2")).classificacao).toBe(
+      "EXACT EQUIVALENT",
+    );
+  });
+
+  it("e a versão do Postgres nunca é contada como objeto divergente", () => {
+    const c = comparar(BASE, trocar("fp.db.version|17.6", "fp.db.version|17.2"));
+    expect(c.diferencas).toEqual([]);
+    expect(c.objetosComparados).toBe(11);
+  });
+
+  /**
+   * Um caso por tipo de diferença que o mandato proíbe normalizar. Todos são a mesma
+   * asserção, e é de propósito: a lista existe para que remover qualquer item dela quebre
+   * um teste com nome próprio, em vez de sumir numa condição composta.
+   */
+  it.each([
+    ["nulabilidade", "notnull=false,default=(nenhum)", "notnull=true,default=(nenhum)"],
+    ["default", "default=gen_random_uuid()", "default=uuid_generate_v4()"],
+    ["tipo de coluna", "tipo=text,notnull=false", "tipo=character varying,notnull=false"],
+    ["validação de constraint", "validada=true,def=PRIMARY KEY", "validada=false,def=PRIMARY KEY"],
+    ["predicado de índice", "WHERE (gtin IS NOT NULL)", "WHERE (gtin IS NOT NULL AND is_active)"],
+    ["expressão de policy", "using=(is_active)", "using=(true)"],
+    ["papéis de policy", "papeis=anon", "papeis=anon,authenticated"],
+    ["RLS", "rls=true,forcada=false", "rls=false,forcada=false"],
+    ["volatilidade de função", "volatil=i,secdef=false", "volatil=v,secdef=false"],
+    ["modo de segurança", "secdef=false,kind=f", "secdef=true,kind=f"],
+    ["corpo de função", "RETURNS text", "RETURNS citext"],
+    ["comentário normativo", "nunca fonte de calculo", "pode ser usado em calculo"],
+  ])("MATERIAL DRIFT quando %s difere", (_rotulo, de, para) => {
+    const c = comparar(BASE, trocar(de, para));
+    expect(c.classificacao).toBe("MATERIAL DRIFT");
+    expect(c.diferencas).toHaveLength(1);
+    expect(c.diferencas[0]!.tipo).toBe("assinatura diferente");
+  });
+
+  it("MATERIAL DRIFT quando o ambiente tem um grant a mais", () => {
+    const c = comparar(BASE, `${BASE}\nfp.grant_tabela|products:anon:INSERT|concedido`);
+    expect(c.classificacao).toBe("MATERIAL DRIFT");
+    expect(c.diferencas[0]).toMatchObject({ tipo: "só no ambiente", categoria: "fp.grant_tabela" });
+  });
+
+  it("MATERIAL DRIFT quando falta um objeto no ambiente", () => {
+    const semIndice = BASE.split("\n")
+      .filter((l) => !l.startsWith("fp.indice|"))
+      .join("\n");
+    const c = comparar(BASE, semIndice);
+    expect(c.classificacao).toBe("MATERIAL DRIFT");
+    expect(c.diferencas[0]).toMatchObject({ tipo: "só no esperado", categoria: "fp.indice" });
+  });
+
+  it("UNKNOWN quando um dos lados veio vazio — e nunca EXACT EQUIVALENT", () => {
+    expect(comparar(BASE, "").classificacao).toBe("UNKNOWN");
+    expect(comparar("", BASE).classificacao).toBe("UNKNOWN");
+    // O erro perigoso: dois vazios "batem" e passariam por equivalentes.
+    expect(comparar("", "").classificacao).toBe("UNKNOWN");
+  });
+
+  it("UNKNOWN quando a leitura do ambiente não foi read-only", () => {
+    const c = comparar(BASE, trocar("fp.guard.read_only|on", "fp.guard.read_only|off"));
+    expect(c.classificacao).toBe("UNKNOWN");
+    expect(c.motivo).toContain("read-only");
+  });
+
+  it("UNKNOWN quando há diferença E as versões maiores divergem", () => {
+    // Não dá para separar drift de schema de mudança de renderizador. Chamar de MATERIAL
+    // DRIFT afirmaria mais do que se mediu.
+    const outro = trocar("fp.db.version|17.6", "fp.db.version|16.4").replace(
+      "volatil=i",
+      "volatil=v",
+    );
+    const c = comparar(BASE, outro);
+    expect(c.classificacao).toBe("UNKNOWN");
+    expect(c.motivo).toContain("renderizador");
+  });
+
+  it("mas versões maiores diferentes SEM diferença continuam EXACT EQUIVALENT", () => {
+    // É uma prova mais forte, não mais fraca: sobreviveu à troca de renderizador.
+    expect(comparar(BASE, trocar("fp.db.version|17.6", "fp.db.version|16.4")).classificacao).toBe(
+      "EXACT EQUIVALENT",
+    );
+  });
+});
+
+describe("renderizar", () => {
+  it("EXACT EQUIVALENT diz o que a adoção NÃO afirma", () => {
+    const md = renderizar(comparar(BASE, BASE));
+    expect(md).toContain("EXACT EQUIVALENT");
+    expect(md).toContain("procedência");
+    expect(md).toContain("não autoriza aplicar R2-A".replace("não", "Não"));
+  });
+
+  it("MATERIAL DRIFT recusa reparar, e diz por quê", () => {
+    const md = renderizar(comparar(BASE, trocar("rls=true", "rls=false")));
+    expect(md).toContain("MATERIAL DRIFT");
+    expect(md).toContain("certeza falsa");
+    expect(md).toContain("`fp.tabela`");
+  });
+
+  it("UNKNOWN se distingue de reprovação no texto", () => {
+    const md = renderizar(comparar(BASE, ""));
+    expect(md).toContain("não foi conclusiva");
+  });
+
+  it("o `|` de uma assinatura não quebra a tabela Markdown", () => {
+    const comBarra = `${BASE}\nfp.constraint|products.x|tipo=c,validada=true,def=CHECK ((a | b) > 0)`;
+    const md = renderizar(comparar(BASE, comBarra));
+    expect(md).toContain("(a \\| b)");
+  });
+
+  it("nunca imprime credencial, host ou linha de tabela", () => {
+    const md = renderizar(comparar(BASE, BASE));
+    for (const proibido of [/password/i, /postgres(ql)?:\/\//, /supabase\.co/, /\beyJ/]) {
+      expect(md).not.toMatch(proibido);
+    }
+  });
+});
+
+describe("fingerprint.sql é read-only, e isso é verificável", () => {
+  const executavel = FINGERPRINT_SQL.split("\n")
+    .filter((l) => !l.trimStart().startsWith("--"))
+    .join("\n");
+
+  const VERBOS = [
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "MERGE",
+    "TRUNCATE",
+    "COPY",
+    "ALTER",
+    "CREATE",
+    "DROP",
+    "GRANT",
+    "REVOKE",
+    "CALL",
+    "DO",
+  ] as const;
+
+  it.each(VERBOS)("não contém %s fora de comentário", (verbo) => {
+    expect(executavel).not.toMatch(new RegExp(`\\b${verbo}\\b`, "i"));
+  });
+
+  it("e o guarda acima reprova quando um verbo entra", () => {
+    const hostil = `${executavel}\nDROP TABLE public.products;`;
+    expect(VERBOS.some((v) => new RegExp(`\\b${v}\\b`, "i").test(hostil))).toBe(true);
+  });
+
+  it("todo statement começa com SELECT ou WITH", () => {
+    const statements = executavel
+      .split(";")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    expect(statements.length).toBeGreaterThan(10);
+    for (const s of statements) expect(s).toMatch(/^(SELECT|WITH)\b/i);
+  });
+
+  it("não lê linha de nenhuma tabela de negócio", () => {
+    // A comparação é de SCHEMA. Tocar em `products`, `prices` ou `markets` como tabela
+    // (e não como nome no catálogo) seria ler dado que a pergunta não precisa.
+    for (const tabela of ["public.products", "public.prices", "public.markets"]) {
+      expect(executavel).not.toContain(`FROM ${tabela}`);
+    }
+  });
+
+  it("cobre todas as categorias que o mandato §5 exige", () => {
+    for (const categoria of [
+      "fp.tabela",
+      "fp.coluna",
+      "fp.constraint",
+      "fp.indice",
+      "fp.funcao",
+      "fp.trigger",
+      "fp.policy",
+      "fp.grant_tabela",
+      "fp.grant_funcao",
+      "fp.comentario",
+      "fp.extensao",
+    ]) {
+      expect(FINGERPRINT_SQL, `categoria ausente: ${categoria}`).toContain(`'${categoria}'`);
+    }
+  });
+
+  it("colapsa espaço em branco na origem, senão o formato linha a linha quebraria", () => {
+    // `pg_get_functiondef` devolve texto com quebra de linha. Sem o `regexp_replace`, uma
+    // única função viraria dezenas de "fatos" e o comparador leria lixo.
+    for (const renderizador of [
+      "pg_get_functiondef",
+      "pg_get_constraintdef",
+      "pg_get_indexdef",
+      "pg_get_triggerdef",
+      "pg_get_expr",
+    ]) {
+      expect(executavel, `${renderizador} sem normalização de espaço`).toContain(
+        `regexp_replace(${renderizador}`,
+      );
+    }
+  });
+});

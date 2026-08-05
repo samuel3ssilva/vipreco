@@ -1,0 +1,72 @@
+name: R2 equivalência de schema
+
+# R2.4 §5 - responde uma pergunta so, e responde por MEDICAO:
+#
+#   o schema de staging e semanticamente equivalente ao que as OITO migrations
+#   anteriores a R2 produzem a partir do zero?
+#
+# Existe porque staging nao tem historico de migrations -- `supabase_migrations.
+# schema_migrations` nao existe la (medido, run 31032153539). Sem historico, adotar as
+# oito versoes como baseline seria carimbar como aplicadas migrations que ninguem viu
+# aplicar: trocar uma incerteza CONHECIDA por uma certeza FALSA.
+#
+# A procedencia historica nao e recuperavel -- nao existe log de quem rodou o que, e
+# nenhuma consulta traz de volta um registro que nunca existiu. Mas a procedencia nao e o
+# que a aplicacao de R2 exige. O que ela exige e que o ESTADO seja aquele contra o qual as
+# migrations foram escritas, e isso e verificavel.
+#
+# LE OS DOIS LADOS E NAO ESCREVE EM NENHUM. Staging e lido em transacao READ ONLY com
+# ROLLBACK ao final; o lado esperado e um container descartavel. Nao aplica migration, nao
+# faz repair, nao faz deploy, e nao existe caminho aqui que alcance producao -- o runner
+# recusa se a conexao montada mencionar o project ref de producao.
+
+on:
+  workflow_dispatch: {}
+
+# Compartilha o grupo com o preflight de propósito: as duas coisas leem o mesmo banco, e
+# dois relatorios simultaneos com horarios diferentes nao teriam como ser ordenados.
+concurrency:
+  group: r2-staging-leitura
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  equivalencia:
+    name: comparar schema de staging com as migrations anteriores a R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Garantir cliente psql
+        run: |
+          set -euo pipefail
+          if command -v psql >/dev/null 2>&1; then
+            psql --version
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends postgresql-client
+            psql --version
+          fi
+
+      - name: Comparar fingerprints
+        env:
+          # O MESMO segredo atomico do preflight, lido uma vez so. Nunca interpolado em
+          # `echo`, nunca no Job Summary, nunca em artefato: o runner o escreve direto num
+          # `.pgpass` de modo 0600, e o que atravessa o ambiente e o CAMINHO.
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PREFLIGHT_ENVIRONMENT: staging
+        run: bash scripts/r2/equivalence/run.sh

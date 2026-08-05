@@ -816,7 +816,7 @@ END
 $$;
 
 -- ----------------------------------------------------------------------------
--- O script de auditoria de prontidao (scripts/r2/target-readiness.sql) precisa
+-- O script de auditoria de prontidao (scripts/r2/target-readiness-pre.sql) precisa
 -- responder EXATAMENTE o mesmo que pa_is_valid_gtin().
 --
 -- Ele reimplementa a aritmetica GS1 em linha porque roda ANTES de a migration

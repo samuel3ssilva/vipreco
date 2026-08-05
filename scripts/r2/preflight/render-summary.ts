@@ -135,6 +135,111 @@ export function classificarHistorico(
 }
 
 // ---------------------------------------------------------------------------------
+// Classificação da telemetria anônima (R2.4 §3)
+// ---------------------------------------------------------------------------------
+
+/**
+ * A auditoria de R2.3E achou uma linha em `product_watch_requests`, e ela reprovou G5 e
+ * G13. Reprovar foi correto — a regra dizia "as três tabelas de submissão vazias", e uma
+ * não estava. Mas "existe uma linha" é um número, não uma classificação.
+ *
+ * A classificação aqui se decide pela ESTRUTURA da tabela, e não pelo conteúdo das
+ * linhas. Se não existe coluna capaz de guardar identificador de pessoa, nenhuma linha
+ * pode conter um — e isso se afirma sem ler linha nenhuma. É a única forma de responder
+ * "há dado pessoal aqui?" sem que responder já seja uma leitura de dado pessoal.
+ */
+export type ClasseDeTelemetria =
+  /** sem coluna capaz de carregar identificador de pessoa, e intocada por R2 */
+  | "A. ANONYMOUS NONCRITICAL TELEMETRY"
+  /** há campo pessoal possível, ou a origem não pôde ser avaliada com segurança */
+  | "B. PERSONAL OR UNKNOWN DATA";
+
+export interface Telemetria {
+  classe: ClasseDeTelemetria;
+  linhas: number | null;
+  colunas: string[];
+  suspeitas: string[];
+  explicacao: string;
+  instante: string | null;
+}
+
+/**
+ * Nomes de coluna capazes de carregar identificador de pessoa. Lista fechada e
+ * deliberadamente ampla: o custo de um falso positivo é classificar como B e continuar
+ * investigando; o de um falso negativo é declarar anônimo um dado que não é.
+ */
+const NOMES_PESSOAIS =
+  /(mail|phone|fone|telefone|celular|whatsapp|\bcpf\b|\brg\b|documento|\bip\b|user|usuario|session|sessao|device|dispositivo|nome|name|endereco|address|contato|token|cookie|agent)/i;
+
+/** Tipos que aceitam texto livre — onde um identificador caberia mesmo sem o nome dizer. */
+const TIPOS_DE_TEXTO_LIVRE = new Set([
+  "text",
+  "character varying",
+  "character",
+  "json",
+  "jsonb",
+  "xml",
+  "bytea",
+]);
+
+export function classificarTelemetria(fatos: Fatos): Telemetria {
+  const brutoTotal = um(fatos, "watch.total");
+  const colunasBrutas = todos(fatos, "watch.column");
+  const instante = um(fatos, "watch.instante");
+  const tocadaPorR2 = um(fatos, "watch.tocada_por_r2");
+  const linhas = brutoTotal === null ? null : Number(brutoTotal);
+  const colunas = colunasBrutas.map((c) => c.split(":")[0] ?? "");
+
+  const base = { linhas, colunas, instante };
+
+  if (colunasBrutas.length === 0) {
+    return {
+      ...base,
+      classe: "B. PERSONAL OR UNKNOWN DATA",
+      suspeitas: [],
+      explicacao:
+        "as colunas de `product_watch_requests` não foram lidas. Sem saber o que a tabela é capaz de guardar, não há como afirmar que ela não guarda dado pessoal — e `UNKNOWN` classifica como B de propósito, porque a dúvida aqui pesa para o lado protegido.",
+    };
+  }
+
+  const suspeitas: string[] = [];
+  for (const bruto of colunasBrutas) {
+    const [nome = "", tipo = ""] = bruto.split(":");
+    if (NOMES_PESSOAIS.test(nome)) suspeitas.push(`${nome} (nome sugere dado pessoal)`);
+    else if (TIPOS_DE_TEXTO_LIVRE.has(tipo))
+      suspeitas.push(`${nome} (${tipo}: aceita texto livre)`);
+  }
+
+  if (suspeitas.length > 0) {
+    return {
+      ...base,
+      classe: "B. PERSONAL OR UNKNOWN DATA",
+      suspeitas,
+      explicacao: `a tabela tem coluna capaz de carregar dado pessoal: ${suspeitas.join("; ")}. Isso não afirma que há dado pessoal ali — afirma que não dá para descartar sem olhar, e olhar é justamente o que não se faz.`,
+    };
+  }
+
+  if (tocadaPorR2 !== "false") {
+    return {
+      ...base,
+      classe: "B. PERSONAL OR UNKNOWN DATA",
+      suspeitas,
+      explicacao:
+        tocadaPorR2 === null
+          ? "não foi verificado se alguma migration de R2 toca esta tabela. A classificação A exige que nenhuma toque."
+          : "alguma migration de R2 menciona esta tabela. A classificação A exige que a aplicação não a alcance.",
+    };
+  }
+
+  return {
+    ...base,
+    classe: "A. ANONYMOUS NONCRITICAL TELEMETRY",
+    suspeitas,
+    explicacao: `as ${colunas.length} colunas da tabela são \`${colunas.join("`, `")}\` — nenhuma capaz de guardar identificador de pessoa, e nenhuma de texto livre. O que uma linha registra é "houve interesse neste produto neste instante", e nada mais. Nenhuma migration de R2 menciona a tabela.`,
+  };
+}
+
+// ---------------------------------------------------------------------------------
 // Classificação dos dados
 // ---------------------------------------------------------------------------------
 
@@ -153,7 +258,7 @@ const TABELAS_DE_SUBMISSAO = [
   "decision_feedback",
 ] as const;
 
-export function classificarDados(fatos: Fatos): Dados {
+export function classificarDados(fatos: Fatos, telemetria: Telemetria): Dados {
   const totais: Record<string, Record<string, number>> = {};
   let algumaLida = false;
 
@@ -192,13 +297,33 @@ export function classificarDados(fatos: Fatos): Dados {
   }
 
   const real = soma("real");
-  const submissoes = TABELAS_DE_SUBMISSAO.reduce((acc, t) => acc + (totais[t]?.total ?? 0), 0);
 
-  if (real === 0 && submissoes === 0) {
+  /**
+   * R2.4 — a linha de `product_watch_requests` deixa de reprovar quando classificada
+   * como telemetria anônima não crítica.
+   *
+   * Isso não é afrouxar o gate: é parar de tratar duas coisas diferentes como a mesma.
+   * "Existe dado de piloto que a migration pode danificar" e "existe um registro anônimo
+   * de que alguém clicou em avisar-me" tinham o mesmo veredito, e só o primeiro é um
+   * motivo para não aplicar. As outras duas tabelas de submissão continuam contando
+   * integralmente — elas têm coluna de texto livre e de escolha, e nenhuma classificação
+   * estrutural as absolve.
+   */
+  const anonimaAceita = telemetria.classe === "A. ANONYMOUS NONCRITICAL TELEMETRY";
+  const submissoesQueContam = TABELAS_DE_SUBMISSAO.reduce(
+    (acc, t) =>
+      acc + (t === "product_watch_requests" && anonimaAceita ? 0 : (totais[t]?.total ?? 0)),
+    0,
+  );
+  const toleradas = anonimaAceita ? (totais.product_watch_requests?.total ?? 0) : 0;
+
+  if (real === 0 && submissoesQueContam === 0) {
     return {
       classe: "DEMO ONLY",
       explicacao:
-        "toda linha lida tem `is_demo = true`, e as três tabelas de submissão estão vazias. Diferente da medição anônima de R2.2, aqui as linhas INATIVAS também entraram na conta.",
+        toleradas > 0
+          ? `toda linha de conteúdo lida tem \`is_demo = true\`. As ${toleradas} linha(s) de \`product_watch_requests\` são telemetria anônima não crítica (${telemetria.classe}) e não descaracterizam o ambiente: a tabela não tem coluna capaz de guardar dado pessoal, e nenhuma migration de R2 a alcança. \`price_submissions\` e \`decision_feedback\` estão vazias.`
+          : "toda linha lida tem `is_demo = true`, e as três tabelas de submissão estão vazias. Diferente da medição anônima de R2.2, aqui as linhas INATIVAS também entraram na conta.",
       totais,
     };
   }
@@ -207,7 +332,7 @@ export function classificarDados(fatos: Fatos): Dados {
     explicacao:
       real > 0
         ? `há ${real} linha(s) com \`is_demo = false\`. Enquanto existir dado não-demo, R2 não pode ser aplicada sem decisão explícita sobre esse dado.`
-        : `as tabelas de submissão têm ${submissoes} linha(s). Nenhuma delas deveria ter conteúdo — a superfície pública de escrita foi fechada na Onda 3.`,
+        : `as tabelas de submissão têm ${submissoesQueContam} linha(s) que a classificação não absolve — ${telemetria.classe}. A superfície pública de escrita foi fechada na Onda 3.`,
     totais,
   };
 }
@@ -216,7 +341,14 @@ export function classificarDados(fatos: Fatos): Dados {
 // Gates verificáveis por leitura
 // ---------------------------------------------------------------------------------
 
-export type Veredito = "PASS" | "FAIL" | "UNKNOWN";
+/**
+ * `PENDING BY DESIGN` não é um FAIL educado. Ele afirma que a pergunta ainda não pode
+ * ser feita — não que a resposta tenha sido não. Confundir as duas coisas foi o que
+ * produziu a circularidade do G7: as consultas pós-aplicação eram executadas antes da
+ * aplicação, falhavam por falta das colunas que a aplicação cria, e o FAIL resultante
+ * bloqueava a aplicação. O gate media a si mesmo.
+ */
+export type Veredito = "PASS" | "FAIL" | "UNKNOWN" | "PENDING BY DESIGN";
 export interface Gate {
   id: string;
   condicao: string;
@@ -231,7 +363,12 @@ const COLUNAS_DE_R2A = [
   "products.units_per_package",
 ] as const;
 
-export function avaliarGates(fatos: Fatos, historico: Historico, dados: Dados): Gate[] {
+export function avaliarGates(
+  fatos: Fatos,
+  historico: Historico,
+  dados: Dados,
+  telemetria: Telemetria,
+): Gate[] {
   const colunas = todos(fatos, "schema.column").map((c) => c.split(":")[0]);
   const r2aPresentes = COLUNAS_DE_R2A.filter((c) => colunas.includes(c));
   const gtin = campos(um(fatos, "gtin.resumo"));
@@ -267,8 +404,8 @@ export function avaliarGates(fatos: Fatos, historico: Historico, dados: Dados): 
       base: `${dados.classe} — ${dados.explicacao}`,
     },
     {
-      id: "G7",
-      condicao: "target-readiness executado no ambiente alvo",
+      id: "G7-PRE",
+      condicao: "prontidão do schema legado (`target-readiness-pre.sql`)",
       veredito:
         um(fatos, "readiness.status") === "ok"
           ? "PASS"
@@ -276,6 +413,12 @@ export function avaliarGates(fatos: Fatos, historico: Historico, dados: Dados): 
             ? "UNKNOWN"
             : "FAIL",
       base: um(fatos, "readiness.detalhe") ?? "não executado",
+    },
+    {
+      id: "G7-POST",
+      condicao: "verificação pós-aplicação (`target-readiness-post.sql`)",
+      veredito: "PENDING BY DESIGN",
+      base: "só responde depois de R2-A e R2-B: toda consulta dele referencia objeto que as migrations criam. Antes da aplicação, este é o estado correto — e não um FAIL. Roda pelo runner de aplicação, na mesma janela.",
     },
     {
       id: "G8",
@@ -322,7 +465,12 @@ function tabela(cabecalho: string[], linhas: string[][]): string {
   ].join("\n");
 }
 
-const SIMBOLO: Record<Veredito, string> = { PASS: "✅", FAIL: "❌", UNKNOWN: "⚠️" };
+const SIMBOLO: Record<Veredito, string> = {
+  PASS: "✅",
+  FAIL: "❌",
+  UNKNOWN: "⚠️",
+  "PENDING BY DESIGN": "⏳",
+};
 
 export function renderizar(fatos: Fatos, locais: readonly string[]): string {
   const historico = classificarHistorico(
@@ -330,8 +478,9 @@ export function renderizar(fatos: Fatos, locais: readonly string[]): string {
     todos(fatos, "history.version"),
     [...locais],
   );
-  const dados = classificarDados(fatos);
-  const gates = avaliarGates(fatos, historico, dados);
+  const telemetria = classificarTelemetria(fatos);
+  const dados = classificarDados(fatos, telemetria);
+  const gates = avaliarGates(fatos, historico, dados, telemetria);
 
   const colunas = todos(fatos, "schema.column");
   const r2aPresentes = COLUNAS_DE_R2A.filter((c) =>
@@ -448,6 +597,39 @@ export function renderizar(fatos: Fatos, locais: readonly string[]): string {
   );
   partes.push("");
 
+  partes.push("## 4B. Telemetria anônima");
+  partes.push("");
+  partes.push(`**Classificação: ${telemetria.classe}** — ${telemetria.explicacao}`);
+  partes.push("");
+  partes.push(
+    tabela(
+      ["", ""],
+      [
+        [
+          "Linhas em `product_watch_requests`",
+          telemetria.linhas === null ? "não lido" : String(telemetria.linhas),
+        ],
+        [
+          "Colunas",
+          telemetria.colunas.length === 0 ? "não lidas" : `\`${telemetria.colunas.join("`, `")}\``,
+        ],
+        ["Instante das linhas (UTC)", telemetria.instante ?? "não lido"],
+        ["Relação com `products`", um(fatos, "watch.produto_alvo") ?? "não lido"],
+        ["Chave estrangeira", todos(fatos, "watch.fk").join("; ") || "nenhuma lida"],
+        [
+          "Alcançada por alguma migration de R2",
+          um(fatos, "watch.tocada_por_r2") ?? "não verificado",
+        ],
+        ["Outras tabelas de submissão", um(fatos, "watch.outras") ?? "não lido"],
+      ],
+    ),
+  );
+  partes.push("");
+  partes.push(
+    "Nenhum `id`, nenhum `product_id` e nenhum conteúdo de linha aparece aqui. A classificação se decide pela **estrutura** da tabela, não pelo conteúdo das linhas: se não existe coluna capaz de guardar identificador de pessoa, nenhuma linha pode conter um — e afirmar isso não exige ler linha nenhuma.",
+  );
+  partes.push("");
+
   partes.push("## 5. GTIN");
   partes.push("");
   const gtin = campos(um(fatos, "gtin.resumo"));
@@ -517,13 +699,20 @@ export function renderizar(fatos: Fatos, locais: readonly string[]): string {
 
   const reprovados = gates.filter((g) => g.veredito === "FAIL");
   const desconhecidos = gates.filter((g) => g.veredito === "UNKNOWN");
+  const pendentes = gates.filter((g) => g.veredito === "PENDING BY DESIGN");
 
   partes.push("## 8. Recomendação");
   partes.push("");
   if (reprovados.length === 0 && desconhecidos.length === 0) {
     partes.push(
-      "Todos os gates verificáveis por leitura passaram. Isso **não** autoriza aplicar nada: G1, G2, G6, G9–G12 e G15 são decisão humana e vivem fora deste relatório.",
+      "Todos os gates verificáveis por leitura **antes da aplicação** passaram. Isso **não** autoriza aplicar nada: G1, G2, G6, G9–G12 e G15 são decisão humana e vivem fora deste relatório.",
     );
+    if (pendentes.length > 0) {
+      partes.push("");
+      partes.push(
+        `Continua(m) pendente(s) por desenho: ${pendentes.map((g) => `**${g.id}**`).join(", ")}. Pendente por desenho não é reprovado — é uma pergunta que ainda não pode ser feita, e responder a ela é parte da própria aplicação.`,
+      );
+    }
   } else {
     partes.push(
       `${reprovados.length} gate(s) reprovado(s) e ${desconhecidos.length} indeterminado(s). **Nenhuma migration deve ser aplicada.**`,

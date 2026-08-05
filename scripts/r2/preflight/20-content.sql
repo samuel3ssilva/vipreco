@@ -9,7 +9,7 @@
 -- Num banco vazio ele falha, e falhar aqui e informacao: o runner classifica o
 -- ambiente como EMPTY em vez de morrer.
 --
--- A aritmetica GS1 e a MESMA de scripts/r2/target-readiness.sql consulta 2, e
+-- A aritmetica GS1 e a MESMA de scripts/r2/target-readiness-pre.sql consulta 2, e
 -- pelo mesmo motivo: precisa responder ANTES de a migration criar
 -- `pa_is_valid_gtin()`. Algoritmo duplicado e algoritmo que diverge, entao
 -- `preflight.test.ts` confere que as duas copias nao divergiram no texto.

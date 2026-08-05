@@ -128,7 +128,7 @@ Nenhum conflito com o roadmap v3. Todos permanecem vinculantes no que lhes cabe.
 | Pasta                              | Estado                                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------------------------- |
 | [`security/`](security/)           | **NORMATIVO** — threat model, matriz de autorização, política de borda, revisão adversarial |
-| [`operations/`](operations/)       | **NORMATIVO** — cache HTTP, resposta a incidente, runbook de resiliência, plano da Onda 4   |
+| [`operations/`](operations/)       | **NORMATIVO** — cache HTTP, resposta a incidente, registro de incidentes de processo, runbook de resiliência, plano da Onda 4 |
 | [`accessibility/`](accessibility/) | **NORMATIVO** — auditoria WCAG 2.2 AA                                                       |
 | [`design/`](design/)               | **NORMATIVO** — Brand System v2 e recálculo de contraste                                    |
 

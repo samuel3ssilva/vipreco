@@ -80,10 +80,35 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.prices FROM PUBLIC;
 -- Ver a auditoria read-only que mede isso em staging antes da aplicacao:
 -- scripts/r2/preflight/50-privileges.sql
 -- ----------------------------------------------------------------------------
+-- R2.6 -- E A ARMADILHA TEM UM SEGUNDO ANDAR, MEDIDO AO VIVO.
+--
+-- A primeira aplicacao desta migration em staging falhou aqui, e falhou certo:
+--
+--   ERROR: permission denied to change default privileges (SQLSTATE 42501)
+--
+-- Medir o papel resolveu a pergunta "QUAL papel"; nao resolvia "posso alterar esse papel".
+-- Na plataforma Supabase o default privilege de `public` pertence a um papel administrativo
+-- do qual o usuario da conexao nao e membro -- e `ALTER DEFAULT PRIVILEGES FOR ROLE` exige
+-- essa participacao. Nenhum ajuste de credencial resolve: e limite de plataforma.
+--
+-- A migration inteira e transacional, entao a falha revertia TAMBEM os REVOKE do passo 1 --
+-- e o passo 1 e o achado P0, o unico que fecha o TRUNCATE. Deixar a migration morrer aqui
+-- trocava a correcao critica por uma protecao acessoria.
+--
+-- Por isso o bloco passa a tratar `insufficient_privilege` POR PAPEL: aplica onde consegue,
+-- e registra o que nao conseguiu. E deliberadamente NAO transforma isso em sucesso
+-- silencioso -- `RAISE WARNING` nomeia os papeis, e o runner de aplicacao publica o estado
+-- medido de `pg_default_acl` a cada operacao, de modo que a heranca por corrigir aparece
+-- como fato no resumo em vez de virar uma linha de log que ninguem le.
+--
+-- O que fica em aberto, declarado: em staging, TABELA NOVA pode continuar nascendo com
+-- GRANT da plataforma. As tabelas que existem estao cobertas pelo passo 1. Fechar o resto
+-- exige acao no painel do Supabase ou suporte -- decisao do Founder, nao do CTO.
 DO $$
 DECLARE
   papel text;
   encontrados int := 0;
+  sem_permissao text[] := ARRAY[]::text[];
 BEGIN
   FOR papel IN
     SELECT DISTINCT pg_get_userbyid(d.defaclrole)
@@ -93,13 +118,26 @@ BEGIN
       AND (n.nspname = 'public' OR n.nspname IS NULL)
   LOOP
     encontrados := encontrados + 1;
-    EXECUTE format(
-      'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public '
-      'REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLES FROM anon, authenticated',
-      papel
-    );
-    RAISE NOTICE 'default privileges de tabela ajustados para o papel %', papel;
+    BEGIN
+      EXECUTE format(
+        'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public '
+        'REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLES FROM anon, authenticated',
+        papel
+      );
+      RAISE NOTICE 'default privileges de tabela ajustados para o papel %', papel;
+    EXCEPTION
+      -- SO `insufficient_privilege`. Qualquer outro erro continua abortando a migration:
+      -- um `WHEN OTHERS` aqui transformaria qualquer defeito futuro em aviso.
+      WHEN insufficient_privilege THEN
+        sem_permissao := array_append(sem_permissao, papel);
+    END;
   END LOOP;
+
+  IF array_length(sem_permissao, 1) > 0 THEN
+    RAISE WARNING
+      'HERANCA NAO CORRIGIDA: o usuario da conexao nao pode alterar default privileges do(s) papel(is) %. Tabela NOVA em public pode continuar nascendo com GRANT da plataforma. As tabelas existentes estao cobertas pelas revogacoes acima. Fechar isto exige acao no painel do Supabase -- decisao do Founder.',
+      array_to_string(sem_permissao, ', ');
+  END IF;
 
   IF encontrados = 0 THEN
     -- Nao e erro: significa que o grant automatico vem de provisionamento direto, e nao

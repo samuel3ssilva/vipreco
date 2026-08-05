@@ -125,10 +125,19 @@ REVOKE ALL PRIVILEGES ON public.decision_feedback       FROM PUBLIC;
 -- encontrado, em vez de chutar. Ver a auditoria read-only que mede isso antes da aplicacao:
 -- scripts/r2/preflight/50-privileges.sql
 -- ----------------------------------------------------------------------------
+--
+-- R2.6 -- e o mesmo limite de plataforma que 20260803005000 encontrou ao vivo:
+-- `ALTER DEFAULT PRIVILEGES FOR ROLE` exige participacao no papel dono do default, e o
+-- usuario da conexao de staging nao e membro do papel administrativo do Supabase. A
+-- migration inteira e transacional, entao deixar o erro subir reverteria TAMBEM as
+-- revogacoes do passo 1 -- trocando a correcao que fecha a escrita publica por uma
+-- protecao acessoria. Trata-se `insufficient_privilege` por papel, aplica onde da, e
+-- registra o resto em vez de fingir sucesso.
 DO $$
 DECLARE
   papel text;
   encontrados int := 0;
+  sem_permissao text[] := ARRAY[]::text[];
 BEGIN
   FOR papel IN
     SELECT DISTINCT pg_get_userbyid(d.defaclrole)
@@ -138,18 +147,31 @@ BEGIN
       AND (n.nspname = 'public' OR n.nspname IS NULL)
   LOOP
     encontrados := encontrados + 1;
-    EXECUTE format(
-      'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public '
-      'REVOKE ALL ON TABLES FROM anon, authenticated',
-      papel
-    );
-    EXECUTE format(
-      'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public '
-      'REVOKE ALL ON TABLES FROM PUBLIC',
-      papel
-    );
-    RAISE NOTICE 'heranca de privilegio de tabela cortada para o papel %', papel;
+    BEGIN
+      EXECUTE format(
+        'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public '
+        'REVOKE ALL ON TABLES FROM anon, authenticated',
+        papel
+      );
+      EXECUTE format(
+        'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public '
+        'REVOKE ALL ON TABLES FROM PUBLIC',
+        papel
+      );
+      RAISE NOTICE 'heranca de privilegio de tabela cortada para o papel %', papel;
+    EXCEPTION
+      -- SO `insufficient_privilege`. `WHEN OTHERS` transformaria qualquer defeito futuro
+      -- em aviso, e um aviso e exatamente o que ninguem le.
+      WHEN insufficient_privilege THEN
+        sem_permissao := array_append(sem_permissao, papel);
+    END;
   END LOOP;
+
+  IF array_length(sem_permissao, 1) > 0 THEN
+    RAISE WARNING
+      'HERANCA NAO CORRIGIDA: o usuario da conexao nao pode alterar default privileges do(s) papel(is) %. Tabela NOVA em public pode continuar nascendo com GRANT da plataforma. As tres tabelas de contribuicao estao cobertas pelas revogacoes acima. Fechar isto exige acao no painel do Supabase -- decisao do Founder.',
+      array_to_string(sem_permissao, ', ');
+  END IF;
 
   IF encontrados = 0 THEN
     -- Nao e erro: significa que o grant automatico vem de provisionamento direto e nao de

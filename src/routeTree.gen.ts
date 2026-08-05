@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as ComoFuncionaRouteImport } from './routes/como-funciona'
 import { Route as ParaMercadosRouteImport } from './routes/para-mercados'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProdutoProductIdRouteImport } from './routes/produto.$productId'
 
@@ -36,6 +37,11 @@ const ParaMercadosRoute = ParaMercadosRouteImport.update({
   path: '/para-mercados',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/buscar': typeof BuscarRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/para-mercados': typeof ParaMercadosRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/buscar': typeof BuscarRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/para-mercados': typeof ParaMercadosRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/buscar': typeof BuscarRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/para-mercados': typeof ParaMercadosRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/como-funciona'
     | '/para-mercados'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/produto/$productId'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/como-funciona'
     | '/para-mercados'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/produto/$productId'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/como-funciona'
     | '/para-mercados'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/produto/$productId'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   BuscarRoute: typeof BuscarRoute
   ComoFuncionaRoute: typeof ComoFuncionaRoute
   ParaMercadosRoute: typeof ParaMercadosRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ProdutoProductIdRoute: typeof ProdutoProductIdRoute
 }
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParaMercadosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscarRoute: BuscarRoute,
   ComoFuncionaRoute: ComoFuncionaRoute,
   ParaMercadosRoute: ParaMercadosRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ProdutoProductIdRoute: ProdutoProductIdRoute,
 }

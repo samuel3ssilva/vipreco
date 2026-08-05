@@ -4,6 +4,7 @@ import {
   CONTENT_SECURITY_POLICY,
   withSecurityHeaders,
 } from "@/lib/security-headers";
+import { NOINDEX_DIRECTIVE } from "@/lib/indexing";
 
 describe("buildSecurityHeaders", () => {
   it("aplica CSP restritiva sem unsafe-eval e com framing bloqueado", () => {
@@ -30,23 +31,33 @@ describe("buildSecurityHeaders", () => {
     expect(headers.get("Permissions-Policy")).toContain("geolocation=()");
   });
 
-  it("marca noindex apenas em hosts tecnicos *.workers.dev", () => {
+  it("marca noindex em host tecnico e no host de demonstracao, nunca no dominio publico", () => {
     const staging = buildSecurityHeaders(
       "https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev/buscar",
     );
     const production = buildSecurityHeaders(
       "https://vipreco-production.samuel-bortoletto.workers.dev/",
     );
+    const demo = buildSecurityHeaders("https://demo.vipreco.com.br/para-mercados");
     const officialDomain = buildSecurityHeaders("https://vipreco.com.br/");
+    const officialWww = buildSecurityHeaders("https://www.vipreco.com.br/");
 
-    expect(staging.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    expect(production.get("X-Robots-Tag")).toBe("noindex, nofollow");
+    expect(staging.get("X-Robots-Tag")).toBe(NOINDEX_DIRECTIVE);
+    expect(production.get("X-Robots-Tag")).toBe(NOINDEX_DIRECTIVE);
+    expect(demo.get("X-Robots-Tag")).toBe(NOINDEX_DIRECTIVE);
     expect(officialDomain.get("X-Robots-Tag")).toBeNull();
+    expect(officialWww.get("X-Robots-Tag")).toBeNull();
   });
 
-  it("nao quebra com uma URL invalida", () => {
+  it("a diretiva tambem barra o cache do buscador", () => {
+    expect(NOINDEX_DIRECTIVE).toBe("noindex, nofollow, noarchive");
+  });
+
+  it("nao quebra com uma URL invalida, e nesse caso erra para o lado de nao indexar", () => {
+    // No Worker a URL vem sempre da requisicao, entao o caso e teorico. Se acontecer, indexar
+    // por engano e o erro sem volta; o contrario se conserta com um deploy.
     expect(() => buildSecurityHeaders("not-a-url")).not.toThrow();
-    expect(buildSecurityHeaders("not-a-url").get("X-Robots-Tag")).toBeNull();
+    expect(buildSecurityHeaders("not-a-url").get("X-Robots-Tag")).toBe(NOINDEX_DIRECTIVE);
   });
 });
 

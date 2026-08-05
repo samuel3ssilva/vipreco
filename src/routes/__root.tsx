@@ -11,6 +11,12 @@ import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { ogImageMeta } from "@/lib/og";
+import {
+  NOINDEX_DIRECTIVE,
+  canonicalUrl,
+  configuredSiteUrl,
+  shouldBlockIndexingForSite,
+} from "@/lib/indexing";
 
 function NotFoundComponent() {
   return (
@@ -70,46 +76,63 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ViPreço" },
-      {
-        name: "description",
-        content: "Compare preços recentes e verificados de supermercados da sua região.",
-      },
-      { name: "author", content: "ViPreço" },
-      { property: "og:title", content: "ViPreço" },
-      {
-        property: "og:description",
-        content: "Compare preços recentes e verificados de supermercados da sua região.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "ViPreço" },
-      { property: "og:locale", content: "pt_BR" },
-      ...ogImageMeta(),
-      { name: "theme-color", content: "#0e5c3c" },
-    ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        // Brand System v2 "Visto" (docs/design/BRAND-V2-CONTRAST-RECALC.md): Bricolage
-        // Grotesque na marca/títulos, Public Sans no corpo, IBM Plex Mono em dado
-        // tabular (preço, contagem) via .font-mono onde já usado.
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap",
-      },
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      { rel: "icon", href: "/logo/vipreco-favicon.svg", type: "image/svg+xml" },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      { rel: "apple-touch-icon", href: "/logo/vipreco-app-icon-1024.svg" },
-    ],
-  }),
+  head: ({ matches }) => {
+    // Endereço canônico deste build, quando ele tem um. `workers.dev` não entra: é contingência
+    // técnica, e nada que alguém possa copiar deve apontar para lá.
+    //
+    // O caminho vem da **última** correspondência, não de `match`: aqui, na raiz, `match` é a
+    // própria raiz e o caminho seria sempre "/" — todas as rotas apontariam canônico para a Home.
+    const caminho = matches[matches.length - 1]?.pathname ?? "/";
+    const canonical = canonicalUrl(caminho);
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "ViPreço" },
+        {
+          name: "description",
+          content: "Compare preços recentes e verificados de supermercados da sua região.",
+        },
+        { name: "author", content: "ViPreço" },
+        { property: "og:title", content: "ViPreço" },
+        {
+          property: "og:description",
+          content: "Compare preços recentes e verificados de supermercados da sua região.",
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "ViPreço" },
+        { property: "og:locale", content: "pt_BR" },
+        ...ogImageMeta(),
+        { name: "theme-color", content: "#0e5c3c" },
+        // Demonstração e contingência técnica não entram em buscador. A meta acompanha o
+        // `X-Robots-Tag` do Worker: o header vale por host, esta vale por build.
+        ...(shouldBlockIndexingForSite(configuredSiteUrl())
+          ? [{ name: "robots", content: NOINDEX_DIRECTIVE }]
+          : []),
+        ...(canonical ? [{ property: "og:url", content: canonical }] : []),
+      ],
+      links: [
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        {
+          // Brand System v2 "Visto" (docs/design/BRAND-V2-CONTRAST-RECALC.md): Bricolage
+          // Grotesque na marca/títulos, Public Sans no corpo, IBM Plex Mono em dado
+          // tabular (preço, contagem) via .font-mono onde já usado.
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap",
+        },
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+        { rel: "icon", href: "/logo/vipreco-favicon.svg", type: "image/svg+xml" },
+        { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+        { rel: "apple-touch-icon", href: "/logo/vipreco-app-icon-1024.svg" },
+        ...(canonical ? [{ rel: "canonical", href: canonical }] : []),
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,

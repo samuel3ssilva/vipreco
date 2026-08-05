@@ -187,6 +187,20 @@ describe("o segredo nunca é impresso", () => {
     expect(RUNNER).toContain("--no-password");
   });
 
+  it("o resumo vai para o log SEMPRE, e não só para o Job Summary", () => {
+    // O Job Summary só é legível pela interface web autenticada; o log é recuperável
+    // por API. Sem isto, a tabela G1–G15 de um preflight bem-sucedido não tem como ser
+    // citada dentro de `docs/evidence/` sem alguém copiar da tela — num projeto cuja
+    // disciplina inteira é evidência versionada.
+    //
+    // É seguro porque o resumo já é sanitizado na origem, e os testes de sigilo deste
+    // mesmo arquivo verificam exatamente isso.
+    expect(RUNNER).toMatch(/^cat "\$TRABALHO\/resumo\.md"$/m);
+    expect(RUNNER).toMatch(/cat "\$TRABALHO\/resumo\.md" >>"\$GITHUB_STEP_SUMMARY"/);
+    // E nunca por um `else`, que era o que prendia o resumo numa saída só.
+    expect(RUNNER).not.toMatch(/GITHUB_STEP_SUMMARY"\nelse/);
+  });
+
   it("nada é enviado como artefato", () => {
     expect(WORKFLOW).not.toContain("upload-artifact");
     expect(WORKFLOW).not.toContain("actions/cache");

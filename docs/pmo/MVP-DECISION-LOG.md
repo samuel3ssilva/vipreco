@@ -917,3 +917,63 @@ exatamente a família de defeito que a decisão elimina.
   superseded, e as medições preservadas), `data/R2-APPLICATION-GATE.md`,
   `data/R2-ROLLOUT-RUNBOOK.md`, `scripts/r2/preflight/README.md`
 - **Status:** ativa
+
+### DL-026 — Privilégio público: a auditoria lia migrations, e o banco tinha outra coisa
+
+- **Data:** 2026-08-05
+- **Contexto:** a `DATABASE-AUTHORIZATION-MATRIX.md` da Onda 3 afirmava que `anon` e
+  `authenticated` não tinham UPDATE nem DELETE em tabela nenhuma. A afirmação era derivada de
+  leitura das migrations — o próprio documento diz isso no cabeçalho. R2.5 mediu staging pela
+  primeira vez e achou 45 dos 48 privilégios de tabela concedidos aos dois papéis públicos. Os
+  3 ausentes eram exatamente os 3 `REVOKE INSERT` da Onda 3.
+- **Decisão:** duas migrations de revogação, `20260803005000` (tabelas centrais) e
+  `20260803007500` (tabelas de contribuição), e a correção explícita do documento que estava
+  errado — sem apagá-lo, porque o erro e sua causa são a parte útil.
+
+**A causa não foi desatenção; foi a fonte.** Toda auditoria anterior perguntou ao repositório o
+que o repositório concede. A plataforma Supabase concede por fora, via `ALTER DEFAULT PRIVILEGES
+... GRANT ALL ON TABLES`, e nenhuma leitura de migration jamais veria isso. A mesma classe de
+ponto cego já havia produzido o achado crítico da Onda 3 nas funções — e a lição foi aplicada só
+às funções, porque foi só ali que alguém olhou.
+
+**TRUNCATE é o achado, e os outros três não são.** Para INSERT, UPDATE e DELETE a RLS nega a
+operação mesmo com o privilégio, então o excesso era defesa em profundidade perdida. **A RLS não
+se aplica a TRUNCATE**: não existe policy que o negue, e o privilégio é a barreira inteira. O
+único motivo pelo qual `anon` não apagava `prices` era o PostgREST não expor verbo para a
+operação. Proteção que depende de o cliente não conseguir pedir não é proteção.
+
+**O contrato das tabelas de contribuição foi resolvido para "nada".** A regra aprovada era
+preservar INSERT só onde houvesse policy ativa **e** contrato funcional que ainda permitisse
+submissão pública. As três têm policy — dormente — e nenhuma tem contrato: o `CLAUDE.md`,
+princípio 5, é explícito. SELECT também não se sustentou: nenhuma delas tem policy de SELECT e
+nenhum caminho do aplicativo as lê. Sem nada a preservar, `REVOKE ALL PRIVILEGES`.
+
+**Herança futura cortada, e a consequência é deliberada.** `REVOKE ALL ON TABLES` no default
+privilege significa que tabela nova em `public` não dá nada a `anon` por herança — toda tabela
+publicamente legível passa a exigir `GRANT SELECT` explícito. Já era o padrão do repositório, e
+falhar fechado é a direção certa: tabela nova que não aparece na API é um bug óbvio de dois
+minutos; tabela nova exposta sem ninguém ter decidido é este achado.
+
+**O que impede a correção de repetir o erro que corrige.** Um controle positivo. O drill cria
+uma tabela no baseline, sob o mesmo default privilege das seis reais, e nenhuma migration a
+toca. Privilégio presente nela e ausente nas seis é a prova de que a revogação é **efeito das
+migrations**. Sem esse par, "`anon` não tem DELETE" passa idêntico num banco endurecido e num
+banco que nunca teve o grant — e foi assim que o drill ficou verde por dois meses.
+
+**Um teste antigo carregava a crença errada.** `close-public-write-surfaces.test.ts` tratava
+PUBLIC como sinônimo de "qualquer papel" nos dois sentidos, então um `REVOKE ... FROM PUBLIC`
+apagava, no modelo, o grant direto de `service_role`. Isso é falso no Postgres, e é exatamente a
+crença que custou caro na Onda 3. A migration nova fez o teste reprovar; o defeito era do
+modelo, não da migration.
+
+- **Alternativas descartadas:** (a) revogar só UPDATE/DELETE/TRUNCATE e manter SELECT — manteria
+  privilégio sem contrato nem documento, contra a regra aprovada; (b) uma migration só para as
+  seis tabelas — misturaria dois escopos de revisão num gate só; (c) `ALTER DEFAULT PRIVILEGES`
+  sem `FOR ROLE` — roda, devolve sucesso e pode não desfazer nada, que é o pior resultado
+  possível; (d) confiar no drill sem controle positivo — foi o que já falhou.
+- **O que não muda:** RLS, policies, dados e `service_role` intactos. Nenhuma migration foi
+  aplicada em banco remoto por esta decisão; o gate de `data/R2-APPLICATION-GATE.md` continua
+  fechado e continua sendo decisão do Founder/PMO, ambiente por ambiente (princípio 14).
+- **Documentos:** `security/DATABASE-AUTHORIZATION-MATRIX.md` (§Correção de R2.5/R2.6),
+  `data/R2-APPLICATION-GATE.md`
+- **Status:** ativa

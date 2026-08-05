@@ -130,6 +130,96 @@ preflight; os demais são decisão humana registrada aqui.
 | G14        | RLS, policies e grants equivalentes                                | fingerprint de equivalência                                       |
 | G15        | credencial segura                                                  | segredo atômico, `.pgpass` 0600, apagado no fim do job            |
 
+### G3 e G4 medidos: staging tem SETE migrations aplicadas, não oito (R2.4B, 05/08/2026)
+
+A comparação de equivalência rodou pela primeira vez contra staging
+([run 31042845838](https://github.com/samuel3ssilva/vipreco/actions/runs/31042845838)) e o
+resultado é **MATERIAL DRIFT — 2 de 310 objetos**. As duas diferenças são o mesmo fato:
+
+| Objeto                            | Esperado (8 migrations)                     | Encontrado (staging)   |
+| --------------------------------- | ------------------------------------------- | ---------------------- |
+| `pa_normalize_text(input text)`    | `btrim(regexp_replace(lower(translate(…))))` | `lower(translate(…))`  |
+| `COMMENT ON FUNCTION pa_normalize_text` | contrato único de normalização         | _(ausente)_            |
+
+O corpo encontrado em staging é **exatamente** o bloco `ROLLBACK EXATO` escrito dentro de
+`20260803000000_normalization_contract.sql`, e o `COMMENT` que aquela migration adiciona não
+existe. Dois fatos independentes, a mesma conclusão: **essa migration nunca foi aplicada em
+staging** — como, aliás, o cabeçalho dela sempre disse ("esta migration NAO foi aplicada em
+nenhum ambiente").
+
+Isto não é adulteração nem deriva manual. É o estado documentado. O que estava errado era a
+premissa de "adotar as oito versões": staging está em **sete**.
+
+**Consequência direta, e é ela que importa:** `products_exact_identity_idx`, criado por
+R2-A, é um índice **funcional sobre `pa_normalize_text()`**. Aplicar R2-A agora construiria o
+índice de identidade exata — o que sustenta o princípio inviolável nº 1 — com a normalização
+**antiga**, a que não colapsa espaço em branco. `'500 g'` e `'500  g'` continuariam sendo dois
+SKUs. E a correção posterior não seria simples: a migration de normalização faz `REINDEX`, e o
+`REINDEX` **falha** se as colisões já existirem.
+
+Ou seja: o gate não travou por formalidade. Ele impediu que a semântica errada fosse gravada
+no índice que define o que é o mesmo produto.
+
+Pendentes em staging são **três**, não duas:
+
+1. `20260803000000_normalization_contract` — exige rodar `scripts/normalization-collisions.ts`
+   antes, e **parar** se o relatório não vier vazio (unir ou excluir produto é decisão do
+   Founder/PMO, nunca do CTO);
+2. `20260803010000_product_identity_quantity` (R2-A);
+3. `20260803020000_gtin_integrity` (R2-B).
+
+A ordem não é negociável, e a primeira não estava no escopo autorizado desta missão.
+
+### G14 medido, com um achado de segurança em anexo
+
+Fora as duas diferenças acima, os 308 objetos restantes são **idênticos**: tabelas, colunas,
+tipos, nullability, defaults, constraints, índices, predicados, triggers, RLS, policies e
+grants. G14 passa.
+
+Mas o caminho até esse `PASS` revelou algo que ninguém tinha medido. A primeira execução
+acusou **84 diferenças de grant**, e o fingerprint cru mostrou por quê:
+
+|            | `anon` | `authenticated` | `service_role` | `postgres` |
+| ---------- | ------ | --------------- | -------------- | ---------- |
+| staging    | 45     | 45              | 48             | 48         |
+| efêmero    | 3      | 3               | 48             | 48         |
+
+48 = 6 tabelas × 8 privilégios. A aritmética fecha sem sobra: staging tem **tudo** menos os
+três `INSERT` que a Onda 3 revogou nas tabelas de submissão; o efêmero tinha só os três
+`SELECT` que as migrations concedem. 45 − 3 = 42, × 2 papéis = 84.
+
+A leitura correta é sobre o instrumento — as migrations nunca precisaram *conceder* acesso de
+tabela a `anon`, porque a plataforma Supabase já concedia; elas só revogam. Corrigido em
+`scripts/r2/equivalence/01-supabase-table-grants.sql`.
+
+**O achado que sobra, e que é decisão do Founder/PMO:**
+
+`anon` detém `INSERT`, `UPDATE`, `DELETE` e `TRUNCATE` sobre `markets`, `products` e `prices`
+em staging — e, pelo mesmo mecanismo de plataforma, quase certamente em produção também.
+
+- **O que segura hoje:** RLS está ligada nas seis tabelas e as únicas policies para
+  `anon`/`authenticated` em `markets`/`products`/`prices` são de `SELECT` (`cmd=r`). Sem
+  policy de escrita, `INSERT`/`UPDATE`/`DELETE` são negados. Isso foi **medido**, não
+  presumido.
+- **Por que ainda assim importa:** a proteção inteira depende de uma camada só. A Onda 3
+  estabeleceu defesa em profundidade para as tabelas de submissão — revogar o grant **e**
+  confiar na RLS. Para `markets`/`products`/`prices` só a RLS trabalha.
+- **`TRUNCATE` merece atenção separada:** no PostgreSQL, RLS **não se aplica** a `TRUNCATE` —
+  ele é governado só pelo privilégio de tabela. `NOT VERIFIED`: não testei se o PostgREST
+  consegue emitir `TRUNCATE` (ele não expõe verbo para isso, e `anon` é `NOLOGIN`), então
+  hoje parece inalcançável pela superfície publicada. Inalcançável hoje não é o mesmo que
+  impossível amanhã.
+- **O teste que dá falsa segurança:** `scripts/db-drill/90-assertions.sql` afirma que `anon`
+  não tem `INSERT` em tabela nenhuma. Contra um Postgres virgem, passa. Contra a plataforma
+  real, é **falso** para `markets`, `products` e `prices`. O drill vinha passando pelo motivo
+  errado — exatamente a classe de ponto cego do achado crítico da Onda 3, um nível acima:
+  lá era `EXECUTE` em função, aqui é grant de tabela.
+
+**Recomendação (não executada — §0 e a regra 14 do CLAUDE.md proíbem migration sem gate
+humano):** uma migration que revogue `INSERT, UPDATE, DELETE, TRUNCATE` de `anon` e
+`authenticated` nas três tabelas, mais a correção do baseline do drill para que a asserção
+volte a medir a realidade. Isso é escopo próprio, fora de R2.
+
 ### G7 deixou de ser circular
 
 Até R2.4, G7 dizia "`target-readiness` executado por inteiro". As consultas 5 a 7 daquele

@@ -249,10 +249,24 @@ const SIMBOLO: Record<Classificacao, string> = {
   UNKNOWN: "⚠️",
 };
 
-/** Corta uma assinatura longa preservando o começo, que é onde a diferença costuma estar. */
+/**
+ * Corta uma assinatura longa preservando o começo, que é onde a diferença costuma estar.
+ *
+ * A CONTRABARRA É ESCAPADA **ANTES** DO PIPE, e a ordem não é estilística.
+ *
+ * Escapar só o `|` deixava `a\|b` virar `a\\|b` — em Markdown, `\\` é uma contrabarra
+ * literal, e o `|` seguinte volta a ser separador de célula. A tabela quebra, e quebra
+ * justamente na linha que alguém precisa ler: definição de função em Postgres carrega
+ * contrabarra de verdade (`regexp_replace(..., '\s+', ' ')` está no próprio
+ * `fingerprint.sql`), então isto não é hipótese.
+ *
+ * É o mesmo raciocínio do escape do `.pgpass` em `preflight/prepare-credential.sh`:
+ * escapar o `:` antes da `\` faria a barra do próprio escape ser escapada em seguida.
+ * Lá eu acertei a ordem e escrevi por quê; aqui eu errei, e o CodeQL achou.
+ */
 function resumir(valor: string | null, limite = 160): string {
   if (valor === null) return "_(ausente)_";
-  const limpo = valor.replace(/\|/g, "\\|");
+  const limpo = valor.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
   return limpo.length <= limite ? `\`${limpo}\`` : `\`${limpo.slice(0, limite)}…\``;
 }
 

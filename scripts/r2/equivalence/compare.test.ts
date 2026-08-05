@@ -210,6 +210,22 @@ describe("renderizar", () => {
     expect(md).toContain("não foi conclusiva");
   });
 
+  it("a contrabarra é escapada ANTES do pipe, senão a tabela quebra na linha que importa", () => {
+    // `a\|b` escapado só no pipe vira `a\\|b` — em Markdown, `\\` é contrabarra literal e
+    // o `|` seguinte volta a separar célula. Definição de função em Postgres carrega
+    // contrabarra de verdade (`regexp_replace(..., '\s+', ' ')`), então não é hipótese.
+    const comBarra = `${BASE}\nfp.funcao|f()|def=regexp_replace(x, '\\s+', ' ')`;
+    const md = renderizar(comparar(BASE, comBarra));
+    expect(md).toContain("\\\\s+");
+    // Nenhuma linha da tabela pode ter mais células do que o cabeçalho declara.
+    const linhasDeTabela = md.split("\n").filter((l) => l.startsWith("| `"));
+    expect(linhasDeTabela.length).toBeGreaterThan(0);
+    for (const linha of linhasDeTabela) {
+      const celulas = linha.split(/(?<!\\)\|/).length;
+      expect(celulas, `linha com célula a mais: ${linha}`).toBe(6);
+    }
+  });
+
   it("o `|` de uma assinatura não quebra a tabela Markdown", () => {
     const comBarra = `${BASE}\nfp.constraint|products.x|tipo=c,validada=true,def=CHECK ((a | b) > 0)`;
     const md = renderizar(comparar(BASE, comBarra));

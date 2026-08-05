@@ -103,9 +103,13 @@ Três consequências práticas:
 - **a máscara acontece no SQL, não na renderização.** Mascarar só no fim deixaria o código
   completo no arquivo intermediário — exatamente onde ninguém procuraria depois.
 
-A senha nunca entra na linha de comando do `psql`: a URL é decomposta em variáveis libpq, e
-cada pedaço recebe `::add-mask::`. O GitHub mascara o secret inteiro sozinho, mas não seus
-pedaços — e é o pedaço que vaza numa mensagem de erro de conexão.
+A senha nunca entra na linha de comando do `psql`, e desde a R2.3B também **não entra no
+ambiente**: ela é escrita num `.pgpass` de modo `0600` no diretório efêmero, e o que atravessa
+o processo é o caminho. Host e usuário recebem `::add-mask::` — o GitHub mascara o secret
+inteiro sozinho, mas não seus pedaços, e é o pedaço que vaza numa mensagem de erro de conexão.
+
+A senha ficou de fora dessa lista de propósito: mascará-la exigiria trazer o valor de volta
+para o shell, que é o oposto do que a mudança fez. Ver §8B.
 
 ---
 
@@ -140,6 +144,10 @@ Duas decisões de SQL vieram daí:
 ---
 
 ## 8. A execução: `STAGING SECRET REQUIRED`
+
+> **Medida em 04/08/2026, antes do segredo existir.** Preservada como está: ela é a razão de a
+> §8B existir, e reescrevê-la apagaria a diferença entre "não havia como olhar" e "olhou-se e o
+> banco recusou". O estado atual do secret está em [§8B](#8b-r23b--a-primeira-execução-com-credencial-04082026).
 
 O segredo `SUPABASE_DB_URL` **não existe** no GitHub Environment `staging`. Verificado pela
 presença do nome, nunca pelo valor:

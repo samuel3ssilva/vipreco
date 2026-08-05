@@ -91,6 +91,54 @@ describe("fatos medidos", () => {
     expect(medicao.linhas.products).toBe(7);
     expect(medicao.linhas.prices).toBeNull();
   });
+
+  it("lê o formato COMPOSTO das tabelas de catálogo", () => {
+    // Regressão do defeito que o primeiro `plan` contra staging expôs. `20-content.sql`
+    // emite `total=4,demo=4,real=0,ativos=4` para markets/products/prices e um número puro
+    // para as três de contribuição. A primeira versão de `medir()` só entendia o número
+    // puro, então as três tabelas cujo total importa viravam `null` — e `null` significa
+    // "não lido", que faz `check-after.ts` PULAR a comparação. A guarda parecia existir.
+    const medicao = medir(
+      comFatos([
+        "count.markets|total=4,demo=4,real=0,ativos=4",
+        "count.products|total=7,demo=7,real=0,ativos=7,com_gtin=5,com_size_text=7",
+        "count.prices|total=22,demo=22,real=0,ativos=22,validos=22",
+        "count.price_submissions|0",
+        "count.product_watch_requests|1",
+        "count.decision_feedback|0",
+        "gtin.resumo|preenchidos=5,invalidos=2,duplicados=0",
+      ]),
+    );
+    expect(medicao.linhas).toEqual({
+      markets: 4,
+      products: 7,
+      prices: 22,
+      price_submissions: 0,
+      product_watch_requests: 1,
+      decision_feedback: 0,
+    });
+    for (const valor of Object.values(medicao.linhas)) {
+      expect(valor, "nenhuma contagem pode ficar como não lida").not.toBeNull();
+    }
+  });
+
+  it("os dois formatos do fixture são os que o SQL realmente emite", () => {
+    // Sem esta amarra, o teste acima protege contra um defeito que já aconteceu — e não
+    // contra o próximo, que seria o SQL mudar de formato e o fixture continuar antigo. Foi
+    // exatamente assim que o defeito nasceu: o fixture usava o formato de UMA das famílias
+    // de tabela para as duas.
+    const conteudo = readFileSync(join(RAIZ, "scripts/r2/preflight/20-content.sql"), "utf-8");
+    for (const tabela of ["markets", "products", "prices"]) {
+      expect(conteudo, `count.${tabela} deixou de ser composto`).toMatch(
+        new RegExp(`'count\\.${tabela}',\\s*format\\(\\s*\\n?\\s*'total=%s`),
+      );
+    }
+    for (const tabela of ["price_submissions", "product_watch_requests", "decision_feedback"]) {
+      expect(conteudo, `count.${tabela} deixou de ser número puro`).toContain(
+        `SELECT 'count.${tabela}', count(*)::text`,
+      );
+    }
+  });
 });
 
 describe("as sete versões do baseline", () => {

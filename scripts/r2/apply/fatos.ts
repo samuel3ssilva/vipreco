@@ -65,13 +65,34 @@ const TABELAS_CONTADAS = [
   "decision_feedback",
 ] as const;
 
+/**
+ * `20-content.sql` emite as contagens em DOIS formatos, e a diferença não é cosmética.
+ *
+ *   count.markets            → `total=4,demo=4,real=0,ativos=4`   (composto)
+ *   count.price_submissions  → `0`                                (número puro)
+ *
+ * As tabelas de catálogo precisam da discriminação demo/real para a classificação
+ * EMPTY / DEMO ONLY / MIXED; as de contribuição só precisam do número, e o mandato proíbe
+ * ler mais do que o necessário nelas.
+ *
+ * A primeira versão desta função só entendia o número puro, e o resultado foi silencioso do
+ * pior jeito: `markets`, `products` e `prices` viravam `null`, `null` significava "não
+ * lido", e a comparação de contagem em `check-after.ts` PULAVA justamente as três tabelas
+ * cujo total importa. A guarda parecia existir e não existia — foi o primeiro `plan` contra
+ * staging que mostrou isso, e por isso ele rodou antes de qualquer escrita.
+ */
+function contagem(bruto: string | null): number | null {
+  if (bruto === null) return null;
+  const direto = Number(bruto);
+  if (Number.isFinite(direto)) return direto;
+  return campos(bruto).total ?? null;
+}
+
 export function medir(fatos: Fatos): Medicao {
   const gtin = campos(um(fatos, "gtin.resumo"));
   const linhas: Record<string, number | null> = {};
   for (const tabela of TABELAS_CONTADAS) {
-    const bruto = um(fatos, `count.${tabela}`);
-    const numero = Number(bruto);
-    linhas[tabela] = bruto !== null && Number.isFinite(numero) ? numero : null;
+    linhas[tabela] = contagem(um(fatos, `count.${tabela}`));
   }
 
   // `history.count` só existe quando a tabela de histórico existe. Ausente é 0 versões —

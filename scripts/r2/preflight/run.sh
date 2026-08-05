@@ -283,10 +283,20 @@ rm -f "$TRABALHO/readiness.txt" "$TRABALHO/readiness.err"
 ls "$REPO_ROOT/supabase/migrations" | sed 's/\.sql$//' >"$TRABALHO/migrations-locais.txt"
 bun "$PREFLIGHT_DIR/render-summary.ts" "$FATOS" "$TRABALHO/migrations-locais.txt" >"$TRABALHO/resumo.md"
 
+# O resumo vai para o LOG sempre, e para o Job Summary quando ele existir.
+#
+# Nao e duplicacao por descuido. O Job Summary so e legivel pela interface web, com
+# sessao autenticada; o log e recuperavel por API. A diferenca deixou de ser teorica
+# no run 31031676899: o preflight finalmente leu staging, e a tabela G1-G15 ficou
+# presa numa tela que nao da para citar dentro de docs/evidence/ sem alguem copiar a
+# mao -- num projeto cuja disciplina inteira e evidencia versionada.
+#
+# E seguro por construcao, e nao por confianca: o resumo ja e sanitizado na origem
+# (host so como hash truncado, GTIN mascarado no proprio SQL, nenhuma linha de
+# tabela), e `preflight.test.ts` verifica exatamente isso.
+cat "$TRABALHO/resumo.md"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   cat "$TRABALHO/resumo.md" >>"$GITHUB_STEP_SUMMARY"
-else
-  cat "$TRABALHO/resumo.md"
 fi
 
 echo "==> Preflight concluido. Nenhuma escrita foi emitida."

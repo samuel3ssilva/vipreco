@@ -12,13 +12,19 @@
 # e decisao sem teste.
 #
 # O QUE NUNCA SAI DAQUI
-#   connection string, senha, token, host completo, GTIN completo, linha de tabela,
-#   dado pessoal. O fingerprint publicado e um hash truncado do host mais os ultimos
-#   caracteres do project ref: da para conferir QUAL ambiente foi lido, nao da para
-#   alcanca-lo.
+#   senha, token, host completo, GTIN completo, linha de tabela, dado pessoal. O
+#   fingerprint publicado e um hash truncado do host mais os ultimos caracteres do
+#   project ref: da para conferir QUAL ambiente foi lido, nao da para alcanca-lo.
 #
 # ENTRADA (ambiente):
-#   SUPABASE_DB_URL   connection string de staging. Vem de Environment Secret.
+#   SUPABASE_DB_PASSWORD   a Database password do projeto Supabase de STAGING, e
+#                          nada alem dela. Vem de Environment Secret. NAO e uma
+#                          connection string -- host, porta, usuario e banco sao
+#                          derivados de config/environments.json, que ja e
+#                          versionado e ja e publico. Ver o cabecalho de
+#                          `prepare-credential.sh` para o motivo dessa troca.
+#   PREFLIGHT_ENVIRONMENT  nome do GitHub Environment declarado pelo workflow.
+#                          Precisa ser exatamente `staging`.
 #   GITHUB_STEP_SUMMARY, GITHUB_OUTPUT, RUNNER_TEMP   opcionais (Actions).
 # =============================================================================
 set -euo pipefail
@@ -38,26 +44,44 @@ erro() { echo "::error::$1" >&2; }
 aviso() { echo "::warning::$1" >&2; }
 
 # -----------------------------------------------------------------------------
-# 1. O secret existe? Verificacao pela PRESENCA, nunca pelo valor.
+# 1. O ambiente declarado e o segredo existem?
+#
+# Presenca, nunca valor. E sem fallback: se `SUPABASE_DB_PASSWORD` nao estiver la, o
+# preflight PARA. Nao tenta `SUPABASE_DB_URL`, nao monta connection string
+# alternativa, nao procura credencial de producao. Um fallback aqui reintroduziria,
+# de uma vez, os dois caminhos de autenticacao que esta mudanca existe para eliminar.
 # -----------------------------------------------------------------------------
-if [ -z "${SUPABASE_DB_URL:-}" ]; then
-  echo "STAGING DATABASE SECRET REQUIRED" >&2
+if [ "${PREFLIGHT_ENVIRONMENT:-}" != "staging" ]; then
+  erro "Este preflight so roda no GitHub Environment 'staging' (recebido: '${PREFLIGHT_ENVIRONMENT:-vazio}'). Abortando sem abrir conexao."
+  exit 1
+fi
+
+if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+  echo "STAGING DATABASE PASSWORD SECRET REQUIRED" >&2
   if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
     cat >>"$GITHUB_STEP_SUMMARY" <<'RESUMO'
 # Preflight remoto de staging — não executado
 
-**`STAGING DATABASE SECRET REQUIRED`**
+**`STAGING DATABASE PASSWORD SECRET REQUIRED`**
 
-O segredo `SUPABASE_DB_URL` não existe no GitHub Environment `staging`, então nenhuma
-conexão foi aberta. Nada falhou no banco: o preflight simplesmente não tinha como olhar.
+O segredo `SUPABASE_DB_PASSWORD` não existe no GitHub Environment `staging`, então
+nenhuma conexão foi aberta. Nada falhou no banco: o preflight simplesmente não tinha
+como olhar.
 
 ## A ação mínima
 
-Cadastrar `SUPABASE_DB_URL` como **Environment Secret** do ambiente `staging`, com a
-connection string do Postgres de **staging** — nunca a de produção.
+Cadastrar `SUPABASE_DB_PASSWORD` como **Environment Secret** do ambiente `staging`,
+contendo **somente a Database password** do projeto Supabase de **staging** — nada de
+URI de conexão, nada de host, nada de usuário, nunca a `service_role`, nunca a senha de
+produção.
 
-Ela nunca é impressa, nem no log nem neste resumo, e o workflow recusa a execução se a
-URL apontar para o projeto de produção.
+Host, porta, usuário e banco não vêm de segredo: são derivados de
+`config/environments.json`, que já é versionado e já é público. Era exatamente essa
+montagem manual de URI que produziu cinco defeitos silenciosos de credencial — ver
+`scripts/r2/preflight/prepare-credential.sh`.
+
+A senha nunca é impressa, nem no log nem neste resumo: ela vai direto para um
+`.pgpass` de modo 0600, que é apagado no fim do job.
 
 ## O que continua valendo
 
@@ -78,80 +102,63 @@ echo "==> Guarda estatica de read-only nos .sql do preflight"
 bun "$PREFLIGHT_DIR/read-only-guard.ts"
 
 # -----------------------------------------------------------------------------
-# 3. Decompor a URL em variaveis libpq.
+# 3. Identidade do ambiente, guardas, e a credencial.
 #
-# Assim a senha nunca entra na linha de comando do psql (argv e legivel por outros
-# processos do runner), e o host fica disponivel para o fingerprint sanitizado.
+# Os dois project refs estao em config/environments.json, que ja e versionado e ja e
+# publico (o ref aparece na URL da API). Ler o ref de PRODUCAO aqui serve para uma
+# coisa so: RECUSAR. E a diferenca entre "o workflow nao aponta para producao" e "o
+# workflow se recusa a rodar contra producao" -- e so a segunda e uma garantia.
 #
-# A decomposicao NAO e feita aqui com expansao de parametro do bash. Ela ja foi, e
-# corrompia senha com `+`, com `%`, com barra invertida e com `@` -- quatro defeitos
-# que se disfarcavam de `password authentication failed`, ou seja, mandavam procurar
-# o problema no banco. Agora quem parseia e `parse-connection-url.ts`, com um parser
-# de URL de verdade e com teste. Ver o cabecalho daquele arquivo.
+# NAO EXISTE MAIS DECOMPOSICAO DE URL AQUI. Host, porta, usuario e banco sao
+# derivados; o unico segredo e a senha, e ela vai direto para um `.pgpass` de modo
+# 0600 dentro de $TRABALHO, que o `trap` apaga. A senha nunca entra em argv, nunca
+# atravessa um pipe, nunca e codificada e nunca e reconstruida.
 #
-# Os valores chegam em base64 porque usuario e banco podem conter `=`, `|`, espaco ou
-# quebra de linha, e qualquer separador em texto puro seria mais um jeito silencioso de
-# corromper o valor.
-#
-# A SENHA NAO VEM POR AQUI. Ela e escrita pelo parser direto num `.pgpass` de modo 0600
-# dentro de $TRABALHO, e o que atravessa este pipe e o CAMINHO. Assim a senha nunca
-# vira variavel de ambiente, nunca atravessa um pipe e -- o que importa mais -- nunca
-# passa codificada em base64: o `::add-mask::` do GitHub mascara o valor literal do
-# secret e NAO reconhece o base64 do mesmo valor. Senha em base64 num log e senha num
-# log com um passo a mais.
+# Toda a cadeia de guarda mora em `preparar_credencial`, que e uma funcao com nome e
+# com teste que a EXECUTA de verdade. Guarda escrita direto no corpo de um script e
+# guarda sem teste.
 # -----------------------------------------------------------------------------
-FORMA_DA_URL=""
-# shellcheck source=scripts/r2/preflight/load-components.sh
-source "$PREFLIGHT_DIR/load-components.sh"
-componentes="$(PREFLIGHT_WORKDIR="$TRABALHO" bun "$PREFLIGHT_DIR/parse-connection-url.ts")"
-carregar_componentes <<<"$componentes"
-unset componentes
+ref_de() {
+  bun --print "JSON.parse(require('fs').readFileSync('$REPO_ROOT/config/environments.json','utf-8')).$1.supabaseProjectId" 2>/dev/null || true
+}
+REF_STAGING="$(ref_de staging)"
+REF_PROIBIDO="$(ref_de production)"
 
+# shellcheck source=scripts/r2/preflight/prepare-credential.sh
+source "$PREFLIGHT_DIR/prepare-credential.sh"
+if ! preparar_credencial "$REF_STAGING" "$REF_PROIBIDO" "$TRABALHO/.pgpass"; then
+  erro "Nao foi possivel preparar a credencial de staging. Nenhuma conexao foi aberta."
+  exit 1
+fi
+
+# A senha ja esta no `.pgpass`. Tira-la do ambiente encurta a janela em que ela existe
+# em dois lugares ao mesmo tempo: dali em diante, todo processo filho -- inclusive o
+# `psql` e o `bun` do renderizador -- herda um ambiente que nao a contem.
+unset SUPABASE_DB_PASSWORD
+
+PGHOST="$PREFLIGHT_HOST"
+PGPORT="$PREFLIGHT_PORTA"
+PGUSER="$PREFLIGHT_USUARIO"
+PGDATABASE="$PREFLIGHT_BANCO"
+PGPASSFILE="$TRABALHO/.pgpass"
 export PGHOST PGPORT PGUSER PGDATABASE PGPASSFILE
 export PGSSLMODE="${PGSSLMODE:-require}"
 export PGCONNECT_TIMEOUT=15
 export PGAPPNAME="vipreco-r2-preflight"
 
-# Mascara explicita. O GitHub ja mascara o secret INTEIRO; estes sao os pedacos dele,
-# que sozinhos nao seriam mascarados. So valores longos: mascarar a palavra "postgres"
-# tornaria todo o log ilegivel sem proteger nada.
+# Mascara explicita do host. Ele nao e segredo -- e derivado de arquivo versionado e
+# publico --, mas nao ha motivo para ele aparecer inteiro num log de erro de conexao.
+# `PGUSER` e `postgres`: mascarar essa palavra tornaria o log ilegivel sem proteger
+# nada.
 #
-# A senha nao aparece nesta lista porque nao existe neste processo: ela esta no
-# `.pgpass`, e o unico jeito de mascarar aqui seria trazer o valor de volta para o
-# shell -- o oposto do que a mudanca fez.
-for segredo in "$PGHOST" "$PGUSER"; do
-  if [ "${#segredo}" -gt 8 ]; then echo "::add-mask::$segredo"; fi
-done
+# A senha nao aparece nesta lista porque nao existe neste processo depois do
+# `.pgpass`: o GitHub ja mascara o valor do secret, e traze-lo de volta para o shell
+# so para mascara-lo de novo seria o oposto do que esta mudanca fez.
+echo "::add-mask::$PGHOST"
 
 # -----------------------------------------------------------------------------
-# 4. Fingerprint sanitizado, e a recusa de producao.
-#
-# Os dois project refs estao em config/environments.json, que ja e versionado e ja e
-# publico. Ler o ref de producao aqui serve para uma coisa so: RECUSAR. E a diferenca
-# entre "o workflow nao aponta para producao" e "o workflow se recusa a rodar contra
-# producao mesmo se alguem apontar" -- e so a segunda e uma garantia.
+# 4. Fingerprint sanitizado.
 # -----------------------------------------------------------------------------
-REF_STAGING="$(bun --print "JSON.parse(require('fs').readFileSync('$REPO_ROOT/config/environments.json','utf-8')).staging.supabaseProjectId" 2>/dev/null || true)"
-REF_PROIBIDO="$(bun --print "JSON.parse(require('fs').readFileSync('$REPO_ROOT/config/environments.json','utf-8')).production.supabaseProjectId" 2>/dev/null || true)"
-
-# Falha ABERTA se ninguem olhar. Com REF_STAGING vazio, `!= *""*` e sempre falso e a
-# confirmacao de staging passaria calada -- exatamente a checagem que parece existir e
-# nao existe. Por isso os dois refs sao exigidos antes de qualquer comparacao.
-if [ -z "$REF_STAGING" ] || [ -z "$REF_PROIBIDO" ]; then
-  erro "Nao foi possivel ler os project refs de config/environments.json. Abortando: sem eles a recusa de producao nao e verificavel, e uma guarda que nao e verificavel nao e guarda."
-  exit 1
-fi
-
-identidade="$PGHOST $PGUSER"
-if [[ "$identidade" == *"$REF_PROIBIDO"* ]]; then
-  erro "A connection string aponta para o projeto de PRODUCAO. Abortando sem abrir conexao. Este workflow so pode ler staging."
-  exit 1
-fi
-if [[ "$identidade" != *"$REF_STAGING"* ]]; then
-  erro "Nao foi possivel confirmar que a connection string e a de staging (o ref esperado nao aparece no host nem no usuario). Abortando: identificar o ambiente sem ambiguidade e pre-requisito, nao formalidade."
-  exit 1
-fi
-
 : >"$FATOS"
 fato "run.environment" "staging"
 fato "run.main_sha" "${GITHUB_SHA:-desconhecido}"
@@ -184,46 +191,34 @@ consultar() {
 }
 
 # Diagnostico da PRIMEIRA consulta -- a unica que ainda pode falhar por conexao.
-# Imprime FORMA da URL, nunca a URL: "a senha tem `%` que nao e escape valido" orienta
-# a correcao; o valor da senha nao orienta nada que ja nao esteja orientado.
+#
+# NAO EXISTE MAIS UMA SEGUNDA TENTATIVA. Ela existia porque a senha vinha de dentro de
+# uma URI e havia duas leituras defensaveis do mesmo texto. Com um segredo atomico ha
+# uma leitura so, e uma recusa aqui significa uma coisa so -- o que e exatamente o
+# ponto da mudanca: transformar um erro ambiguo num erro que aponta para um lugar.
 diagnostico_de_conexao() {
   echo "--- diagnostico de conexao (nenhum valor e impresso) ---" >&2
-  echo "forma da URL: ${FORMA_DA_URL:-nada de anormal}" >&2
   cat >&2 <<'AJUDA'
-Se a mensagem do psql for `password authentication failed`, as causas possiveis sao,
-nesta ordem:
-  1. a senha no secret nao e a do banco (foi rotacionada, ou e a senha do painel);
-  2. a senha tem caractere especial e foi colada sem percent-encoding na URI --
-     `@` deve virar %40, `:` %3A, `/` %2F, `?` %3F, `#` %23, `%` %25;
-  3. o usuario nao corresponde ao host: conexao direta usa `postgres`, o pooler usa
-     `postgres.<project-ref>`.
-Nenhuma delas se resolve daqui: o secret so pode ser reescrito pelo Founder.
+A conexao usa um segredo ATOMICO: `SUPABASE_DB_PASSWORD` carrega so a senha, e host,
+porta, usuario e banco vem de config/environments.json. Nao ha URI para montar errado,
+nao ha percent-encoding, nao ha base64.
+
+Entao `password authentication failed` aqui tem uma leitura so: o valor cadastrado em
+`SUPABASE_DB_PASSWORD` nao e a Database password do projeto Supabase de staging. As
+confusoes possiveis, em ordem de frequencia:
+  1. e a senha da CONTA do Supabase (a do painel), e nao a do BANCO;
+  2. e a senha de outro projeto -- producao, ou um projeto antigo;
+  3. e uma connection string inteira colada no lugar da senha;
+  4. a senha foi redefinida no painel depois de o segredo ter sido gravado.
+Nenhuma delas se resolve daqui: o segredo so pode ser reescrito pelo Founder.
 AJUDA
 }
 
 echo "==> 00-structure.sql (catalogo)"
 if ! consultar "00-structure.sql" "$TRABALHO/structure.txt"; then
-  # Antes de culpar a credencial, elimina a ultima duvida que ainda e NOSSA: quando a
-  # senha veio percent-encoded, decodificar e o certo -- exceto se ela contiver `%40`
-  # literal. Os dois casos sao indistinguiveis no texto e terminam no mesmo erro. O
-  # segundo candidato sai do mesmo valor cadastrado, de forma deterministica; isto nao
-  # e adivinhar senha, e fechar a unica porta que sobrou do nosso lado.
-  if [ -n "${PGPASSFILE_ALT:-}" ]; then
-    aviso "Primeira tentativa recusada. Repetindo com a senha SEM decodificacao percent, para separar 'senha errada' de 'senha com % literal'."
-    export PGPASSFILE="$PGPASSFILE_ALT"
-    if consultar "00-structure.sql" "$TRABALHO/structure.txt"; then
-      fato "guard.senha_variante" "sem-decodificacao-percent"
-      aviso "A senha do secret NAO deve ser percent-decoded: ela contem '%' literal. Considere reescrever o secret com o '%' escapado como '%25' para eliminar a ambiguidade."
-    else
-      erro "Nao foi possivel ler o catalogo de staging com nenhuma das duas leituras da senha; veja as mensagens do psql acima."
-      diagnostico_de_conexao
-      exit 1
-    fi
-  else
-    erro "Nao foi possivel ler o catalogo de staging; veja a mensagem do psql acima."
-    diagnostico_de_conexao
-    exit 1
-  fi
+  erro "Nao foi possivel ler o catalogo de staging; veja a mensagem do psql acima."
+  diagnostico_de_conexao
+  exit 1
 fi
 cat "$TRABALHO/structure.txt" >>"$FATOS"
 

@@ -382,6 +382,95 @@ Nenhuma escrita, nenhum deploy, produção não contatada.
 `postgresql://postgres:SENHA@db.<ref>.supabase.co:5432/postgres`, com a senha nova no lugar —
 e, se ela tiver qualquer caractere especial, percent-encoded (`%` → `%25`).
 
+> **Superseded pela §8D (05/08/2026).** A ação mínima acima deixou de valer: o segredo composto
+> saiu do caminho. O que se pede agora é um segredo com **só a senha**. As medições e o
+> diagnóstico desta seção continuam válidos como registro do que foi observado.
+
+---
+
+## 8D. R2.3D — o segredo composto foi eliminado (05/08/2026)
+
+### A pergunta que ninguém tinha feito
+
+Depois de três missões, a investigação sempre foi a mesma: _o valor cadastrado está certo?_ A
+pergunta que faltava era outra — **por que existe um valor composto para cadastrar?**
+
+`SUPABASE_DB_URL` carregava cinco campos:
+
+| Campo   | Era segredo? | Já estava versionado?             |
+| ------- | ------------ | --------------------------------- |
+| host    | não          | sim — `config/environments.json`  |
+| porta   | não          | sim — constante da conexão direta |
+| usuário | não          | sim — constante da conexão direta |
+| banco   | não          | sim — constante                   |
+| senha   | **sim**      | não, e nem deve                   |
+
+Quatro dos cinco já eram conhecidos. Montá-los à mão numa URI, para que o runner os
+decompusesse de volta em seguida, criava superfície de erro **do nada** — e foi exatamente
+dessa superfície que saíram os cinco defeitos da §8B, todos silenciosos, todos devolvendo
+`password authentication failed`, todos mandando investigar o banco.
+
+Um segredo composto tem uma propriedade que nenhum teste conserta: **ele não consegue
+distinguir "senha errada" de "URI montada errada"**. As duas falham no mesmo lugar, com a
+mesma mensagem. Um segredo atômico não tem como ter essa ambiguidade, porque não tem o que
+montar.
+
+### O que mudou
+
+| Antes                                                    | Depois                                               |
+| -------------------------------------------------------- | ---------------------------------------------------- |
+| `SUPABASE_DB_URL` com a connection string inteira        | `SUPABASE_DB_PASSWORD` com **só a senha**            |
+| parser de URL, percent-decode, base64, `.pgpass-alt`     | nada disso existe no caminho                         |
+| host vindo do segredo, conferido contra o ref versionado | host **derivado** do ref versionado                  |
+| duas leituras da senha, e uma segunda tentativa          | uma leitura, e um erro que aponta para um lugar      |
+| guarda de ambiente escrita no corpo do `run.sh`          | `preparar_credencial()`, com teste que a **executa** |
+
+Arquivos removidos: `parse-connection-url.ts`, `parse-connection-url.test.ts`,
+`load-components.sh`. Arquivo criado: `prepare-credential.sh`.
+
+### O que os testes passaram a provar
+
+O antecessor tinha teste e quebrou cinco vezes. A quinta foi a mais instrutiva: as duas
+pontas estavam testadas e o defeito morava na **costura** entre elas. Então o novo arquivo de
+teste executa a função de verdade, com senhas hostis, e afirma o arquivo que ela produziu:
+
+- senha com `:`, `\`, `\:`, `%`, `+`, `$`, crase, aspas e espaço interno sai **idêntica** do
+  `.pgpass` — os escapes de `\` e `:` são desfeitos pelo próprio teste, do jeito que o libpq
+  os desfaz;
+- `.pgpass` nasce e permanece **0600** — o libpq ignora o arquivo em silêncio se for mais
+  permissivo, e `psql` se comportaria como se não houvesse senha;
+- espaço, tabulação ou quebra de linha nas pontas do segredo é **recusado, não aparado**.
+  Aparar produziria uma senha diferente da cadastrada, que é a família de defeito inteira;
+- refs ausentes, refs iguais e host contaminado pelo ref de produção abortam **antes** de
+  qualquer arquivo ser escrito;
+- a senha não aparece em stdout nem em stderr — com controle positivo, para que "não vazou" e
+  "a verificação não funciona" não sejam a mesma coisa no CI.
+
+### Um bit de diagnóstico, e por que ele existe
+
+O runner agora emite um `::warning::` quando o segredo **não é alfanumérico puro**. É um bit
+de forma: não é o valor, nem comprimento, nem prefixo, nem sufixo, nem hash.
+
+Ele existe porque foi exatamente esse bit que localizou o bloqueio da §8C — na terceira
+execução, quando podia ter sido na primeira.
+
+### O que **não** foi feito
+
+Nenhuma execução do preflight. O segredo novo ainda não existe, e o mandato é explícito:
+verificar a existência **pelo nome**, não executar, não usar o segredo antigo, não pedir a
+senha. Nenhuma conexão foi aberta nesta missão — nem para staging, nem para produção.
+
+### Veredito
+
+**`STAGING PASSWORD-ONLY FLOW READY`**
+
+O caminho de autenticação está pronto e provado localmente. G3, G4, G5 e G7 continuam
+`UNKNOWN` por limite de medição, e continuarão até o segredo existir.
+
+**Ação mínima do Founder:** adicionar `SUPABASE_DB_PASSWORD` ao GitHub Environment `staging`,
+contendo **somente a Database password** de staging — sem `postgresql://`, sem host, sem
+usuário, sem `service_role`, e sem espaço nas pontas.
+
 ---
 
 ## 9. Onde o gate ficou
@@ -395,12 +484,14 @@ e, se ela tiver qualquer caractere especial, percent-encoded (`%` → `%25`).
 | Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514`                       |
 | `db-schema-drill-required` na `main` | **obrigatório**                                                                |
 | Preflight remoto                     | **executado 7×** — mecânica provada, banco não auditado                        |
-| Auditoria de staging                 | **não realizada** — `STAGING DATABASE PASSWORD STILL REJECTED` (§8C)           |
+| Auditoria de staging                 | **não realizada** — `STAGING PASSWORD-ONLY FLOW READY` (§8D)                   |
+| Autenticação                         | segredo **atômico** `SUPABASE_DB_PASSWORD`; a URI composta saiu do caminho     |
 | Recuperação de staging               | metade versionada **provada** ([`staging/recovery.md`](./staging/recovery.md)) |
 
-A ação mínima do Founder mudou de novo: a senha já foi reemitida, e o secret continua com um
-valor que **não é alfanumérico puro**. Falta conferir o conteúdo do segredo. O detalhe está em
-§8C.
+A ação mínima do Founder mudou de novo — e desta vez porque a **pergunta** mudou. Não é mais
+conferir o conteúdo de um valor composto: é cadastrar `SUPABASE_DB_PASSWORD` com só a senha.
+O detalhe está em §8D; a §8C fica como registro do que foi medido, com a ação mínima dela
+marcada como superseded.
 
 Nada disso reabre decisão resolvida. Os achados de R2.2 continuam de pé, inclusive os dois
 GTINs inválidos em staging — que não são curadoria pendente, e cuja correção continua sendo

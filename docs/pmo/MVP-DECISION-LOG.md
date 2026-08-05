@@ -864,3 +864,56 @@ cega. Nenhuma implementação visual começa antes de autorização específica.
   `product/R3-SCREEN-SPEC.md` (criado), `product/R3-COMPONENT-INVENTORY.md` (criado),
   `product/visual-north-star/vipreco-mvp-north-star.png` (criado), `INDEX.md`
 - **Status:** ativa
+
+---
+
+### DL-025 — Segredo atômico: a credencial de staging deixou de ser uma URI montada à mão
+
+- **Data:** 05/08/2026 · **Origem:** mandato R2.3D · **Decide:** Founder/PMO; executado pelo CTO
+- **Evidência:** `evidence/r2/automation.md` §8D · `scripts/r2/preflight/prepare-credential.sh`
+- **Contexto:** três missões seguidas (R2.3B, R2.3C e a retomada) terminaram em
+  `password authentication failed`, e em todas a investigação começou pelo mesmo lugar: _o valor
+  cadastrado está certo?_ Em R2.3B a resposta foi **não, o valor estava certo e o runner estava
+  errado** — cinco vezes, e nenhum dos cinco defeitos falhava: todos entregavam uma senha
+  silenciosamente diferente.
+
+**A decisão.** O Environment Secret operacional passa a ser **`SUPABASE_DB_PASSWORD`**, contendo
+**somente a Database password** de staging. Host, porta, usuário e banco são derivados de
+`config/environments.json`. `SUPABASE_DB_URL` sai do caminho de execução.
+
+**O argumento não é "o parser estava ruim".** Daqueles cinco campos da URI, quatro já eram
+conhecidos e versionados e só um era segredo. Montar os quatro conhecidos à mão, para
+decompô-los de volta em seguida, criava superfície de erro do nada — e um segredo composto tem
+uma propriedade que teste nenhum conserta: **ele não distingue "senha errada" de "URI montada
+errada"**. As duas falham no mesmo ponto, com a mesma mensagem, e mandam investigar o banco. Um
+segredo atômico não tem essa ambiguidade porque não tem o que montar.
+
+**O que foi eliminado, e não apenas corrigido:** parser de URL, detecção percent-encoded,
+extração de senha, base64, decode, `.pgpass` alternativo e a segunda tentativa de conexão.
+Nenhum caminho de autenticação em paralelo sobrou — sem o segredo novo o job encerra em
+`STAGING DATABASE PASSWORD SECRET REQUIRED` e não tenta mais nada.
+
+**Uma guarda que se executa.** A cadeia de recusa (refs ausentes, refs iguais, host contaminado
+pelo ref de produção) virou `preparar_credencial()`, uma função com nome cujo teste a **roda de
+verdade** em vez de casar regex sobre o texto do script. É a lição da quinta falha aplicada em
+vez de reaprendida: as duas pontas estavam testadas, e o defeito morava na costura.
+
+**Recusar em vez de consertar.** Espaço, tabulação ou quebra de linha nas pontas do segredo
+abortam com mensagem própria. Aparar em silêncio produziria uma senha diferente da cadastrada —
+exatamente a família de defeito que a decisão elimina.
+
+- **Alternativas descartadas:** (a) escrever um parser ainda melhor — trata o sintoma e mantém a
+  ambiguidade estrutural; (b) manter os dois segredos com fallback — reintroduziria os dois
+  caminhos paralelos e tornaria o erro de novo indistinguível; (c) pedir a senha em chat ou
+  usar `service_role` — proibido pelo mandato e desnecessário; (d) inferir o host de um segredo
+  separado — devolveria ao segredo um campo que já é público e versionado.
+- **O que não muda:** nada disso aplica migration. O gate de `data/R2-APPLICATION-GATE.md`
+  continua fechado e continua sendo decisão do Founder/PMO, ambiente por ambiente (princípio 14).
+  Os dois GTINs inválidos em staging seguem não sendo curadoria pendente.
+- **Estado:** nenhuma execução do preflight nesta missão. O segredo novo é verificado **pelo
+  nome**, e enquanto não existir o workflow não roda. Nenhuma conexão foi aberta, nenhuma
+  escrita emitida, produção não contatada. Staging segue em `862a179`, produção em `b88e514`.
+- **Documentos:** `evidence/r2/automation.md` (§8D; a ação mínima da §8C fica marcada como
+  superseded, e as medições preservadas), `data/R2-APPLICATION-GATE.md`,
+  `data/R2-ROLLOUT-RUNBOOK.md`, `scripts/r2/preflight/README.md`
+- **Status:** ativa

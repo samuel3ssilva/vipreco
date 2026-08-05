@@ -16,6 +16,10 @@ name: R2 staging preflight
 # SELECT direto em `supabase_migrations.schema_migrations`, que responde a mesma
 # pergunta que `supabase migration list`. A diferenca importa: assim o runner nunca
 # carrega uma ferramenta que tambem saiba aplicar migration.
+#
+# R2.3D: a autenticacao usa UM segredo atomico, `SUPABASE_DB_PASSWORD`, com a senha e
+# nada mais. Nao existe caminho alternativo: sem ele, o job encerra com
+# `STAGING DATABASE PASSWORD SECRET REQUIRED` e nao tenta nenhuma outra credencial.
 
 on:
   workflow_dispatch: {}
@@ -68,9 +72,21 @@ jobs:
 
       - name: Preflight read-only de staging
         env:
+          # R2.3D - SEGREDO ATOMICO. O secret carrega SO a Database password de staging.
+          #
+          # Ele substituiu `SUPABASE_DB_URL`, que carregava a connection string inteira.
+          # Dos cinco campos daquela URI, quatro ja eram conhecidos e versionados e um
+          # so era segredo -- e montar os quatro conhecidos a mao, para decompo-los de
+          # novo depois, produziu cinco defeitos silenciosos de credencial. Todos
+          # devolviam `password authentication failed`, que manda investigar o banco.
+          # Ver scripts/r2/preflight/prepare-credential.sh.
+          #
           # Unica leitura do secret em todo o workflow. Nunca interpolado em `echo`, em
-          # `run:` com debug, no Job Summary nem em artefato. O runner decompoe a URL em
-          # variaveis libpq -- para a senha nao entrar na linha de comando do psql -- e
-          # registra `::add-mask::` para cada pedaco.
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # `run:` com debug, no Job Summary nem em artefato: o runner o escreve direto
+          # num `.pgpass` de modo 0600, e o que atravessa o ambiente e o CAMINHO.
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          # Host, porta, usuario e banco NAO vem de segredo -- sao derivados de
+          # config/environments.json. Isto aqui e so o nome do Environment declarado
+          # acima, para que o runner possa recusar qualquer outro.
+          PREFLIGHT_ENVIRONMENT: staging
         run: bash scripts/r2/preflight/run.sh

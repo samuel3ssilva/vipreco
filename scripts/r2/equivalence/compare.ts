@@ -270,6 +270,43 @@ function resumir(valor: string | null, limite = 160): string {
   return limpo.length <= limite ? `\`${limpo}\`` : `\`${limpo.slice(0, limite)}…\``;
 }
 
+/** Quanto do trecho igual mostrar antes do ponto onde os dois lados se separam. */
+const CONTEXTO_ANTES = 24;
+/** Tamanho da janela recortada em volta da divergência. */
+const JANELA = 140;
+
+/**
+ * Recorta duas assinaturas divergentes em volta do ponto onde elas **de fato** divergem.
+ *
+ * `resumir()` cortava as duas pelos primeiros 160 caracteres, apostando — está escrito
+ * ali — que "a diferença costuma estar no começo". A primeira execução real contra
+ * staging desmentiu a aposta do pior jeito possível: `pa_normalize_text` só diverge no
+ * corpo, depois de um prefixo idêntico de mais de 150 caracteres, e a tabela exibiu duas
+ * células com texto EXATAMENTE igual sob o rótulo "assinatura diferente".
+ *
+ * Um relatório que mostra uma diferença como se fosse igualdade é pior que relatório
+ * nenhum. Relatório nenhum deixa a pergunta em aberto; este a respondia errado, e ainda
+ * por cima com a autoridade de uma tabela. Quem lesse concluiria que o comparador está
+ * com defeito — e pararia de confiar no único instrumento que separa drift real de
+ * ruído.
+ *
+ * Quando não há prefixo comum relevante, o começo já é o lugar certo para olhar e o
+ * recorte não acontece: nada é escondido sem motivo.
+ */
+export function recortarDivergencia(esperado: string, encontrado: string): [string, string] {
+  const limite = Math.min(esperado.length, encontrado.length);
+  let comum = 0;
+  while (comum < limite && esperado[comum] === encontrado[comum]) comum++;
+
+  if (comum <= CONTEXTO_ANTES) return [esperado, encontrado];
+
+  const inicio = comum - CONTEXTO_ANTES;
+  return [
+    `…${esperado.slice(inicio, inicio + JANELA)}`,
+    `…${encontrado.slice(inicio, inicio + JANELA)}`,
+  ];
+}
+
 export function renderizar(c: Comparacao): string {
   const linhas: string[] = [];
 
@@ -299,8 +336,17 @@ export function renderizar(c: Comparacao): string {
       linhas.push("| Objeto | Diferença | Esperado (repositório) | Encontrado (staging) |");
       linhas.push("| --- | --- | --- | --- |");
       for (const d of lista) {
+        // Só há ponto de divergência quando os dois lados existem. "só no esperado" e
+        // "só no ambiente" têm um lado nulo, e aí o recorte não faria sentido nenhum.
+        const [esq, dir] =
+          d.esperado !== null && d.encontrado !== null
+            ? recortarDivergencia(d.esperado, d.encontrado)
+            : [d.esperado, d.encontrado];
+        // O limite é maior que o de `resumir()` porque o escape de contrabarra pode até
+        // dobrar o tamanho do recorte — e truncar de novo devolveria o defeito original.
+        const limite = JANELA * 2 + CONTEXTO_ANTES;
         linhas.push(
-          `| \`${d.identidade}\` | ${d.tipo} | ${resumir(d.esperado)} | ${resumir(d.encontrado)} |`,
+          `| \`${d.identidade}\` | ${d.tipo} | ${resumir(esq, limite)} | ${resumir(dir, limite)} |`,
         );
       }
       linhas.push("");

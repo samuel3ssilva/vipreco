@@ -110,6 +110,7 @@ aplicar_efemero() {
 
 echo "==> Baseline de plataforma"
 aplicar_efemero "00-platform-baseline.sql" "$DRILL_DIR/00-platform-baseline.sql"
+aplicar_efemero "01-supabase-table-grants.sql" "$EQUIV_DIR/01-supabase-table-grants.sql"
 
 echo "==> Aplicando SOMENTE as migrations anteriores a R2"
 aplicadas=0
@@ -203,6 +204,35 @@ bun "$EQUIV_DIR/compare.ts" "$TRABALHO/esperado.txt" "$TRABALHO/encontrado.txt" 
   >"$TRABALHO/relatorio.md" || estado=$?
 
 cat "$TRABALHO/relatorio.md"
+
+# -----------------------------------------------------------------------------
+# 4b. Publicar os dois fingerprints crus num caminho estavel, para virarem artefato.
+#
+# A primeira execucao real (run 31041870966) mostrou por que isto e necessario: o
+# relatorio disse "86 diferencas" e, para 84 delas, a resposta certa dependia de saber
+# QUAIS grants existiam de cada lado -- e o relatorio, que resume, nao carrega isso.
+# Sem o fingerprint cru, a unica saida seria eu SUPOR o que a plataforma concede e
+# escrever a suposicao no baseline. Um instrumento cuja saida so pode ser interpretada
+# por adivinhacao nao mede: ele convida a confirmar o que ja se acreditava.
+#
+# O que vai no artefato e metadado de catalogo -- nome de tabela, coluna, expressao de
+# policy, grant. Nao ha linha de dado, nao ha senha (a variavel ja foi `unset` bem antes
+# daqui) e nao ha connection string. O host, que E sensivel, e verificado abaixo em vez
+# de presumido ausente.
+# -----------------------------------------------------------------------------
+SAIDA="${EQUIVALENCE_OUT:-}"
+if [ -n "$SAIDA" ]; then
+  mkdir -p "$SAIDA"
+  for f in esperado encontrado; do
+    if grep -qF "$PGHOST" "$TRABALHO/$f.txt"; then
+      erro "O fingerprint '$f' contem o host de staging. Nao vou publica-lo como artefato."
+      exit 1
+    fi
+    cp "$TRABALHO/$f.txt" "$SAIDA/fingerprint-$f.txt"
+  done
+  cp "$TRABALHO/relatorio.md" "$SAIDA/relatorio.md"
+  echo "==> Fingerprints e relatorio copiados para publicacao"
+fi
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   cat "$TRABALHO/relatorio.md" >>"$GITHUB_STEP_SUMMARY"
 fi

@@ -101,15 +101,10 @@ bun "$PREFLIGHT_DIR/read-only-guard.ts"
 # log com um passo a mais.
 # -----------------------------------------------------------------------------
 FORMA_DA_URL=""
+# shellcheck source=scripts/r2/preflight/load-components.sh
+source "$PREFLIGHT_DIR/load-components.sh"
 componentes="$(PREFLIGHT_WORKDIR="$TRABALHO" bun "$PREFLIGHT_DIR/parse-connection-url.ts")"
-while IFS='=' read -r chave valor; do
-  case "$chave" in
-    PGHOST | PGPORT | PGUSER | PGDATABASE | PGPASSFILE)
-      printf -v "$chave" '%s' "$(printf '%s' "$valor" | base64 --decode)"
-      ;;
-    FORMA) FORMA_DA_URL="$valor" ;;
-  esac
-done <<<"$componentes"
+carregar_componentes <<<"$componentes"
 unset componentes
 
 export PGHOST PGPORT PGUSER PGDATABASE PGPASSFILE

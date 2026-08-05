@@ -65,7 +65,11 @@ SELECT
   'priv.default_acl' AS chave,
   pg_get_userbyid(d.defaclrole)
     || '|' || coalesce(n.nspname, '(todos os schemas)')
-    || '|tipo=' || d.defaclobjtype
+    -- `::text` explicito: `defaclobjtype` e do tipo "char" (um byte), e `text || "char"`
+    -- e ambiguo para o Postgres -- `operator is not unique`. O drill pegou isto antes de
+    -- a consulta chegar perto de staging, que e exatamente para isso que ele roda os .sql
+    -- do preflight contra um banco vivo.
+    || '|tipo=' || d.defaclobjtype::text
     || '|' || coalesce(array_to_string(d.defaclacl::text[], ' '), '(vazio)') AS valor
 FROM pg_default_acl d
 LEFT JOIN pg_namespace n ON n.oid = d.defaclnamespace

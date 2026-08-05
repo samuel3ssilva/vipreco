@@ -9,9 +9,21 @@
 -- circularidade que esta separacao desfez. Em uma frase: um gate que exigia, para
 -- autorizar a migration, uma prova que so a migration podia produzir.
 --
---   G7-PRE   roda ANTES  -- `target-readiness-pre.sql`
---   G7-POST  roda DEPOIS -- este arquivo
---   G7       PASS quando os dois passaram, cada um no seu momento
+--   G7-PRE        roda ANTES de tudo        -- `target-readiness-pre.sql`
+--   G7-POST       roda DEPOIS de R2-A       -- este arquivo
+--   G7-POST-GTIN  roda DEPOIS de R2-B       -- `target-readiness-post-gtin.sql`
+--   G7            PASS quando os tres passaram, cada um no seu momento
+--
+-- R2.6 -- A CIRCULARIDADE TINHA UM SEGUNDO ANDAR, e ele so apareceu na aplicacao real.
+--
+-- Ate aqui este arquivo tambem trazia a consulta 8, que chama `pa_is_valid_gtin()` -- uma
+-- funcao que **R2-B** cria. O runner roda G7-POST logo depois de R2-A, como o gate manda, e
+-- ali a funcao ainda nao existe: o arquivo inteiro morria em `function does not exist`, e o
+-- gate reprovava um ambiente correto.
+--
+-- E exatamente o defeito que a separacao PRE/POST desfez um nivel acima, repetido aqui
+-- dentro: um arquivo que mistura dois momentos so pode passar num deles. A consulta 8 virou
+-- `target-readiness-post-gtin.sql`, e roda depois de R2-B.
 --
 -- ESTE ARQUIVO E ESTRITAMENTE READ-ONLY. So SELECT e WITH sobre SELECT. Ele verifica
 -- a aplicacao; nao a conclui, nao a corrige e nao valida constraint -- `VALIDATE
@@ -81,42 +93,3 @@ WHERE nsp.nspname = 'public'
   AND rel.relname = 'products'
   AND con.contype = 'c'
 ORDER BY con.conname;
-
--- -----------------------------------------------------------------------------
--- 8. DEPOIS DE R2-B: a funcao de GTIN concorda com a aritmetica que a auditoria
---    usou ANTES da aplicacao.
---
---    A parte PRE calcula o digito verificador em linha porque precisa responder sem
---    a funcao. A partir daqui existem DUAS implementacoes do mesmo algoritmo no mesmo
---    banco, e duas implementacoes sao duas chances de divergir. Esta consulta compara
---    as duas sobre os GTINs que realmente existem no ambiente: qualquer linha na saida
---    e uma divergencia, e uma divergencia invalida a auditoria PRE retroativamente.
---
---    Nao devolve o codigo -- so o `id` e os dois vereditos.
--- -----------------------------------------------------------------------------
-WITH avaliados AS (
-  SELECT
-    p.id,
-    public.pa_is_valid_gtin(p.gtin) AS pela_funcao,
-    -- `CASE`, e nao `AND`: o Postgres NAO garante ordem de avaliacao dos operandos de
-    -- `AND`, entao o cast `::integer` poderia ser avaliado sobre um codigo com letra e
-    -- abortar a consulta inteira. `CASE` garante a ordem. E a mesma protecao que a
-    -- parte PRE usa, pelo mesmo motivo.
-    CASE
-      WHEN p.gtin !~ '^[0-9]+$' THEN false
-      WHEN length(p.gtin) NOT IN (8, 12, 13, 14) THEN false
-      ELSE (
-        SELECT (10 - (SUM(
-          (substr(p.gtin, length(p.gtin) - 1 - i, 1))::integer
-            * CASE WHEN i % 2 = 0 THEN 3 ELSE 1 END
-        ) % 10)) % 10
-        FROM generate_series(0, length(p.gtin) - 2) AS i
-      ) = (substr(p.gtin, length(p.gtin), 1))::integer
-    END AS pela_aritmetica_da_auditoria
-  FROM public.products p
-  WHERE p.gtin IS NOT NULL
-)
-SELECT id, pela_funcao, pela_aritmetica_da_auditoria
-FROM avaliados
-WHERE pela_funcao IS DISTINCT FROM pela_aritmetica_da_auditoria
-ORDER BY id;

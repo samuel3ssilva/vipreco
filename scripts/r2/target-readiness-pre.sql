@@ -20,7 +20,8 @@
 --
 -- A separacao desfaz a circularidade na ESTRUTURA, e nao num comentario pedindo
 -- tolerancia. Este arquivo contem exatamente as consultas que respondem sobre o schema
--- LEGADO; `target-readiness-post.sql` contem as que so respondem depois da aplicacao.
+-- LEGADO; `target-readiness-post.sql` contem as que so respondem depois de R2-A, e
+-- `target-readiness-post-gtin.sql` a que so responde depois de R2-B.
 --
 --   G7-PRE   roda ANTES de aplicar   -- precisa passar para autorizar
 --   G7-POST  roda DEPOIS de aplicar  -- verifica o que a aplicacao produziu

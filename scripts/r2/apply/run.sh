@@ -68,6 +68,12 @@ publicar_resumo() {
   fi
 }
 
+# Vira "true" no instante em que a operacao emite a primeira escrita. Existe porque
+# `abortar()` afirmava, sempre, que nada tinha sido escrito -- e depois de R2-A aplicada e
+# G7-POST reprovado, essa frase era FALSA. Uma mensagem de erro que mente sobre o estado do
+# banco e pior que erro nenhum: ela manda quem le procurar no lugar errado.
+JA_ESCREVEU="false"
+
 abortar() {
   local veredito="$1" motivo="$2"
   erro "$motivo"
@@ -76,7 +82,11 @@ abortar() {
   relatar ""
   relatar "$motivo"
   relatar ""
-  relatar "**Nenhuma escrita foi emitida.** O estado de staging nao mudou."
+  if [ "$JA_ESCREVEU" = "true" ]; then
+    relatar "**A ESCRITA JA TINHA ACONTECIDO quando esta verificacao reprovou.** O estado de staging MUDOU -- leia a medicao acima antes de qualquer outro disparo, e nao continue a sequencia."
+  else
+    relatar "**Nenhuma escrita foi emitida.** O estado de staging nao mudou."
+  fi
   publicar_resumo
   exit 1
 }
@@ -383,6 +393,10 @@ relatorio_de_colisoes() {
 # -----------------------------------------------------------------------------
 # 10. EXECUCAO.
 # -----------------------------------------------------------------------------
+# A partir daqui uma operacao de escrita pode emitir escrita. O marcador sobe ANTES do
+# comando, e nao depois: um comando que falha no meio pode ter escrito parte.
+if [ "$ESCREVE" = "true" ]; then JA_ESCREVEU="true"; fi
+
 case "$OPERACAO" in
   plan)
     titulo "PLAN — auditoria read-only; nenhuma escrita"
@@ -447,21 +461,44 @@ esac
 # Rodar antes seria a circularidade que R2.4 desfez: o gate exigiria uma prova que so a
 # migration podia produzir. A saida NAO e publicada: ela contem GTIN completo.
 # -----------------------------------------------------------------------------
-if [ "$OPERACAO" = "apply-r2a" ]; then
-  titulo "G7-POST (saida nao publicada: contem GTIN completo)"
+# `apply-r2a` roda G7-POST; `apply-r2b` roda G7-POST-GTIN. A separacao existe porque a
+# consulta de concordancia chama `pa_is_valid_gtin()`, que **R2-B** cria: rodar o arquivo
+# inteiro depois de R2-A morria em `function does not exist` e reprovava um ambiente
+# correto. Foi medido ao vivo, e e a mesma circularidade que a separacao PRE/POST desfez um
+# nivel acima.
+g7() {
+  local rotulo="$1" arquivo="$2" veredito="$3" descricao="$4"
+  titulo "$rotulo (saida nao publicada: contem GTIN completo)"
   if psql --no-psqlrc --no-password --quiet --no-align --tuples-only \
     --variable=ON_ERROR_STOP=1 \
-    --file="$REPO_ROOT/scripts/r2/target-readiness-post.sql" >"$TRABALHO/g7.txt" 2>"$TRABALHO/g7.err"; then
-    fato "g7post.status" "PASS"
+    --file="$REPO_ROOT/scripts/r2/$arquivo" >"$TRABALHO/g7.txt" 2>"$TRABALHO/g7.err"; then
+    fato "g7.status" "PASS"
     relatar ""
-    relatar "**G7-POST: PASS.** As consultas do schema pos-R2-A rodaram por inteiro; saida retida por conter GTIN completo."
-  else
-    fato "g7post.status" "FAIL"
+    relatar "**$rotulo: PASS.** $descricao Saida retida por conter GTIN completo."
     rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
-    abortar "G7 POST FAILED" \
-      "R2-A foi aplicada, mas G7-POST reprovou. A sequencia PARA aqui: R2-B nao roda sobre um estado que a prontidao nao confirma."
+  else
+    fato "g7.status" "FAIL"
+    # A saida NAO e publicada, mas a CLASSE do erro sim -- sem ela, um FAIL nao diz se o
+    # ambiente esta errado ou se a consulta e que nao podia rodar ainda. Foi essa distincao
+    # que faltou na primeira reprovacao real.
+    if grep -qiE "does not exist" "$TRABALHO/g7.err"; then
+      relatar ""
+      relatar "Classe do erro: **objeto inexistente**. A consulta referencia algo que a migration desta etapa nao cria."
+    fi
+    rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
+    abortar "$veredito" \
+      "A migration foi aplicada, mas $rotulo reprovou. A sequencia PARA aqui: o passo seguinte nao roda sobre um estado que a prontidao nao confirma."
   fi
-  rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
+}
+
+if [ "$OPERACAO" = "apply-r2a" ]; then
+  g7 "G7-POST" "target-readiness-post.sql" "G7 POST FAILED" \
+    "As consultas do schema pos-R2-A rodaram por inteiro."
+fi
+
+if [ "$OPERACAO" = "apply-r2b" ]; then
+  g7 "G7-POST-GTIN" "target-readiness-post-gtin.sql" "G7 POST GTIN FAILED" \
+    "As duas implementacoes do digito verificador concordam sobre os GTINs que existem."
 fi
 
 # -----------------------------------------------------------------------------

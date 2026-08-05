@@ -111,24 +111,25 @@ decisão do Founder/PMO.
 Todos precisam estar `PASS` antes da aplicação. Os vereditos decidíveis por leitura saem do
 preflight; os demais são decisão humana registrada aqui.
 
-| #          | Condição                                                          | Como se decide                                                    |
-| ---------- | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
-| G1         | staging identificado sem ambiguidade                              | usuário `postgres.<ref>` derivado de `config/environments.json`   |
-| G2         | production é outro projeto, e não foi contatada                    | refs diferentes provados; a conexão aborta se mencionar produção  |
-| G3         | baseline histórico adotado **com equivalência comprovada**         | `r2-schema-equivalence.yml` + `migration repair` das 8 versões    |
-| G4         | schema legado equivalente                                          | nenhuma coluna de R2-A presente                                   |
-| G5         | dados afetados `DEMO ONLY`                                         | contagens, incluindo linhas inativas — ver a ressalva abaixo      |
-| G6-STAGING | staging reconstruível segundo a política aprovada                  | ver **STAGING DISPOSABLE REBUILD POLICY**, abaixo                 |
-| G7-PRE     | prontidão do schema legado                                         | `target-readiness-pre.sql` roda por inteiro **antes** de aplicar  |
-| G7-POST    | verificação pós-aplicação                                          | `target-readiness-post.sql`, **depois** de aplicar                |
-| G8         | zero GTIN inválido ou duplicado                                    | aritmética GS1 em linha, sobre os GTINs que existem               |
-| G9         | preview read-only de quantidade                                    | `preview-counts.ts`, sem escrever                                 |
-| G10        | drill e rollback                                                   | `db-schema-drill-required` verde                                  |
-| G11        | CI e CodeQL                                                        | verdes na revisão aplicada                                        |
-| G12        | nenhum deploy automático                                           | R2 não tem superfície de interface                                |
-| G13        | nenhum dado pessoal ou crítico afetado                             | ver a ressalva abaixo                                             |
-| G14        | RLS, policies e grants equivalentes                                | fingerprint de equivalência                                       |
-| G15        | credencial segura                                                  | segredo atômico, `.pgpass` 0600, apagado no fim do job            |
+| #            | Condição                                                   | Como se decide                                                   |
+| ------------ | ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| G1           | staging identificado sem ambiguidade                       | usuário `postgres.<ref>` derivado de `config/environments.json`  |
+| G2           | production é outro projeto, e não foi contatada            | refs diferentes provados; a conexão aborta se mencionar produção |
+| G3           | baseline histórico adotado **com equivalência comprovada** | `r2-schema-equivalence.yml` + `migration repair` das 8 versões   |
+| G4           | schema legado equivalente                                  | nenhuma coluna de R2-A presente                                  |
+| G5           | dados afetados `DEMO ONLY`                                 | contagens, incluindo linhas inativas — ver a ressalva abaixo     |
+| G6-STAGING   | staging reconstruível segundo a política aprovada          | ver **STAGING DISPOSABLE REBUILD POLICY**, abaixo                |
+| G7-PRE       | prontidão do schema legado                                 | `target-readiness-pre.sql` roda por inteiro **antes** de aplicar |
+| G7-POST      | verificação pós-R2-A                                       | `target-readiness-post.sql`, **depois** de R2-A                  |
+| G7-POST-GTIN | concordância das duas implementações do dígito verificador | `target-readiness-post-gtin.sql`, **depois** de R2-B             |
+| G8           | zero GTIN inválido ou duplicado                            | aritmética GS1 em linha, sobre os GTINs que existem              |
+| G9           | preview read-only de quantidade                            | `preview-counts.ts`, sem escrever                                |
+| G10          | drill e rollback                                           | `db-schema-drill-required` verde                                 |
+| G11          | CI e CodeQL                                                | verdes na revisão aplicada                                       |
+| G12          | nenhum deploy automático                                   | R2 não tem superfície de interface                               |
+| G13          | nenhum dado pessoal ou crítico afetado                     | ver a ressalva abaixo                                            |
+| G14          | RLS, policies e grants equivalentes                        | fingerprint de equivalência                                      |
+| G15          | credencial segura                                          | segredo atômico, `.pgpass` 0600, apagado no fim do job           |
 
 ### G3 e G4 medidos: staging tem SETE migrations aplicadas, não oito (R2.4B, 05/08/2026)
 
@@ -136,10 +137,10 @@ A comparação de equivalência rodou pela primeira vez contra staging
 ([run 31042845838](https://github.com/samuel3ssilva/vipreco/actions/runs/31042845838)) e o
 resultado é **MATERIAL DRIFT — 2 de 310 objetos**. As duas diferenças são o mesmo fato:
 
-| Objeto                            | Esperado (8 migrations)                     | Encontrado (staging)   |
-| --------------------------------- | ------------------------------------------- | ---------------------- |
-| `pa_normalize_text(input text)`    | `btrim(regexp_replace(lower(translate(…))))` | `lower(translate(…))`  |
-| `COMMENT ON FUNCTION pa_normalize_text` | contrato único de normalização         | _(ausente)_            |
+| Objeto                                  | Esperado (8 migrations)                      | Encontrado (staging)  |
+| --------------------------------------- | -------------------------------------------- | --------------------- |
+| `pa_normalize_text(input text)`         | `btrim(regexp_replace(lower(translate(…))))` | `lower(translate(…))` |
+| `COMMENT ON FUNCTION pa_normalize_text` | contrato único de normalização               | _(ausente)_           |
 
 O corpo encontrado em staging é **exatamente** o bloco `ROLLBACK EXATO` escrito dentro de
 `20260803000000_normalization_contract.sql`, e o `COMMENT` que aquela migration adiciona não
@@ -179,16 +180,16 @@ grants. G14 passa.
 Mas o caminho até esse `PASS` revelou algo que ninguém tinha medido. A primeira execução
 acusou **84 diferenças de grant**, e o fingerprint cru mostrou por quê:
 
-|            | `anon` | `authenticated` | `service_role` | `postgres` |
-| ---------- | ------ | --------------- | -------------- | ---------- |
-| staging    | 45     | 45              | 48             | 48         |
-| efêmero    | 3      | 3               | 48             | 48         |
+|         | `anon` | `authenticated` | `service_role` | `postgres` |
+| ------- | ------ | --------------- | -------------- | ---------- |
+| staging | 45     | 45              | 48             | 48         |
+| efêmero | 3      | 3               | 48             | 48         |
 
 48 = 6 tabelas × 8 privilégios. A aritmética fecha sem sobra: staging tem **tudo** menos os
 três `INSERT` que a Onda 3 revogou nas tabelas de submissão; o efêmero tinha só os três
 `SELECT` que as migrations concedem. 45 − 3 = 42, × 2 papéis = 84.
 
-A leitura correta é sobre o instrumento — as migrations nunca precisaram *conceder* acesso de
+A leitura correta é sobre o instrumento — as migrations nunca precisaram _conceder_ acesso de
 tabela a `anon`, porque a plataforma Supabase já concedia; elas só revogam. Corrigido em
 `scripts/r2/equivalence/01-supabase-table-grants.sql`.
 

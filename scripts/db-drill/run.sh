@@ -85,6 +85,23 @@ done
 
 psql_apply "assertions de autorizacao (90-assertions.sql)" "$SCRIPT_DIR/90-assertions.sql"
 
+# R2.3C - reconstrucao do DADO, e nao so do schema.
+#
+# Ate aqui o drill provava que o schema se reconstroi do zero. Nao provava nada
+# sobre o dado: o seed.sql nunca era aplicado. Metade de uma prova de reconstrucao
+# passa por prova inteira ate o dia em que alguem precisa reconstruir de verdade --
+# e G6 (recuperacao verificada) depende exatamente disto.
+#
+# O seed e aplicado DUAS vezes de proposito. Ele e idempotente por `ON CONFLICT DO
+# NOTHING`, e ja duplicou linhas de preco quando nao tinha id explicito. Aplicar duas
+# vezes e verificar contagem exata e o que transforma "e idempotente" de alegacao em
+# fato -- e importa porque recuperacao de emergencia raramente acontece de primeira.
+echo "==> Reconstrucao de dado: aplicando supabase/seed.sql (1 de 2)..."
+psql_apply "seed ficticio (supabase/seed.sql)" "$REPO_ROOT/supabase/seed.sql"
+echo "==> Reaplicando o mesmo seed para provar idempotencia (2 de 2)..."
+psql_apply "seed ficticio, segunda aplicacao" "$REPO_ROOT/supabase/seed.sql"
+psql_apply "assertions de reconstrucao do seed (96-seed-rebuild.sql)" "$SCRIPT_DIR/96-seed-rebuild.sql"
+
 # O script de auditoria de prontidao de R2 e read-only, entao rodar ele aqui nao muda
 # nada -- e prova que ele EXECUTA contra o schema real: sintaxe valida, e toda coluna,
 # funcao e indice que ele referencia existem de fato. Um runbook que manda rodar uma
@@ -115,4 +132,4 @@ done
 echo "==> Drill de rollback e reaplicacao de R2..."
 bash "$SCRIPT_DIR/95-rollback-reapply.sh" "$CONTAINER_NAME" "$MIGRATIONS_DIR"
 
-echo "==> Drill de reconstrucao de schema concluido com sucesso: ${#migration_files[@]} migrations reproduzidas e verificadas contra banco vivo, e a auditoria de prontidao de R2 executada."
+echo "==> Drill concluido com sucesso: ${#migration_files[@]} migrations reproduzidas e verificadas contra banco vivo, seed ficticio reconstruido e conferido (contagens exatas, is_demo, GTIN e idempotencia), e a auditoria de prontidao de R2 executada."

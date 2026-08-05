@@ -589,30 +589,73 @@ usuário, sem `service_role`, e sem espaço nas pontas.
 
 ---
 
+## 8F. R2.3E — a auditoria remota funcionou (05/08, 17:54Z)
+
+[Run 31032153539](https://github.com/samuel3ssilva/vipreco/actions/runs/31032153539), `main`
+em `6043e02`. Os quatro `.sql` executaram, a transação read-only foi confirmada **pelo próprio
+banco**, e nenhuma escrita foi emitida. PostgreSQL **17.6**.
+
+Depois de nove execuções, a décima leu staging. O gate consolidado está em
+[`staging/application.md` §1B](./staging/application.md); aqui fica só o que a execução diz
+sobre a **ferramenta**.
+
+### O que a automação provou sobre si mesma
+
+| Garantia                     | Como apareceu                                                      |
+| ---------------------------- | ------------------------------------------------------------------ |
+| read-only não é promessa     | `transaction_read_only = on`, respondido pelo banco na 1ª consulta |
+| o segredo não vaza           | `SUPABASE_DB_PASSWORD: ***`; host publicado só como `a757d67ece4e` |
+| produção é inalcançável      | ref `…hhvigy` no usuário; nenhum contato com o outro projeto       |
+| GTIN sai mascarado da origem | `*********2345`, mascarado no SQL e não na renderização            |
+| o dump nunca é publicado     | só a contagem por estado: 7 `proposta_segura`                      |
+
+### Zero `UNKNOWN`
+
+A R2.2 deixou G3, G4 e G5 indeterminados **por limite de medição** — a chave anônima não
+enxerga catálogo. Agora os três estão decididos: G4 passou, G3 e G5 reprovaram por motivo
+concreto. **9 PASS, 6 FAIL, nenhum indeterminado.**
+
+Vale dizer o que isso não é: o gate continua fechado, e mais gates reprovam do que antes. Mas
+reprovar por um fato medido é outra coisa que reprovar por não ter conseguido olhar — a
+primeira é informação, a segunda é ausência dela.
+
+### O custo real, e a lição que sobra
+
+Dez execuções para uma leitura. O que as separou não foi o banco: foram cinco defeitos de
+parsing (§8B), um segredo composto que não distinguia senha errada de URI errada (§8D), um
+segredo gravado no nome antigo, um host derivado IPv6-only, e um diagnóstico que acusava a
+senha quando o problema era a rede (§8E).
+
+Todos compartilham a mesma forma: **produzem uma mensagem plausível que aponta para o lugar
+errado**. Nenhum deles "falha" no sentido de parar e dizer o que houve — todos respondem algo
+que parece resposta. É por isso que cada correção desta série terminou virando teste que
+**executa**, e não asserção sobre texto.
+
+---
+
 ## 9. Onde o gate ficou
 
-| Item                                 | Estado                                                                         |
-| ------------------------------------ | ------------------------------------------------------------------------------ |
-| Migrations aplicadas                 | **nenhuma**                                                                    |
-| Escritas emitidas                    | **nenhuma**                                                                    |
-| Banco de produção                    | **não contatado**                                                              |
-| Backfill                             | **não iniciado**                                                               |
-| Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514`                       |
-| `db-schema-drill-required` na `main` | **obrigatório**                                                                |
-| Preflight remoto                     | **executado 9×** — mecânica provada, banco não auditado                        |
-| Auditoria de staging                 | **não realizada** — `STAGING PASSWORD-ONLY FLOW READY` (§8D)                   |
-| Autenticação                         | segredo **atômico** `SUPABASE_DB_PASSWORD`; a URI composta saiu do caminho     |
-| Recuperação de staging               | metade versionada **provada** ([`staging/recovery.md`](./staging/recovery.md)) |
+| Item                                 | Estado                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Migrations aplicadas                 | **nenhuma**                                                                                                    |
+| Escritas emitidas                    | **nenhuma**                                                                                                    |
+| Banco de produção                    | **não contatado**                                                                                              |
+| Backfill                             | **não iniciado**                                                                                               |
+| Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514`                                                       |
+| `db-schema-drill-required` na `main` | **obrigatório**                                                                                                |
+| Preflight remoto                     | **executado 10×** — e a 10ª **auditou staging** ([§8F](#8f-r23e--a-auditoria-remota-funcionou-05082026-1754z)) |
+| Auditoria de staging                 | **REALIZADA** — 9 PASS, 6 FAIL, 0 UNKNOWN ([`staging/application.md` §1B](./staging/application.md))           |
+| Autenticação                         | segredo **atômico** `SUPABASE_DB_PASSWORD`; a URI composta saiu do caminho                                     |
+| Recuperação de staging               | metade versionada **provada** ([`staging/recovery.md`](./staging/recovery.md))                                 |
 
-A ação mínima do Founder mudou de novo — e desta vez porque a **pergunta** mudou. Não é mais
-conferir o conteúdo de um valor composto: é cadastrar `SUPABASE_DB_PASSWORD` com só a senha.
-O detalhe está em §8D; a §8C fica como registro do que foi medido, com a ação mínima dela
-marcada como superseded.
+**A ferramenta deixou de ser o bloqueio.** As §§8B–8E registram a série de defeitos que
+mantiveram a auditoria parada — todos meus, todos disfarçados de problema do banco — e a §8F
+registra a execução em que ela finalmente leu staging.
 
-Na execução 8 a senha foi escrita no segredo **antigo** (`SUPABASE_DB_URL`), e o preflight
-encerrou sem abrir conexão. Na execução 9, com o secret certo cadastrado, o bloqueio mudou de
-lugar de novo: o **host** que eu derivava era o da conexão direta, que é IPv6-only e
-inalcançável do runner. Ver §8E.
+O que bloqueia agora são **achados**, não instrumentos: histórico de migrations ausente, uma
+linha em `product_watch_requests`, dois GTINs inválidos, backup, e um critério de gate
+circular. Nenhum deles se resolve por leitura — todos são escrita ou decisão, logo são do
+Founder/PMO.
 
 Nada disso reabre decisão resolvida. Os achados de R2.2 continuam de pé, inclusive os dois
 GTINs inválidos em staging — que não são curadoria pendente, e cuja correção continua sendo

@@ -479,3 +479,23 @@ describe("o limite de plataforma no ALTER DEFAULT PRIVILEGES", () => {
     expect(checkAfter).toContain("Default privileges de tabela");
   });
 });
+
+describe("G7 também roda no validate", () => {
+  it("porque uma migration aplicada não pode ser reaplicada", () => {
+    // G7-POST reprovou uma vez por defeito do próprio arquivo, com R2-A já aplicada. Se G7
+    // só existisse dentro de `apply-r2a`, ele seria IRREPETÍVEL: não haveria como
+    // reexecutá-lo depois da correção sem inventar uma operação.
+    const validate = /validate\)([\s\S]*?)\n    ;;/.exec(runnerExecutavel)?.[1] ?? "";
+    expect(validate).toContain('g7 "G7-POST"');
+    expect(validate).toContain('g7 "G7-POST-GTIN"');
+  });
+
+  it("cada parte só roda quando o histórico MEDIDO já a admite", () => {
+    // A condição é o estado medido, e não uma suposição sobre a ordem em que alguém
+    // disparou as coisas.
+    const validate = /validate\)([\s\S]*?)\n    ;;/.exec(runnerExecutavel)?.[1] ?? "";
+    expect(validate).toMatch(/HISTORICO_ANTES:-0\}" -ge 11/);
+    expect(validate).toMatch(/HISTORICO_ANTES:-0\}" -ge 12/);
+    expect(validate).toContain("não aplicável ainda");
+  });
+});

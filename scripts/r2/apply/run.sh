@@ -390,6 +390,36 @@ relatorio_de_colisoes() {
   fi
 }
 
+# `apply-r2a` roda G7-POST; `apply-r2b` roda G7-POST-GTIN. A separacao existe porque a
+# consulta de concordancia chama `pa_is_valid_gtin()`, que **R2-B** cria: rodar o arquivo
+# inteiro depois de R2-A morria em `function does not exist` e reprovava um ambiente
+# correto. Foi medido ao vivo, e e a mesma circularidade que a separacao PRE/POST desfez um
+# nivel acima.
+g7() {
+  local rotulo="$1" arquivo="$2" veredito="$3" descricao="$4"
+  titulo "$rotulo (saida nao publicada: contem GTIN completo)"
+  if psql --no-psqlrc --no-password --quiet --no-align --tuples-only \
+    --variable=ON_ERROR_STOP=1 \
+    --file="$REPO_ROOT/scripts/r2/$arquivo" >"$TRABALHO/g7.txt" 2>"$TRABALHO/g7.err"; then
+    fato "g7.status" "PASS"
+    relatar ""
+    relatar "**$rotulo: PASS.** $descricao Saida retida por conter GTIN completo."
+    rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
+  else
+    fato "g7.status" "FAIL"
+    # A saida NAO e publicada, mas a CLASSE do erro sim -- sem ela, um FAIL nao diz se o
+    # ambiente esta errado ou se a consulta e que nao podia rodar ainda. Foi essa distincao
+    # que faltou na primeira reprovacao real.
+    if grep -qiE "does not exist" "$TRABALHO/g7.err"; then
+      relatar ""
+      relatar "Classe do erro: **objeto inexistente**. A consulta referencia algo que a migration desta etapa nao cria."
+    fi
+    rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
+    abortar "$veredito" \
+      "A migration foi aplicada, mas $rotulo reprovou. A sequencia PARA aqui: o passo seguinte nao roda sobre um estado que a prontidao nao confirma."
+  fi
+}
+
 # -----------------------------------------------------------------------------
 # 10. EXECUCAO.
 # -----------------------------------------------------------------------------
@@ -448,6 +478,32 @@ case "$OPERACAO" in
 
   validate)
     titulo "VALIDATE — auditoria read-only do estado final"
+
+    # G7 roda aqui tambem, e nao so acoplado a cada aplicacao. Duas razoes:
+    #
+    #   1. uma migration ja aplicada nao pode ser reaplicada, entao um G7 que so existisse
+    #      dentro de `apply-r2a` seria IRREPETIVEL -- e foi exatamente o que aconteceu
+    #      quando G7-POST reprovou por um defeito do proprio arquivo: nao havia como
+    #      reexecuta-lo depois da correcao sem inventar uma operacao;
+    #   2. validacao final que nao roda a prontidao nao valida a parte que mais importa.
+    #
+    # Cada parte roda so quando o estado ja a admite -- e a condicao e o historico medido,
+    # nao uma suposicao sobre a ordem em que alguem disparou as coisas.
+    if [ "${HISTORICO_ANTES:-0}" -ge 11 ]; then
+      g7 "G7-POST" "target-readiness-post.sql" "G7 POST FAILED" \
+        "As consultas do schema pos-R2-A rodaram por inteiro."
+    else
+      relatar ""
+      relatar "**G7-POST: não aplicável ainda** — R2-A não está no histórico remoto."
+    fi
+
+    if [ "${HISTORICO_ANTES:-0}" -ge 12 ]; then
+      g7 "G7-POST-GTIN" "target-readiness-post-gtin.sql" "G7 POST GTIN FAILED" \
+        "As duas implementacoes do digito verificador concordam sobre os GTINs que existem."
+    else
+      relatar ""
+      relatar "**G7-POST-GTIN: não aplicável ainda** — R2-B não está no histórico remoto."
+    fi
     ;;
 
   *)
@@ -461,36 +517,6 @@ esac
 # Rodar antes seria a circularidade que R2.4 desfez: o gate exigiria uma prova que so a
 # migration podia produzir. A saida NAO e publicada: ela contem GTIN completo.
 # -----------------------------------------------------------------------------
-# `apply-r2a` roda G7-POST; `apply-r2b` roda G7-POST-GTIN. A separacao existe porque a
-# consulta de concordancia chama `pa_is_valid_gtin()`, que **R2-B** cria: rodar o arquivo
-# inteiro depois de R2-A morria em `function does not exist` e reprovava um ambiente
-# correto. Foi medido ao vivo, e e a mesma circularidade que a separacao PRE/POST desfez um
-# nivel acima.
-g7() {
-  local rotulo="$1" arquivo="$2" veredito="$3" descricao="$4"
-  titulo "$rotulo (saida nao publicada: contem GTIN completo)"
-  if psql --no-psqlrc --no-password --quiet --no-align --tuples-only \
-    --variable=ON_ERROR_STOP=1 \
-    --file="$REPO_ROOT/scripts/r2/$arquivo" >"$TRABALHO/g7.txt" 2>"$TRABALHO/g7.err"; then
-    fato "g7.status" "PASS"
-    relatar ""
-    relatar "**$rotulo: PASS.** $descricao Saida retida por conter GTIN completo."
-    rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
-  else
-    fato "g7.status" "FAIL"
-    # A saida NAO e publicada, mas a CLASSE do erro sim -- sem ela, um FAIL nao diz se o
-    # ambiente esta errado ou se a consulta e que nao podia rodar ainda. Foi essa distincao
-    # que faltou na primeira reprovacao real.
-    if grep -qiE "does not exist" "$TRABALHO/g7.err"; then
-      relatar ""
-      relatar "Classe do erro: **objeto inexistente**. A consulta referencia algo que a migration desta etapa nao cria."
-    fi
-    rm -f "$TRABALHO/g7.txt" "$TRABALHO/g7.err"
-    abortar "$veredito" \
-      "A migration foi aplicada, mas $rotulo reprovou. A sequencia PARA aqui: o passo seguinte nao roda sobre um estado que a prontidao nao confirma."
-  fi
-}
-
 if [ "$OPERACAO" = "apply-r2a" ]; then
   g7 "G7-POST" "target-readiness-post.sql" "G7 POST FAILED" \
     "As consultas do schema pos-R2-A rodaram por inteiro."

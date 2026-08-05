@@ -495,6 +495,91 @@ falta, e a correção é uma linha na tela de Environment Secrets.
 
 **`STAGING PASSWORD-ONLY FLOW READY`** — mecânica provada em execução real; banco não auditado.
 
+---
+
+## 8E. R2.3E — o host derivado estava errado, e o diagnóstico mentiu (05/08, 17:32Z)
+
+Com `SUPABASE_DB_PASSWORD` finalmente cadastrado, o
+[run 31030456630](https://github.com/samuel3ssilva/vipreco/actions/runs/31030456630) passou
+das guardas, montou o `.pgpass`, chamou o `psql` — e devolveu:
+
+```
+psql: error: connection to server at "***" (2600:1f11:c29:8b01:1f37:785f:3f86:6352),
+      port 5432 failed: Network is unreachable
+```
+
+**Não é erro de autenticação.** O TCP nunca abriu; a senha não chegou a ser testada.
+
+### O defeito: eu derivei o host errado
+
+A R2.3D derivava `db.<ref>.supabase.co` — a conexão **direta** do Supabase. Esse host é
+**IPv6-only**, e runner do GitHub é **IPv4-only**. O endereço no log é a prova: `2600:1f11:…`.
+
+A §8B desta mesma página registrava, medido, que o host das missões anteriores **resolvia
+para IPv4 em `ca-central-1`** — ou seja, era o **pooler**. Ao trocar um host cadastrado à mão
+por um derivado, troquei também um host alcançável por um inalcançável, e não percebi porque
+a evidência que dizia isso estava a 200 linhas de distância na mesma página.
+
+|                      | Direta (`db.<ref>.supabase.co`) | Pooler, modo Session         |
+| -------------------- | ------------------------------- | ---------------------------- |
+| Família de IP        | **IPv6-only**                   | IPv4                         |
+| Porta                | 5432                            | 5432                         |
+| Usuário              | `postgres`                      | **`postgres.<project-ref>`** |
+| Alcançável do runner | **não**                         | sim                          |
+
+A correção: o **host** passa a vir de `staging.supabaseDbHost` em `config/environments.json`
+(público, versionado, copiado do painel), e o **usuário** passa a ser derivado como
+`postgres.<project-ref>`.
+
+Daí sai uma consequência que muda uma guarda: **a identidade do ambiente mudou de campo**. O
+host do pooler é compartilhado por região — dois projetos na mesma região usam o mesmo
+hostname. Quem carrega o tenant é o usuário. Conferir o ambiente pelo host teria virado uma
+guarda que parece existir e não existe, que é o pior tipo.
+
+Em compensação, a recusa de produção **deixou de ser tautológica**: o host agora vem de fora
+da construção, então verificá-lo voltou a ser validação de verdade, e não asserção sobre o
+que o próprio código acabou de montar.
+
+### O segundo defeito, e o mais instrutivo
+
+Diante de um erro de **rede**, o runner imprimiu quatro hipóteses sobre a **senha**:
+
+> `Entao password authentication failed aqui tem uma leitura so: o valor cadastrado em
+SUPABASE_DB_PASSWORD nao e a Database password…`
+
+O texto era impresso incondicionalmente. Ele nunca lia o erro do psql — só assumia qual tinha
+sido.
+
+É a mesma família de defeito que a R2.3D existe para eliminar, um nível acima. Antes, cinco
+bugs produziam uma senha silenciosamente diferente e o Postgres devolvia uma mensagem que
+mandava investigar o banco. Aqui, o **diagnóstico** manda investigar a credencial quando o
+problema é o host. O mecanismo difere; o custo é idêntico — alguém procura onde não está.
+
+A correção tem duas partes, e a segunda importa mais que a primeira:
+
+1. o stderr do psql passa a ser **guardado** além de repassado, e o diagnóstico o **lê** antes
+   de opinar: ramo de rede, ramo de autenticação, ramo inconclusivo;
+2. o diagnóstico saiu de dentro do `run.sh` e virou
+   [`diagnose-connection.sh`](../../../scripts/r2/preflight/diagnose-connection.sh) — uma
+   função sourced, com 18 testes que a **executam** sobre os erros reais dos runs 4 e
+   31030456630, em vez de conferir o texto por regex.
+
+Um diagnóstico sem teste é um comentário que se apresenta como conclusão.
+
+### O que a execução estabelece
+
+| Estabelecido                                 | Como                                        |
+| -------------------------------------------- | ------------------------------------------- |
+| o segredo atômico existe e é lido            | `SUPABASE_DB_PASSWORD: ***` no log do passo |
+| as guardas de ambiente passaram              | o runner chegou ao `psql`                   |
+| o `.pgpass` foi montado                      | o `psql` foi invocado com `PGPASSFILE`      |
+| o host derivado é **inalcançável** do runner | `Network is unreachable` contra `2600:…`    |
+
+**Não estabelecido:** absolutamente nada sobre a senha, nem sobre o conteúdo de staging.
+Nenhuma consulta rodou. G3, G4, G5 e G7 continuam `UNKNOWN` por limite de medição.
+
+Nenhuma escrita, nenhuma migration, nenhum deploy, produção não contatada.
+
 O caminho de autenticação está pronto e provado localmente. G3, G4, G5 e G7 continuam
 `UNKNOWN` por limite de medição, e continuarão até o segredo existir.
 
@@ -514,7 +599,7 @@ usuário, sem `service_role`, e sem espaço nas pontas.
 | Backfill                             | **não iniciado**                                                               |
 | Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514`                       |
 | `db-schema-drill-required` na `main` | **obrigatório**                                                                |
-| Preflight remoto                     | **executado 8×** — mecânica provada, banco não auditado                        |
+| Preflight remoto                     | **executado 9×** — mecânica provada, banco não auditado                        |
 | Auditoria de staging                 | **não realizada** — `STAGING PASSWORD-ONLY FLOW READY` (§8D)                   |
 | Autenticação                         | segredo **atômico** `SUPABASE_DB_PASSWORD`; a URI composta saiu do caminho     |
 | Recuperação de staging               | metade versionada **provada** ([`staging/recovery.md`](./staging/recovery.md)) |
@@ -525,8 +610,9 @@ O detalhe está em §8D; a §8C fica como registro do que foi medido, com a aç�
 marcada como superseded.
 
 Na execução 8 a senha foi escrita no segredo **antigo** (`SUPABASE_DB_URL`), e o preflight
-encerrou sem abrir conexão. O que falta é criar um secret **novo**, com o nome
-`SUPABASE_DB_PASSWORD` — não editar o que já existe.
+encerrou sem abrir conexão. Na execução 9, com o secret certo cadastrado, o bloqueio mudou de
+lugar de novo: o **host** que eu derivava era o da conexão direta, que é IPv6-only e
+inalcançável do runner. Ver §8E.
 
 Nada disso reabre decisão resolvida. Os achados de R2.2 continuam de pé, inclusive os dois
 GTINs inválidos em staging — que não são curadoria pendente, e cuja correção continua sendo

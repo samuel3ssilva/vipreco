@@ -62,8 +62,21 @@ class Sessao {
   private pendentes = new Map<number, (v: unknown) => void>();
   private constructor(private ws: WebSocket) {
     ws.addEventListener("message", (ev) => {
-      const msg = JSON.parse(String(ev.data)) as { id?: number; result?: unknown };
-      if (msg.id !== undefined) this.pendentes.get(msg.id)?.(msg.result);
+      const msg: unknown = JSON.parse(String(ev.data));
+      // O `id` vem de JSON de fora e era usado direto como chave de busca do callback a
+      // ser invocado — o CodeQL apontou (js/unvalidated-dynamic-method-call, alta), e
+      // apontou com razão. Aqui não é explorável, porque `pendentes` é um `Map` e não um
+      // objeto: `Map.get` não passa por prototype, então "__proto__" ou "constructor"
+      // devolvem `undefined` como qualquer outra chave ausente.
+      //
+      // Mesmo assim vale validar, e não por burocracia de alerta: sem esta guarda, um
+      // frame malformado do navegador chamaria o `?.()` sobre o que quer que estivesse
+      // no Map, e o modo de falha seria uma resposta trocada de comando — o tipo de
+      // defeito que aparece como screenshot vazio e manda procurar no lugar errado.
+      if (typeof msg !== "object" || msg === null) return;
+      const { id, result } = msg as { id?: unknown; result?: unknown };
+      if (typeof id !== "number" || !Number.isInteger(id)) return;
+      this.pendentes.get(id)?.(result);
     });
   }
   static async abrir(url: string): Promise<Sessao> {

@@ -166,8 +166,13 @@ describe("o segredo nunca é impresso", () => {
   });
 
   it("a senha não entra na linha de comando do psql", () => {
-    expect(RUNNER).toContain("export PGUSER PGPASSWORD PGDATABASE");
+    // A senha viaja por variável de ambiente (libpq lê `PGPASSWORD`), e não por argv,
+    // que é legível por outros processos do runner. A decomposição em si vive em
+    // `parse-connection-url.ts` — e tem suíte própria, porque a versão artesanal
+    // anterior corrompia a senha em silêncio.
+    expect(RUNNER).toMatch(/export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE/);
     expect(RUNNER).not.toMatch(/psql[^\n]*\$SUPABASE_DB_URL/);
+    expect(RUNNER).not.toMatch(/psql[^\n]*\$PGPASSWORD/);
   });
 
   it("nada é enviado como artefato", () => {

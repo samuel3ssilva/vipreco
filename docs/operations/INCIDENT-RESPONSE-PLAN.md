@@ -74,6 +74,11 @@ antes do Gate R0, não implementado agora.
 
 ## 6. O que este plano deliberadamente não cobre ainda
 
+- **Falha de controle de processo** (push direto, PR sem check, gate humano pulado) sem
+  indisponibilidade, exposição de segredo ou escrita em dado real. Isso tem registro
+  próprio em [`PROCESS-CONTROL-INCIDENTS.md`](PROCESS-CONTROL-INCIDENTS.md) e classificação
+  própria (`PROCESS CONTROL INCIDENT`), justamente para não diluir a escala SEV1–SEV4 deste
+  plano com eventos que não tocaram dado nem disponibilidade.
 - Escalonamento entre múltiplas pessoas (não existe equipe).
 - Comunicação com usuário/comerciante externo (não existe usuário real).
 - SLA formal (não existe contrato pago ainda).

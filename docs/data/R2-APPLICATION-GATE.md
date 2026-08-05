@@ -20,16 +20,59 @@ nenhuma quantidade de teste verde troca a segunda pela primeira.
 
 ---
 
-## Estado atual
+## Estado atual — **staging aplicada em 05/08/2026 (R2.6)**
 
-| Item                                           | Estado                                             |
-| ---------------------------------------------- | -------------------------------------------------- |
-| `20260803010000_product_identity_quantity.sql` | versionada na `main`, **não aplicada**             |
-| `20260803020000_gtin_integrity.sql`            | versionada na `main`, **não aplicada**             |
-| Backfill de quantidade (MVP-E1-08)             | **não iniciado**                                   |
-| `VALIDATE CONSTRAINT`                          | **não executado** em constraint nenhuma            |
-| Conteúdo de `products` em staging              | **parcialmente medido em 04/08/2026** — ver abaixo |
-| Conteúdo de `products` em produção             | **NOT VERIFIED** — banco nunca contatado           |
+| Item                                                        | Staging                                   | Produção                                 |
+| ----------------------------------------------------------- | ----------------------------------------- | ---------------------------------------- |
+| Histórico remoto de migrations                              | **12 versões**                            | **NOT VERIFIED** — banco nunca contatado |
+| `20260803000000_normalization_contract.sql`                 | **aplicada**                              | não aplicada                             |
+| `20260803005000_core_table_privilege_hardening.sql`         | **aplicada**                              | não aplicada                             |
+| `20260803007500_contribution_table_privilege_hardening.sql` | **aplicada**                              | não aplicada                             |
+| `20260803010000_product_identity_quantity.sql`              | **aplicada**, G7-POST PASS                | não aplicada                             |
+| `20260803020000_gtin_integrity.sql`                         | **aplicada**, G7-POST-GTIN PASS           | não aplicada                             |
+| GTINs demo inválidos                                        | **0** (dois anulados em transação medida) | **NOT VERIFIED**                         |
+| Backfill de quantidade (MVP-E1-08)                          | **não iniciado**                          | **não iniciado**                         |
+| `VALIDATE CONSTRAINT`                                       | **não executado** em constraint nenhuma   | **não executado**                        |
+
+Toda a aplicação passou pelo workflow manual `r2-staging-apply.yml`, uma operação por
+disparo, com frase de confirmação própria e verificação de estado antes e depois. O
+procedimento está em [`R2-CONTROLLED-APPLY-RUNBOOK.md`](R2-CONTROLLED-APPLY-RUNBOOK.md).
+
+**O banco de produção continua sem ter sido contatado uma única vez.** O Environment
+`production` não carrega segredo de banco, e o workflow recusa qualquer alvo que não seja
+staging em quatro pontos independentes.
+
+### Contagens medidas depois de tudo aplicado
+
+| Tabela                   | Linhas |
+| ------------------------ | -----: |
+| `markets`                |      4 |
+| `products`               |      7 |
+| `prices`                 |     22 |
+| `price_submissions`      |      0 |
+| `product_watch_requests` |      1 |
+| `decision_feedback`      |      0 |
+
+Idênticas às medidas antes da primeira operação. **Nenhuma linha foi criada ou apagada em
+nenhum passo** — a única escrita de dado foi `gtin → NULL` em dois registros `is_demo`.
+
+### Resíduo declarado — herança de privilégio
+
+`ALTER DEFAULT PRIVILEGES FOR ROLE` exige participação no papel dono do default, e o usuário
+da conexão não é membro do papel administrativo do Supabase. A primeira tentativa de aplicar
+o hardening central reprovou em `permission denied to change default privileges` — e, por a
+migration ser transacional, isso revertia também as revogações de tabela, que são o achado
+P0.
+
+Medido depois da correção: o default privilege do papel `postgres` no schema `public` **não
+concede mais nada** a `anon` nem a `authenticated` (`postgres=arwdDxtm/postgres
+service_role=arwdDxtm/postgres`). É esse o papel que cria tabela em `public`, então a herança
+está fechada na prática. O que sobra são defaults de outros papéis, em outros schemas, que a
+conexão não pode alterar — fica registrado, e fechá-los exigiria ação no painel do Supabase.
+
+---
+
+## Estado anterior (04/08/2026), preservado
 
 O último item é o motivo de **todas** as constraints nascerem `NOT VALID`. Sem saber o que
 existe no ambiente alvo, uma constraint validada na criação poderia falhar a aplicação

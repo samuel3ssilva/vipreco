@@ -41,10 +41,11 @@ próprio documento.
 Operação de aplicação de R2 — como o dado **vai para o banco**. Os dois nascem da missão
 R2.1 e valem enquanto as migrations de R2 não estiverem aplicadas e validadas:
 
-| Documento                                                    | Estado                                                  |
-| ------------------------------------------------------------ | ------------------------------------------------------- |
-| [`data/R2-ROLLOUT-RUNBOOK.md`](data/R2-ROLLOUT-RUNBOOK.md)   | **NORMATIVO** — as oito fases da aplicação              |
-| [`data/R2-APPLICATION-GATE.md`](data/R2-APPLICATION-GATE.md) | **NORMATIVO** — quem autoriza, e o que não é autorizado |
+| Documento                                                                    | Estado                                                                |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [`data/R2-ROLLOUT-RUNBOOK.md`](data/R2-ROLLOUT-RUNBOOK.md)                   | **NORMATIVO** — as oito fases da aplicação                            |
+| [`data/R2-APPLICATION-GATE.md`](data/R2-APPLICATION-GATE.md)                 | **NORMATIVO** — quem autoriza, e o que não é autorizado               |
+| [`data/R2-CONTROLLED-APPLY-RUNBOOK.md`](data/R2-CONTROLLED-APPLY-RUNBOOK.md) | **NORMATIVO** — o único procedimento autorizado de escrita em staging |
 
 As ferramentas read-only que as duas fases de auditoria usam estão em
 [`../scripts/r2/README.md`](../scripts/r2/README.md).
@@ -125,12 +126,12 @@ Gate humano.
 
 Nenhum conflito com o roadmap v3. Todos permanecem vinculantes no que lhes cabe.
 
-| Pasta                              | Estado                                                                                      |
-| ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| [`security/`](security/)           | **NORMATIVO** — threat model, matriz de autorização, política de borda, revisão adversarial |
+| Pasta                              | Estado                                                                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`security/`](security/)           | **NORMATIVO** — threat model, matriz de autorização, política de borda, revisão adversarial                                   |
 | [`operations/`](operations/)       | **NORMATIVO** — cache HTTP, resposta a incidente, registro de incidentes de processo, runbook de resiliência, plano da Onda 4 |
-| [`accessibility/`](accessibility/) | **NORMATIVO** — auditoria WCAG 2.2 AA                                                       |
-| [`design/`](design/)               | **NORMATIVO** — Brand System v2 e recálculo de contraste                                    |
+| [`accessibility/`](accessibility/) | **NORMATIVO** — auditoria WCAG 2.2 AA                                                                                         |
+| [`design/`](design/)               | **NORMATIVO** — Brand System v2 e recálculo de contraste                                                                      |
 
 ---
 

@@ -69,4 +69,21 @@ jobs:
           # `.pgpass` de modo 0600, e o que atravessa o ambiente e o CAMINHO.
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PREFLIGHT_ENVIRONMENT: staging
+          EQUIVALENCE_OUT: ${{ runner.temp }}/equivalencia-publicada
         run: bash scripts/r2/equivalence/run.sh
+
+      # `always()` de proposito: o caso em que os fingerprints mais importam e exatamente
+      # aquele em que o passo anterior falhou. Um artefato que so existe quando nao ha
+      # diferenca nenhuma nao serviria para investigar diferenca nenhuma.
+      #
+      # O conteudo e metadado de catalogo. O proprio runner recusa a copia se o host de
+      # staging aparecer nos arquivos, e a senha ja foi `unset` muito antes de qualquer
+      # fingerprint ser gerado.
+      - name: Publicar fingerprints e relatório
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r2-equivalencia-${{ github.run_id }}
+          path: ${{ runner.temp }}/equivalencia-publicada
+          if-no-files-found: warn
+          retention-days: 30

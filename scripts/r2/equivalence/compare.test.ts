@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { comparar, lerFingerprint, normalizar, renderizar } from "./compare";
+import { comparar, lerFingerprint, normalizar, recortarDivergencia, renderizar } from "./compare";
 
 /**
  * R2.4 §5 — o comparador de equivalência de schema.
@@ -237,6 +237,63 @@ describe("renderizar", () => {
     for (const proibido of [/password/i, /postgres(ql)?:\/\//, /supabase\.co/, /\beyJ/]) {
       expect(md).not.toMatch(proibido);
     }
+  });
+});
+
+/**
+ * Estes casos existem por causa de um defeito real, achado na primeira execução contra
+ * staging (run 31041870966): o relatório imprimiu duas células com texto IDÊNTICO sob o
+ * rótulo "assinatura diferente", porque as duas assinaturas só divergiam depois de um
+ * prefixo comum maior que o limite de corte.
+ */
+describe("recortarDivergencia — a diferença precisa aparecer na célula", () => {
+  const PREFIXO = "CREATE OR REPLACE FUNCTION public.pa_normalize_text(input text) RETURNS text ";
+
+  it("mostra o ponto onde os dois lados se separam, e não o começo comum", () => {
+    const [esq, dir] = recortarDivergencia(
+      `${PREFIXO}AS $$ SELECT btrim(regexp_replace(lower(x), 'a', 'b')) $$`,
+      `${PREFIXO}AS $$ SELECT lower(x) $$`,
+    );
+    expect(esq).not.toBe(dir);
+    expect(esq).toContain("btrim");
+    expect(dir).toContain("lower(x)");
+    expect(dir).not.toContain("btrim");
+  });
+
+  it("marca com reticências que houve corte à esquerda", () => {
+    const [esq, dir] = recortarDivergencia(`${PREFIXO}IMMUTABLE`, `${PREFIXO}STABLE`);
+    expect(esq.startsWith("…")).toBe(true);
+    expect(dir.startsWith("…")).toBe(true);
+  });
+
+  it("não corta quando a divergência já está no começo", () => {
+    const a = "volatil=i,secdef=f";
+    const b = "volatil=s,secdef=f";
+    expect(recortarDivergencia(a, b)).toEqual([a, b]);
+  });
+
+  it("não corta quando um lado é prefixo curto do outro", () => {
+    expect(recortarDivergencia("abc", "abcdef")).toEqual(["abc", "abcdef"]);
+  });
+
+  it("preserva contexto igual antes da divergência, para a célula ser legível", () => {
+    const [esq] = recortarDivergencia(`${PREFIXO}IMMUTABLE`, `${PREFIXO}STABLE`);
+    // O trecho comum imediatamente anterior tem que estar lá: sem ele, o leitor vê o
+    // caractere divergente sem saber em que ponto da definição ele está.
+    expect(esq).toContain("text ");
+  });
+
+  it("o relatório de duas assinaturas com prefixo longo não repete a mesma célula", () => {
+    const comum = "fp.funcao|f(text)|";
+    const esperado = [`${comum}def=${PREFIXO}AS $$ SELECT btrim(x) $$`];
+    const encontrado = [`${comum}def=${PREFIXO}AS $$ SELECT lower(x) $$`];
+    const md = renderizar(comparar(esperado.join("\n"), encontrado.join("\n")));
+    const linha = md.split("\n").find((l) => l.includes("assinatura diferente"));
+    expect(linha).toBeDefined();
+    const celulas = linha!.split("|").map((c) => c.trim());
+    // As duas células de valor precisam ser diferentes entre si — que é exatamente o
+    // que o defeito original violava.
+    expect(celulas[3]).not.toBe(celulas[4]);
   });
 });
 

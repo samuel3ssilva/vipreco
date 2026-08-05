@@ -203,9 +203,27 @@ AJUDA
 
 echo "==> 00-structure.sql (catalogo)"
 if ! consultar "00-structure.sql" "$TRABALHO/structure.txt"; then
-  erro "Nao foi possivel ler o catalogo de staging; veja a mensagem do psql acima."
-  diagnostico_de_conexao
-  exit 1
+  # Antes de culpar a credencial, elimina a ultima duvida que ainda e NOSSA: quando a
+  # senha veio percent-encoded, decodificar e o certo -- exceto se ela contiver `%40`
+  # literal. Os dois casos sao indistinguiveis no texto e terminam no mesmo erro. O
+  # segundo candidato sai do mesmo valor cadastrado, de forma deterministica; isto nao
+  # e adivinhar senha, e fechar a unica porta que sobrou do nosso lado.
+  if [ -n "${PGPASSFILE_ALT:-}" ]; then
+    aviso "Primeira tentativa recusada. Repetindo com a senha SEM decodificacao percent, para separar 'senha errada' de 'senha com % literal'."
+    export PGPASSFILE="$PGPASSFILE_ALT"
+    if consultar "00-structure.sql" "$TRABALHO/structure.txt"; then
+      fato "guard.senha_variante" "sem-decodificacao-percent"
+      aviso "A senha do secret NAO deve ser percent-decoded: ela contem '%' literal. Considere reescrever o secret com o '%' escapado como '%25' para eliminar a ambiguidade."
+    else
+      erro "Nao foi possivel ler o catalogo de staging com nenhuma das duas leituras da senha; veja as mensagens do psql acima."
+      diagnostico_de_conexao
+      exit 1
+    fi
+  else
+    erro "Nao foi possivel ler o catalogo de staging; veja a mensagem do psql acima."
+    diagnostico_de_conexao
+    exit 1
+  fi
 fi
 cat "$TRABALHO/structure.txt" >>"$FATOS"
 

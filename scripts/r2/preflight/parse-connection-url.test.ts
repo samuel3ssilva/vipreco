@@ -51,7 +51,8 @@ function parsear(url: string): Componentes {
     const corte = linha.indexOf("=");
     const chave = linha.slice(0, corte);
     const valor = linha.slice(corte + 1);
-    componentes[chave] = chave === "FORMA" ? valor : Buffer.from(valor, "base64").toString("utf-8");
+    componentes[chave] =
+      chave === "FORMA" || valor === "" ? valor : Buffer.from(valor, "base64").toString("utf-8");
   }
   return { ...componentes, senha: lerSenhaDoPgpass(componentes.PGPASSFILE), saidaBruta };
 }
@@ -260,6 +261,23 @@ describe("a senha vai para um .pgpass, e não para a saída", () => {
     expect(r.PGPASSFILE.startsWith(trabalho)).toBe(true);
     expect(RUNNER).toContain("trap limpar EXIT");
     expect(RUNNER).toContain('PREFLIGHT_WORKDIR="$TRABALHO"');
+  });
+
+  it("escreve o candidato SEM decodificação quando a decodificação mudou algo", () => {
+    // Uma senha percent-encoded e uma senha que contém literalmente `%40` são
+    // indistinguíveis no texto, e as duas terminam no mesmo `password authentication
+    // failed`. Não dá para adivinhar qual é; dá para eliminar a dúvida.
+    const r = parsear(url("p%40ss"));
+    expect(r.senha).toBe("p@ss");
+    expect(r.PGPASSFILE_ALT).toBeTruthy();
+    expect(lerSenhaDoPgpass(r.PGPASSFILE_ALT)).toBe("p%40ss");
+    expect(statSync(r.PGPASSFILE_ALT).mode & 0o777).toBe(0o600);
+  });
+
+  it("não escreve alternativo quando não há ambiguidade nenhuma", () => {
+    // Sem ambiguidade, um segundo candidato seria uma segunda tentativa de conexão
+    // sem pergunta a responder.
+    expect(parsear(url("senhasimples")).PGPASSFILE_ALT).toBe("");
   });
 
   it("exige o diretório em vez de inventar um — quem cria é quem apaga", () => {

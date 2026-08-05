@@ -286,10 +286,36 @@ describe("o runner", () => {
     expect(runnerExecutavel).toMatch(/nao confere com o original/);
   });
 
-  it("roda G7-POST só depois de R2-A, e para a sequência se ele reprovar", () => {
+  it("roda G7-POST depois de R2-A e G7-POST-GTIN depois de R2-B", () => {
+    // A separação foi medida ao vivo: a consulta de concordância chama `pa_is_valid_gtin()`,
+    // que R2-B cria. Rodar o arquivo inteiro depois de R2-A morria em
+    // `function does not exist` e reprovava um ambiente correto.
     expect(runnerExecutavel).toMatch(/OPERACAO" = "apply-r2a"/);
     expect(runnerExecutavel).toContain("target-readiness-post.sql");
     expect(runnerExecutavel).toContain("G7 POST FAILED");
+    expect(runnerExecutavel).toMatch(/OPERACAO" = "apply-r2b"/);
+    expect(runnerExecutavel).toContain("target-readiness-post-gtin.sql");
+    expect(runnerExecutavel).toContain("G7 POST GTIN FAILED");
+  });
+
+  it("G7-POST, o de R2-A, não referencia nada que só R2-B cria", () => {
+    const post = readFileSync(join(RAIZ, "scripts/r2/target-readiness-post.sql"), "utf-8")
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("--"))
+      .join("\n");
+    for (const deR2B of ["pa_is_valid_gtin", "pa_gtin_check_digit", "products_gtin_valid"]) {
+      expect(post, `G7-POST referencia ${deR2B}, que só existe depois de R2-B`).not.toContain(
+        deR2B,
+      );
+    }
+  });
+
+  it("a mensagem de aborto para de mentir depois que a escrita aconteceu", () => {
+    // `abortar()` afirmava sempre "Nenhuma escrita foi emitida" — e depois de R2-A aplicada
+    // com G7-POST reprovado, a frase era falsa. Erro que mente sobre o estado do banco manda
+    // quem lê procurar no lugar errado.
+    expect(runnerExecutavel).toContain("JA_ESCREVEU");
+    expect(runnerExecutavel).toContain("A ESCRITA JA TINHA ACONTECIDO");
   });
 
   it("o plan tem controle positivo do detector de colisões", () => {
@@ -451,5 +477,25 @@ describe("o limite de plataforma no ALTER DEFAULT PRIVILEGES", () => {
     const checkAfter = readFileSync(join(RAIZ, "scripts/r2/apply/check-after.ts"), "utf-8");
     expect(checkAfter).toContain("priv.default_acl");
     expect(checkAfter).toContain("Default privileges de tabela");
+  });
+});
+
+describe("G7 também roda no validate", () => {
+  it("porque uma migration aplicada não pode ser reaplicada", () => {
+    // G7-POST reprovou uma vez por defeito do próprio arquivo, com R2-A já aplicada. Se G7
+    // só existisse dentro de `apply-r2a`, ele seria IRREPETÍVEL: não haveria como
+    // reexecutá-lo depois da correção sem inventar uma operação.
+    const validate = /validate\)([\s\S]*?)\n {4};;/.exec(runnerExecutavel)?.[1] ?? "";
+    expect(validate).toContain('g7 "G7-POST"');
+    expect(validate).toContain('g7 "G7-POST-GTIN"');
+  });
+
+  it("cada parte só roda quando o histórico MEDIDO já a admite", () => {
+    // A condição é o estado medido, e não uma suposição sobre a ordem em que alguém
+    // disparou as coisas.
+    const validate = /validate\)([\s\S]*?)\n {4};;/.exec(runnerExecutavel)?.[1] ?? "";
+    expect(validate).toMatch(/HISTORICO_ANTES:-0\}" -ge 11/);
+    expect(validate).toMatch(/HISTORICO_ANTES:-0\}" -ge 12/);
+    expect(validate).toContain("não aplicável ainda");
   });
 });

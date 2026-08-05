@@ -115,7 +115,8 @@ psql_apply "assertions de reconstrucao do seed (96-seed-rebuild.sql)" "$SCRIPT_D
 # quanto a POST. Contra um ambiente real eles rodam em momentos diferentes, e e disso que
 # a separacao trata -- ver o cabecalho de scripts/r2/target-readiness-pre.sql.
 psql_apply "prontidao PRE, schema legado (scripts/r2/target-readiness-pre.sql)" "$REPO_ROOT/scripts/r2/target-readiness-pre.sql"
-psql_apply "prontidao POST, pos-aplicacao (scripts/r2/target-readiness-post.sql)" "$REPO_ROOT/scripts/r2/target-readiness-post.sql"
+psql_apply "prontidao POST, pos-R2-A (scripts/r2/target-readiness-post.sql)" "$REPO_ROOT/scripts/r2/target-readiness-post.sql"
+psql_apply "prontidao POST-GTIN, pos-R2-B (scripts/r2/target-readiness-post-gtin.sql)" "$REPO_ROOT/scripts/r2/target-readiness-post-gtin.sql"
 
 # R2.3 - o preflight remoto (scripts/r2/preflight/) le staging por psql, e sem isto aqui
 # a unica forma de descobrir que uma consulta dele nao compila seria ao vivo, contra o

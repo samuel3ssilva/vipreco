@@ -13,10 +13,21 @@ import { describe, expect, it } from "vitest";
  */
 const PRE = readFileSync(new URL("./target-readiness-pre.sql", import.meta.url), "utf-8");
 const POST = readFileSync(new URL("./target-readiness-post.sql", import.meta.url), "utf-8");
+/**
+ * R2.6: a consulta de concordância do dígito verificador saiu de `POST` para cá, porque
+ * chama `pa_is_valid_gtin()` — função que **R2-B** cria. Rodar o arquivo inteiro depois de
+ * R2-A morria em `function does not exist` e reprovava um ambiente correto: a mesma
+ * circularidade que a separação PRE/POST desfez, um nível abaixo.
+ */
+const POST_GTIN = readFileSync(
+  new URL("./target-readiness-post-gtin.sql", import.meta.url),
+  "utf-8",
+);
 
 const ARQUIVOS = [
   ["target-readiness-pre.sql", PRE],
   ["target-readiness-post.sql", POST],
+  ["target-readiness-post-gtin.sql", POST_GTIN],
 ] as const;
 
 /**
@@ -165,11 +176,19 @@ describe("G7-PRE não pode depender de nada que a migration cria", () => {
   it("e a parte POST referencia esses objetos — o filtro não come tudo", () => {
     // Controle positivo do `soIdentificadores`. Se ele estivesse apagando o arquivo
     // inteiro, o teste acima passaria por vacuidade e não provaria nada.
-    for (const objeto of ["package_type", "quantity_value", "pa_is_valid_gtin"]) {
+    //
+    // R2.6: `pa_is_valid_gtin` saiu daqui para `target-readiness-post-gtin.sql` — ele é
+    // criado por R2-B, e a parte POST roda logo depois de R2-A. O controle positivo passa a
+    // cobrir os dois arquivos, cada um com o que de fato referencia.
+    for (const objeto of ["package_type", "quantity_value"]) {
       expect(postSemLiteral, `o filtro apagou ${objeto} da parte POST`).toMatch(
         new RegExp(`\\b${objeto}\\b`),
       );
     }
+    expect(
+      soIdentificadores(POST_GTIN),
+      "o filtro apagou pa_is_valid_gtin da parte POST-GTIN",
+    ).toMatch(/\bpa_is_valid_gtin\b/);
   });
 
   it("o filtro de literais remove o conteúdo das aspas e preserva o resto", () => {
@@ -202,7 +221,7 @@ describe("a aritmética GS1 duplicada não pode divergir", () => {
 
   it.each(NUCLEO)("o trecho %j aparece nos três arquivos", (trecho) => {
     expect(PRE, "trecho ausente em target-readiness-pre.sql").toContain(trecho);
-    expect(POST, "trecho ausente em target-readiness-post.sql").toContain(trecho);
+    expect(POST_GTIN, "trecho ausente em target-readiness-post-gtin.sql").toContain(trecho);
     expect(drill, "trecho ausente em 90-assertions.sql").toContain(trecho);
   });
 
@@ -211,7 +230,7 @@ describe("a aritmética GS1 duplicada não pode divergir", () => {
     // já sem o dígito. Errar isto por um deslocaria todos os pesos.
     const indexacao = /substr\((\w+\.)?codigo, length\((\w+\.)?codigo\) - 1 - i, 1\)/;
     expect(PRE.replace(/c\.gtin/g, "codigo")).toMatch(indexacao);
-    expect(POST.replace(/p\.gtin/g, "codigo")).toMatch(indexacao);
+    expect(POST_GTIN.replace(/p\.gtin/g, "codigo")).toMatch(indexacao);
     expect(drill.replace(/v\.codigo/g, "codigo")).toMatch(indexacao);
   });
 });

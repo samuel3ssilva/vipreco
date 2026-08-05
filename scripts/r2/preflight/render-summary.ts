@@ -416,7 +416,8 @@ export function avaliarGates(
     },
     {
       id: "G7-POST",
-      condicao: "verificação pós-aplicação (`target-readiness-post.sql`)",
+      condicao:
+        "verificação pós-aplicação (`target-readiness-post.sql` e `target-readiness-post-gtin.sql`)",
       veredito: "PENDING BY DESIGN",
       base: "só responde depois de R2-A e R2-B: toda consulta dele referencia objeto que as migrations criam. Antes da aplicação, este é o estado correto — e não um FAIL. Roda pelo runner de aplicação, na mesma janela.",
     },

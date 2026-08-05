@@ -3,12 +3,13 @@
 Todas **read-only**. Nenhuma escreve, aplica migration, faz backfill ou abre conexão
 sozinha com ambiente algum.
 
-| Arquivo                                                          | O que é                                                                                                             | Onde roda                            |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| [`target-readiness-pre.sql`](./target-readiness-pre.sql)         | prontidão do schema **legado**: quantos produtos, quais GTINs são inválidos, quais objetos existem e quais ainda não | **antes** da aplicação — gate G7-PRE |
-| [`target-readiness-post.sql`](./target-readiness-post.sql)       | verificação **pós-aplicação**: colunas nasceram vazias, colisões, constraints, e a função de GTIN concorda           | **depois** da aplicação — G7-POST    |
-| [`target-readiness.test.ts`](./target-readiness.test.ts)         | prova que os dois são read-only, que a parte PRE não depende de nada que a migration cria, e que a aritmética GS1 duplicada não divergiu | `bun run test`                       |
-| [`equivalence/`](./equivalence/)                                 | fingerprint semântico do schema e comparação staging × as 8 migrations anteriores a R2                              | `workflow_dispatch`                  |
+| Arquivo                                                              | O que é                                                                                                                                  | Onde roda                            |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| [`target-readiness-pre.sql`](./target-readiness-pre.sql)             | prontidão do schema **legado**: quantos produtos, quais GTINs são inválidos, quais objetos existem e quais ainda não                     | **antes** da aplicação — gate G7-PRE |
+| [`target-readiness-post.sql`](./target-readiness-post.sql)           | verificação **pós-R2-A**: colunas nasceram vazias, colisões e constraints                                                                | **depois de R2-A** — G7-POST         |
+| [`target-readiness-post-gtin.sql`](./target-readiness-post-gtin.sql) | as duas implementações do dígito verificador concordam sobre os GTINs que existem                                                        | **depois de R2-B** — G7-POST-GTIN    |
+| [`target-readiness.test.ts`](./target-readiness.test.ts)             | prova que os dois são read-only, que a parte PRE não depende de nada que a migration cria, e que a aritmética GS1 duplicada não divergiu | `bun run test`                       |
+| [`equivalence/`](./equivalence/)                                     | fingerprint semântico do schema e comparação staging × as 8 migrations anteriores a R2                                                   | `workflow_dispatch`                  |
 
 ## Os dois `target-readiness`, e por que são dois
 

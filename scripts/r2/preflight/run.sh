@@ -118,15 +118,16 @@ bun "$PREFLIGHT_DIR/read-only-guard.ts"
 # com teste que a EXECUTA de verdade. Guarda escrita direto no corpo de um script e
 # guarda sem teste.
 # -----------------------------------------------------------------------------
-ref_de() {
-  bun --print "JSON.parse(require('fs').readFileSync('$REPO_ROOT/config/environments.json','utf-8')).$1.supabaseProjectId" 2>/dev/null || true
+campo_de() {
+  bun --print "(JSON.parse(require('fs').readFileSync('$REPO_ROOT/config/environments.json','utf-8'))['$1']?.['$2'] ?? '')" 2>/dev/null || true
 }
-REF_STAGING="$(ref_de staging)"
-REF_PROIBIDO="$(ref_de production)"
+REF_STAGING="$(campo_de staging supabaseProjectId)"
+REF_PROIBIDO="$(campo_de production supabaseProjectId)"
+HOST_STAGING="$(campo_de staging supabaseDbHost)"
 
 # shellcheck source=scripts/r2/preflight/prepare-credential.sh
 source "$PREFLIGHT_DIR/prepare-credential.sh"
-if ! preparar_credencial "$REF_STAGING" "$REF_PROIBIDO" "$TRABALHO/.pgpass"; then
+if ! preparar_credencial "$REF_STAGING" "$REF_PROIBIDO" "$HOST_STAGING" "$TRABALHO/.pgpass"; then
   erro "Nao foi possivel preparar a credencial de staging. Nenhuma conexao foi aberta."
   exit 1
 fi
@@ -146,14 +147,17 @@ export PGSSLMODE="${PGSSLMODE:-require}"
 export PGCONNECT_TIMEOUT=15
 export PGAPPNAME="vipreco-r2-preflight"
 
-# Mascara explicita do host. Ele nao e segredo -- e derivado de arquivo versionado e
-# publico --, mas nao ha motivo para ele aparecer inteiro num log de erro de conexao.
-# `PGUSER` e `postgres`: mascarar essa palavra tornaria o log ilegivel sem proteger
-# nada.
+# Mascara explicita do host. Ele nao e segredo -- vem de arquivo versionado e publico
+# --, mas nao ha motivo para ele aparecer inteiro num log de erro de conexao.
 #
-# A senha nao aparece nesta lista porque nao existe neste processo depois do
-# `.pgpass`: o GitHub ja mascara o valor do secret, e traze-lo de volta para o shell
-# so para mascara-lo de novo seria o oposto do que esta mudanca fez.
+# `PGUSER` NAO e mascarado de proposito. Ele e `postgres.<project-ref>`, e o ref ja e
+# publico; mascara-lo apagaria a unica informacao util de um
+# `password authentication failed for user "..."`, que e justamente saber QUAL tenant
+# o servidor viu.
+#
+# A senha nao aparece aqui porque nao existe neste processo depois do `.pgpass`: o
+# GitHub ja mascara o valor do secret, e traze-lo de volta para o shell so para
+# mascara-lo de novo seria o oposto do que esta mudanca fez.
 echo "::add-mask::$PGHOST"
 
 # -----------------------------------------------------------------------------
@@ -169,11 +173,18 @@ fato "run.host_hash" "$(printf '%s' "$PGHOST" | shasum -a 256 | cut -c1-12)"
 # 5. Executar as consultas. Prologo + arquivo + epilogo, sempre nessa ordem: a
 #    transacao READ ONLY e o que impede escrita mesmo se a camada A tiver falhado.
 # -----------------------------------------------------------------------------
+# O stderr do psql e guardado ALEM de ser repassado. Sem isso o diagnostico abaixo nao
+# tem como saber POR QUE falhou, e um diagnostico que nao le o erro so pode chutar --
+# foi exatamente o que aconteceu no run 31030456630, onde a falha era de rede e o texto
+# impresso falava de senha.
+ERRO_PSQL="$TRABALHO/psql.err"
 psql_transacao() {
-  local arquivo="$1" destino="$2"
+  local arquivo="$1" destino="$2" estado=0
   cat "$PREFLIGHT_DIR/_prologue.sql" "$arquivo" "$PREFLIGHT_DIR/_epilogue.sql" |
     psql --no-psqlrc --no-password --quiet --no-align --tuples-only --field-separator='|' \
-      --variable=ON_ERROR_STOP=1 --file=- >"$destino"
+      --variable=ON_ERROR_STOP=1 --file=- >"$destino" 2>"$ERRO_PSQL" || estado=$?
+  cat "$ERRO_PSQL" >&2 || true
+  return "$estado"
 }
 
 # Guarda o resultado JA FILTRADO. O psql imprime o status de `BEGIN`, `SET` e
@@ -190,29 +201,8 @@ consultar() {
   rm -f "$destino.bruto"
 }
 
-# Diagnostico da PRIMEIRA consulta -- a unica que ainda pode falhar por conexao.
-#
-# NAO EXISTE MAIS UMA SEGUNDA TENTATIVA. Ela existia porque a senha vinha de dentro de
-# uma URI e havia duas leituras defensaveis do mesmo texto. Com um segredo atomico ha
-# uma leitura so, e uma recusa aqui significa uma coisa so -- o que e exatamente o
-# ponto da mudanca: transformar um erro ambiguo num erro que aponta para um lugar.
-diagnostico_de_conexao() {
-  echo "--- diagnostico de conexao (nenhum valor e impresso) ---" >&2
-  cat >&2 <<'AJUDA'
-A conexao usa um segredo ATOMICO: `SUPABASE_DB_PASSWORD` carrega so a senha, e host,
-porta, usuario e banco vem de config/environments.json. Nao ha URI para montar errado,
-nao ha percent-encoding, nao ha base64.
-
-Entao `password authentication failed` aqui tem uma leitura so: o valor cadastrado em
-`SUPABASE_DB_PASSWORD` nao e a Database password do projeto Supabase de staging. As
-confusoes possiveis, em ordem de frequencia:
-  1. e a senha da CONTA do Supabase (a do painel), e nao a do BANCO;
-  2. e a senha de outro projeto -- producao, ou um projeto antigo;
-  3. e uma connection string inteira colada no lugar da senha;
-  4. a senha foi redefinida no painel depois de o segredo ter sido gravado.
-Nenhuma delas se resolve daqui: o segredo so pode ser reescrito pelo Founder.
-AJUDA
-}
+# shellcheck source=scripts/r2/preflight/diagnose-connection.sh
+source "$PREFLIGHT_DIR/diagnose-connection.sh"
 
 echo "==> 00-structure.sql (catalogo)"
 if ! consultar "00-structure.sql" "$TRABALHO/structure.txt"; then

@@ -52,10 +52,12 @@ protege o repositório, não o banco.
 | [`read-only-guard.ts`](./read-only-guard.ts)                            | camada A                                                                   |
 | [`preview-counts.ts`](./preview-counts.ts)                              | reduz o preview de backfill a contagens por estado                         |
 | [`render-summary.ts`](./render-summary.ts)                              | classifica histórico, dados e gates, e escreve o Job Summary               |
-| [`prepare-credential.sh`](./prepare-credential.sh)                      | deriva host/porta/usuário/banco e escreve o `.pgpass` 0600                 |
+| [`prepare-credential.sh`](./prepare-credential.sh)                      | resolve host/porta/usuário/banco e escreve o `.pgpass` 0600                |
+| [`diagnose-connection.sh`](./diagnose-connection.sh)                    | lê o erro do psql e diz se a falha foi de **rede** ou de **credencial**    |
 | [`run.sh`](./run.sh)                                                    | conecta, executa e guarda fatos                                            |
 | [`preflight.test.ts`](./preflight.test.ts)                              | 84 testes sobre read-only, sigilo, classificação e desenho do workflow     |
-| [`prepare-credential.test.ts`](./prepare-credential.test.ts)            | 42 testes que **executam** a cadeia de credencial em bash                  |
+| [`prepare-credential.test.ts`](./prepare-credential.test.ts)            | 46 testes que **executam** a cadeia de credencial em bash                  |
+| [`diagnose-connection.test.ts`](./diagnose-connection.test.ts)          | 18 testes que **executam** o diagnóstico sobre erros reais de psql         |
 
 `run.sh` é fino de propósito. Toda **decisão** mora em `render-summary.ts`, que tem
 teste — decisão em shell é decisão sem teste.
@@ -83,22 +85,21 @@ completo no arquivo intermediário — que é exatamente onde ninguém procurari
 
 ## Produção é inalcançável, e isso é verificado
 
-O runner lê os dois project refs de [`config/environments.json`](../../../config/environments.json)
-— arquivo já versionado, já público — e **monta o host a partir do ref de staging**. Não
-existe host vindo de fora para conferir: o host é derivado, e derivado de uma fonte só.
+Tudo vem de [`config/environments.json`](../../../config/environments.json) — arquivo já
+versionado, já público. Nada de host ou usuário vindo de segredo.
 
 A cadeia de guarda de [`prepare-credential.sh`](prepare-credential.sh) **aborta** quando:
 
 - qualquer um dos dois refs estiver ausente — uma comparação contra `""` casa sempre, e a
   recusa passaria calada;
 - os dois refs forem **iguais** — nesse estado nenhuma guarda distingue os ambientes;
-- o host montado contiver o ref de **produção**;
-- o host montado **não** contiver o ref de staging.
+- `staging.supabaseDbHost` não estiver no arquivo;
+- o usuário derivado **ou** o host versionado mencionar o ref de **produção**;
+- o usuário derivado **não** contiver o ref de staging.
 
-As duas últimas são hoje asserções sobre a construção, e não validação de um valor
-externo — eram validação quando o host vinha de uma URI cadastrada à mão. Ficam porque
-voltam a ser necessárias no instante em que alguém reintroduzir um host vindo de fora, sem
-depender de ninguém lembrar de recriá-las.
+O quarto item deixou de ser tautológico quando o host passou a vir de fora da construção:
+antes ele era uma asserção sobre o que o próprio código montava; agora é validação de um
+valor que alguém edita à mão.
 
 A cadeia inteira é **executada** em `prepare-credential.test.ts`, e não conferida por
 regex sobre o texto do script.
@@ -130,12 +131,30 @@ que este desenho existe para eliminar.
 
 Os outros quatro parâmetros são derivados, e não cadastrados:
 
-| Parâmetro | Valor                          | De onde vem                                      |
-| --------- | ------------------------------ | ------------------------------------------------ |
-| host      | `db.<staging-ref>.supabase.co` | `config/environments.json`, versionado e público |
-| porta     | `5432`                         | constante — conexão direta                       |
-| usuário   | `postgres`                     | constante — o pooler usaria `postgres.<ref>`     |
-| banco     | `postgres`                     | constante                                        |
+| Parâmetro | Valor                    | De onde vem                                       |
+| --------- | ------------------------ | ------------------------------------------------- |
+| host      | `staging.supabaseDbHost` | `config/environments.json`, versionado e público  |
+| porta     | `5432`                   | constante — pooler em modo Session                |
+| usuário   | `postgres.<staging-ref>` | **derivado** do ref versionado — carrega o tenant |
+| banco     | `postgres`               | constante                                         |
+
+### O host é o do pooler, e isso não é detalhe
+
+A primeira versão de R2.3D derivava `db.<ref>.supabase.co`, a conexão **direta**. Isso foi
+um defeito: esse host é **IPv6-only**, e runner do GitHub é **IPv4-only**. O
+[run 31030456630](https://github.com/samuel3ssilva/vipreco/actions/runs/31030456630) morreu
+em `Network is unreachable` contra um endereço `2600:...` — antes de qualquer autenticação.
+
+O pooler em modo **Session** é IPv4, escuta na 5432 e exige o tenant no usuário. Por isso:
+
+- o **host** vem do arquivo versionado (copiado de _Project Settings › Database › Connection
+  string › Session pooler_; é público, não é segredo);
+- o **usuário** é derivado, `postgres.<project-ref>`, e não configurável.
+
+E daí decorre uma consequência que vale dizer em voz alta: **a identidade do ambiente vive no
+usuário, não no host**. O host do pooler é compartilhado por região — dois projetos na mesma
+região usam o mesmo hostname. Conferir o ambiente pelo host seria uma guarda que parece existir
+e não existe.
 
 ### Por que o desenho anterior foi abandonado
 

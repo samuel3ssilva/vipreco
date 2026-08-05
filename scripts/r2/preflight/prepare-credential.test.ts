@@ -29,10 +29,15 @@ const WORKFLOW = readFileSync(
 );
 const ENVIRONMENTS = JSON.parse(
   readFileSync(new URL("../../../config/environments.json", import.meta.url), "utf-8"),
-) as { staging: { supabaseProjectId: string }; production: { supabaseProjectId: string } };
+) as {
+  staging: { supabaseProjectId: string; supabaseDbHost: string };
+  production: { supabaseProjectId: string };
+};
 
 const REF_STAGING = ENVIRONMENTS.staging.supabaseProjectId;
 const REF_PRODUCAO = ENVIRONMENTS.production.supabaseProjectId;
+const HOST_STAGING = ENVIRONMENTS.staging.supabaseDbHost;
+const USUARIO_STAGING = `postgres.${REF_STAGING}`;
 
 let trabalho = "";
 const destino = () => join(trabalho, ".pgpass");
@@ -56,6 +61,7 @@ function preparar(
   senha: string | null,
   refStaging = REF_STAGING,
   refProducao = REF_PRODUCAO,
+  host = HOST_STAGING,
   alvo = destino(),
 ): Resultado {
   const env: NodeJS.ProcessEnv = { PATH: process.env.PATH };
@@ -64,11 +70,12 @@ function preparar(
     "bash",
     [
       "-c",
-      `set -euo pipefail\nsource "$1"\npreparar_credencial "$2" "$3" "$4"`,
+      `set -euo pipefail\nsource "$1"\npreparar_credencial "$2" "$3" "$4" "$5"`,
       "_",
       CREDENCIAL,
       refStaging,
       refProducao,
+      host,
       alvo,
     ],
     { encoding: "utf-8", env },
@@ -169,16 +176,25 @@ describe("o segredo atômico", () => {
 // ---------------------------------------------------------------------------------
 
 describe("o .pgpass", () => {
-  it("tem os quatro primeiros campos fixos, e o host é o de staging", () => {
+  it("tem host do arquivo versionado, porta 5432, banco e usuário do pooler", () => {
     expect(preparar("Abc123").ok).toBe(true);
     const [host, porta, banco, usuario] = campos();
-    expect(host).toBe(`db.${REF_STAGING}.supabase.co`);
+    expect(host).toBe(HOST_STAGING);
     expect(porta).toBe("5432");
-    // Ordem do libpq: hostname:port:DATABASE:USERNAME:password. Os dois valem
-    // `postgres` hoje, então trocá-los não quebraria nada — quebraria calado no dia em
-    // que um deles mudasse.
+    // Ordem do libpq: hostname:port:DATABASE:USERNAME:password. Trocar os dois últimos
+    // quebraria calado, porque hoje só um deles é `postgres`.
     expect(banco).toBe("postgres");
-    expect(usuario).toBe("postgres");
+    expect(usuario).toBe(USUARIO_STAGING);
+  });
+
+  it("NÃO usa o host de conexão direta — ele é IPv6-only", () => {
+    // Esta é a regressão que derrubou o run 31030456630: `db.<ref>.supabase.co` é
+    // IPv6-only e runner do GitHub é IPv4-only, então o TCP nunca abriu e a senha nem
+    // chegou a ser testada. O host correto é o do pooler, que é IPv4 e escuta na 5432.
+    expect(preparar("Abc123").ok).toBe(true);
+    expect(campos()[0]).not.toBe(`db.${REF_STAGING}.supabase.co`);
+    expect(HOST_STAGING).toContain("pooler.supabase.com");
+    expect(FONTE).not.toContain("db.%s.supabase.co");
   });
 
   it("nasce e permanece com modo 0600", () => {
@@ -234,9 +250,21 @@ describe("guardas de ambiente", () => {
     expect(REF_STAGING.length).toBeGreaterThan(8);
   });
 
-  it("constrói o host a partir do ref de staging, e de mais nada", () => {
+  it("constrói o usuário a partir do ref de staging, e de mais nada", () => {
+    // A identidade do ambiente vive no USUÁRIO, e não no host: o host do pooler é
+    // compartilhado por região, então dois projetos na mesma região o dividem.
+    // Conferir o ambiente pelo host seria uma guarda que parece existir e não existe.
     expect(preparar("Abc123").ok).toBe(true);
-    expect(campos()[0]).toBe(`db.${REF_STAGING}.supabase.co`);
+    expect(campos()[3]).toBe(`postgres.${REF_STAGING}`);
+    expect(campos()[3]).not.toContain(REF_PRODUCAO);
+  });
+
+  it("recusa quando o host não está no arquivo versionado", () => {
+    const r = preparar("Abc123", REF_STAGING, REF_PRODUCAO, "");
+    expect(r.ok).toBe(false);
+    expect(r.stderr).toContain("supabaseDbHost");
+    expect(r.stderr).toContain("Session pooler");
+    expect(existsSync(destino())).toBe(false);
   });
 
   it.each([
@@ -260,13 +288,17 @@ describe("guardas de ambiente", () => {
     expect(existsSync(destino())).toBe(false);
   });
 
-  it("recusa quando o host montado conteria o ref de produção", () => {
-    // O host é CONSTRUÍDO a partir do ref de staging, então esta é hoje uma asserção
-    // sobre a construção, e não a validação de um valor externo — era validação quando
-    // o host vinha da URI cadastrada à mão. Ela fica porque volta a ser necessária no
-    // instante em que alguém reintroduzir um host vindo de fora, sem depender de
-    // ninguém lembrar de recriá-la.
+  it("recusa quando o usuário montado mencionaria produção", () => {
     const r = preparar("Abc123", `contaminado-${REF_PRODUCAO}-x`, REF_PRODUCAO);
+    expect(r.ok).toBe(false);
+    expect(r.stderr).toContain("PRODUCAO");
+    expect(existsSync(destino())).toBe(false);
+  });
+
+  it("recusa quando o HOST versionado mencionaria produção", () => {
+    // Agora que o host vem de fora da construção — de `config/environments.json` — esta
+    // deixou de ser uma asserção tautológica e voltou a ser validação de verdade.
+    const r = preparar("Abc123", REF_STAGING, REF_PRODUCAO, `db.${REF_PRODUCAO}.supabase.co`);
     expect(r.ok).toBe(false);
     expect(r.stderr).toContain("PRODUCAO");
     expect(existsSync(destino())).toBe(false);
@@ -432,7 +464,7 @@ describe("o caminho de URI foi eliminado, e não duplicado", () => {
     // teste, não o runner.
     expect(RUNNER).toContain('PGPASSFILE="$TRABALHO/.pgpass"');
     expect(RUNNER).toContain(
-      'preparar_credencial "$REF_STAGING" "$REF_PROIBIDO" "$TRABALHO/.pgpass"',
+      'preparar_credencial "$REF_STAGING" "$REF_PROIBIDO" "$HOST_STAGING" "$TRABALHO/.pgpass"',
     );
     expect(RUNNER).toMatch(/limpar\(\) \{ rm -rf "\$TRABALHO"; \}/);
     expect(RUNNER).toContain("trap limpar EXIT");

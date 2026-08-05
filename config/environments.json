@@ -1,8 +1,9 @@
 {
-  "$schema": "Não é um arquivo de segredo — os refs de projeto Supabase e nomes de Worker aqui já são públicos (aparecem na URL pública da API/app). Usado só por scripts/verify-env.ts para impedir troca acidental de ambiente.",
+  "$schema": "Não é um arquivo de segredo — os refs de projeto Supabase, o host do pooler e os nomes de Worker aqui já são públicos (aparecem na URL pública da API e no painel do Supabase). Usado por scripts/verify-env.ts para impedir troca acidental de ambiente, e por scripts/r2/preflight/ para derivar a conexão sem que host algum precise vir de segredo.",
   "staging": {
     "label": "Staging legado (infraestrutura atual, único ambiente até a Onda 2)",
     "supabaseProjectId": "wjurqpclauwtbjhhvigy",
+    "supabaseDbHost": "aws-0-ca-central-1.pooler.supabase.com",
     "workerName": "samuel3ssilva-vipreco"
   },
   "production": {

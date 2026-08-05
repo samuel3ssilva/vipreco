@@ -45,28 +45,43 @@
 #   existe porque a ausencia exata desse bit custou tres execucoes desta missao.
 # =============================================================================
 
-# Constantes da conexao direta do Postgres do Supabase. Nao vem de segredo e nao sao
-# configuraveis: conexao direta e sempre porta 5432, usuario `postgres`, banco
-# `postgres`. O pooler usaria `postgres.<ref>` e outra porta -- e por isso o usuario
-# ficar FIXO aqui e uma garantia, e nao uma simplificacao: um usuario vindo de
-# segredo poderia apontar para o pooler sem ninguem notar.
+# Constantes da conexao. Nao vem de segredo.
+#
+# POR QUE O POOLER, E NAO A CONEXAO DIRETA
+#
+#   A primeira versao de R2.3D derivava o host da conexao DIRETA,
+#   `db.<ref>.supabase.co`, e isso foi um defeito meu. Esse host e IPv6-only, e
+#   runner do GitHub e IPv4-only: o run 31030456630 morreu em
+#   `Network is unreachable` contra `2600:1f11:...` antes de qualquer troca de senha.
+#
+#   O host que funcionava nas missoes anteriores resolvia para IPv4 em
+#   `ca-central-1` (medido, docs/evidence/r2/automation.md §8B) -- ou seja, era o
+#   POOLER. Derivar a conexao direta trocou um host alcancavel por um inalcancavel,
+#   e a mensagem de erro passou a falar de rede em vez de credencial.
+#
+#   O pooler em modo SESSION escuta na 5432 e exige o tenant no usuario:
+#   `postgres.<project-ref>`. O ref continua vindo de config/environments.json, entao
+#   a identidade do ambiente continua derivada de arquivo versionado -- e agora ela
+#   vive no USUARIO, que e o unico campo que distingue staging de producao quando o
+#   host do pooler e compartilhado por regiao.
 PREFLIGHT_PORTA="5432"
-PREFLIGHT_USUARIO="postgres"
 PREFLIGHT_BANCO="postgres"
 
-# Preenchido por `preparar_credencial`. Declarado aqui para que `set -u` no runner
+# Preenchidos por `preparar_credencial`. Declarados aqui para que `set -u` no runner
 # nao tropece antes da chamada.
 PREFLIGHT_HOST=""
+PREFLIGHT_USUARIO=""
 
-# Host de conexao direta a partir do project ref. O ref e publico (aparece na URL da
-# API) e e versionado em config/environments.json.
-montar_host() {
+# Usuario do pooler: `postgres.<project-ref>`. NAO e configuravel e NAO vem de
+# segredo -- e derivado do mesmo ref que identifica o ambiente, de proposito. Um
+# usuario vindo de fora poderia apontar para outro tenant sem ninguem notar.
+montar_usuario() {
   local ref="$1"
   if [ -z "$ref" ]; then
-    echo "::error::Nao da para montar o host sem o project ref de staging." >&2
+    echo "::error::Nao da para montar o usuario sem o project ref de staging." >&2
     return 1
   fi
-  printf 'db.%s.supabase.co' "$ref"
+  printf 'postgres.%s' "$ref"
 }
 
 # -----------------------------------------------------------------------------
@@ -151,10 +166,10 @@ escrever_pgpass() {
 # ref ausente ou um ref de producao sao problemas piores que um segredo ausente, e
 # quem le o log precisa ver o pior primeiro.
 #
-# Argumentos: <ref-staging> <ref-producao> <caminho-do-pgpass>
+# Argumentos: <ref-staging> <ref-producao> <host-do-pooler> <caminho-do-pgpass>
 # -----------------------------------------------------------------------------
 preparar_credencial() {
-  local ref_staging="$1" ref_producao="$2" destino="$3"
+  local ref_staging="$1" ref_producao="$2" host="$3" destino="$4"
 
   # Falha ABERTA se ninguem exigir os dois refs: com `ref_producao` vazio, qualquer
   # comparacao com `*""*` casa sempre, e a recusa de producao passaria calada. E o
@@ -169,26 +184,33 @@ preparar_credencial() {
     return 1
   fi
 
-  PREFLIGHT_HOST="$(montar_host "$ref_staging")" || return 1
+  if [ -z "$host" ]; then
+    echo "::error::config/environments.json nao traz staging.supabaseDbHost. Copie o host do painel: Supabase > Project Settings > Database > Connection string > Session pooler. E publico, e nao e segredo." >&2
+    return 1
+  fi
 
-  # O host e CONSTRUIDO a partir do ref de staging, entao ele so poderia conter o ref
-  # de producao se os dois refs fossem iguais -- e isso ja foi recusado acima. Esta
-  # verificacao e, hoje, uma asserção sobre a construcao, e nao a validacao de um
-  # valor externo como era quando o host vinha da URI cadastrada a mao.
+  PREFLIGHT_HOST="$host"
+  PREFLIGHT_USUARIO="$(montar_usuario "$ref_staging")" || return 1
+
+  # A IDENTIDADE DO AMBIENTE VIVE NO USUARIO, e nao no host.
   #
-  # Ela fica porque e o que falha alto no dia em que alguem reintroduzir um host vindo
-  # de fora: a guarda para de ser tautologica no exato momento em que passa a ser
-  # necessaria de novo, sem depender de ninguem lembrar de recria-la.
-  case "$PREFLIGHT_HOST" in
+  # O host do pooler e compartilhado por REGIAO: dois projetos na mesma regiao usam o
+  # mesmo hostname. Conferir o ambiente pelo host seria uma guarda que parece existir
+  # e nao existe -- o pior tipo. Quem carrega o tenant e `postgres.<project-ref>`.
+  #
+  # A recusa continua valendo para os dois campos: se um deles mencionar o ref de
+  # producao, aborta. Nenhum dos dois pode; o usuario e derivado do ref de staging, e
+  # o host vem de arquivo versionado.
+  case "$PREFLIGHT_USUARIO $PREFLIGHT_HOST" in
     *"$ref_producao"*)
-      echo "::error::O host montado aponta para o projeto de PRODUCAO. Abortando sem abrir conexao. Este preflight so pode ler staging." >&2
+      echo "::error::A conexao montada menciona o projeto de PRODUCAO. Abortando sem abrir conexao. Este preflight so pode ler staging." >&2
       return 1
       ;;
   esac
-  case "$PREFLIGHT_HOST" in
+  case "$PREFLIGHT_USUARIO" in
     *"$ref_staging"*) ;;
     *)
-      echo "::error::O host montado nao contem o project ref de staging. Abortando: identificar o ambiente sem ambiguidade e pre-requisito, nao formalidade." >&2
+      echo "::error::O usuario montado nao contem o project ref de staging. Abortando: identificar o ambiente sem ambiguidade e pre-requisito, nao formalidade." >&2
       return 1
       ;;
   esac

@@ -227,17 +227,22 @@ describe("produção não é alcançável por este workflow", () => {
   // certa, e que não existe outra forma de o host chegar até o psql.
 
   it("o runner passa staging e produção, nessa ordem, para a guarda", () => {
-    expect(RUNNER).toContain('preparar_credencial "$REF_STAGING" "$REF_PROIBIDO"');
-    expect(RUNNER).toMatch(/REF_STAGING="\$\(ref_de staging\)"/);
-    expect(RUNNER).toMatch(/REF_PROIBIDO="\$\(ref_de production\)"/);
+    expect(RUNNER).toContain('preparar_credencial "$REF_STAGING" "$REF_PROIBIDO" "$HOST_STAGING"');
+    expect(RUNNER).toMatch(/REF_STAGING="\$\(campo_de staging supabaseProjectId\)"/);
+    expect(RUNNER).toMatch(/REF_PROIBIDO="\$\(campo_de production supabaseProjectId\)"/);
+    expect(RUNNER).toMatch(/HOST_STAGING="\$\(campo_de staging supabaseDbHost\)"/);
   });
 
-  it("o host chega ao psql só pela guarda, e nunca de outra fonte", () => {
-    // Se `PGHOST` pudesse ser montado em outro lugar do runner, a recusa de produção
-    // deixaria de ser o único caminho — e uma guarda que dá para contornar não é guarda.
+  it("host e usuário chegam ao psql só pela guarda, e nunca de outra fonte", () => {
+    // Se `PGHOST` ou `PGUSER` pudessem ser montados em outro lugar do runner, a recusa
+    // de produção deixaria de ser o único caminho — e uma guarda que dá para contornar
+    // não é guarda. O usuário importa tanto quanto o host: é ele que carrega o tenant.
     expect(RUNNER).toMatch(/^PGHOST="\$PREFLIGHT_HOST"$/m);
+    expect(RUNNER).toMatch(/^PGUSER="\$PREFLIGHT_USUARIO"$/m);
     expect(RUNNER.match(/^PGHOST=/gm)).toHaveLength(1);
+    expect(RUNNER.match(/^PGUSER=/gm)).toHaveLength(1);
     expect(RUNNER).not.toContain("supabase.co");
+    expect(RUNNER).not.toContain("pooler.supabase.com");
   });
 
   it("os dois refs vêm do arquivo versionado, não de literal no script", () => {

@@ -810,3 +810,57 @@ e assim o runner nunca carrega uma ferramenta que também saiba aplicar migratio
   `evidence/r2/README.md`, `data/R2-APPLICATION-GATE.md`, `data/R2-ROLLOUT-RUNBOOK.md` (FASE 1),
   `INDEX.md`, `TRELLO-MAPPING.md` (**MVP-DOCS-07** concluído)
 - **Status:** ativa
+
+---
+
+### DL-024 — North Star visual do MVP: a imagem é direção, a `main` é a lei
+
+- **Data:** 05/08/2026 · **Origem:** mandato R3.0 · **Decide:** Founder; registrado pelo CTO
+- **Evidência:** `product/visual-north-star/vipreco-mvp-north-star.png`
+  (SHA-256 `7b7a28b5…cbb858`, 1448 × 1086, 1 741 410 bytes, sem recompressão)
+- **Contexto:** o produto tinha contratos funcionais fechados (identidade exata, comparação,
+  card v2, política de imagem) e nenhuma referência visual aprovada. Cada tela implementada
+  reabria a discussão de forma, cor e densidade do zero, e "parecido com o que imaginei" não é
+  critério revisável.
+
+**A decisão.** A imagem anexada pelo Founder é a **direção visual oficial** do MVP. O GitHub
+`main` continua sendo a **fonte normativa funcional**. Fidelidade visual deve ser alta;
+fidelidade **funcional** deve ser total.
+
+**A distinção que faz a decisão valer alguma coisa:** o conteúdo da imagem é **ilustrativo**.
+Mercados, bairro, cidade, preços, promoções, datas, GTINs, logotipos e imagens de produto que
+aparecem nela não são reais e não podem entrar no produto. A imagem mostra São Luís-MA; o piloto
+é em Artemis, Piracicaba-SP. Um mockup que vira dado é risco jurídico e de confiança, não
+detalhe estético.
+
+**Seis conflitos entre a imagem e os contratos foram identificados e registrados** antes de
+qualquer implementação, justamente para que ninguém os "resolva" implementando o que viu:
+preço unitário exibido sem quantidade estruturada; preço anterior sem histórico; barra de cinco
+abas; "Favoritos"; sino de notificação; logotipos de rede. Em todos, ganham os contratos.
+
+**Ordem de execução:** Card v2 **precede** a Home. O primeiro PR visual trata só de tokens,
+tipografia, espaçamento, primitivas e um laboratório isolado — e **não altera a Home**. Token
+novo aplicado direto na Home mistura, num só diff, "a fundação mudou" com "a tela mudou"; quando
+algo regride, não há como saber qual dos dois causou.
+
+**Screenshots são evidência obrigatória** por tela, em 360 px e desktop, e **Founder Review é
+Gate obrigatório** para cada uma. Sem screenshot, a revisão de fidelidade visual vira confiança
+cega. Nenhuma implementação visual começa antes de autorização específica.
+
+- **Alternativas descartadas:** (a) tratar a imagem como especificação literal — produziria os
+  seis conflitos acima, em silêncio, porque o resultado pareceria certo; (b) não registrar a
+  imagem e seguir só por contrato — devolveria a discussão de forma a cada tela; (c) reproduzir
+  o conteúdo do mockup no fixture demo — inventaria mercados e preços com aparência de reais.
+- **Consequências:** três documentos normativos novos; toda tela passa a ter Gate explícito; o
+  primeiro PR visual fica deliberadamente sem efeito visível na Home.
+- **Riscos:** implementar por semelhança em vez de por contrato; a imagem envelhecer e virar
+  referência morta; o `FeaturedOfferCard` virar ranking editorial se o critério de destaque não
+  for objetivo — enquanto não houver critério escrito e testado, a Home vai sem destaque.
+- **Pendência registrada, não resolvida:** o roadmap do mandato põe Card v2 em R3.2 e Home em
+  R3.3; o `MVP-EXECUTION-PLAN.md` põe MVP-DESIGN-03 em R6 e MVP-DESIGN-05 em R4. **Não alterei
+  a etapa de nenhum card** — reescrever o plano de execução por conta própria seria trocar a
+  fonte normativa por uma leitura minha. Até haver decisão, vale o plano.
+- **Documentos:** `product/VISUAL-IMPLEMENTATION-CONTRACT.md` (criado),
+  `product/R3-SCREEN-SPEC.md` (criado), `product/R3-COMPONENT-INVENTORY.md` (criado),
+  `product/visual-north-star/vipreco-mvp-north-star.png` (criado), `INDEX.md`
+- **Status:** ativa

@@ -454,15 +454,46 @@ de forma: não é o valor, nem comprimento, nem prefixo, nem sufixo, nem hash.
 Ele existe porque foi exatamente esse bit que localizou o bloqueio da §8C — na terceira
 execução, quando podia ter sido na primeira.
 
-### O que **não** foi feito
+### O que **não** foi feito na entrega
 
-Nenhuma execução do preflight. O segredo novo ainda não existe, e o mandato é explícito:
+Nenhuma execução do preflight enquanto o segredo novo não existia. O mandato é explícito:
 verificar a existência **pelo nome**, não executar, não usar o segredo antigo, não pedir a
-senha. Nenhuma conexão foi aberta nesta missão — nem para staging, nem para produção.
+senha.
+
+### A execução 8, e o que ela provou (05/08, 17:01Z)
+
+O Founder informou ter cadastrado `SUPABASE_DB_PASSWORD`. A lista de secrets do Environment
+`staging`, lida **pelo nome** 32 segundos depois, mostrava outra coisa:
+
+| Secret                 | `updated_at` |
+| ---------------------- | ------------ |
+| `SUPABASE_DB_URL`      | `17:00:22Z`  |
+| `SUPABASE_DB_PASSWORD` | **ausente**  |
+
+A escrita aconteceu — no segredo **antigo**. O nome é o que o workflow lê, e o nome não mudou.
+
+O [run 31028039238](https://github.com/samuel3ssilva/vipreco/actions/runs/31028039238) foi
+disparado assim mesmo, porque uma leitura de API é inferência e um run é fato:
+
+```
+env:
+  SUPABASE_DB_PASSWORD:
+  PREFLIGHT_ENVIRONMENT: staging
+STAGING DATABASE PASSWORD SECRET REQUIRED
+```
+
+Sete passos verdes, o oitavo encerrou. **Nenhuma conexão foi aberta**, nenhum `psql` rodou, e
+— o ponto do redesenho — o runner **não tentou `SUPABASE_DB_URL`**, que estava ali, recém-escrito,
+a um `if` de distância. Um fallback teria "funcionado", e teria devolvido o mesmo erro ambíguo
+de sempre.
+
+Vale registrar o contraste com R2.3B e R2.3C: lá, três execuções disseram
+`password authentication failed` e apontaram para o banco. Aqui a mensagem nomeia o segredo que
+falta, e a correção é uma linha na tela de Environment Secrets.
 
 ### Veredito
 
-**`STAGING PASSWORD-ONLY FLOW READY`**
+**`STAGING PASSWORD-ONLY FLOW READY`** — mecânica provada em execução real; banco não auditado.
 
 O caminho de autenticação está pronto e provado localmente. G3, G4, G5 e G7 continuam
 `UNKNOWN` por limite de medição, e continuarão até o segredo existir.
@@ -483,7 +514,7 @@ usuário, sem `service_role`, e sem espaço nas pontas.
 | Backfill                             | **não iniciado**                                                               |
 | Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514`                       |
 | `db-schema-drill-required` na `main` | **obrigatório**                                                                |
-| Preflight remoto                     | **executado 7×** — mecânica provada, banco não auditado                        |
+| Preflight remoto                     | **executado 8×** — mecânica provada, banco não auditado                        |
 | Auditoria de staging                 | **não realizada** — `STAGING PASSWORD-ONLY FLOW READY` (§8D)                   |
 | Autenticação                         | segredo **atômico** `SUPABASE_DB_PASSWORD`; a URI composta saiu do caminho     |
 | Recuperação de staging               | metade versionada **provada** ([`staging/recovery.md`](./staging/recovery.md)) |
@@ -492,6 +523,10 @@ A ação mínima do Founder mudou de novo — e desta vez porque a **pergunta** 
 conferir o conteúdo de um valor composto: é cadastrar `SUPABASE_DB_PASSWORD` com só a senha.
 O detalhe está em §8D; a §8C fica como registro do que foi medido, com a ação mínima dela
 marcada como superseded.
+
+Na execução 8 a senha foi escrita no segredo **antigo** (`SUPABASE_DB_URL`), e o preflight
+encerrou sem abrir conexão. O que falta é criar um secret **novo**, com o nome
+`SUPABASE_DB_PASSWORD` — não editar o que já existe.
 
 Nada disso reabre decisão resolvida. Os achados de R2.2 continuam de pé, inclusive os dois
 GTINs inválidos em staging — que não são curadoria pendente, e cuja correção continua sendo

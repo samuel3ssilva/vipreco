@@ -104,12 +104,20 @@ Três razões para preferi-lo a rodar SQL à mão:
 
 - o read-only é **estrutural** (guarda estática, transação `READ ONLY`, verificação no banco),
   em vez de depender de quem executa colar a consulta certa;
-- o runner **recusa** a execução se a connection string não for comprovadamente a de staging;
+- o host é **derivado** do project ref de staging versionado, e o runner recusa a execução se a
+  cadeia de guarda não conseguir provar o ambiente;
 - a saída é sanitizada por construção: GTIN mascarado, nenhuma linha de tabela, nenhum host.
 
-Pré-requisito: o Environment Secret `SUPABASE_DB_URL` no ambiente `staging`. Sem ele o
-workflow para com `STAGING DATABASE SECRET REQUIRED` e não abre conexão. Ver
-[`../evidence/r2/automation.md`](../evidence/r2/automation.md).
+Pré-requisito: o Environment Secret **`SUPABASE_DB_PASSWORD`** no ambiente `staging`, contendo
+**somente a Database password** de staging — nada de URI, nunca a `service_role`, nunca a senha
+de produção. Sem ele o workflow para com `STAGING DATABASE PASSWORD SECRET REQUIRED`, não abre
+conexão e **não tenta nenhuma credencial alternativa**.
+
+O segredo composto anterior (`SUPABASE_DB_URL`) foi retirado do caminho na R2.3D: dos cinco
+campos daquela URI, quatro já eram versionados e um só era segredo, e montar os quatro à mão
+para decompô-los depois produziu cinco defeitos que devolviam sempre
+`password authentication failed`. Ver [`../evidence/r2/automation.md`](../evidence/r2/automation.md)
+§8D.
 
 Para **produção** — e para staging, se por algum motivo o workflow não puder ser usado — rodar
 [`../../scripts/r2/target-readiness.sql`](../../scripts/r2/target-readiness.sql) no ambiente

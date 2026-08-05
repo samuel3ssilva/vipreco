@@ -91,10 +91,11 @@ describe("guarda de read-only — camada A (estática)", () => {
     for (const nome of ARQUIVOS_DE_AUDITORIA) {
       expect(() => readFileSync(new URL(`./${nome}`, import.meta.url))).not.toThrow();
     }
-    // Nomes DISTINTOS, não ocorrências: o runner consulta `00-structure.sql` duas
-    // vezes de propósito (a segunda com a leitura alternativa da senha), e contar
-    // ocorrências transformaria uma repetição legítima em falha — sem que nenhum
-    // `.sql` tivesse escapado da guarda, que é a única coisa que este teste protege.
+    // Nomes DISTINTOS, e não ocorrências. Hoje cada `.sql` aparece uma vez só — a
+    // segunda consulta a `00-structure.sql` existia para a leitura alternativa da
+    // senha, que R2.3D eliminou junto com a URI. Contar ocorrências voltaria a
+    // transformar uma repetição legítima em falha sem que nenhum `.sql` tivesse
+    // escapado da guarda, que é a única coisa que este teste protege.
     const consultados = new Set(
       [...RUNNER.matchAll(/consultar "([\w-]+\.sql)"/g)].map((m) => m[1]),
     );
@@ -148,39 +149,37 @@ describe("guarda de read-only — camada C (verificação no banco)", () => {
 // ---------------------------------------------------------------------------------
 
 describe("o segredo nunca é impresso", () => {
-  it("SUPABASE_DB_URL é lido uma única vez, e só como secret", () => {
-    expect(WORKFLOW).toContain("SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}");
-    expect(WORKFLOW.match(/secrets\.SUPABASE_DB_URL/g)).toHaveLength(1);
-    expect(WORKFLOW).not.toContain("vars.SUPABASE_DB_URL");
-  });
+  // O contrato do segredo — nome, leitura única, ausência de fallback — vive em
+  // `prepare-credential.test.ts`, que EXECUTA a função. Aqui ficam só as garantias
+  // sobre o runner e o workflow.
 
-  it("o runner nunca ecoa a URL", () => {
+  it("o runner nunca ecoa o segredo", () => {
     for (const linha of RUNNER.split("\n")) {
       if (/^\s*(echo|printf|cat)\b/.test(linha)) {
-        expect(linha, `linha imprime a URL: ${linha}`).not.toContain("$SUPABASE_DB_URL");
-        expect(linha).not.toContain("${SUPABASE_DB_URL");
+        expect(linha, `linha imprime o segredo: ${linha}`).not.toContain("$SUPABASE_DB_PASSWORD");
+        expect(linha).not.toContain("${SUPABASE_DB_PASSWORD");
       }
     }
   });
 
-  it("o runner registra add-mask para os pedaços da URL", () => {
-    // O GitHub mascara o secret INTEIRO sozinho. Host, usuário e senha isolados não
-    // seriam mascarados — e é justamente eles que vazariam num erro de conexão.
-    expect(RUNNER).toContain("::add-mask::");
-    expect(RUNNER).toMatch(/for segredo in "\$PGHOST" "\$PGUSER"/);
-    // A senha não está na lista porque não existe neste processo — está no `.pgpass`.
-    // Mascará-la aqui exigiria trazer o valor de volta para o shell, que é o oposto
-    // do que a mudança fez.
+  it("o runner registra add-mask para o host", () => {
+    // O host é derivado de arquivo versionado e público, então não é segredo — mas não
+    // há motivo para ele sair inteiro num erro de conexão. `PGUSER` é `postgres`:
+    // mascarar essa palavra tornaria o log ilegível sem proteger nada.
+    expect(RUNNER).toMatch(/echo "::add-mask::\$PGHOST"/);
+    // A senha não está mascarada aqui porque não existe neste processo depois do
+    // `.pgpass`. Trazê-la de volta para o shell só para mascarar seria o oposto do
+    // que a mudança fez — e é o que reintroduziria o vazamento que o CodeQL apontou.
     expect(RUNNER).not.toMatch(/add-mask[^\n]*PGPASSWORD/);
+    expect(RUNNER).not.toMatch(/add-mask[^\n]*SUPABASE_DB_PASSWORD/);
   });
 
   it("a senha não entra na linha de comando do psql", () => {
-    // A senha não entra em argv (legível por outros processos do runner) e também não
-    // entra no ambiente: ela vive num `.pgpass` de modo 0600, e o que o runner exporta
-    // é o CAMINHO. A decomposição vive em `parse-connection-url.ts`, com suíte própria
-    // — a versão artesanal anterior corrompia a senha em silêncio.
+    // A senha não entra em argv (legível por outros processos do runner) e não vira
+    // `PGPASSWORD`: ela vai direto para um `.pgpass` de modo 0600, e o que o runner
+    // exporta é o CAMINHO.
     expect(RUNNER).toMatch(/export PGHOST PGPORT PGUSER PGDATABASE PGPASSFILE/);
-    expect(RUNNER).not.toMatch(/psql[^\n]*\$SUPABASE_DB_URL/);
+    expect(RUNNER).not.toMatch(/psql[^\n]*\$SUPABASE_DB_PASSWORD/);
     expect(RUNNER).not.toMatch(/psql[^\n]*\$PGPASSWORD/);
     // `--no-password` para o psql falhar na hora em vez de esperar um prompt que
     // ninguém vai responder: num runner, "pendurado" e "quebrado" são o mesmo estado,
@@ -222,30 +221,30 @@ describe("produção não é alcançável por este workflow", () => {
     expect(WORKFLOW).toMatch(/environment:\s*staging/);
   });
 
-  it("o runner recusa a execução se a URL apontar para produção", () => {
-    // Não basta "o workflow não aponta para produção". A garantia é o workflow se
-    // RECUSAR a rodar contra produção mesmo se alguém apontar.
-    expect(RUNNER).toContain("REF_PROIBIDO");
-    expect(RUNNER).toMatch(/aponta para o projeto de PRODUCAO. Abortando/);
+  // A CADEIA DE GUARDA em si — refs ausentes, refs iguais, host contaminado pelo ref
+  // de produção — é EXECUTADA em `prepare-credential.test.ts`. O que se verifica aqui
+  // é o que aquele arquivo não alcança: que o runner passa os refs certos, na ordem
+  // certa, e que não existe outra forma de o host chegar até o psql.
+
+  it("o runner passa staging e produção, nessa ordem, para a guarda", () => {
+    expect(RUNNER).toContain('preparar_credencial "$REF_STAGING" "$REF_PROIBIDO"');
+    expect(RUNNER).toMatch(/REF_STAGING="\$\(ref_de staging\)"/);
+    expect(RUNNER).toMatch(/REF_PROIBIDO="\$\(ref_de production\)"/);
   });
 
-  it("o runner exige confirmar que a URL é a de staging", () => {
-    expect(RUNNER).toContain("REF_STAGING");
-    expect(RUNNER).toMatch(/Nao foi possivel confirmar que a connection string e a de staging/);
-  });
-
-  // A guarda de produção falharia ABERTA se este teste não existisse: com `REF_STAGING`
-  // vazio, `!= *""*` é sempre falso e a confirmação de staging passaria calada. É o pior
-  // tipo de defeito — a checagem parece estar lá, e não está.
-  it("aborta se não conseguir ler os refs, em vez de seguir sem guarda", () => {
-    expect(RUNNER).toMatch(/if \[ -z "\$REF_STAGING" \] \|\| \[ -z "\$REF_PROIBIDO" \]/);
-    expect(RUNNER).toMatch(/uma guarda que nao e verificavel nao e guarda/);
+  it("o host chega ao psql só pela guarda, e nunca de outra fonte", () => {
+    // Se `PGHOST` pudesse ser montado em outro lugar do runner, a recusa de produção
+    // deixaria de ser o único caminho — e uma guarda que dá para contornar não é guarda.
+    expect(RUNNER).toMatch(/^PGHOST="\$PREFLIGHT_HOST"$/m);
+    expect(RUNNER.match(/^PGHOST=/gm)).toHaveLength(1);
+    expect(RUNNER).not.toContain("supabase.co");
   });
 
   it("os dois refs vêm do arquivo versionado, não de literal no script", () => {
     expect(RUNNER).toContain("config/environments.json");
     expect(RUNNER).not.toContain(ENVIRONMENTS.production.supabaseProjectId);
     expect(RUNNER).not.toContain(ENVIRONMENTS.staging.supabaseProjectId);
+    expect(WORKFLOW).not.toContain(ENVIRONMENTS.staging.supabaseProjectId);
   });
 
   it("nenhuma credencial administrativa é referenciada", () => {
@@ -301,13 +300,28 @@ describe("r2-staging-preflight.yml — desenho", () => {
 
 describe("comportamento sem o segredo", () => {
   it("verifica a presença sem tocar no valor, e devolve a mensagem exata", () => {
-    expect(RUNNER).toMatch(/if \[ -z "\$\{SUPABASE_DB_URL:-\}" \]/);
-    expect(RUNNER).toContain("STAGING DATABASE SECRET REQUIRED");
+    expect(RUNNER).toMatch(/if \[ -z "\$\{SUPABASE_DB_PASSWORD:-\}" \]/);
+    expect(RUNNER).toContain("STAGING DATABASE PASSWORD SECRET REQUIRED");
     expect(RUNNER).toContain("GitHub Environment `staging`");
   });
 
   it("a guarda de presença vem antes de qualquer conexão", () => {
-    expect(RUNNER.indexOf("STAGING DATABASE SECRET REQUIRED")).toBeLessThan(RUNNER.indexOf("psql"));
+    expect(RUNNER.indexOf("STAGING DATABASE PASSWORD SECRET REQUIRED")).toBeLessThan(
+      RUNNER.indexOf("psql"),
+    );
+  });
+
+  it("o resumo publicado não vaza o segredo nem sugere um fallback", () => {
+    // O Job Summary é público para quem tem acesso ao repositório. Ele diz o NOME do
+    // segredo e o que cadastrar; nunca o valor, e nunca uma credencial alternativa.
+    const resumo = RUNNER.slice(
+      RUNNER.indexOf("STAGING DATABASE PASSWORD SECRET REQUIRED"),
+      RUNNER.indexOf("RESUMO\n  fi"),
+    );
+    expect(resumo).toContain("SUPABASE_DB_PASSWORD");
+    expect(resumo).toContain("somente a Database password");
+    expect(resumo).not.toContain("$SUPABASE_DB_PASSWORD");
+    expect(resumo).toContain("nunca a `service_role`");
   });
 });
 

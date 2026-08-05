@@ -52,8 +52,10 @@ protege o repositório, não o banco.
 | [`read-only-guard.ts`](./read-only-guard.ts)                            | camada A                                                                   |
 | [`preview-counts.ts`](./preview-counts.ts)                              | reduz o preview de backfill a contagens por estado                         |
 | [`render-summary.ts`](./render-summary.ts)                              | classifica histórico, dados e gates, e escreve o Job Summary               |
+| [`prepare-credential.sh`](./prepare-credential.sh)                      | deriva host/porta/usuário/banco e escreve o `.pgpass` 0600                 |
 | [`run.sh`](./run.sh)                                                    | conecta, executa e guarda fatos                                            |
-| [`preflight.test.ts`](./preflight.test.ts)                              | 84 testes sobre tudo acima                                                 |
+| [`preflight.test.ts`](./preflight.test.ts)                              | 84 testes sobre read-only, sigilo, classificação e desenho do workflow     |
+| [`prepare-credential.test.ts`](./prepare-credential.test.ts)            | 42 testes que **executam** a cadeia de credencial em bash                  |
 
 `run.sh` é fino de propósito. Toda **decisão** mora em `render-summary.ts`, que tem
 teste — decisão em shell é decisão sem teste.
@@ -82,14 +84,24 @@ completo no arquivo intermediário — que é exatamente onde ninguém procurari
 ## Produção é inalcançável, e isso é verificado
 
 O runner lê os dois project refs de [`config/environments.json`](../../../config/environments.json)
-— arquivo já versionado, já público — e:
+— arquivo já versionado, já público — e **monta o host a partir do ref de staging**. Não
+existe host vindo de fora para conferir: o host é derivado, e derivado de uma fonte só.
 
-- **aborta** se a connection string apontar para o ref de produção;
-- **aborta** se não conseguir confirmar que ela é a de staging.
+A cadeia de guarda de [`prepare-credential.sh`](prepare-credential.sh) **aborta** quando:
 
-Ler o ref de produção aqui serve para uma coisa só: recusar. É a diferença entre "o
-workflow não aponta para produção" e "o workflow se recusa a rodar contra produção mesmo
-se alguém apontar" — e só a segunda é uma garantia.
+- qualquer um dos dois refs estiver ausente — uma comparação contra `""` casa sempre, e a
+  recusa passaria calada;
+- os dois refs forem **iguais** — nesse estado nenhuma guarda distingue os ambientes;
+- o host montado contiver o ref de **produção**;
+- o host montado **não** contiver o ref de staging.
+
+As duas últimas são hoje asserções sobre a construção, e não validação de um valor
+externo — eram validação quando o host vinha de uma URI cadastrada à mão. Ficam porque
+voltam a ser necessárias no instante em que alguém reintroduzir um host vindo de fora, sem
+depender de ninguém lembrar de recriá-las.
+
+A cadeia inteira é **executada** em `prepare-credential.test.ts`, e não conferida por
+regex sobre o texto do script.
 
 ---
 
@@ -105,13 +117,50 @@ runner nunca carrega uma ferramenta que também saiba aplicar migration.
 
 ---
 
-## O segredo
+## O segredo é atômico, e isso é o ponto
 
-`SUPABASE_DB_URL`, como **Environment Secret** do ambiente `staging`, apontando para o
-Postgres de **staging**. Sem ele o workflow para com `STAGING DATABASE SECRET REQUIRED`
-e explica o que falta — sem stack trace e sem abrir conexão nenhuma.
+`SUPABASE_DB_PASSWORD`, como **Environment Secret** do ambiente `staging`, contendo
+**somente a Database password** do projeto Supabase de staging. Nada de URI de conexão,
+nada de host, nada de usuário, nunca a `service_role`, nunca a senha de produção.
 
-Nunca colar o valor em chat, em `.env` versionado, em `VITE_*` ou em issue.
+Sem ele o workflow para com `STAGING DATABASE PASSWORD SECRET REQUIRED` e explica o que
+falta — sem stack trace, sem abrir conexão, e **sem tentar nenhuma credencial
+alternativa**. Um fallback aqui recriaria os dois caminhos de autenticação em paralelo
+que este desenho existe para eliminar.
+
+Os outros quatro parâmetros são derivados, e não cadastrados:
+
+| Parâmetro | Valor                          | De onde vem                                      |
+| --------- | ------------------------------ | ------------------------------------------------ |
+| host      | `db.<staging-ref>.supabase.co` | `config/environments.json`, versionado e público |
+| porta     | `5432`                         | constante — conexão direta                       |
+| usuário   | `postgres`                     | constante — o pooler usaria `postgres.<ref>`     |
+| banco     | `postgres`                     | constante                                        |
+
+### Por que o desenho anterior foi abandonado
+
+O segredo antigo guardava a connection string inteira, e o runner a decompunha em tempo
+de execução. Cinco defeitos saíram dessa decomposição: `+` virando espaço, `%` sem hex
+válido, `\n` interpretado como formato em vez de dado, corte no primeiro `@` em vez do
+último, e `read` com `IFS='='` comendo o `=` de padding do base64 — este último falhando
+alto no GNU do CI e **mudo** no macOS de quem escreveu.
+
+O que os une importa mais que cada um: **nenhum deles falha**. Todos entregam uma senha
+silenciosamente diferente, e senha diferente volta do Postgres como
+`password authentication failed` — a mesma mensagem de uma credencial de fato inválida.
+Um defeito que se disfarça de problema do outro lado manda investigar o lugar errado, e
+mandou, três vezes.
+
+A lição não é "escrever um parser melhor". É que daqueles cinco campos, quatro já eram
+conhecidos e versionados e só um era segredo. Montar os quatro conhecidos à mão, para
+decompô-los de novo depois, criava superfície de erro do nada.
+
+Com um segredo atômico não há URI, não há parsing, não há percent-encoding e não há
+base64 — e portanto não há como essa classe de defeito voltar.
+
+Nunca colar o valor em chat, em `.env` versionado, em `VITE_*` ou em issue. A senha vai
+direto para um `.pgpass` de modo 0600 dentro do diretório efêmero do job, que o `trap` do
+runner apaga inclusive quando o script falha no meio.
 
 ---
 

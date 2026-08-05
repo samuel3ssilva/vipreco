@@ -67,6 +67,7 @@ export const ARQUIVOS_DE_AUDITORIA = [
   "20-content.sql",
   "30-quantity-input.sql",
   "40-watch-requests.sql",
+  "50-privileges.sql",
 ] as const;
 
 /**

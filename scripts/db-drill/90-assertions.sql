@@ -8,6 +8,8 @@ DO $$
 DECLARE
   failures text[] := ARRAY[]::text[];
   tbl text;
+  priv text;
+  papel text;
   fn record;
 BEGIN
   -- 1. Tabelas de negocio existem e tem RLS habilitado.
@@ -38,6 +40,60 @@ BEGIN
       failures := array_append(failures, format('authenticated tem INSERT em public.%s -- superficie fechada na Onda 3 reaberta sem gate', tbl));
     END IF;
   END LOOP;
+
+  -- 3B. R2.5 -- ESCRITA PUBLICA NAS TRES TABELAS CENTRAIS.
+  --
+  -- Esta assercao so significa alguma coisa porque `00-platform-baseline.sql` passou a
+  -- conceder GRANT ALL automatico em tabela nova, como a plataforma faz. Antes disso ela
+  -- passaria por ausencia de grant -- nunca houve o que revogar num Postgres virgem --
+  -- e foi exatamente assim que o drill ficou verde enquanto staging tinha 42 privilegios
+  -- de escrita por papel nessas tabelas.
+  --
+  -- TRUNCATE esta na lista e e o mais importante dos quatro: no PostgreSQL a RLS NAO se
+  -- aplica a TRUNCATE. Para os outros tres, a ausencia de policy ainda nega a operacao;
+  -- para TRUNCATE, o privilegio e a unica barreira que existe.
+  FOREACH tbl IN ARRAY ARRAY['markets', 'products', 'prices']
+  LOOP
+    FOREACH priv IN ARRAY ARRAY['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']
+    LOOP
+      FOREACH papel IN ARRAY ARRAY['anon', 'authenticated']
+      LOOP
+        IF has_table_privilege(papel, format('public.%s', tbl), priv) THEN
+          failures := array_append(failures, format(
+            '%s tem %s em public.%s -- escrita publica em tabela central; ver 20260803005000_core_table_privilege_hardening.sql',
+            papel, priv, tbl));
+        END IF;
+      END LOOP;
+    END LOOP;
+  END LOOP;
+
+  -- 3C. O grant automatico da plataforma foi desarmado para TABELA FUTURA.
+  --
+  -- Revogar das tabelas que existem nao impede a proxima de nascer aberta. Este bloco cria
+  -- uma tabela depois do hardening e pergunta o que ela herdou.
+  CREATE TABLE public._drill_tabela_futura (id int PRIMARY KEY);
+  FOREACH priv IN ARRAY ARRAY['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']
+  LOOP
+    FOREACH papel IN ARRAY ARRAY['anon', 'authenticated']
+    LOOP
+      IF has_table_privilege(papel, 'public._drill_tabela_futura', priv) THEN
+        failures := array_append(failures, format(
+          'tabela criada APOS o hardening ainda nasce com %s para %s -- o default privilege nao foi corrigido',
+          priv, papel));
+      END IF;
+    END LOOP;
+  END LOOP;
+  DROP TABLE public._drill_tabela_futura;
+
+  -- 3D. O controle positivo do baseline. Ele provou, ANTES das migrations, que o grant
+  --     automatico estava ativo. Se ele nao existir aqui, o baseline nao rodou, e todas as
+  --     assercoes de privilegio acima estariam medindo um banco limpo demais.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = '_drill_controle_de_acl'
+  ) THEN
+    failures := array_append(failures, 'o controle positivo de ACL sumiu: sem ele nao da para afirmar que o baseline reproduziu o grant da plataforma');
+  END IF;
 
   -- 4. Nenhuma funcao do schema public e chamavel por anon/authenticated -- reproduz
   --    exatamente a checagem que faltou antes do achado ao vivo da Onda 3 (SS5.3): fazer

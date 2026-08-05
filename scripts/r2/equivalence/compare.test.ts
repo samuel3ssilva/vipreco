@@ -426,10 +426,22 @@ describe("classificarGrants — modelar para não confundir, nunca para não enx
     expect(g?.categoria).toBe("B. intencional do aplicativo");
   });
 
-  it("escrita nas tabelas de contribuição é B, não C — elas têm contrato e policy", () => {
+  it("INSERT nas tabelas de contribuição é B — a policy delas é `cmd=a`", () => {
     for (const t of ["price_submissions", "product_watch_requests", "decision_feedback"]) {
       const [g] = classificarGrants(linha(t, "anon", "INSERT"));
       expect(g?.categoria, `${t} foi classificada errado`).toBe("B. intencional do aplicativo");
+    }
+  });
+
+  it("mas DELETE, UPDATE e TRUNCATE nelas são C — a policy cobre INSERT, e só", () => {
+    // A primeira versão devolvia B para qualquer escrita em tabela de contribuição, e o
+    // relatório real saiu dizendo que `anon TRUNCATE decision_feedback` era intencional.
+    // Nunca houve contrato de apagar nem de alterar sugestão alheia.
+    for (const t of ["price_submissions", "product_watch_requests", "decision_feedback"]) {
+      for (const priv of ["DELETE", "UPDATE", "TRUNCATE"]) {
+        const [g] = classificarGrants(linha(t, "anon", priv));
+        expect(g?.categoria, `${t}:${priv}`).toBe("C. inseguro — exige hardening");
+      }
     }
   });
 

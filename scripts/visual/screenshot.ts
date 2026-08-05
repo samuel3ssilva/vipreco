@@ -56,29 +56,26 @@ async function comTentativas<T>(fn: () => Promise<T>, tentativas = 40): Promise<
   throw ultimo;
 }
 
-/** Uma sessão CDP mínima: envia comando, espera a resposta com o mesmo id. */
+/**
+ * Uma sessão CDP mínima: envia comando, espera a resposta com o mesmo id.
+ *
+ * O DESPACHO NÃO É DIRIGIDO PELO DADO DE FORA, e isso é o desenho, não um detalhe.
+ *
+ * A primeira versão guardava os callbacks pendentes num `Map<number, fn>` e, ao receber
+ * um frame, fazia `pendentes.get(msg.id)?.(msg.result)` — ou seja, o JSON que chega do
+ * navegador escolhia QUAL função chamar. O CodeQL apontou (js/unvalidated-dynamic-method-call,
+ * severidade alta). Minha primeira correção só validou que `msg.id` era inteiro, e o alerta
+ * continuou de pé — corretamente: garantir o TIPO de uma chave não garante que o valor
+ * pertença a um conjunto seguro, e a função invocada seguia sendo escolhida por dado
+ * externo.
+ *
+ * Aqui cada comando registra o próprio ouvinte, e `ok` é ligado lexicamente. O `id` que
+ * chega de fora decide apenas SE aquela promessa resolve — nunca O QUE é chamado. Some o
+ * padrão, some o alerta, e some o `Map` junto: a versão segura ficou menor que a insegura.
+ */
 class Sessao {
   private id = 0;
-  private pendentes = new Map<number, (v: unknown) => void>();
-  private constructor(private ws: WebSocket) {
-    ws.addEventListener("message", (ev) => {
-      const msg: unknown = JSON.parse(String(ev.data));
-      // O `id` vem de JSON de fora e era usado direto como chave de busca do callback a
-      // ser invocado — o CodeQL apontou (js/unvalidated-dynamic-method-call, alta), e
-      // apontou com razão. Aqui não é explorável, porque `pendentes` é um `Map` e não um
-      // objeto: `Map.get` não passa por prototype, então "__proto__" ou "constructor"
-      // devolvem `undefined` como qualquer outra chave ausente.
-      //
-      // Mesmo assim vale validar, e não por burocracia de alerta: sem esta guarda, um
-      // frame malformado do navegador chamaria o `?.()` sobre o que quer que estivesse
-      // no Map, e o modo de falha seria uma resposta trocada de comando — o tipo de
-      // defeito que aparece como screenshot vazio e manda procurar no lugar errado.
-      if (typeof msg !== "object" || msg === null) return;
-      const { id, result } = msg as { id?: unknown; result?: unknown };
-      if (typeof id !== "number" || !Number.isInteger(id)) return;
-      this.pendentes.get(id)?.(result);
-    });
-  }
+  private constructor(private ws: WebSocket) {}
   static async abrir(url: string): Promise<Sessao> {
     const ws = new WebSocket(url);
     await new Promise<void>((ok, erro) => {
@@ -92,7 +89,17 @@ class Sessao {
   enviar<T = Record<string, unknown>>(method: string, params: object = {}): Promise<T> {
     const id = ++this.id;
     return new Promise((ok) => {
-      this.pendentes.set(id, ok as (v: unknown) => void);
+      const aoReceber = (ev: MessageEvent) => {
+        const msg: unknown = JSON.parse(String(ev.data));
+        // O id que chega decide apenas SE esta promessa resolve. Quem é chamado —
+        // `ok` — está ligado lexicamente e não depende de nada que veio do socket.
+        if (typeof msg !== "object" || msg === null) return;
+        const { id: recebido, result } = msg as { id?: unknown; result?: unknown };
+        if (recebido !== id) return;
+        this.ws.removeEventListener("message", aoReceber);
+        ok(result as T);
+      };
+      this.ws.addEventListener("message", aoReceber);
       this.ws.send(JSON.stringify({ id, method, params }));
     });
   }

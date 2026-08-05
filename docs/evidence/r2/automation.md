@@ -1,6 +1,6 @@
 # Automação segura do preflight de staging — R2.3
 
-**Registrado em 2026-08-04.** `main` em `252af35`.
+**Registrado em 2026-08-04.** `main` em `252af35`; §8B acrescentado com a `main` em `8ded9d2`.
 
 Duas frentes, uma consequência: o gate de R2 continua fechado, e agora pelo motivo certo — a
 resposta que falta é do banco, não da ferramenta.
@@ -103,9 +103,13 @@ Três consequências práticas:
 - **a máscara acontece no SQL, não na renderização.** Mascarar só no fim deixaria o código
   completo no arquivo intermediário — exatamente onde ninguém procuraria depois.
 
-A senha nunca entra na linha de comando do `psql`: a URL é decomposta em variáveis libpq, e
-cada pedaço recebe `::add-mask::`. O GitHub mascara o secret inteiro sozinho, mas não seus
-pedaços — e é o pedaço que vaza numa mensagem de erro de conexão.
+A senha nunca entra na linha de comando do `psql`, e desde a R2.3B também **não entra no
+ambiente**: ela é escrita num `.pgpass` de modo `0600` no diretório efêmero, e o que atravessa
+o processo é o caminho. Host e usuário recebem `::add-mask::` — o GitHub mascara o secret
+inteiro sozinho, mas não seus pedaços, e é o pedaço que vaza numa mensagem de erro de conexão.
+
+A senha ficou de fora dessa lista de propósito: mascará-la exigiria trazer o valor de volta
+para o shell, que é o oposto do que a mudança fez. Ver §8B.
 
 ---
 
@@ -140,6 +144,10 @@ Duas decisões de SQL vieram daí:
 ---
 
 ## 8. A execução: `STAGING SECRET REQUIRED`
+
+> **Medida em 04/08/2026, antes do segredo existir.** Preservada como está: ela é a razão de a
+> §8B existir, e reescrevê-la apagaria a diferença entre "não havia como olhar" e "olhou-se e o
+> banco recusou". O estado atual do secret está em [§8B](#8b-r23b--a-primeira-execução-com-credencial-04082026).
 
 O segredo `SUPABASE_DB_URL` **não existe** no GitHub Environment `staging`. Verificado pela
 presença do nome, nunca pelo valor:
@@ -196,6 +204,124 @@ mudado de versão sem ninguém pedir.
 
 ---
 
+## 8B. R2.3B — a primeira execução com credencial (04/08/2026)
+
+O segredo `SUPABASE_DB_URL` foi cadastrado no Environment `staging` pelo Founder. Verificado
+pela **presença do nome**, nunca pelo valor — e ausente em `production`, como o mandato exige.
+
+O preflight foi executado **quatro vezes**. As três primeiras falharam por defeito **meu**, e
+isso é o principal registro desta seção.
+
+| #   | Run                                                                              | Onde parou                              | De quem era o defeito                 |
+| --- | -------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------- |
+| 1   | [30965931926](https://github.com/samuel3ssilva/vipreco/actions/runs/30965931926) | `password authentication failed`        | **meu** — o decompositor da URL       |
+| 2   | [30966712920](https://github.com/samuel3ssilva/vipreco/actions/runs/30966712920) | `base64: invalid input` ×3, depois auth | **meu** — o `read` comia o padding    |
+| 3   | [30967023601](https://github.com/samuel3ssilva/vipreco/actions/runs/30967023601) | `password authentication failed`        | ambíguo — restava o percent-encoding  |
+| 4   | [30967421936](https://github.com/samuel3ssilva/vipreco/actions/runs/30967421936) | as **duas** leituras da senha recusadas | **da credencial** — e agora com prova |
+
+### Por que os três primeiros erros pareciam ser do banco
+
+Os defeitos eram quatro no parser e um no shell, e o que os une é o que importa: **nenhum
+deles falha**. Todos entregam uma senha silenciosamente diferente da cadastrada — e uma senha
+diferente volta do Postgres com exatamente a mesma mensagem de uma senha inválida.
+
+| Defeito               | O que produzia                                                                         | PR                                                      |
+| --------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `+` → espaço          | em URI, `+` é um mais **literal**; quem troca `+` por espaço é o formato de formulário | [#65](https://github.com/samuel3ssilva/vipreco/pull/65) |
+| `%` sem hex válido    | `printf '%b'` devolvia `\x` literal — e avisava no stderr, sem ninguém ler             | #65                                                     |
+| `\n`, `\t`, `\\`      | `printf '%b'` tratava a senha como **formato**, não como dado                          | #65                                                     |
+| split no primeiro `@` | senha com `@` literal truncada; o corte é no **último**                                | #65                                                     |
+| `read` com `IFS='='`  | descarta o `=` final da linha, que em base64 é o **padding**: `postgres` → `postgr`    | [#66](https://github.com/samuel3ssilva/vipreco/pull/66) |
+
+O último é o mais instrutivo. Eu havia testado o parser e testado o `base64 --decode` —
+**separadamente**. O defeito morava na costura. Conferir as duas margens não é conferir a
+ponte, e por isso a leitura virou `load-components.sh`, uma função com nome e com teste que a
+executa de verdade, em bash, sobre a saída real do parser.
+
+Pior ainda: o **GNU base64 recusa** com `invalid input`, o do **macOS trunca em silêncio**. O
+mesmo código falha barulhento no CI e mudo na máquina de quem escreve.
+
+### O CodeQL estava certo
+
+A primeira correção emitia `PGPASSWORD=<base64>` em stdout, e o CodeQL apontou
+`js/clear-text-logging`. Base64 não é proteção — e aqui era pior que neutro: o `::add-mask::`
+do GitHub mascara o valor **literal** do secret e não reconhece o base64 do mesmo valor. A
+codificação que parecia esconder era exatamente o que furava o mascaramento.
+
+A correção não foi silenciar o alerta, foi remover o que ele apontava: a senha passou a ser
+escrita direto num `.pgpass` de modo `0600` dentro do diretório efêmero, e o que atravessa o
+pipe é o **caminho**. Ela nunca vira variável de ambiente, nunca atravessa um pipe e nunca
+passa codificada.
+
+### A última dúvida que era nossa
+
+O run 3 chegou limpo até a autenticação e o diagnóstico imprimiu `forma da URL:
+senha:percent-encoded`. Esse rótulo é ambíguo por natureza: decodificar percent é o certo — é
+o que o libpq faz com uma URI — **exceto** se a senha contiver literalmente `%40` e tiver sido
+colada crua. As duas situações são indistinguíveis no texto e terminam no mesmo erro.
+
+Então o parser passou a escrever **os dois candidatos** (o segundo só quando a decodificação
+muda algo), e o runner tenta o segundo se o primeiro for recusado. Não é adivinhar senha: os
+dois saem de forma determinística do mesmo valor cadastrado. É a diferença entre dizer que a
+credencial está errada e **ter provado** que está.
+
+### O resultado do run 4
+
+```
+psql: FATAL: password authentication failed for user "postgres"
+      password retrieved from file ".../.pgpass"
+warning: Primeira tentativa recusada. Repetindo com a senha SEM decodificacao percent...
+psql: FATAL: password authentication failed for user "postgres"
+      password retrieved from file ".../.pgpass-alt"
+```
+
+O que isso estabelece, e o que não estabelece:
+
+| Estabelecido                                            | Como                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| a URL é sintaticamente válida e aponta para **staging** | a recusa de produção deixou passar, e ela exige o ref de staging no host ou no usuário |
+| o host existe e responde                                | resolveu para IPv4 da AWS `ca-central-1`, porta 5432                                   |
+| o TLS completou e o **servidor** respondeu              | a mensagem é `FATAL` do Postgres, não erro de rede                                     |
+| o usuário chega como `postgres`                         | é o que o servidor cita de volta — coerente com conexão direta                         |
+| o `.pgpass` foi lido pelo libpq                         | o próprio psql informa de qual arquivo                                                 |
+| **as duas** leituras possíveis da senha foram recusadas | duas tentativas, dois arquivos distintos                                               |
+
+**Não estabelecido:** nada sobre o conteúdo de staging. Nenhuma consulta rodou. G3, G4, G5 e
+G7 continuam exatamente onde a R2.2 os deixou, e continuam `UNKNOWN` por **limite de medição**,
+não por defeito do banco.
+
+### O que muda em G15
+
+A R2.2 registrou G15 como **FAIL** porque _não existia_ credencial. Agora existe uma, e ela é
+recusada. O gate continua **FAIL**, mas a natureza do bloqueio mudou — e é a segunda vez nesta
+missão que um bloqueio muda de natureza sem mudar de cor:
+
+| Quando | Bloqueio                      | Significa                                             |
+| ------ | ----------------------------- | ----------------------------------------------------- |
+| R2.2   | `CREDENTIAL ACCESS REQUIRED`  | não existe caminho                                    |
+| R2.3   | `STAGING SECRET REQUIRED`     | existe caminho, falta a decisão                       |
+| R2.3B  | `STAGING CREDENTIAL REJECTED` | a decisão foi tomada, o valor não é aceito pelo banco |
+
+Causas possíveis, em ordem, e nenhuma resolúvel daqui — o segredo só pode ser reescrito pelo
+Founder:
+
+1. a senha cadastrada **não é a do banco** — foi rotacionada, ou é a senha da conta Supabase e
+   não a do Postgres (são coisas diferentes, e o painel não deixa isso óbvio);
+2. a senha tem caractere especial e foi colada **sem percent-encoding** na URI — `@` deve virar
+   `%40`, `:` `%3A`, `/` `%2F`, `?` `%3F`, `#` `%23`, `%` `%25`. Esta hipótese está **enfraquecida**
+   pelo run 4, que testou as duas leituras, mas não eliminada: ela cobre o caso de decodificar
+   demais ou de menos, não o de um caractere que quebrou a URI antes disso;
+3. o usuário não corresponde ao host — conexão direta usa `postgres`, o pooler usa
+   `postgres.<project-ref>`. O servidor citou `postgres` e o host é o direto, então os dois são
+   coerentes entre si.
+
+**A ação mínima:** reemitir a senha do banco no painel do Supabase (_Project Settings →
+Database → Reset database password_), montar a URI com a senha **percent-encoded** e regravar o
+Environment Secret `SUPABASE_DB_URL` de `staging`. Nunca colar o valor em chat, em `.env`
+versionado, em `VITE_*` ou em issue. Depois disso, basta redisparar o workflow.
+
+---
+
 ## 9. Onde o gate ficou
 
 | Item                                 | Estado                                                   |
@@ -206,11 +332,12 @@ mudado de versão sem ninguém pedir.
 | Backfill                             | **não iniciado**                                         |
 | Deploys                              | **nenhum** — staging em `862a179`, produção em `b88e514` |
 | `db-schema-drill-required` na `main` | **obrigatório**                                          |
-| Preflight remoto                     | **pronto e não executado** — falta o segredo             |
+| Preflight remoto                     | **executado 4×** — mecânica provada, banco não auditado  |
+| Auditoria de staging                 | **não realizada** — `STAGING CREDENTIAL REJECTED` (§8B)  |
 
-A ação mínima do Founder: cadastrar `SUPABASE_DB_URL` como **Environment Secret** de `staging`,
-apontando para o Postgres de **staging**. Nunca colar o valor em chat, em `.env` versionado,
-em `VITE_*` ou em issue.
+A ação mínima do Founder mudou: o segredo já existe, então não é mais cadastrá-lo, é
+**reemitir a senha do banco** e regravar `SUPABASE_DB_URL` com ela percent-encoded. O detalhe
+está em §8B.
 
 Nada disso reabre decisão resolvida. Os achados de R2.2 continuam de pé, inclusive os dois
 GTINs inválidos em staging — que não são curadoria pendente, e cuja correção continua sendo

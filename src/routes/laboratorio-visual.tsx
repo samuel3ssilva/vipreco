@@ -117,7 +117,17 @@ function Tipografia() {
               {t.nome} — {t.valor}
             </p>
             <p
-              className={t.nome.includes("price") ? "font-data" : undefined}
+              // `font-bold` junto com `font-data` porque é assim que o preço aparece no
+              // produto — `PriceCard` e `PriceSummary` escrevem os dois. Sem o peso, esta
+              // amostra herdava 400 e o laboratório mostrava um preço que a comparação
+              // nunca desenha.
+              //
+              // E a diferença não era só teórica: a face 400 da IBM Plex Mono não é
+              // carregada (o conjunto importado é 500/600), então o 400 caía na 500 e o
+              // 700 cai na 600. Medido por impressão digital de canvas — 400 e 500 pintam
+              // pixels idênticos. Um laboratório de fundação visual que mostra o preço no
+              // peso errado erra justamente no elemento que o produto existe para exibir.
+              className={t.nome.includes("price") ? "font-data font-bold" : undefined}
               style={{ fontSize: `var(${t.nome})`, lineHeight: 1.2 }}
             >
               {t.nome.includes("price") ? "R$ 00,00" : "Reconhecer antes de comparar"}

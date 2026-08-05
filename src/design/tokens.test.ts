@@ -27,8 +27,14 @@ function declaradoNoCss(nome: string): string | null {
   // O `[^;]*` para no `;` e o `m` prende a busca a uma linha, então um token cujo nome é
   // prefixo de outro (`--vp-sp-1` e `--vp-sp-16`) não casa com o vizinho: o `\s*:` logo
   // depois do nome exige que o nome termine ali.
-  const casado = new RegExp(`^\\s*${nome}\\s*:\\s*([^;]*);`, "m").exec(STYLES);
-  return casado === null ? null : casado[1]!.trim();
+  // `s` em vez de `m` no final: uma pilha de fontes longa o bastante é quebrada em várias
+  // linhas pelo Prettier, e o `m` fazia a leitura parar na primeira. O `[^;]*` continua
+  // sendo o limite real — vai até o `;`, atravessando quebra de linha se houver.
+  //
+  // A quebra é formatação, não divergência: colapsar espaço em branco compara o VALOR, que
+  // é o que o catálogo promete, em vez do recuo, que é assunto do Prettier.
+  const casado = new RegExp(`^[ \\t]*${nome}\\s*:\\s*([^;]*);`, "ms").exec(STYLES);
+  return casado === null ? null : casado[1]!.replace(/\s+/g, " ").trim();
 }
 
 describe("o catálogo de tokens não pode divergir de styles.css", () => {

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -221,5 +222,60 @@ describe("nenhuma primitiva conhece dado", () => {
         expect(fonte, `${arquivo} importa ${proibido}`).not.toContain(proibido);
       }
     }
+  });
+});
+
+/**
+ * R3.1A — o estado desabilitado passa a consumir `--vp-action-disabled`.
+ *
+ * O token existia desde o Brand System v2 e nenhum componente o lia: todo botão herdava
+ * `opacity: 0.6` de `btn-base`. Um token de cor que ninguém consome não é um token, é uma
+ * linha de CSS morta — e pior, dá a impressão de que a decisão de cor foi tomada quando
+ * na prática o que decide é a opacidade, que depende do que estiver atrás.
+ */
+describe("Button desabilitado — o token deixa de ser decorativo", () => {
+  const STYLES = readFileSync(new URL("../../styles.css", import.meta.url), "utf-8");
+
+  it("a primitiva escreve a utilitária do estado desabilitado", () => {
+    expect(html(<Button disabled>Indisponível</Button>)).toContain("btn-r31-disabled");
+  });
+
+  it("o IconButton também, senão o estado depende de qual primitiva o chamador escolheu", () => {
+    expect(html(<IconButton rotulo="Fechar" disabled />)).toContain("btn-r31-disabled");
+  });
+
+  it("a utilitária consome --vp-action-disabled", () => {
+    const bloco = STYLES.match(/@utility btn-r31-disabled \{[\s\S]*?\n\}/)?.[0];
+    expect(bloco).toBeDefined();
+    expect(bloco).toContain("var(--vp-action-disabled)");
+  });
+
+  it("desfaz a opacidade herdada, senão a cor do token chegaria desbotada", () => {
+    const bloco = STYLES.match(/@utility btn-r31-disabled \{[\s\S]*?\n\}/)?.[0];
+    expect(bloco).toContain("opacity: 1");
+  });
+
+  it("o :disabled de btn-base continua intocado — mexer nele mudaria a Home", () => {
+    const base = STYLES.match(/@utility btn-base \{[\s\S]*?\n\}/)?.[0];
+    expect(base).toContain("opacity: 0.6");
+    expect(base).not.toContain("--vp-action-disabled");
+  });
+
+  it("o botão desabilitado sai com o atributo nativo, e não só com a aparência", () => {
+    // Sem `disabled` de verdade, o clique por teclado continua chegando ao handler: o
+    // botão pareceria inerte e não seria.
+    const saida = html(<Button disabled>Indisponível</Button>);
+    expect(saida).toContain("disabled");
+  });
+
+  it("nenhum componente fora das primitivas usa a utilitária nova", () => {
+    // A Home não pode herdar este estado por acidente: §0 do mandato a mantém intocada.
+    const consumidores = execSync("grep -rl 'btn-r31-disabled' src/ || true", { encoding: "utf-8" })
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((f) => f.replace(/\/{2,}/g, "/"))
+      .filter((f) => !f.endsWith(".test.tsx"));
+    expect(consumidores.sort()).toEqual(["src/components/primitives/button.tsx", "src/styles.css"]);
   });
 });

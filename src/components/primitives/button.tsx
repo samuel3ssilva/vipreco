@@ -48,7 +48,7 @@ export function Button({
       // `type="button"` por padrão, e não `submit`: um botão dentro de `<form>` que
       // submete sem ninguém pedir é o defeito mais silencioso que um botão pode ter.
       type={type}
-      className={cn("btn-base btn-touch-48", VARIANTE[variante], className)}
+      className={cn("btn-base btn-touch-48 btn-r31-disabled", VARIANTE[variante], className)}
       {...props}
     >
       {children}
@@ -79,7 +79,11 @@ export function IconButton({
     <button
       type={type}
       aria-label={rotulo}
-      className={cn("btn-base btn-touch-48 min-w-12 px-0", VARIANTE[variante], className)}
+      className={cn(
+        "btn-base btn-touch-48 btn-r31-disabled min-w-12 px-0",
+        VARIANTE[variante],
+        className,
+      )}
       {...props}
     >
       <span aria-hidden="true" className="inline-flex">

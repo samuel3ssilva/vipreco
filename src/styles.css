@@ -2,6 +2,29 @@
 @source "../src";
 @import "tw-animate-css";
 
+/*
+ * TIPOGRAFIA DE MARCA, SERVIDA PELO PRÓPRIO BUILD.
+ *
+ * Antes estas três famílias vinham de fonts.googleapis.com por um <link> no
+ * __root.tsx. Funcionava — foi medido no navegador, as faces carregavam. Mas amarrava
+ * três coisas a uma chamada externa: o screenshot de revisão, o teste, e a primeira
+ * pintura de qualquer visitante.
+ *
+ * Os pesos aqui NÃO são uma escolha nova. São exatamente os que a URL do Google pedia:
+ * Bricolage variável no eixo `opsz` (era `opsz,wght@12..96,600..800`), Public Sans em
+ * 400/500/600/700, IBM Plex Mono em 500/600. Importar um peso a mais mudaria o que a
+ * Home desenha hoje — `.font-data` está declarado em 400 e em 700, e hoje esses dois
+ * caem nas faces 500 e 600 por não existir face mais próxima. Manter o conjunto
+ * idêntico é o que garante que a Home continue pixel a pixel a mesma; está verificado
+ * por impressão digital de canvas em src/design/fonts.test.ts.
+ *
+ * Licença OFL-1.1 nas três, versão fixada, arquivo de licença dentro de cada pacote.
+ */
+@import "@fontsource-variable/bricolage-grotesque/opsz.css";
+@import "@fontsource-variable/public-sans/index.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/latin-600.css";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -212,8 +235,18 @@
   --vp-staging-border: #c89a25;
   --vp-staging-height: 44px;
 
-  --vp-font-display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
-  --vp-font-body: "Public Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  /*
+   * "Bricolage Grotesque Variable" vem PRIMEIRO porque é o nome que o pacote
+   * @fontsource-variable declara no @font-face — e um nome que não casa não é um
+   * fallback elegante, é a Home perdendo a face de display sem avisar ninguém.
+   * "Bricolage Grotesque" continua logo atrás: é o nome que o Google servia, e mantê-lo
+   * é o que faz esta troca ser reversível sem tocar em mais nada.
+   */
+  --vp-font-display:
+    "Bricolage Grotesque Variable", "Bricolage Grotesque", "Public Sans", system-ui,
+    sans-serif;
+  --vp-font-body:
+    "Public Sans Variable", "Public Sans", system-ui, "Segoe UI", Roboto, sans-serif;
   --vp-font-data: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   --vp-fs-display: 2.5rem;
@@ -370,6 +403,30 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+/* Estado desabilitado das primitivas de R3.1 — o único consumidor de --vp-action-disabled.
+ *
+ * O token existia em `styles.css` desde o Brand System v2 e ninguém o usava: todo botão do
+ * produto herda `opacity: 0.6` de `btn-base`. Opacidade não é a mesma coisa que uma cor de
+ * estado — ela desbota o texto junto com o fundo, e o resultado depende do que estiver
+ * atrás. Uma cor declarada não depende.
+ *
+ * NÃO altera `btn-base`, de propósito. Mexer no `:disabled` de lá mudaria todo botão
+ * desabilitado do produto, incluindo a Home — que o mandato §0 mantém intocada. Esta
+ * utilitária só existe quando alguém a escreve, e hoje quem escreve são as primitivas
+ * novas. `opacity: 1` é necessário justamente para desfazer o 0.6 herdado; sem ele, a cor
+ * do token chegaria desbotada e o token continuaria sem mandar em nada.
+ *
+ * `cursor` e o bloqueio de clique continuam vindo do atributo `disabled` nativo, não de
+ * CSS: um botão que apenas *parece* desabilitado continua clicável por teclado. */
+@utility btn-r31-disabled {
+  &:disabled {
+    opacity: 1;
+    background-color: var(--vp-action-disabled);
+    border-color: var(--vp-action-disabled);
+    color: var(--vp-text-muted);
   }
 }
 

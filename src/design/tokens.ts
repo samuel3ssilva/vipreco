@@ -143,14 +143,16 @@ const CORES: Token[] = [
 const TIPOGRAFIA: Token[] = [
   {
     nome: "--vp-font-display",
-    valor: '"Bricolage Grotesque", "Public Sans", system-ui, sans-serif',
+    valor:
+      '"Bricolage Grotesque Variable", "Bricolage Grotesque", "Public Sans", system-ui, sans-serif',
     grupo: "tipografia-familia",
-    nota: "não self-hosted; a pilha de fallback é o que realmente renderiza hoje",
+    nota: "self-hosted (@fontsource-variable, OFL-1.1); o nome com sufixo Variable é o que o pacote declara",
   },
   {
     nome: "--vp-font-body",
-    valor: '"Public Sans", system-ui, "Segoe UI", Roboto, sans-serif',
+    valor: '"Public Sans Variable", "Public Sans", system-ui, "Segoe UI", Roboto, sans-serif',
     grupo: "tipografia-familia",
+    nota: "self-hosted; a variável reproduz exatamente o que o Google servia — a estática, não",
   },
   {
     nome: "--vp-font-data",

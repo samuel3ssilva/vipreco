@@ -5,15 +5,17 @@
 //   (nao pode ser fixado por hash) e componentes Radix aplicam `style="..."`
 //   inline via DOM para posicionamento de overlay/popover; nenhum nonce e
 //   threaded pelo framework nesta versao. unsafe-eval nunca e usado.
-// - fonts.googleapis.com/fonts.gstatic.com: unica origem externa real (Google
-//   Fonts, preconectada em src/routes/__root.tsx).
+// - fonte: NENHUMA origem externa. As tres familias de marca passaram a ser servidas
+//   pelo proprio build (@fontsource, importado em src/styles.css) na R3.1A, entao
+//   fonts.googleapis.com e fonts.gstatic.com sairam do CSP. Uma origem externa a menos
+//   e uma origem a menos para confiar -- e a unica que restava para conteudo estatico.
 // - *.supabase.co: unica origem de dados do app (staging e producao usam
 //   projetos Supabase distintos, ambos sob esse dominio).
 const CSP_DIRECTIVES = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data:",
   "connect-src 'self' https://*.supabase.co",
   "object-src 'none'",

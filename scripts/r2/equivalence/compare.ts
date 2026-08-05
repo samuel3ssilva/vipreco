@@ -106,6 +106,102 @@ function versaoMaior(v: string | null): string | null {
   return v === null ? null : (v.split(".")[0] ?? null);
 }
 
+// ---------------------------------------------------------------------------------
+// Classificação de grants (R2.5 §2)
+// ---------------------------------------------------------------------------------
+
+/**
+ * As três tabelas centrais da comparação. Escrita pública nelas nunca teve contrato: o
+ * produto lê preço, mercado e produto, e quem escreve é operação manual por `service_role`.
+ */
+const TABELAS_CENTRAIS = ["markets", "prices", "products"] as const;
+
+/**
+ * Tabelas cuja escrita pública TEM contrato e policy própria. A Onda 3 revogou o `INSERT`
+ * delas, mas as policies continuam lá — e o desenho é esse. Não entram no hardening.
+ */
+const TABELAS_DE_CONTRIBUICAO = [
+  "decision_feedback",
+  "price_submissions",
+  "product_watch_requests",
+] as const;
+
+/** Os quatro que mudam ou destroem linha. `TRUNCATE` está aqui por um motivo específico. */
+const PRIVILEGIOS_DE_ESCRITA = ["INSERT", "UPDATE", "DELETE", "TRUNCATE"] as const;
+
+const PAPEIS_PUBLICOS = ["anon", "authenticated", "PUBLIC"] as const;
+
+export type CategoriaDeGrant =
+  "A. padrão da plataforma" | "B. intencional do aplicativo" | "C. inseguro — exige hardening";
+
+export interface GrantClassificado {
+  tabela: string;
+  papel: string;
+  privilegio: string;
+  categoria: CategoriaDeGrant;
+  porque: string;
+}
+
+/**
+ * Separa os grants de tabela de staging em três categorias.
+ *
+ * POR QUE ISTO NÃO MEXE NO VEREDITO DE EQUIVALÊNCIA
+ *
+ * Desde R2.5 o lado esperado reproduz os default privileges da plataforma, então esses
+ * grants aparecem **dos dois lados** e não geram diferença nenhuma. Isso é o certo para a
+ * pergunta "o schema de staging é o das sete migrations?" — e seria péssimo como resposta
+ * final, porque tornaria invisível exatamente o achado que motivou a migration de
+ * hardening.
+ *
+ * Modelar para não confundir é uma coisa; modelar para não enxergar é outra. Esta função
+ * existe para a segunda não acontecer: o veredito ignora privilégio, o relatório não.
+ *
+ * `TRUNCATE` está em `PRIVILEGIOS_DE_ESCRITA` de propósito, e é o mais grave dos quatro:
+ * no PostgreSQL a RLS **não se aplica** a `TRUNCATE`. Para `INSERT`/`UPDATE`/`DELETE` a
+ * ausência de policy nega a operação; para `TRUNCATE`, o privilégio é a única barreira.
+ */
+export function classificarGrants(fingerprintStaging: string): GrantClassificado[] {
+  const fora: GrantClassificado[] = [];
+  for (const o of lerFingerprint(fingerprintStaging).values()) {
+    if (o.categoria !== "fp.grant_tabela") continue;
+    const [tabela, papel, privilegio] = o.identidade.split(":");
+    if (tabela === undefined || papel === undefined || privilegio === undefined) continue;
+
+    const publico = (PAPEIS_PUBLICOS as readonly string[]).includes(papel);
+    const central = (TABELAS_CENTRAIS as readonly string[]).includes(tabela);
+    const contribuicao = (TABELAS_DE_CONTRIBUICAO as readonly string[]).includes(tabela);
+    const escrita = (PRIVILEGIOS_DE_ESCRITA as readonly string[]).includes(privilegio);
+
+    let categoria: CategoriaDeGrant;
+    let porque: string;
+    if (!publico) {
+      categoria = "B. intencional do aplicativo";
+      porque = `${papel} não é papel público`;
+    } else if (privilegio === "SELECT" && (central || contribuicao)) {
+      categoria = "B. intencional do aplicativo";
+      porque = "leitura pública é o produto; a RLS filtra as linhas";
+    } else if (central && escrita) {
+      categoria = "C. inseguro — exige hardening";
+      porque =
+        privilegio === "TRUNCATE"
+          ? "a RLS NÃO se aplica a TRUNCATE — o privilégio é a única barreira"
+          : "escrita pública em tabela central nunca teve contrato; hoje só a RLS nega";
+    } else if (contribuicao && escrita) {
+      categoria = "B. intencional do aplicativo";
+      porque = "tabela de contribuição tem contrato e policy próprios";
+    } else {
+      categoria = "A. padrão da plataforma";
+      porque = "concedido pelo provisionamento do Supabase, sem efeito de escrita";
+    }
+    fora.push({ tabela, papel, privilegio, categoria, porque });
+  }
+  return fora.sort((a, b) =>
+    `${a.categoria}${a.tabela}${a.papel}${a.privilegio}`.localeCompare(
+      `${b.categoria}${b.tabela}${b.papel}${b.privilegio}`,
+    ),
+  );
+}
+
 /**
  * Linhas de contexto (`fp.db.version`, `fp.guard.read_only`) chegam sem `|` interno, então
  * o valor cai em `identidade` e não em `assinatura`. Procurar pela chave montada não
@@ -307,10 +403,10 @@ export function recortarDivergencia(esperado: string, encontrado: string): [stri
   ];
 }
 
-export function renderizar(c: Comparacao): string {
+export function renderizar(c: Comparacao, grants: GrantClassificado[] = []): string {
   const linhas: string[] = [];
 
-  linhas.push("# Equivalência de schema — staging contra as oito migrations anteriores a R2");
+  linhas.push("# Equivalência de schema — staging contra as SETE migrations do baseline");
   linhas.push("");
   linhas.push(`## ${SIMBOLO[c.classificacao]} ${c.classificacao}`);
   linhas.push("");
@@ -353,11 +449,57 @@ export function renderizar(c: Comparacao): string {
     }
   }
 
+  if (grants.length > 0) {
+    const porCat = new Map<string, GrantClassificado[]>();
+    for (const g of grants) {
+      const l = porCat.get(g.categoria) ?? [];
+      l.push(g);
+      porCat.set(g.categoria, l);
+    }
+    const inseguros = porCat.get("C. inseguro — exige hardening") ?? [];
+    linhas.push("## Grants de tabela em staging, por categoria");
+    linhas.push("");
+    linhas.push(
+      'Isto **não entra no veredito acima**. O lado esperado reproduz os default privileges da plataforma, então esses grants aparecem dos dois lados e não geram diferença — o que é correto para a pergunta "o schema é o das sete migrations?". Modelar para não confundir é uma coisa; modelar para não enxergar seria outra, e é por isso que a classificação vem aqui.',
+    );
+    linhas.push("");
+    for (const [cat, lista] of [...porCat].sort()) {
+      linhas.push(`### ${cat} — ${lista.length}`);
+      linhas.push("");
+      if (cat.startsWith("C.")) {
+        linhas.push("| Tabela | Papel | Privilégio | Por quê |");
+        linhas.push("| --- | --- | --- | --- |");
+        for (const g of lista) {
+          linhas.push(`| \`${g.tabela}\` | \`${g.papel}\` | \`${g.privilegio}\` | ${g.porque} |`);
+        }
+      } else {
+        const resumo = new Map<string, string[]>();
+        for (const g of lista) {
+          const k = `${g.tabela}:${g.papel}`;
+          resumo.set(k, [...(resumo.get(k) ?? []), g.privilegio]);
+        }
+        linhas.push("| Tabela | Papel | Privilégios |");
+        linhas.push("| --- | --- | --- |");
+        for (const [k, privs] of [...resumo].sort()) {
+          const [t, p] = k.split(":");
+          linhas.push(`| \`${t}\` | \`${p}\` | ${privs.sort().join(", ")} |`);
+        }
+      }
+      linhas.push("");
+    }
+    if (inseguros.length > 0) {
+      linhas.push(
+        `**${inseguros.length} grants na categoria C.** Endereçados por migration própria (\`20260803005000_core_table_privilege_hardening.sql\`), não por esta comparação.`,
+      );
+      linhas.push("");
+    }
+  }
+
   linhas.push("## O que esta classificação autoriza");
   linhas.push("");
   if (c.classificacao === "EXACT EQUIVALENT") {
     linhas.push(
-      "Autoriza **adotar** as oito versões anteriores a R2 como baseline histórico, e só isso. Não autoriza aplicar R2-A nem R2-B: os demais gates continuam valendo, e a aplicação é passo próprio, com registro próprio.",
+      "Autoriza **adotar** as sete versões do baseline histórico, e só isso. Não autoriza aplicar a normalização, o hardening, R2-A nem R2-B: os demais gates continuam valendo, e cada aplicação é passo próprio, com registro próprio.",
     );
     linhas.push("");
     linhas.push(
@@ -392,7 +534,7 @@ if (import.meta.main) {
     readFileSync(caminhoEsperado, "utf-8"),
     readFileSync(caminhoEncontrado, "utf-8"),
   );
-  console.log(renderizar(c));
+  console.log(renderizar(c, classificarGrants(readFileSync(caminhoEncontrado, "utf-8"))));
   // Código de saída para o shell: 0 só quando equivalente. O runner usa isto para decidir
   // se o passo seguinte pode nascer.
   process.exit(c.classificacao === "EXACT EQUIVALENT" ? 0 : 1);

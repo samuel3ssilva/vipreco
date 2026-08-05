@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { comparar, lerFingerprint, normalizar, recortarDivergencia, renderizar } from "./compare";
+import {
+  classificarGrants,
+  comparar,
+  lerFingerprint,
+  normalizar,
+  recortarDivergencia,
+  renderizar,
+} from "./compare";
 
 /**
  * R2.4 §5 — o comparador de equivalência de schema.
@@ -195,7 +202,10 @@ describe("renderizar", () => {
     const md = renderizar(comparar(BASE, BASE));
     expect(md).toContain("EXACT EQUIVALENT");
     expect(md).toContain("procedência");
-    expect(md).toContain("não autoriza aplicar R2-A".replace("não", "Não"));
+    // R2.5: a adoção passou a ser das SETE versões, e a lista do que ela NÃO autoriza
+    // cresceu junto — normalização e hardening entraram na frente de R2-A.
+    expect(md).toContain("Não autoriza aplicar a normalização");
+    expect(md).toContain("R2-A");
   });
 
   it("MATERIAL DRIFT recusa reparar, e diz por quê", () => {
@@ -376,5 +386,88 @@ describe("fingerprint.sql é read-only, e isso é verificável", () => {
         `regexp_replace(${renderizador}`,
       );
     }
+  });
+});
+
+/**
+ * R2.5 §2 — a classificação de grants existe para o relatório VER o que o veredito ignora.
+ *
+ * Desde que o lado esperado passou a reproduzir os default privileges da plataforma, os
+ * grants aparecem dos dois lados e somem do diff. Isso é correto para a pergunta "o schema
+ * é o das sete migrations?" — e seria uma armadilha como resposta final, porque tornaria
+ * invisível justamente o achado que motivou a migration de hardening.
+ */
+describe("classificarGrants — modelar para não confundir, nunca para não enxergar", () => {
+  const linha = (t: string, p: string, priv: string) =>
+    `fp.grant_tabela|${t}:${p}:${priv}|concedido`;
+
+  it.each(["INSERT", "UPDATE", "DELETE", "TRUNCATE"])(
+    "%s de anon em tabela central é categoria C",
+    (priv) => {
+      const [g] = classificarGrants(linha("products", "anon", priv));
+      expect(g?.categoria).toBe("C. inseguro — exige hardening");
+    },
+  );
+
+  it.each(["markets", "prices", "products"])("as três centrais entram em C — %s", (tabela) => {
+    const [g] = classificarGrants(linha(tabela, "authenticated", "DELETE"));
+    expect(g?.categoria).toBe("C. inseguro — exige hardening");
+  });
+
+  it("TRUNCATE recebe justificativa própria — a RLS não se aplica a ele", () => {
+    const [truncate] = classificarGrants(linha("prices", "anon", "TRUNCATE"));
+    const [del] = classificarGrants(linha("prices", "anon", "DELETE"));
+    expect(truncate?.porque).toContain("RLS");
+    expect(truncate?.porque).not.toBe(del?.porque);
+  });
+
+  it("SELECT público é categoria B — leitura é o produto", () => {
+    const [g] = classificarGrants(linha("products", "anon", "SELECT"));
+    expect(g?.categoria).toBe("B. intencional do aplicativo");
+  });
+
+  it("escrita nas tabelas de contribuição é B, não C — elas têm contrato e policy", () => {
+    for (const t of ["price_submissions", "product_watch_requests", "decision_feedback"]) {
+      const [g] = classificarGrants(linha(t, "anon", "INSERT"));
+      expect(g?.categoria, `${t} foi classificada errado`).toBe("B. intencional do aplicativo");
+    }
+  });
+
+  it("service_role e o owner nunca são categoria C", () => {
+    for (const papel of ["service_role", "postgres"]) {
+      const [g] = classificarGrants(linha("products", papel, "TRUNCATE"));
+      expect(g?.categoria).toBe("B. intencional do aplicativo");
+    }
+  });
+
+  it("PUBLIC com escrita em tabela central também é C", () => {
+    const [g] = classificarGrants(linha("markets", "PUBLIC", "UPDATE"));
+    expect(g?.categoria).toBe("C. inseguro — exige hardening");
+  });
+
+  it("REFERENCES e TRIGGER de anon são A — plataforma, sem efeito de escrita", () => {
+    for (const priv of ["REFERENCES", "TRIGGER", "MAINTAIN"]) {
+      const [g] = classificarGrants(linha("products", "anon", priv));
+      expect(g?.categoria).toBe("A. padrão da plataforma");
+    }
+  });
+
+  it("o relatório mostra a categoria C mesmo quando NÃO há diferença de schema", () => {
+    // O caso que importa: os dois lados idênticos (EXACT EQUIVALENT) e ainda assim o
+    // grant inseguro visível. É esta linha que impede o modelo de virar cegueira.
+    const c = comparar(BASE, BASE);
+    expect(c.classificacao).toBe("EXACT EQUIVALENT");
+    const md = renderizar(c, classificarGrants(linha("products", "anon", "TRUNCATE")));
+    expect(md).toContain("C. inseguro");
+    expect(md).toContain("hardening");
+  });
+
+  it("sem grants inseguros, a seção não inventa alarme", () => {
+    const iguais = [...BASE].join("\n");
+    const md = renderizar(
+      comparar(iguais, iguais),
+      classificarGrants(linha("products", "anon", "SELECT")),
+    );
+    expect(md).not.toContain("C. inseguro");
   });
 });

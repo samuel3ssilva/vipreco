@@ -39,12 +39,30 @@ TRABALHO="$(mktemp -d "${RUNNER_TEMP:-/tmp}/r2-equivalencia.XXXXXX")"
 CONTAINER="vipreco-equivalencia-$$"
 IMAGEM_POSTGRES="postgres:17-alpine"
 
-# As duas migrations de R2. NAO entram no lado efemero: o que se quer comparar e o estado
-# ANTERIOR a elas.
-declare -a MIGRATIONS_DE_R2=(
+# O que NAO entra no lado efemero, porque o que se quer comparar e o estado ANTERIOR a
+# estas migrations.
+#
+# A NORMALIZACAO ENTROU NESTA LISTA EM R2.5, e a correcao e do instrumento, nao do banco.
+# A execucao 31042845838 comparou staging contra OITO migrations e acusou MATERIAL DRIFT em
+# dois objetos: `pa_normalize_text` e o COMMENT dela. Os dois sao efeito de
+# 20260803000000_normalization_contract.sql -- que nunca foi aplicada em ambiente nenhum, e
+# cujo proprio cabecalho sempre disse isso.
+#
+# Ou seja: staging nao estava divergente, a pergunta e que estava errada. Ela media
+# "staging == 8 migrations?" quando o estado real e o de SETE. Deixar a normalizacao no lado
+# esperado faria a ferramenta reprovar para sempre um banco que esta exatamente onde
+# deveria, e uma reprovacao permanente e indistinguivel de ferramenta quebrada.
+declare -a MIGRATIONS_POSTERIORES_AO_BASELINE=(
+  "20260803000000_normalization_contract.sql"
+  "20260803005000_core_table_privilege_hardening.sql"
   "20260803010000_product_identity_quantity.sql"
   "20260803020000_gtin_integrity.sql"
 )
+
+# Quantas o lado esperado deve aplicar. Conferido em tempo de execucao: um numero diferente
+# significa que o conjunto de migrations mudou sem esta ferramenta ser atualizada junto, e
+# o diff resultante falaria de outra coisa.
+MIGRATIONS_DO_BASELINE=7
 
 limpar() {
   docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
@@ -112,17 +130,17 @@ echo "==> Baseline de plataforma"
 aplicar_efemero "00-platform-baseline.sql" "$DRILL_DIR/00-platform-baseline.sql"
 aplicar_efemero "01-supabase-table-grants.sql" "$EQUIV_DIR/01-supabase-table-grants.sql"
 
-echo "==> Aplicando SOMENTE as migrations anteriores a R2"
+echo "==> Aplicando SOMENTE as $MIGRATIONS_DO_BASELINE migrations do baseline historico"
 aplicadas=0
 shopt -s nullglob
 for migration in "$REPO_ROOT/supabase/migrations"/*.sql; do
   nome="$(basename "$migration")"
   pular=""
-  for de_r2 in "${MIGRATIONS_DE_R2[@]}"; do
-    [ "$nome" = "$de_r2" ] && pular=1
+  for posterior in "${MIGRATIONS_POSTERIORES_AO_BASELINE[@]}"; do
+    [ "$nome" = "$posterior" ] && pular=1
   done
   if [ -n "$pular" ]; then
-    echo "  -- pulando $nome (é de R2, e o lado esperado é o estado ANTERIOR a ela)"
+    echo "  -- pulando $nome (posterior ao baseline; o lado esperado é o estado ANTERIOR a ela)"
     continue
   fi
   aplicar_efemero "$nome" "$migration"
@@ -133,8 +151,8 @@ shopt -u nullglob
 # A contagem e uma guarda, e nao um relatorio. Se uma migration nova entrar no
 # repositorio sem que este script saiba dela, a comparacao viraria "staging esta
 # atrasado" -- um MATERIAL DRIFT que na verdade seria uma ferramenta desatualizada.
-if [ "$aplicadas" -ne 8 ]; then
-  erro "Esperava aplicar 8 migrations anteriores a R2, apliquei $aplicadas. O conjunto de migrations do repositorio mudou e esta ferramenta nao foi atualizada junto. Abortando antes de comparar: um numero diferente aqui produziria um diff que fala de outra coisa."
+if [ "$aplicadas" -ne "$MIGRATIONS_DO_BASELINE" ]; then
+  erro "Esperava aplicar $MIGRATIONS_DO_BASELINE migrations do baseline, apliquei $aplicadas. O conjunto de migrations do repositorio mudou e esta ferramenta nao foi atualizada junto. Abortando antes de comparar: um numero diferente aqui produziria um diff que fala de outra coisa."
   exit 1
 fi
 

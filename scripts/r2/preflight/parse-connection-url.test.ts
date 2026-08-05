@@ -17,34 +17,71 @@
 // Por isso cada um dos quatro tem caso aqui, com o valor que o parser antigo produzia
 // escrito por extenso: se alguém reintroduzir a "simplificação", a suíte diz qual.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const PARSER = new URL("./parse-connection-url.ts", import.meta.url).pathname;
 const RUNNER = readFileSync(new URL("./run.sh", import.meta.url), "utf-8");
+const PARSER_FONTE = readFileSync(new URL("./parse-connection-url.ts", import.meta.url), "utf-8");
 
-type Componentes = Record<string, string>;
+type Componentes = Record<string, string> & { senha: string; saidaBruta: string };
 
-/** Executa o parser como o runner executa: URL pelo AMBIENTE, nunca por argv. */
+let trabalho: string;
+beforeEach(() => {
+  trabalho = mkdtempSync(join(tmpdir(), "r2-parser-"));
+});
+afterEach(() => {
+  rmSync(trabalho, { recursive: true, force: true });
+});
+
+/**
+ * Executa o parser como o runner executa: URL pelo AMBIENTE, nunca por argv.
+ * A senha é lida do `.pgpass`, e não da saída — porque ela não sai na saída.
+ */
 function parsear(url: string): Componentes {
-  const saida = execFileSync("bun", [PARSER], {
-    env: { ...process.env, SUPABASE_DB_URL: url },
+  const saidaBruta = execFileSync("bun", [PARSER], {
+    env: { ...process.env, SUPABASE_DB_URL: url, PREFLIGHT_WORKDIR: trabalho },
     encoding: "utf-8",
   });
-  const componentes: Componentes = {};
-  for (const linha of saida.trim().split("\n")) {
+  const componentes: Record<string, string> = {};
+  for (const linha of saidaBruta.trim().split("\n")) {
     const corte = linha.indexOf("=");
     const chave = linha.slice(0, corte);
     const valor = linha.slice(corte + 1);
     componentes[chave] = chave === "FORMA" ? valor : Buffer.from(valor, "base64").toString("utf-8");
   }
-  return componentes;
+  return { ...componentes, senha: lerSenhaDoPgpass(componentes.PGPASSFILE), saidaBruta };
+}
+
+/**
+ * Desfaz o formato do libpq: `host:porta:banco:usuario:senha`, com `\` e `:`
+ * escapados. Desescapar aqui, e não simplesmente cortar no último `:`, é o que faz o
+ * teste provar o escape em vez de assumi-lo.
+ */
+function lerSenhaDoPgpass(caminho: string): string {
+  const linha = readFileSync(caminho, "utf-8").replace(/\n$/, "");
+  const campos: string[] = [];
+  let atual = "";
+  for (let i = 0; i < linha.length; i++) {
+    if (linha[i] === "\\") {
+      atual += linha[++i];
+    } else if (linha[i] === ":") {
+      campos.push(atual);
+      atual = "";
+    } else {
+      atual += linha[i];
+    }
+  }
+  campos.push(atual);
+  return campos[4];
 }
 
 function falhar(url: string): { status: number; stderr: string } {
   try {
     execFileSync("bun", [PARSER], {
-      env: { ...process.env, SUPABASE_DB_URL: url },
+      env: { ...process.env, SUPABASE_DB_URL: url, PREFLIGHT_WORKDIR: trabalho },
       encoding: "utf-8",
       stdio: "pipe",
     });
@@ -63,7 +100,7 @@ describe("os quatro defeitos que se disfarçavam de credencial inválida", () =>
     // Em URI, `+` é um mais literal. Quem troca `+` por espaço é o formato de
     // formulário (application/x-www-form-urlencoded), não o de URL; o libpq só faz
     // percent-decode. Trocar aqui é inventar um espaço que o Founder nunca digitou.
-    expect(parsear(url("abc+def")).PGPASSWORD).toBe("abc+def");
+    expect(parsear(url("abc+def")).senha).toBe("abc+def");
   });
 
   it("preserva `%` que não é escape válido — o parser antigo devolvia '100\\xpure'", () => {
@@ -71,18 +108,18 @@ describe("os quatro defeitos que se disfarçavam de credencial inválida", () =>
     // `printf: missing hex digit for \x` no stderr, ou seja, o defeito tinha aviso e
     // ninguém o lia.
     const r = parsear(url("100%pure"));
-    expect(r.PGPASSWORD).toBe("100%pure");
+    expect(r.senha).toBe("100%pure");
     expect(r.FORMA).toContain("senha:percent-invalido");
   });
 
   it("não interpreta barra invertida — o parser antigo transformava `\\n` em quebra de linha", () => {
     // A senha é DADO. O parser antigo a passava para `printf` como se fosse FORMATO.
-    expect(parsear(url("a\\nb")).PGPASSWORD).toBe("a\\nb");
+    expect(parsear(url("a\\nb")).senha).toBe("a\\nb");
   });
 
   it("corta no ÚLTIMO `@`, não no primeiro — o parser antigo truncava a senha em 'sen'", () => {
     const r = parsear(url("sen@ha"));
-    expect(r.PGPASSWORD).toBe("sen@ha");
+    expect(r.senha).toBe("sen@ha");
     expect(r.PGHOST).toBe(HOST);
     expect(r.FORMA).toContain("url:mais-de-um-arroba");
   });
@@ -90,10 +127,10 @@ describe("os quatro defeitos que se disfarçavam de credencial inválida", () =>
 
 describe("decodificação percent-encoded", () => {
   it("decodifica os caracteres que a URI exige escapar", () => {
-    expect(parsear(url("p%40ss")).PGPASSWORD).toBe("p@ss");
-    expect(parsear(url("a%3Ab")).PGPASSWORD).toBe("a:b");
-    expect(parsear(url("x%25y")).PGPASSWORD).toBe("x%y");
-    expect(parsear(url("a%2Bb")).PGPASSWORD).toBe("a+b");
+    expect(parsear(url("p%40ss")).senha).toBe("p@ss");
+    expect(parsear(url("a%3Ab")).senha).toBe("a:b");
+    expect(parsear(url("x%25y")).senha).toBe("x%y");
+    expect(parsear(url("a%2Bb")).senha).toBe("a+b");
   });
 
   it("registra na FORMA quando decodificou, para o diagnóstico não ser adivinhação", () => {
@@ -108,8 +145,8 @@ describe("os componentes que o libpq recebe", () => {
       PGHOST: "exemplo.supabase.co",
       PGPORT: "6543",
       PGUSER: "usuario",
-      PGPASSWORD: "segredo",
       PGDATABASE: "meubanco",
+      senha: "segredo",
     });
   });
 
@@ -132,7 +169,7 @@ describe("os componentes que o libpq recebe", () => {
     // Qualquer separador em texto puro seria mais um jeito silencioso de corromper o
     // valor. É o mesmo erro de classe dos quatro acima, um nível abaixo.
     for (const senha of ["a=b", "a|b", "a b", "a\nb"]) {
-      expect(parsear(url(encodeURIComponent(senha))).PGPASSWORD).toBe(senha);
+      expect(parsear(url(encodeURIComponent(senha))).senha).toBe(senha);
     }
   });
 });
@@ -164,11 +201,78 @@ describe("o que o parser recusa, e sem imprimir o valor", () => {
 
   it("a FORMA descreve o formato e nunca carrega o conteúdo", () => {
     const senha = "OUTRA-SENHA-INCONFUNDIVEL-4b7e+x";
-    const { FORMA, PGPASSWORD } = parsear(url(senha));
-    expect(PGPASSWORD).toBe(senha); // provou que o valor passou intacto...
-    expect(FORMA).not.toContain(senha); // ...e que o diagnóstico não o repete.
-    expect(FORMA).not.toContain(HOST);
-    expect(FORMA).toBe("senha:contem-mais");
+    const r = parsear(url(senha));
+    expect(r.senha).toBe(senha); // provou que o valor passou intacto...
+    expect(r.FORMA).not.toContain(senha); // ...e que o diagnóstico não o repete.
+    expect(r.FORMA).not.toContain(HOST);
+    expect(r.FORMA).toBe("senha:contem-mais");
+  });
+});
+
+// -----------------------------------------------------------------------------
+// A senha não atravessa stdout.
+//
+// O CodeQL apontou `js/clear-text-logging` na versão que emitia `PGPASSWORD=<base64>`,
+// e estava certo — base64 não é proteção. É pior que isso: o `::add-mask::` do GitHub
+// mascara o valor LITERAL do secret e não reconhece o base64 do mesmo valor, então a
+// codificação que parecia esconder era exatamente o que furava o mascaramento.
+//
+// A correção não foi silenciar o alerta. Foi remover o que ele apontava.
+// -----------------------------------------------------------------------------
+describe("a senha vai para um .pgpass, e não para a saída", () => {
+  const SENHA = "SENHA-INCONFUNDIVEL-DE-TESTE-7d2a";
+
+  it("não aparece na saída do parser, em texto nem em base64", () => {
+    // Controle positivo: se o `.pgpass` não tivesse a senha, o primeiro expect
+    // falharia — uma checagem de vazamento que não detecta vazamento tranquiliza.
+    const r = parsear(url(SENHA));
+    expect(r.senha).toBe(SENHA);
+    expect(r.saidaBruta).not.toContain(SENHA);
+    expect(r.saidaBruta).not.toContain(Buffer.from(SENHA, "utf-8").toString("base64"));
+    expect(r.saidaBruta).not.toContain("PGPASSWORD");
+  });
+
+  it("escreve o arquivo com modo 0600 — o libpq ignora qualquer coisa mais permissiva", () => {
+    const r = parsear(url(SENHA));
+    expect(statSync(r.PGPASSFILE).mode & 0o777).toBe(0o600);
+  });
+
+  it("escapa `:` e `\\` no formato do libpq, na ordem certa", () => {
+    // Escapar `:` antes de `\` faria a barra do próprio escape ser escapada depois.
+    // É a mesma família de erro que motivou este arquivo: transformação de string que
+    // corrompe em silêncio.
+    for (const senha of ["a:b", "a\\b", "a\\:b", ":::", "a\\\\:b"]) {
+      expect(parsear(url(encodeURIComponent(senha))).senha).toBe(senha);
+    }
+  });
+
+  it("o parser nunca escreve a senha em stdout", () => {
+    const codigo = PARSER_FONTE.split("\n")
+      .filter((l) => !l.trimStart().startsWith("//"))
+      .join("\n");
+    expect(codigo).not.toMatch(/console\.log[^\n]*senha/);
+    expect(codigo).not.toMatch(/PGPASSWORD/);
+  });
+
+  it("o arquivo mora no diretório efêmero que o runner apaga por trap", () => {
+    const r = parsear(url(SENHA));
+    expect(r.PGPASSFILE.startsWith(trabalho)).toBe(true);
+    expect(RUNNER).toContain("trap limpar EXIT");
+    expect(RUNNER).toContain('PREFLIGHT_WORKDIR="$TRABALHO"');
+  });
+
+  it("exige o diretório em vez de inventar um — quem cria é quem apaga", () => {
+    let status = 0;
+    try {
+      execFileSync("bun", [PARSER], {
+        env: { ...process.env, SUPABASE_DB_URL: url(SENHA), PREFLIGHT_WORKDIR: "" },
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+    } catch (erro) {
+      status = (erro as { status: number }).status;
+    }
+    expect(status).toBe(1);
   });
 });
 

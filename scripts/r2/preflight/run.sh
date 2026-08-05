@@ -89,15 +89,22 @@ bun "$PREFLIGHT_DIR/read-only-guard.ts"
 # o problema no banco. Agora quem parseia e `parse-connection-url.ts`, com um parser
 # de URL de verdade e com teste. Ver o cabecalho daquele arquivo.
 #
-# Os valores chegam em base64 porque senha pode conter `=`, `|`, espaco ou quebra de
-# linha, e qualquer separador em texto puro seria mais um jeito silencioso de
+# Os valores chegam em base64 porque usuario e banco podem conter `=`, `|`, espaco ou
+# quebra de linha, e qualquer separador em texto puro seria mais um jeito silencioso de
 # corromper o valor.
+#
+# A SENHA NAO VEM POR AQUI. Ela e escrita pelo parser direto num `.pgpass` de modo 0600
+# dentro de $TRABALHO, e o que atravessa este pipe e o CAMINHO. Assim a senha nunca
+# vira variavel de ambiente, nunca atravessa um pipe e -- o que importa mais -- nunca
+# passa codificada em base64: o `::add-mask::` do GitHub mascara o valor literal do
+# secret e NAO reconhece o base64 do mesmo valor. Senha em base64 num log e senha num
+# log com um passo a mais.
 # -----------------------------------------------------------------------------
 FORMA_DA_URL=""
-componentes="$(bun "$PREFLIGHT_DIR/parse-connection-url.ts")"
+componentes="$(PREFLIGHT_WORKDIR="$TRABALHO" bun "$PREFLIGHT_DIR/parse-connection-url.ts")"
 while IFS='=' read -r chave valor; do
   case "$chave" in
-    PGHOST | PGPORT | PGUSER | PGPASSWORD | PGDATABASE)
+    PGHOST | PGPORT | PGUSER | PGDATABASE | PGPASSFILE)
       printf -v "$chave" '%s' "$(printf '%s' "$valor" | base64 --decode)"
       ;;
     FORMA) FORMA_DA_URL="$valor" ;;
@@ -105,7 +112,7 @@ while IFS='=' read -r chave valor; do
 done <<<"$componentes"
 unset componentes
 
-export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE
+export PGHOST PGPORT PGUSER PGDATABASE PGPASSFILE
 export PGSSLMODE="${PGSSLMODE:-require}"
 export PGCONNECT_TIMEOUT=15
 export PGAPPNAME="vipreco-r2-preflight"
@@ -113,7 +120,11 @@ export PGAPPNAME="vipreco-r2-preflight"
 # Mascara explicita. O GitHub ja mascara o secret INTEIRO; estes sao os pedacos dele,
 # que sozinhos nao seriam mascarados. So valores longos: mascarar a palavra "postgres"
 # tornaria todo o log ilegivel sem proteger nada.
-for segredo in "$PGPASSWORD" "$PGHOST" "$PGUSER"; do
+#
+# A senha nao aparece nesta lista porque nao existe neste processo: ela esta no
+# `.pgpass`, e o unico jeito de mascarar aqui seria trazer o valor de volta para o
+# shell -- o oposto do que a mudanca fez.
+for segredo in "$PGHOST" "$PGUSER"; do
   if [ "${#segredo}" -gt 8 ]; then echo "::add-mask::$segredo"; fi
 done
 
@@ -159,7 +170,7 @@ fato "run.host_hash" "$(printf '%s' "$PGHOST" | shasum -a 256 | cut -c1-12)"
 psql_transacao() {
   local arquivo="$1" destino="$2"
   cat "$PREFLIGHT_DIR/_prologue.sql" "$arquivo" "$PREFLIGHT_DIR/_epilogue.sql" |
-    psql --no-psqlrc --quiet --no-align --tuples-only --field-separator='|' \
+    psql --no-psqlrc --no-password --quiet --no-align --tuples-only --field-separator='|' \
       --variable=ON_ERROR_STOP=1 --file=- >"$destino"
 }
 

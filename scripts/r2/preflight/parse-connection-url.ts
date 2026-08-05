@@ -25,20 +25,42 @@
 //
 //   Por isso a decomposicao passou a usar um parser de URL de verdade.
 //
-// SAIDA (stdout, uma chave por linha, valor em base64)
-//   base64 porque senha pode conter `=`, `|`, espaco ou quebra de linha, e qualquer
-//   separador em texto puro seria mais um jeito silencioso de corromper o valor.
+// A SENHA NAO SAI POR STDOUT
+//   Ela e escrita direto num arquivo `.pgpass` com modo 0600 dentro do diretorio de
+//   trabalho efemero, e o que sai e o CAMINHO. O libpq le a senha de la (`PGPASSFILE`).
 //
-//     PGHOST=<b64>  PGPORT=<b64>  PGUSER=<b64>  PGPASSWORD=<b64>  PGDATABASE=<b64>
+//   Nao e zelo: sair por stdout significaria a senha atravessando um pipe, virando
+//   variavel de ambiente e -- o pior -- passando codificada em base64, que NAO e
+//   protecao. O `::add-mask::` do GitHub mascara o valor literal do secret; ele nao
+//   reconhece o base64 do mesmo valor. Uma senha em base64 num log e uma senha num
+//   log com um passo a mais.
+//
+// SAIDA (stdout, uma chave por linha, valor em base64)
+//   base64 porque usuario e banco podem conter `=`, `|`, espaco ou quebra de linha, e
+//   qualquer separador em texto puro seria mais um jeito silencioso de corromper o
+//   valor -- o mesmo erro de classe dos quatro defeitos acima, um nivel abaixo.
+//
+//     PGHOST=<b64>  PGPORT=<b64>  PGUSER=<b64>  PGDATABASE=<b64>
+//     PGPASSFILE=<b64 do caminho>
 //     FORMA=<lista separada por virgula>   (diagnostico, nunca contem o valor)
 //
 // O QUE NUNCA E IMPRESSO
 //   a URL, a senha, o host, o usuario -- nem em erro. As linhas `FORMA=` carregam
 //   apenas FATOS DE FORMATO ("a senha tem `%` que nao e escape valido"), que sao o
 //   necessario para orientar a correcao sem revelar o segredo.
+//
+// ENTRADA (ambiente)
+//   SUPABASE_DB_URL      a connection string de staging.
+//   PREFLIGHT_WORKDIR    diretorio efemero onde o `.pgpass` e escrito. Exigido, e nao
+//                        inventado aqui: quem cria o diretorio e quem o apaga, e o
+//                        runner ja o apaga por `trap ... EXIT`, inclusive quando falha
+//                        no meio -- que e justamente quando alguem esqueceria.
 // =============================================================================
+import { chmodSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const bruto = process.env.SUPABASE_DB_URL;
+const diretorio = process.env.PREFLIGHT_WORKDIR;
 
 function abortar(mensagem: string): never {
   console.error(`::error::${mensagem}`);
@@ -47,6 +69,9 @@ function abortar(mensagem: string): never {
 
 if (!bruto) {
   abortar("SUPABASE_DB_URL nao esta no ambiente.");
+}
+if (!diretorio) {
+  abortar("PREFLIGHT_WORKDIR nao esta no ambiente; sem ele nao ha onde escrever o .pgpass.");
 }
 
 let url: URL;
@@ -97,14 +122,35 @@ if ((bruto.match(/@/g) ?? []).length > 1) forma.push("url:mais-de-um-arroba");
 if (url.search) forma.push("url:tem-query");
 if (!url.port) forma.push("url:sem-porta-explicita");
 
+// -----------------------------------------------------------------------------
+// O `.pgpass`.
+//
+// Formato do libpq: `host:porta:banco:usuario:senha`, uma entrada por linha, e o
+// arquivo e IGNORADO se o modo for mais permissivo que 0600.
+//
+// Os quatro primeiros campos vao como `*`. Nao e preguica: casar host e porta
+// exatamente cria um modo de falha novo e mudo -- se o libpq normalizar o host de um
+// jeito e este arquivo escrever de outro, a entrada simplesmente nao casa e o psql se
+// comporta como se nao houvesse senha. O arquivo e efemero, de uso unico e so tem
+// esta linha; restringir os campos nao protege nada e pode quebrar tudo.
+//
+// `\` e `:` precisam de escape, e nesta ordem -- escapar `:` antes de `\` faria a
+// barra do proprio escape ser escapada depois. E exatamente a familia de erro que
+// motivou este arquivo: transformacao de string que corrompe em silencio.
+// -----------------------------------------------------------------------------
+const senhaEscapada = senha.replace(/\\/g, "\\\\").replace(/:/g, "\\:");
+const caminhoPgpass = join(diretorio, ".pgpass");
+writeFileSync(caminhoPgpass, `*:*:*:*:${senhaEscapada}\n`, { encoding: "utf-8", mode: 0o600 });
+chmodSync(caminhoPgpass, 0o600);
+
 const b64 = (v: string) => Buffer.from(v, "utf-8").toString("base64");
 
 const linhas = [
   `PGHOST=${b64(url.hostname)}`,
   `PGPORT=${b64(url.port || "5432")}`,
   `PGUSER=${b64(usuario)}`,
-  `PGPASSWORD=${b64(senha)}`,
   `PGDATABASE=${b64(banco)}`,
+  `PGPASSFILE=${b64(caminhoPgpass)}`,
   `FORMA=${forma.join(",")}`,
 ];
 

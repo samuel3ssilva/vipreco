@@ -162,17 +162,25 @@ describe("o segredo nunca é impresso", () => {
     // O GitHub mascara o secret INTEIRO sozinho. Host, usuário e senha isolados não
     // seriam mascarados — e é justamente eles que vazariam num erro de conexão.
     expect(RUNNER).toContain("::add-mask::");
-    expect(RUNNER).toMatch(/for segredo in "\$PGPASSWORD" "\$PGHOST" "\$PGUSER"/);
+    expect(RUNNER).toMatch(/for segredo in "\$PGHOST" "\$PGUSER"/);
+    // A senha não está na lista porque não existe neste processo — está no `.pgpass`.
+    // Mascará-la aqui exigiria trazer o valor de volta para o shell, que é o oposto
+    // do que a mudança fez.
+    expect(RUNNER).not.toMatch(/add-mask[^\n]*PGPASSWORD/);
   });
 
   it("a senha não entra na linha de comando do psql", () => {
-    // A senha viaja por variável de ambiente (libpq lê `PGPASSWORD`), e não por argv,
-    // que é legível por outros processos do runner. A decomposição em si vive em
-    // `parse-connection-url.ts` — e tem suíte própria, porque a versão artesanal
-    // anterior corrompia a senha em silêncio.
-    expect(RUNNER).toMatch(/export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE/);
+    // A senha não entra em argv (legível por outros processos do runner) e também não
+    // entra no ambiente: ela vive num `.pgpass` de modo 0600, e o que o runner exporta
+    // é o CAMINHO. A decomposição vive em `parse-connection-url.ts`, com suíte própria
+    // — a versão artesanal anterior corrompia a senha em silêncio.
+    expect(RUNNER).toMatch(/export PGHOST PGPORT PGUSER PGDATABASE PGPASSFILE/);
     expect(RUNNER).not.toMatch(/psql[^\n]*\$SUPABASE_DB_URL/);
     expect(RUNNER).not.toMatch(/psql[^\n]*\$PGPASSWORD/);
+    // `--no-password` para o psql falhar na hora em vez de esperar um prompt que
+    // ninguém vai responder: num runner, "pendurado" e "quebrado" são o mesmo estado,
+    // e só um dos dois diz o motivo.
+    expect(RUNNER).toContain("--no-password");
   });
 
   it("nada é enviado como artefato", () => {

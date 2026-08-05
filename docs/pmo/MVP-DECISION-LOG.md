@@ -977,3 +977,51 @@ modelo, não da migration.
 - **Documentos:** `security/DATABASE-AUTHORIZATION-MATRIX.md` (§Correção de R2.5/R2.6),
   `data/R2-APPLICATION-GATE.md`
 - **Status:** ativa
+
+### DL-027 — R2 aplicada em staging: uma operação por disparo, e três defeitos do instrumento
+
+- **Data:** 2026-08-05
+- **Contexto:** as cinco migrations pendentes estavam na `main` desde R2.5 sem caminho de
+  saída — todo o instrumental de R2 era read-only por desenho, e ninguém tinha construído a
+  escrita remota.
+- **Decisão:** um workflow manual de nove operações, uma por disparo, com frase de
+  confirmação própria por operação e verificação de estado antes e depois. Executado até o
+  fim: histórico remoto de staging **0 → 12**.
+
+**A ausência de `apply-all` é o desenho, e a sequência provou por quê.** Três dos sete passos
+encontraram defeito, e nos três o defeito era do **instrumento**, não do ambiente. Com uma
+operação única, os três teriam aparecido juntos, no meio de uma cadeia de escrita, sem forma
+de saber qual estado tinha ficado onde.
+
+**O `plan` pagou o próprio custo antes da primeira escrita.** Ele rodou verde e mostrou as
+três tabelas centrais como "não lido" — e "não lido" faz a verificação posterior **pular** a
+comparação. A guarda de contagem parecia existir e não existia.
+
+**Uma migration transacional que falha reverte o que já tinha dado certo.** O hardening
+central morreu em `permission denied to change default privileges`, e com ele voltaram as
+revogações de tabela — que são o achado P0. Medir o papel respondia _"qual papel"_; não
+respondia _"posso alterar esse papel"_. A correção trata a falta de permissão por papel e
+registra o resíduo, em vez de trocar a correção crítica por uma proteção acessória.
+
+**Um gate que só existe acoplado à aplicação é irrepetível.** G7-POST reprovou por defeito
+próprio com R2-A já aplicada, e migration aplicada não se reaplica. Sem mover G7 também para
+o `validate`, a única saída seria inventar uma operação de escrita para contornar um gate — o
+oposto do que o workflow existe para impedir.
+
+**A ordem não era preferência.** A remediação dos GTINs veio antes de R2-A porque R2-B cria a
+constraint que eles violam; os hardenings vieram depois da normalização porque o índice de
+identidade de R2-A é funcional sobre `pa_normalize_text()`. Nenhuma dessas duas ordens é
+recuperável depois.
+
+- **Alternativas descartadas:** (a) aplicar por SQL direto no painel — foi o que produziu um
+  banco correto com histórico vazio, o problema que R2.5 passou uma missão inteira medindo;
+  (b) inserir linhas à mão na tabela de histórico — produziria um histórico que a própria CLI
+  não reconhece como seu; (c) `db push` sem limitar — aplicaria as cinco de uma vez e os
+  checkpoints deixariam de existir; (d) senha em `--db-url` — `argv` é visível para qualquer
+  processo da máquina.
+- **O que não muda:** nenhum backfill, nenhum `VALIDATE CONSTRAINT`, nenhum deploy, nenhum
+  dado real. **O banco de produção não foi contatado uma única vez** — o Environment
+  `production` não carrega segredo de banco.
+- **Documentos:** `evidence/r2/staging-apply-r26.md`, `data/R2-APPLICATION-GATE.md`,
+  `data/R2-CONTROLLED-APPLY-RUNBOOK.md`
+- **Status:** ativa

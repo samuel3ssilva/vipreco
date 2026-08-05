@@ -65,7 +65,7 @@ END $$;
 -- -----------------------------------------------------------------------------
 -- 3. Todo GTIN do seed passa no digito verificador GS1.
 --
--- A aritmetica abaixo e COPIADA de scripts/r2/target-readiness.sql, e nao
+-- A aritmetica abaixo e COPIADA de scripts/r2/target-readiness-pre.sql, e nao
 -- re-derivada. A distincao custou uma hora: a primeira versao deste arquivo
 -- reescreveu a formula "do jeito que deveria ser" -- indexando da esquerda em vez
 -- da direita -- e inverteu os pesos. O resultado reprovava 4 dos 5 GTINs reais do

@@ -102,11 +102,17 @@ echo "==> Reaplicando o mesmo seed para provar idempotencia (2 de 2)..."
 psql_apply "seed ficticio, segunda aplicacao" "$REPO_ROOT/supabase/seed.sql"
 psql_apply "assertions de reconstrucao do seed (96-seed-rebuild.sql)" "$SCRIPT_DIR/96-seed-rebuild.sql"
 
-# O script de auditoria de prontidao de R2 e read-only, entao rodar ele aqui nao muda
-# nada -- e prova que ele EXECUTA contra o schema real: sintaxe valida, e toda coluna,
-# funcao e indice que ele referencia existem de fato. Um runbook que manda rodar uma
+# Os scripts de auditoria de prontidao de R2 sao read-only, entao rodar eles aqui nao
+# muda nada -- e prova que EXECUTAM contra o schema real: sintaxe valida, e toda coluna,
+# funcao e indice que referenciam existem de fato. Um runbook que manda rodar uma
 # consulta quebrada e pior do que um runbook sem consulta nenhuma.
-psql_apply "auditoria read-only de prontidao (scripts/r2/target-readiness.sql)" "$REPO_ROOT/scripts/r2/target-readiness.sql"
+#
+# R2.4 - sao DOIS arquivos agora, e o drill e o unico lugar onde os dois rodam juntos:
+# aqui todas as migrations ja foram aplicadas, entao o schema satisfaz tanto a parte PRE
+# quanto a POST. Contra um ambiente real eles rodam em momentos diferentes, e e disso que
+# a separacao trata -- ver o cabecalho de scripts/r2/target-readiness-pre.sql.
+psql_apply "prontidao PRE, schema legado (scripts/r2/target-readiness-pre.sql)" "$REPO_ROOT/scripts/r2/target-readiness-pre.sql"
+psql_apply "prontidao POST, pos-aplicacao (scripts/r2/target-readiness-post.sql)" "$REPO_ROOT/scripts/r2/target-readiness-post.sql"
 
 # R2.3 - o preflight remoto (scripts/r2/preflight/) le staging por psql, e sem isto aqui
 # a unica forma de descobrir que uma consulta dele nao compila seria ao vivo, contra o
@@ -116,7 +122,7 @@ psql_apply "auditoria read-only de prontidao (scripts/r2/target-readiness.sql)" 
 # existente, e a transacao read-only aceitando cada consulta.
 echo "==> Preflight remoto de R2: executando os .sql contra o banco vivo do drill..."
 PREFLIGHT_DIR="$REPO_ROOT/scripts/r2/preflight"
-for preflight_sql in 00-structure.sql 10-migration-history.sql 20-content.sql 30-quantity-input.sql; do
+for preflight_sql in 00-structure.sql 10-migration-history.sql 20-content.sql 30-quantity-input.sql 40-watch-requests.sql; do
   echo "  -> $preflight_sql"
   if ! cat "$PREFLIGHT_DIR/_prologue.sql" "$PREFLIGHT_DIR/$preflight_sql" "$PREFLIGHT_DIR/_epilogue.sql" |
     docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
@@ -125,6 +131,18 @@ for preflight_sql in 00-structure.sql 10-migration-history.sql 20-content.sql 30
     exit 1
   fi
 done
+
+# R2.4 - o fingerprint de equivalencia pela mesma razao, e com um agravante: ele e o
+# arquivo mais longo e mais dependente de catalogo do repositorio, e roda contra staging.
+# Descobrir que uma coluna de `pg_policy` mudou de nome ao vivo, com o Founder olhando,
+# seria o oposto do que esta ferramenta existe para fazer.
+echo "==> Fingerprint de equivalencia de R2.4: executando contra o banco vivo do drill..."
+if ! cat "$PREFLIGHT_DIR/_prologue.sql" "$REPO_ROOT/scripts/r2/equivalence/fingerprint.sql" "$PREFLIGHT_DIR/_epilogue.sql" |
+  docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+    --quiet --no-align --tuples-only --field-separator='|' >/dev/null; then
+  echo "::error::scripts/r2/equivalence/fingerprint.sql nao executa contra o schema real." >&2
+  exit 1
+fi
 
 # Por ultimo, porque e o unico estagio que muda o schema: executa o rollback DOCUMENTADO
 # das migrations de R2 -- extraido do proprio arquivo, e nao copiado -- e reaplica. Bloco

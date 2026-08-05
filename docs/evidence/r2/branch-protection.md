@@ -88,7 +88,7 @@ nessa direção custa um minuto de CI; errar na oposta deixa uma migration entra
 ninguém reconstruir o schema.
 
 Caminhos vigiados: `supabase/migrations/`, `scripts/db-drill/`, `scripts/r2/` (o drill executa
-`target-readiness.sql` e o SQL do preflight), `supabase/seed.sql`, `supabase/config.toml` e o
+`target-readiness-pre.sql` e o SQL do preflight), `supabase/seed.sql`, `supabase/config.toml` e o
 próprio workflow.
 
 ---

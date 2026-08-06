@@ -1,7 +1,7 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { compararComMain } from "@/test-support/git-guard";
 
 /**
  * R3.2 — o contrato do laboratório do Card v2.
@@ -165,49 +165,25 @@ describe("R3.2 não toca em nada que já está no ar", () => {
    * lembrar de olhar. Um teste que afirmasse isto por inspeção de texto provaria bem menos.
    *
    * =============================================================================
-   * TRÊS ESTADOS, E O TERCEIRO É O QUE FALTAVA
+   * "NÃO CONSEGUI MEDIR" DEIXOU DE SER UM RESULTADO ACEITÁVEL
    * =============================================================================
    *
-   * A versão anterior devolvia um booleano e, quando a comparação era impossível,
-   * devolvia `false` — ou seja, **"não mudou"**. Parece prudente e é o contrário: afirmar
-   * "não mudou" sem ter medido é a única resposta que não pode ser dada aqui.
+   * A comparação vive agora em `@/test-support/git-guard`, e ela **lança** quando não
+   * consegue comparar. A versão que morava aqui tinha um terceiro estado, `"indisponivel"`,
+   * e as asserções abaixo apenas exigiam "nunca `mudou`" — o que fazia o arquivo inteiro
+   * passar por vacuidade num ambiente incapaz de comparar. E esse ambiente era o CI:
+   * `actions/checkout` clonava com profundidade 1, e `origin/main` não existia lá.
    *
-   * E não era hipotético. `actions/checkout` clona com profundidade 1 por padrão, então
-   * `origin/main` NÃO EXISTE no CI — que é exatamente onde alguém lê o check verde como
-   * prova de que a Home continua intacta. O guarda passava por vacuidade justamente no
-   * lugar em que ele deveria valer mais.
+   * Corrigido em duas metades, nenhuma suficiente sozinha: `fetch-depth: 0` no workflow,
+   * para que a comparação seja possível; e o guarda que falha alto quando ela não for,
+   * para que a impossibilidade nunca mais possa ser lida como "está tudo intacto".
    *
-   * Quem expôs isso foi o controle positivo, e só ele: localmente tudo passava.
-   *
-   * Agora há `"indisponivel"`, e ele não se confunde com `"intacto"`. As asserções abaixo
-   * afirmam a propriedade que de fato importa — **nunca `"mudou"`** — e o controle final
-   * exige coerência: ou a comparação é possível e o detector se prova, ou ela é impossível
-   * para TODOS os caminhos, e ninguém pode ler o verde como prova.
-   *
-   * Fechar isto de verdade é uma linha em `.github/workflows/ci.yml` (`fetch-depth: 0`),
-   * que está fora do escopo permitido deste PR e vai no checkpoint como recomendação.
+   * O controle positivo do detector vive junto do guarda, em
+   * `src/test-support/git-guard.test.ts`, e não aqui — lá ele é feito com um arquivo
+   * temporário, o que o torna independente de qual branch está sendo testada. A versão
+   * anterior usava `src/lib/card-v2.ts`, que esta branch cria: ela provava o detector hoje
+   * e viraria uma falha na `main` no dia em que este PR fosse mergeado.
    */
-  type Comparacao = "mudou" | "intacto" | "indisponivel";
-
-  function git(args: string[]): string {
-    return execFileSync("git", args, { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
-  }
-
-  function compararComMain(caminho: string): Comparacao {
-    try {
-      // `origin/main` SEM `...HEAD`, de propósito: compara a ÁRVORE DE TRABALHO com a
-      // main, e não só o que já foi commitado. A primeira versão usava `...HEAD` e o
-      // controle positivo a reprovou — antes do commit, o guarda devolvia "não mudou"
-      // para tudo, inclusive para arquivos que a branch estava criando naquele instante.
-      const alterados = git(["diff", "--name-only", "origin/main", "--", caminho]);
-      // Arquivo novo ainda não rastreado não aparece em `git diff` nenhum.
-      const novos = git(["ls-files", "--others", "--exclude-standard", "--", caminho]);
-      return alterados.trim().length > 0 || novos.trim().length > 0 ? "mudou" : "intacto";
-    } catch {
-      return "indisponivel";
-    }
-  }
-
   const PROTEGIDOS = [
     "src/routes/index.tsx",
     "src/routes/buscar.tsx",
@@ -223,28 +199,6 @@ describe("R3.2 não toca em nada que já está no ar", () => {
   ] as const;
 
   it.each(PROTEGIDOS)("%s não foi alterado por R3.2", (caminho) => {
-    expect(compararComMain(caminho), `${caminho} mudou nesta branch`).not.toBe("mudou");
-  });
-
-  it("o guarda detecta mudança — ou diz, sem rodeios, que não pôde medir", () => {
-    // `src/lib/card-v2.ts` é criado por esta branch. Onde a comparação é possível, ele
-    // TEM de aparecer como mudado; se aparecesse como intacto, a lista acima estaria
-    // passando sem provar nada.
-    const controle = compararComMain("src/lib/card-v2.ts");
-
-    if (controle === "indisponivel") {
-      // Ambiente sem `origin/main`. A única coisa aceitável é que NENHUM caminho tenha
-      // sido declarado intacto — o silêncio precisa ser uniforme, para que ninguém leia
-      // uma resposta parcial como garantia.
-      for (const caminho of PROTEGIDOS) {
-        expect(
-          compararComMain(caminho),
-          `${caminho} foi declarado intacto num ambiente que não consegue comparar com a main`,
-        ).toBe("indisponivel");
-      }
-      return;
-    }
-
-    expect(controle, "o detector não enxergou um arquivo que esta branch cria").toBe("mudou");
+    expect(compararComMain(caminho), `${caminho} mudou nesta branch`).toBe("intacto");
   });
 });

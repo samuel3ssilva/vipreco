@@ -177,18 +177,31 @@ ficava verde por vacuidade justamente onde alguém lê o verde como prova de que
 continua intacta. Confirmado reproduzindo o cenário: um `git clone --depth 1` da própria
 branch não resolve `origin/main`.
 
-A resposta não é "não mudou": é **"não medi"**. O detector passou a ter três estados —
-`mudou`, `intacto`, `indisponivel` —, as asserções afirmam a propriedade que importa
-(**nunca `mudou`**), e o controle final exige coerência: ou a comparação é possível e o
-detector se prova, ou ela é impossível para **todos** os caminhos, e ninguém pode ler o verde
-como garantia.
+A resposta não é "não mudou": é **"não medi"** — e, no fim, nem "não medi" é resposta
+aceitável para um check que alguém lê como garantia.
 
-**Fica em aberto, e é uma linha:** `fetch-depth: 0` no `actions/checkout` de
-`.github/workflows/ci.yml` faria o guarda medir de verdade no CI. Alterar workflow está fora
-do escopo permitido deste PR, então vai como recomendação.
+**Fechado no PR [#90](https://github.com/samuel3ssilva/vipreco/pull/90)** (merge `9d40c82`),
+em duas metades, nenhuma suficiente sozinha:
 
-O mesmo buraco existe em `src/routes/laboratorio-visual.contract.test.ts`, da R3.1, que usa
-a forma antiga e sem controle positivo. Corrigi-lo também está fora do escopo deste PR.
+1. **`fetch-depth: 0`** no `actions/checkout` do CI — `origin/main` passa a existir no
+   runner, e a comparação passa a ser **possível**;
+2. **`src/test-support/git-guard.ts`**, que **lança** quando não consegue comparar — a
+   impossibilidade deixa de ser confundível com sucesso. Se a linha do `fetch-depth` sumir
+   amanhã, o CI fica vermelho com o motivo escrito, em vez de verde sem ter medido.
+
+A segunda metade é a que não caduca: a primeira é configuração, a segunda é contrato.
+
+A prova de que não é vacuidade está no PR: o mesmo commit, no mesmo clone, falha em 9 testes
+com `git clone --depth 1` e passa com histórico completo. Antes da correção, os mesmos 9
+passavam nos dois casos.
+
+O controle positivo mudou de lugar por um motivo concreto: ele vivia aqui e usava
+`src/lib/card-v2.ts`, que **esta branch cria**. Provava o detector hoje e viraria uma falha
+na `main` no dia do merge, quando o arquivo deixasse de ser novidade. Agora vive junto do
+guarda, feito com um arquivo temporário, e independe de qual branch está sendo testada.
+
+`src/routes/laboratorio-visual.contract.test.ts`, da R3.1, tinha o mesmo buraco e passou a
+usar o guarda compartilhado no mesmo PR.
 
 ---
 

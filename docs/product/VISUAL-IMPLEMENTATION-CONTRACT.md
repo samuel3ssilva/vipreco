@@ -1,7 +1,22 @@
 # Contrato de implementação visual — North Star do MVP
 
-**Registrado em 2026-08-05.** Normativo para direção visual. Subordinado ao
-`PLANO-MESTRE.md` e aos contratos funcionais de `docs/product/` e `docs/data/`.
+**Registrado em 2026-08-05.** **Atualizado em 2026-08-06** com o North Star V2. Normativo para
+direção visual. Subordinado ao `PLANO-MESTRE.md` e aos contratos funcionais de `docs/product/` e
+`docs/data/`.
+
+> **Duas gerações de North Star, e nenhuma delas é lei funcional.**
+>
+> - **North Star original** — o PNG abaixo, aprovado em 05/08/2026. **Histórico**, e continua
+>   sendo a referência de forma: paleta, densidade, tom, formato de card.
+> - **North Star V2** — aprovado em 06/08/2026 como **referência atual de produto e design**. As
+>   decisões consolidadas e a matriz elemento a elemento estão em
+>   [`NORTH-STAR-V2-ASSESSMENT.md`](./NORTH-STAR-V2-ASSESSMENT.md). **Os binários não foram
+>   recebidos** — o registro da ausência está em §2 daquele documento e em
+>   [`visual-north-star-v2/README.md`](./visual-north-star-v2/README.md), e nenhum arquivo foi
+>   inventado para preencher a lacuna.
+>
+> A hierarquia da §2 abaixo continua idêntica para as duas: em conflito **funcional**, ganham os
+> contratos da `main`.
 
 ![North Star visual do MVP do ViPreço](./visual-north-star/vipreco-mvp-north-star.png)
 
@@ -72,6 +87,15 @@ Registrados agora para que ninguém os "resolva" implementando o que viu:
 
 Esta tabela é parte do contrato. Um item aqui **não** vira tarefa por conveniência: vira
 decisão registrada, ou não entra.
+
+**Os seis conflitos acima viraram decisão em 06/08/2026**, junto de mais catorze itens, na
+matriz de [`NORTH-STAR-V2-ASSESSMENT.md`](./NORTH-STAR-V2-ASSESSMENT.md) §3. Dois deles mudaram
+de resposta e vale registrar aqui, porque é onde alguém vai procurar:
+
+| Item                       | O que a matriz decidiu                                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| Barra inferior com 5 abas  | **duas abas B2C** — Achados e Buscar. "Comparar" não é aba: a comparação nasce de um produto |
+| "Preço anterior: R$ 20,49" | **removido** do Card v2 até P-01 (MVP-DOCS-02) ser decidida — ver DL-030                     |
 
 ---
 
@@ -160,6 +184,8 @@ Home, nenhuma dependência.
 
 ## Documentos relacionados
 
+- [`NORTH-STAR-V2-ASSESSMENT.md`](./NORTH-STAR-V2-ASSESSMENT.md) — a matriz do North Star V2
+- [`ROADMAP-MVP-V2.md`](./ROADMAP-MVP-V2.md) — as duas trilhas, B2C e B2B
 - [`R3-SCREEN-SPEC.md`](./R3-SCREEN-SPEC.md) — as cinco telas, campo a campo
 - [`R3-COMPONENT-INVENTORY.md`](./R3-COMPONENT-INVENTORY.md) — os componentes e o roadmap R3→R7
 - [`CANONICAL-PRODUCT-SPEC.md`](./CANONICAL-PRODUCT-SPEC.md) — identidade exata de produto

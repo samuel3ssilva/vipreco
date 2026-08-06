@@ -5,34 +5,42 @@ import { SourceBadge } from "@/components/SourceBadge";
 import { sourceLabel } from "@/lib/sources";
 import { PILOT_LOCALITY } from "@/lib/pilot";
 import { TEMPORAL_STYLE, temporalState } from "@/lib/temporal";
-import {
-  formatDate,
-  formatPrice,
-  formatPriceParts,
-  formatRelativeDay,
-  spokenPrice,
-} from "@/lib/format";
+import { formatDate, formatPriceParts, formatRelativeDay, spokenPrice } from "@/lib/format";
 import type { Opportunity, SourceType } from "@/types/domain";
 
 /**
  * Card oficial de Achado (North Star v1.2.2). Uma anatomia só, duas ênfases.
  *
  * Anatomia, de cima para baixo: tarja temporal, chip de origem à esquerda, chip de validade à
- * direita (só quando informada), produto, embalagem, preço, preço anterior (opcional), mercado
- * com a localidade do piloto, linha mono com data e origem, e — apenas no destaque — a ação de
- * compartilhar.
+ * direita (só quando informada), produto, embalagem, preço, mercado com a localidade do piloto,
+ * linha mono com data e origem, e — apenas no destaque — a ação de compartilhar.
+ *
+ * =============================================================================
+ * O PREÇO ANTERIOR SAIU DAQUI EM R3.3, PELO MESMO MOTIVO QUE SAIU DO CARD V2
+ * =============================================================================
+ *
+ * O card exibia "antes R$ 29,90". A regra estava certa e testada; o que falta é o CONTRATO —
+ * P-01 (MVP-DOCS-02), qual observação anterior conta, nunca foi decidida. Sem ela, "antes"
+ * significa "algum preço, de alguma data, escolhido por algum critério que ninguém escreveu",
+ * e isso é procedência que não se defende na frente de um mercado.
+ *
+ * DL-030 tirou do Card v2 em 06/08/2026 e a Home ficou exibindo, porque o caminho estava
+ * protegido naquela branch. A pendência era conhecida e está registrada em MVP-DESIGN-05.
+ * Volta em R6/R8, depois de P-01 — no card e aqui, ao mesmo tempo.
  *
  * Regras de dado que o componente **não** contorna:
  * - validade só aparece quando `valid_until` existe; nunca é inventada nem estimada;
- * - preço anterior só aparece quando `previous_price` existe; ausência é estado normal;
  * - "preço de gôndola observado, sem remarcação" só aparece nas origens que de fato são
  *   observação de gôndola — nunca em preço informado pelo mercado ou anunciado.
  */
 
-/** Um Achado pode trazer um preço anterior; a maioria não traz, e isso é normal. */
-export interface AchadoEntry extends Opportunity {
-  previous_price?: number;
-}
+/**
+ * O Achado da Home é o tipo de domínio, sem extensão.
+ *
+ * Ele já teve um `previous_price?`, e o alias continua aqui porque o nome descreve o papel
+ * ("o que a Home lista") melhor do que `Opportunity` sozinho. O que sumiu foi o campo.
+ */
+export type AchadoEntry = Opportunity;
 
 /** Origens que são, de fato, observação direta da gôndola. */
 const SHELF_OBSERVED_SOURCES: readonly SourceType[] = ["weekly_audit", "shelf_photo"];
@@ -114,11 +122,6 @@ export function AchadoCard({
             <span className="ml-1">{amount}</span>
           </p>
           <span className="sr-only">{spokenPrice(entry.price)}</span>
-          {typeof entry.previous_price === "number" ? (
-            <p className="meta-text">
-              antes <s>{formatPrice(entry.previous_price)}</s>
-            </p>
-          ) : null}
         </div>
 
         <p className={destaque ? "text-base font-semibold" : "text-sm font-semibold"}>

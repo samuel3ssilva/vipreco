@@ -29,14 +29,14 @@ export const HOME_OPPORTUNITY_COUNT = 3;
 export const DEMO_FIXTURE_REFERENCE = "Dado fictício de demonstração (fixture versionado)";
 
 /**
- * Achado de demonstração. Estende o tipo de domínio sem alterá-lo: `previous_price` é um
- * campo **opcional**, existe apenas neste fixture (nenhuma coluna nova no banco) e serve
- * para alimentar o card "antes R$ X" da North Star quando ele for implementado. Quando não
- * houver dado confiável, o campo simplesmente não existe — nunca é inventado.
+ * Achado de demonstração — o tipo de domínio, sem extensão.
+ *
+ * Ele teve um `previous_price?` opcional, para alimentar o "antes R$ X" do North Star. O campo
+ * saiu em R3.3 junto com o que o exibia: sem P-01 decidida (MVP-DOCS-02), não existe critério
+ * escrito para QUAL observação anterior conta, e um fixture que carrega o número mantém vivo o
+ * componente que o mostra. Tirar do card e deixar no dado é adiar, não decidir.
  */
-export interface DemoOpportunity extends Opportunity {
-  previous_price?: number;
-}
+export type DemoOpportunity = Opportunity;
 
 const MARKET_PRINCIPAL: Market = {
   id: "11111111-1111-1111-1111-000000000001",
@@ -168,9 +168,6 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedYesterday,
       market: MARKET_LOCAL_3,
       product: PRODUCT_ARROZ,
-      // Único item do fixture com preço anterior: o campo é opcional por definição e os
-      // outros dois provam que a ausência é um estado normal, não um erro.
-      previous_price: 29.9,
     },
     {
       id: "demo-fixture-price-cafe-mercado-local-2",

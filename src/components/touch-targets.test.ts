@@ -50,9 +50,14 @@ describe("alvo de toque de 48 px", () => {
     expect(whatsappCta).toContain("btn-touch-48");
   });
 
-  it('o link "Buscar" do header mobile subiu de 44 para 48 px', () => {
-    const buscar = appShell.slice(appShell.indexOf('aria-label="Buscar produto"'));
-    expect(buscar.slice(0, 300)).toContain("btn-touch-48");
+  it('o link "Buscar" do header mobile não existe mais — R3.3 o removeu', () => {
+    // Ele foi a TERCEIRA forma de buscar no mesmo viewport de 390 px, ao lado do campo na
+    // primeira dobra e da aba na barra inferior. O alvo de 48 px continua valendo para os dois
+    // que ficaram; o teste mudou de "tem 48 px" para "não está lá" porque o controle sumiu.
+    expect(appShell).not.toContain('aria-label="Buscar produto"');
+    const abas = appShell.slice(appShell.indexOf("const NAV = ["), appShell.indexOf("] as const;"));
+    expect(abas).toContain('label: "Buscar produto"');
+    expect(appShell).toContain("min-h-14"); // a aba, no polegar
   });
 
   // A partir da Parte 2, todo controle interativo novo ou alterado nasce com 48 px. O varrimento
@@ -68,7 +73,8 @@ describe("alvo de toque de 48 px", () => {
   it("nenhum controle das telas da Parte 2 usa btn-sm sem o alvo de 48 px", () => {
     const arquivos = [
       "AchadoCard.tsx",
-      "HomeHero.tsx",
+      "HomeAchados.tsx",
+      "HomeContexto.tsx",
       "TrustSection.tsx",
       "LocalStory.tsx",
       "ShareAchadoButton.tsx",

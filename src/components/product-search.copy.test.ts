@@ -60,7 +60,7 @@ describe("a busca na Home", () => {
   it("os Achados não dependem da busca: vêm do loader, em outra seção", () => {
     // Se a busca falhar, o que já está na tela continua na tela — os Achados nunca passam pelo
     // estado da consulta do cliente.
-    expect(home).toContain("<HomeHero");
+    expect(home).toContain("<HomeAchados");
     expect(home).toContain("opportunities={validOpportunities}");
     expect(home).not.toMatch(/\buseQuery\s*\(/);
   });

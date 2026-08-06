@@ -75,12 +75,14 @@ describe("fixture de demonstração da Home", () => {
     expect(formatDate(cafe.observed_at)).toBe("28/07/2026");
   });
 
-  it("trata preço anterior como campo opcional — presente em um item, ausente nos outros", () => {
-    const comPrecoAnterior = buildDemoOpportunities(NOW).filter(
-      (entry) => entry.previous_price !== undefined,
-    );
-    expect(comPrecoAnterior).toHaveLength(1);
-    expect(comPrecoAnterior[0].previous_price).toBeGreaterThan(comPrecoAnterior[0].price);
+  it("nenhum Achado carrega preço anterior — o campo saiu em R3.3", () => {
+    // Ele existia, e um item do fixture o usava. Saiu junto com o que o exibia: sem P-01
+    // decidida (MVP-DOCS-02), não há critério escrito para QUAL observação anterior conta.
+    // Deixar o número no dado mantém vivo o componente que o mostra — é adiar, não decidir.
+    for (const entry of buildDemoOpportunities(NOW)) {
+      expect(entry).not.toHaveProperty("previous_price");
+      expect(entry).not.toHaveProperty("previous_observed_at");
+    }
   });
 
   it("oferece os mesmos mercados fictícios do seed, em ordem alfabética como o catálogo", () => {

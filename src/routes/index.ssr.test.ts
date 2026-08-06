@@ -65,13 +65,13 @@ describe("HTML inicial da Home (SSR)", () => {
     expect(html).toContain("AMBIENTE DE TESTE");
     expect(html).toContain("esta não é a versão pública do ViPreço");
     expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(
-      html.indexOf("Veja como os Achados de Artemis vão aparecer"),
+      html.indexOf("Você está vendo ofertas de Artemis"),
     );
   });
 
   it("marca os Achados com o selo de dados fictícios", () => {
     expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
-    expect(html).toContain("Exemplos fictícios para mostrar produto, preço, mercado, data e fonte");
+    expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
   });
 
   it("não repete o aviso de ambiente dentro da página — a faixa é o único lugar", () => {
@@ -105,45 +105,49 @@ describe("HTML inicial da Home (SSR)", () => {
 });
 
 describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
-  it("abre com a copy DEMO aprovada, na ordem eyebrow → H1 → subtexto", () => {
+  it("abre com o contexto: eyebrow → H1 → o que estes preços são", () => {
     const eyebrow = html.indexOf("Artemis · Piracicaba, SP");
-    const h1 = html.indexOf("Veja como os Achados de Artemis vão aparecer");
-    const subtexto = html.indexOf(
-      "Exemplos fictícios para mostrar produto, preço, mercado, data e fonte.",
-    );
+    const h1 = html.indexOf("Você está vendo ofertas de Artemis");
+    const subtexto = html.indexOf("Preços observados nos mercados monitorados do bairro");
     expect(eyebrow).toBeGreaterThan(-1);
     expect(h1).toBeGreaterThan(eyebrow);
     expect(subtexto).toBeGreaterThan(h1);
   });
 
-  it("coloca o Achado antes da busca", () => {
-    const primeiroAchado = html.indexOf("Arroz Camil Tipo 1");
+  it("R3.3 INVERTEU: a busca vem ANTES dos Achados", () => {
+    // Decisão D2 (MVP-E2-02, MVP-DESIGN-05). A comparação é o núcleo e a busca é a porta dela;
+    // quem já sabe o que procura não deveria rolar por uma vitrine antes de poder perguntar.
+    // Achados continuam logo abaixo — são descoberta, não a única forma de chegar ao produto.
     const busca = html.indexOf("Procurando um produto específico?");
-    expect(primeiroAchado).toBeGreaterThan(-1);
-    expect(busca).toBeGreaterThan(primeiroAchado);
+    const primeiroAchado = html.indexOf("Achados</h2>");
+    expect(busca).toBeGreaterThan(-1);
+    expect(primeiroAchado).toBeGreaterThan(busca);
   });
 
-  it("a ordem do DOM é a ordem visual do mobile: promessa, Achados, ação", () => {
+  it("a ordem do DOM é a ordem visual: contexto, busca, Achados, outros", () => {
     // Teclado e leitor de tela seguem o DOM. No alvo primário — mobile — ele precisa bater com
     // o que o olho vê, senão o foco pula do topo para o rodapé da seção e volta.
-    const h1 = html.indexOf("Veja como os Achados de Artemis vão aparecer");
-    const primeiroAchado = html.indexOf("Arroz Camil Tipo 1");
-    const carrossel = html.indexOf('aria-label="Outros Achados"');
-    expect(primeiroAchado).toBeGreaterThan(h1);
-    expect(carrossel).toBeGreaterThan(primeiroAchado);
+    const h1 = html.indexOf("Você está vendo ofertas de Artemis");
+    const busca = html.indexOf("Procurando um produto específico?");
+    const primeiroAchado = html.indexOf("Achados</h2>");
+    const outros = html.indexOf("Outros Achados");
+    expect(busca).toBeGreaterThan(h1);
+    expect(primeiroAchado).toBeGreaterThan(busca);
+    expect(outros).toBeGreaterThan(primeiroAchado);
   });
 
-  it("entrega um Achado de destaque e dois secundários", () => {
-    // O destaque é o único com o preço no tamanho dominante; os outros dois vêm no compacto.
-    expect(html.match(/text-\[2\.125rem\]/g) ?? []).toHaveLength(1);
+  it("o destaque usa o Card v2 e os secundários continuam compactos", () => {
+    // O Card v2 é a unidade de produto exato, aprovada em R3.2. Numa lista ele vira textura —
+    // 400 px de CSS por card, medidos lá. Por isso o destaque é dele e a lista não é.
+    expect(html).toContain("Outros Achados");
     expect(html.match(/text-\[1\.625rem\]/g) ?? []).toHaveLength(2);
-    expect(html).toContain('aria-label="Outros Achados"');
   });
 
-  it("segue a ordem completa: hero, busca, confiança, pertencimento, mercados", () => {
+  it("segue a ordem completa: contexto, busca, Achados, confiança, pertencimento, mercados", () => {
     const posicoes = [
-      "Veja como os Achados de Artemis vão aparecer",
+      "Você está vendo ofertas de Artemis",
       "Procurando um produto específico?",
+      "Outros Achados",
       "Nenhum preço aparece sozinho",
       "Começou em Artemis",
       "Tem um mercado no bairro?",
@@ -193,7 +197,11 @@ describe("anatomia do card oficial de Achado", () => {
   const [arroz, cafe, leite] = buildDemoOpportunities();
 
   it("mostra produto e embalagem em campos separados", () => {
-    expect(html).toContain("Arroz Camil Tipo 1");
+    // O DESTAQUE usa o Card v2, que separa nome, marca e variante — deixaram de ser um título
+    // concatenado (CARD-V2-SPEC itens 2, 3 e 4). Os secundários seguem no card compacto, que
+    // concatena. É por isso que "Arroz Camil Tipo 1" some daqui e "Café Pilão Tradicional" fica.
+    expect(html).toContain("Arroz");
+    expect(html).toContain("Camil");
     expect(html).toContain("5 kg");
     expect(html).toContain("Café Pilão Tradicional");
     expect(html).toContain("500 g");
@@ -215,8 +223,12 @@ describe("anatomia do card oficial de Achado", () => {
   });
 
   it("traz a linha de procedência com data e origem", () => {
+    // Os secundários usam o card compacto, que escreve a origem em minúscula na linha mono.
     expect(html).toContain("verificado em pesquisa");
-    expect(html).toContain("informado pelo mercado");
+    // O DESTAQUE usa o Card v2, que a escreve num selo, com maiúscula inicial. Duas grafias da
+    // mesma informação porque são duas composições — não porque alguém esqueceu de padronizar.
+    expect(html).toContain("Informado pelo mercado");
+    expect(html).toContain("observado em 05/08/2026");
   });
 
   it("mostra validade só quando o mercado informou", () => {
@@ -226,12 +238,15 @@ describe("anatomia do card oficial de Achado", () => {
     expect(html.match(/válido até/g) ?? []).toHaveLength(2);
   });
 
-  it("mostra preço anterior só quando existe, sem inventar para os outros", () => {
-    expect(arroz.previous_price).toBe(29.9);
-    expect(cafe.previous_price).toBeUndefined();
-    expect(leite.previous_price).toBeUndefined();
-    expect(html).toContain("29,90");
-    expect(html.match(/antes <s>/g) ?? []).toHaveLength(1);
+  it("não mostra preço anterior em Achado nenhum, e nem carrega o dado", () => {
+    // O card exibia "antes R$ 29,90". DL-030 tirou isso do Card v2 em 06/08/2026 e a Home
+    // continuou exibindo, porque o caminho estava protegido naquela branch. R3.3 fecha.
+    for (const entry of [arroz, cafe, leite]) {
+      expect(entry).not.toHaveProperty("previous_price");
+    }
+    expect(html).not.toContain("antes <s>");
+    expect(html).not.toMatch(/antes\s*R\$/);
+    expect(html).not.toContain("29,90");
   });
 
   it("só afirma gôndola observada na origem que de fato observou a gôndola", () => {
@@ -240,9 +255,16 @@ describe("anatomia do card oficial de Achado", () => {
   });
 
   it("não pula nível na hierarquia de títulos", () => {
-    // Um `h1` na primeira dobra e `h2` daí para baixo. Nenhum `h3` órfão.
+    // Um `h1` só, e nenhum nível pulado. R3.3 introduziu um `h3` legítimo — "Outros Achados",
+    // aninhado sob o `h2` "Achados". A regra nunca foi "nenhum h3"; era "nenhum h3 órfão", e a
+    // diferença passou a importar quando a seção ganhou uma subdivisão de verdade.
     expect(html.match(/<h1/g) ?? []).toHaveLength(1);
-    expect(html).not.toContain("<h3");
+    const niveis = [...html.matchAll(/<h([1-6])/g)].map(([, n]) => Number(n));
+    for (let i = 1; i < niveis.length; i++) {
+      expect(niveis[i], `h${niveis[i]} depois de h${niveis[i - 1]} pula nível`).toBeLessThanOrEqual(
+        niveis[i - 1] + 1,
+      );
+    }
   });
 
   it("não cria urgência artificial em nenhum Achado", () => {

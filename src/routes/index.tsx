@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { HomeHero } from "@/components/HomeHero";
+import { HomeAchados } from "@/components/HomeAchados";
+import { HomeContexto } from "@/components/HomeContexto";
 import { TrustSection } from "@/components/TrustSection";
 import { LocalStory } from "@/components/LocalStory";
 import { ProductSearch } from "@/components/ProductSearch";
 import { ShareAchadoButton } from "@/components/ShareAchadoButton";
 import { StickyWhatsAppCta } from "@/components/StickyWhatsAppCta";
 import { UsualMarketPicker } from "@/components/UsualMarketPicker";
+import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
@@ -65,6 +67,21 @@ export const Route = createFileRoute("/")({
 
 const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
 
+/**
+ * A ORDEM DA HOME MUDOU EM R3.3, E A MUDANÇA É A BUSCA SUBINDO.
+ *
+ * Antes: promessa → Achados → busca → seletor de mercado → confiança → história local. A busca
+ * ficava depois de tudo o que o produto tinha para mostrar, e o usuário que chegava sabendo o
+ * que queria precisava rolar por uma vitrine antes de poder perguntar.
+ *
+ * Agora: contexto → **busca** → Achados → seletor → confiança → história. É a decisão D2 do
+ * roadmap (MVP-E2-02, MVP-DESIGN-05), e ela reconhece o que o produto é: a comparação é o
+ * núcleo, e a busca é a porta dela. Achados são descoberta — importam, e vêm logo abaixo, mas
+ * não na frente de quem já sabe o que procura.
+ *
+ * O que NÃO mudou: os Achados continuam vindo do loader, o HTML inicial continua sem estado de
+ * carregamento, e o CTA fixo do mobile continua com a anti-duplicação.
+ */
 function HomePage() {
   const { source, opportunities, generatedAt, markets } = Route.useLoaderData();
   // Referência única de tempo, vinda do servidor: mantém "ontem"/"há 2 dias" idêntico no HTML
@@ -80,7 +97,34 @@ function HomePage() {
   return (
     <AppShell>
       <div className="space-y-10">
-        <HomeHero
+        <HomeContexto />
+
+        {/* A BUSCA NA PRIMEIRA DOBRA. Sem `autoFocus`: abrir o teclado do celular por conta
+            própria cobre metade da tela antes de a pessoa decidir o que quer fazer. */}
+        <section aria-labelledby="busca-titulo" className="space-y-3">
+          <SectionHeader
+            id="busca-titulo"
+            title="Procurando um produto específico?"
+            description="Compare o mesmo produto entre os mercados, com data e fonte de cada preço."
+          />
+          <ProductSearch label="Qual produto você quer comparar?" />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="meta-text">Buscas comuns:</span>
+            {SHORTCUTS.map((shortcut) => (
+              <Link
+                key={shortcut}
+                to="/buscar"
+                search={{ q: shortcut }}
+                className="btn-base btn-secondary btn-sm btn-touch-48"
+              >
+                {shortcut}
+              </Link>
+            ))}
+          </div>
+          <PriceDisclaimer />
+        </section>
+
+        <HomeAchados
           opportunities={validOpportunities}
           now={renderedAt}
           shareSlot={
@@ -117,28 +161,10 @@ function HomePage() {
           }
         />
 
-        <section aria-labelledby="busca-titulo" className="space-y-3">
-          <SectionHeader
-            id="busca-titulo"
-            title="Procurando um produto específico?"
-            description="Compare o mesmo produto entre os mercados, com data e fonte de cada preço."
-          />
-          <ProductSearch label="Qual produto você quer comparar?" />
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="meta-text">Buscas comuns:</span>
-            {SHORTCUTS.map((shortcut) => (
-              <Link
-                key={shortcut}
-                to="/buscar"
-                search={{ q: shortcut }}
-                className="btn-base btn-secondary btn-sm btn-touch-48"
-              >
-                {shortcut}
-              </Link>
-            ))}
-          </div>
-          <PriceDisclaimer />
-        </section>
+        {/* O WHATSAPP É SECUNDÁRIO, e a posição diz isso. Ele vem depois do que o produto
+            entrega, não antes: pedir o contato de alguém que ainda não viu nada é pedir cedo
+            demais. Nenhuma promessa de frequência — o texto do CTA não diz "todo dia". */}
+        <WhatsAppCta />
 
         <UsualMarketPicker initialMarkets={markets} />
 

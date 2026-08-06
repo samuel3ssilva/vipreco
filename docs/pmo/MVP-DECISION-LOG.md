@@ -1093,7 +1093,8 @@ disfarçada de procedência; e o histórico de preço sai do Card v2 (DL-030).
   funcional, ganham os contratos da `main`.
 - **Documentos:** `product/NORTH-STAR-V2-ASSESSMENT.md`,
   `product/visual-north-star-v2/README.md`, `product/VISUAL-IMPLEMENTATION-CONTRACT.md`
-- **Status:** ativa
+- **Status:** **superseded na parte dos binários por DL-032**, no mesmo dia. A parte das
+  decisões continua ativa.
 
 ### DL-030 — O histórico de preço sai do Card v2 até P-01 existir
 
@@ -1148,4 +1149,57 @@ não tenha: a frase que ele usa é "esta é a experiência que estamos construin
   (`PLANO-MESTRE.md` §11). B2B-5, o painel para mercados, continua pós-MVP.
 - **Documentos:** `business/interviews/README.md`, `product/ROADMAP-MVP-V2.md` §4,
   `pmo/TRELLO-MAPPING.md`
+- **Status:** ativa
+
+### DL-032 — Os binários do North Star V2 chegaram, e o que ficou fora do repositório
+
+- **Data:** 2026-08-06
+- **Contexto:** DL-029 registrou que as decisões do North Star V2 tinham chegado e os binários
+  não, e que nada seria criado no lugar deles. Horas depois, no mesmo dia, o Founder/PMO enviou
+  o pacote `vipreco-north-star-v2-fable.zip`
+  (`c875d49ec6f4c5d5d2cf3d5954559f874fe1843a404a63eb955b36364fe7018e`, 3 489 401 bytes,
+  13 arquivos).
+- **Decisão:** versionar **as cinco telas** e **os dois documentos de origem** byte a byte em
+  `product/visual-north-star-v2/`, com ficha completa de SHA-256, dimensões, tamanho, origem e
+  data; e deixar **quatro arquivos fora do repositório**, cada um com o hash e o motivo escritos
+  na ficha.
+
+**O North Star original não foi substituído, e a prova é aritmética.** O PNG que veio dentro do
+pacote, em `uploads/`, tem exatamente o mesmo SHA-256 (`7b7a28b5…`) do que já estava versionado
+em `product/visual-north-star/`. Era o mesmo arquivo, usado pelo Fable como referência dentro do
+documento. Não havia o que substituir, e nada foi duplicado.
+
+**O `ViPreco Redesign.dc.html` ficou fora, e este repositório ser público é a razão.** Ele é o
+passo intermediário entre o assessment de UX e o North Star V2, e os mockups dele mostram redes e
+marcas reais — uma delas com o selo "★ Parceiro Oficial" do ViPreço —, prova social inventada
+("2.317 vizinhos … já recebem") e histórico de preço com percentual. As três coisas foram
+corrigidas pelo próprio V2, cuja tabela antes/depois escreve "sem risco jurídico/reputacional;
+sem prova social inventada". Versionar o passo anterior num repositório aberto desfaria a
+correção no único lugar em que ela fica gravada para sempre, que é o histórico do Git. O arquivo
+continua no pacote do Founder, com hash registrado, e voltar atrás é um `cp`.
+
+**O documento não é as cinco telas.** Ele tem oito seções, e três não existem como imagem em
+lugar nenhum: os oito estados de ausência, a tabela antes/depois e a classificação de impacto no
+roadmap em quatro faixas. Por isso o HTML foi versionado junto, e por isso `fonte/` entrou no
+`.prettierignore`: um `bun run format` reformataria os arquivos e invalidaria os hashes da ficha.
+
+**A matriz do assessment foi reconferida contra a fonte e nenhuma linha precisou ser desdita.**
+As três células que diziam "não recebida" foram preenchidas com o documento. E ele acrescentou
+uma distinção que a matriz não fazia: a "diferença observada" das telas ("R$ 0,50 abaixo da
+próxima oferta observada") é a distância para o **segundo mercado da mesma comparação**, não para
+um preço passado. Ela não depende de P-01 nem de `price_events`, e portanto **não é** o que
+DL-030 removeu.
+
+- **Alternativas descartadas:** (a) versionar o pacote inteiro, inclusive o Redesign e o runtime
+  do Fable — publicaria mockups com redes reais rotuladas como parceiras num repositório aberto,
+  e 122 KB de JavaScript de terceiro que não é asset do produto; (b) versionar só os PNG — perderia
+  os oito estados de ausência, a tabela antes/depois e a classificação de roadmap, que só existem
+  no HTML; (c) transcrever os documentos para Markdown em vez de versionar o original — criaria
+  duas fontes para o mesmo conteúdo, e a transcrição envelheceria sozinha.
+- **O que não muda:** os assets continuam sem autorizar tela nenhuma
+  (`product/VISUAL-IMPLEMENTATION-CONTRACT.md` §1 e §4), continuam não sendo fonte de dado, e o
+  assessment de UX continua sendo **entrada**, não decisão: várias recomendações dele foram
+  rejeitadas pelo V2, e uma delas contraria a neutralidade do `PLANO-MESTRE.md`.
+- **Documentos:** `product/visual-north-star-v2/README.md`,
+  `product/NORTH-STAR-V2-ASSESSMENT.md` §2 e §3.1, `.prettierignore`
 - **Status:** ativa

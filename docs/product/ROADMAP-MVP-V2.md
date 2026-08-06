@@ -157,4 +157,4 @@ Nada aqui abre porta. Continuam bloqueados, cada um pelo seu gate:
 - [`R3-COMPONENT-INVENTORY.md`](./R3-COMPONENT-INVENTORY.md) — componentes e critérios de entrada e saída por etapa
 - [`../pmo/MVP-EXECUTION-PLAN.md`](../pmo/MVP-EXECUTION-PLAN.md) — o detalhamento por etapa
 - [`../pmo/MVP-DECISION-LOG.md`](../pmo/MVP-DECISION-LOG.md) — DL-028 a DL-031
-- `../business/interviews/` — o kit de B2B-1, entregue em PR próprio (DL-031)
+- [`../business/interviews/README.md`](../business/interviews/README.md) — o kit de B2B-1 (DL-031)

@@ -16,20 +16,20 @@ próprio documento.
 
 ## Produto — o que construir
 
-| Documento                                                                                | Estado                                                                              |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [`product/ROADMAP-MVP-V2.md`](product/ROADMAP-MVP-V2.md)                                 | **NORMATIVO** — o roadmap vigente: trilha B2C e trilha B2B                          |
-| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO no escopo** (épicos, "Fora do MVP"); **HISTÓRICO como roadmap**         |
-| [`product/NORTH-STAR-V2-ASSESSMENT.md`](product/NORTH-STAR-V2-ASSESSMENT.md)             | **NORMATIVO** — as decisões consolidadas do North Star V2                           |
-| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                              |
-| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                                  |
-| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                                  |
-| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                                        |
-| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo              |
-| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                                       |
-| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                                         |
-| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA HISTÓRICA** — o PNG aprovado em 05/08; **não é fonte de dado**         |
-| [`product/visual-north-star-v2/`](product/visual-north-star-v2/)                         | **REFERÊNCIA** — pasta dos assets do V2; **vazia: os binários não foram recebidos** |
+| Documento                                                                                | Estado                                                                        |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`product/ROADMAP-MVP-V2.md`](product/ROADMAP-MVP-V2.md)                                 | **NORMATIVO** — o roadmap vigente: trilha B2C e trilha B2B                    |
+| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO no escopo** (épicos, "Fora do MVP"); **HISTÓRICO como roadmap**   |
+| [`product/NORTH-STAR-V2-ASSESSMENT.md`](product/NORTH-STAR-V2-ASSESSMENT.md)             | **NORMATIVO** — as decisões consolidadas do North Star V2                     |
+| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                        |
+| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                            |
+| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                            |
+| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                                  |
+| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo        |
+| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                                 |
+| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                                   |
+| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA HISTÓRICA** — o PNG aprovado em 05/08; **não é fonte de dado**   |
+| [`product/visual-north-star-v2/`](product/visual-north-star-v2/)                         | **REFERÊNCIA** — as cinco telas e os dois documentos do V2, com ficha de hash |
 
 ## Dados — como o dado é
 
@@ -60,6 +60,19 @@ entram em nenhuma migration de R1/R2:
 | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | [`data/SOURCE-PRODUCT-ALIASES.md`](data/SOURCE-PRODUCT-ALIASES.md)     | **NORMATIVO como contrato** — **fora do MVP**. Alias **de fonte**, que é vínculo de identidade; não confundir com `search_aliases` |
 | [`data/PRICE-CONDITION-TAXONOMY.md`](data/PRICE-CONDITION-TAXONOMY.md) | **NORMATIVO como contrato** — **fora do MVP**. Ortogonal a `PROMOTION-TYPES.md`, que continua íntegro                              |
+
+## Negócio — a trilha B2B
+
+| Documento                                                                                | Estado                                                                             |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`business/interviews/README.md`](business/interviews/README.md)                         | **NORMATIVO** como procedimento de campo — B2B-1. **Nenhuma entrevista realizada** |
+| [`business/interviews/HYPOTHESES.md`](business/interviews/HYPOTHESES.md)                 | as dez hipóteses, com o que confirma e o que nega cada uma                         |
+| [`business/interviews/INTERVIEW-SCRIPT.md`](business/interviews/INTERVIEW-SCRIPT.md)     | o roteiro de 20 a 30 minutos                                                       |
+| [`business/interviews/PITCHES.md`](business/interviews/PITCHES.md)                       | 30 segundos, 2 minutos e 5 minutos                                                 |
+| [`business/interviews/INTERVIEW-SHEET.md`](business/interviews/INTERVIEW-SHEET.md)       | a folha a preencher                                                                |
+| [`business/interviews/SIGNAL-CRITERIA.md`](business/interviews/SIGNAL-CRITERIA.md)       | **NORMATIVO** — forte, moderado e fraco, decididos antes das conversas             |
+| [`business/interviews/SYNTHESIS-TEMPLATE.md`](business/interviews/SYNTHESIS-TEMPLATE.md) | como as conversas viram decisão de roadmap                                         |
+| [`business/interviews/offline/`](business/interviews/offline/)                           | o material de campo, autossuficiente e sem internet                                |
 
 ## Analytics
 

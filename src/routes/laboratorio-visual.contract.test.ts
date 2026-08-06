@@ -1,7 +1,7 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { compararComMain } from "@/test-support/git-guard";
 import { resolveVisualLab } from "@/lib/visual-lab";
 
 /**
@@ -103,25 +103,14 @@ describe("a Home e o ranking continuam intocados", () => {
    * O mandato §16 pede a confirmação; um `git diff` contra a `main` é a única forma de
    * dá-la sem depender de alguém lembrar de olhar. Um teste que afirmasse isso por
    * inspeção de texto provaria bem menos.
+   *
+   * A comparação vive em `@/test-support/git-guard` — uma implementação só, usada também
+   * pelo contrato do Card v2. A versão que morava aqui tinha dois defeitos que o guarda
+   * compartilhado corrige: comparava `origin/main...HEAD` (só o que já foi commitado) e,
+   * quando não conseguia comparar, respondia `false` — isto é, **"não mudou"**. Era a
+   * única resposta que este teste não pode dar sem ter medido, e era a que ele dava no CI,
+   * onde `origin/main` nem existia.
    */
-  function mudouNaBranch(caminho: string): boolean {
-    try {
-      const saida = execFileSync(
-        "git",
-        ["diff", "--name-only", "origin/main...HEAD", "--", caminho],
-        {
-          encoding: "utf-8",
-          stdio: ["ignore", "pipe", "ignore"],
-        },
-      );
-      return saida.trim().length > 0;
-    } catch {
-      // Sem `origin/main` local (clone raso, fork) a comparação não é possível. Declarar
-      // "não mudou" aqui seria afirmar o que não se mediu.
-      return false;
-    }
-  }
-
   it.each([
     "src/routes/index.tsx",
     "src/components/AchadoCard.tsx",
@@ -130,6 +119,6 @@ describe("a Home e o ranking continuam intocados", () => {
     "src/components/AppShell.tsx",
     "src/lib/comparison.ts",
   ])("%s não foi alterado por R3.1", (caminho) => {
-    expect(mudouNaBranch(caminho), `${caminho} mudou nesta branch`).toBe(false);
+    expect(compararComMain(caminho), `${caminho} mudou nesta branch`).toBe("intacto");
   });
 });

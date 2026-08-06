@@ -17,6 +17,19 @@ listas, etiquetas, `Ready`, cards UNMAPPED — está em [`trello/README.md`](tre
 **Nenhum card abaixo está autorizado a virar código.** Autorizar implementação é ato separado do
 Founder/PMO.
 
+> **As etapas mudaram em 06/08/2026 (DL-028).** A sequência vigente está em
+> [`../product/ROADMAP-MVP-V2.md`](../product/ROADMAP-MVP-V2.md) §3 e §4, com duas trilhas. Os
+> quatro cards de DESIGN que carregavam a etapa antiga foram atualizados **no campo `Etapa` e
+> só nele** — objetivo, aceite, gate, fora de escopo e evidência de cada um continuam
+> exatamente como estavam:
+>
+> | Card          | Etapa antiga | Etapa vigente |
+> | ------------- | ------------ | ------------- |
+> | MVP-DESIGN-01 | R3           | **R4**        |
+> | MVP-DESIGN-02 | R3           | **R5**        |
+> | MVP-DESIGN-03 | R6           | **R3.2**      |
+> | MVP-DESIGN-05 | R4           | **R3.3**      |
+
 ---
 
 ## Listas
@@ -379,7 +392,7 @@ de sair da lista 5.
 ### MVP-DESIGN-01 — Protótipo da busca em três blocos
 
 - **Objetivo:** desenhar antes de implementar. · **Fonte:** `MVP-EXECUTION-PLAN.md` R3
-- **Dependências:** MVP-E1-03 · **Etapa:** R3 · **Etiquetas:** DESIGN, E2
+- **Dependências:** MVP-E1-03 · **Etapa:** R4 _(era R3; DL-028)_ · **Etiquetas:** DESIGN, E2
 - **Aceite:** rota de desenvolvimento, dados do fixture, nenhum schema.
 - **Gate:** **sim** — o Founder decide antes da implementação.
 - **Fora de escopo:** produção. · **Evidência:** capturas em 360 px e desktop.
@@ -387,14 +400,14 @@ de sair da lista 5.
 ### MVP-DESIGN-02 — Protótipo da comparação com unitário e estados
 
 - **Objetivo:** idem, para a comparação. · **Fonte:** `MVP-EXECUTION-PLAN.md` R3
-- **Dependências:** MVP-E1-06 · **Etapa:** R3 · **Etiquetas:** DESIGN, E2
+- **Dependências:** MVP-E1-06 · **Etapa:** R5 _(era R3; DL-028)_ · **Etiquetas:** DESIGN, E2
 - **Aceite:** as três seções, os quatro estados públicos, unitário ausente sem quebrar.
 - **Gate:** **sim.** · **Fora de escopo:** produção. · **Evidência:** capturas.
 
 ### MVP-DESIGN-03 — Card v2, anatomia dos 17 itens
 
 - **Objetivo:** evoluir o `AchadoCard`. · **Fonte:** `docs/product/CARD-V2-SPEC.md`
-- **Dependências:** MVP-DESIGN-02 · **Etapa:** R6 · **Etiquetas:** DESIGN, E2
+- **Dependências:** MVP-DESIGN-02 · **Etapa:** R3.2 _(era R6; DL-028)_ · **Etiquetas:** DESIGN, E2
 - **Aceite:** as regras de "o que o card não faz" preservadas e testadas; alvo de toque ≥ 48 px;
   preço fora da árvore de acessibilidade com `spokenPrice()`; variação percentual com rótulo textual.
 - **Gate:** **sim** — é a peça que o Founder mostra.
@@ -412,7 +425,7 @@ de sair da lista 5.
 
 - **Objetivo:** reordenar com a busca na primeira dobra (D2).
 - **Fonte:** `docs/product/ROADMAP-MVP-v3.md` E2.1
-- **Dependências:** MVP-DESIGN-01 · **Etapa:** R4 · **Etiquetas:** DESIGN, E2
+- **Dependências:** MVP-DESIGN-01 · **Etapa:** R3.3 _(era R4; DL-028)_ · **Etiquetas:** DESIGN, E2
 - **Aceite:** Achados continuam presentes e servidos pelo loader; CTA fixo do mobile continua com
   anti-duplicação; nenhum carregamento no HTML inicial.
 - **Gate:** **sim.** · **Fora de escopo:** rodapé novo.
@@ -422,20 +435,38 @@ de sair da lista 5.
 
 ## BUSINESS
 
-### MVP-BUSINESS-01 — Pesquisa de campo e entrevistas em Artemis
+### MVP-BUSINESS-01 — Sprint de entrevistas com mercados de Artemis
 
-- **Status: PAUSADO PARA PLANO DE DELEGAÇÃO**
+- **Status:** materiais prontos; **campo não iniciado**. _(O rótulo "PAUSADO PARA PLANO DE
+  DELEGAÇÃO" foi removido em 06/08/2026: o plano existe. O gate de contato externo **continua
+  fechado** — DL-031.)_
 - **Objetivo:** mapear sobreposição de produtos entre mercados, disponibilidade de GTIN, capacidade
   real de envio de ofertas, formatos de promoção praticados, como correções e esgotamentos são
   comunicados hoje, e aceitação da ideia de comparação pública de preço.
-- **Fonte:** `docs/mvp/TEST-MVP-PLAN.md` Gate V2 · `PLANO-MESTRE.md` §11
+- **Fonte:** `docs/business/interviews/` · `docs/mvp/TEST-MVP-PLAN.md` Gate V2 · `PLANO-MESTRE.md` §11
 - **Dependências:** autorização específica do Founder para contato externo
-- **Etapa:** fora da sequência R · **Etiquetas:** BUSINESS
+- **Etapa:** **B2B-1** · **Etiquetas:** BUSINESS
 - **Aceite:** plano de delegação escrito antes de qualquer contato; nenhum dado pessoal coletado sem
   base definida; nenhum compromisso comercial assumido em campo.
 - **Gate:** **sim** — contato com pessoa real exige autorização específica.
 - **Fora de escopo:** cadastro de dado real; promessa de publicação; cashback.
 - **Evidência:** plano de delegação + roteiro de entrevista, ambos revisados antes de ir a campo.
+- **Checklist:**
+  1. página para mercados revisada
+  2. pitch preparado
+  3. roteiro preparado
+  4. template de entrevista
+  5. hipóteses definidas
+  6. critérios de sucesso definidos
+  7. material offline
+  8. QR Code quando houver URL
+  9. entrevistas realizadas
+  10. síntese concluída
+  11. próximos passos registrados
+
+Os itens 1 a 7 são trabalho do CTO e estão entregues. **Os itens 8 a 11 não podem ser iniciados
+por mim:** o QR Code depende de uma URL estável e aprovada, que não existe antes de R8, e os três
+últimos dependem de conversas com pessoas reais.
 
 ### MVP-BUSINESS-02 — Script versionado de publicação de oferta
 
@@ -456,6 +487,25 @@ de sair da lista 5.
 - **Aceite:** os cinco itens do checklist no documento de operação; reprovação → placeholder.
 - **Gate:** nenhum. · **Fora de escopo:** ferramenta de curadoria.
 - **Evidência:** `MANUAL-OFFER-OPERATIONS.md` atualizado.
+
+### MVP-BUSINESS-04 — `/para-mercados` como apoio à entrevista (B2B-0) _(card novo, 06/08/2026)_
+
+- **Objetivo:** a rota `/para-mercados` deixa de ser página de venda e passa a apoiar a conversa:
+  explica o piloto, mostra como o consumidor encontra o mercado, e pede uma conversa — não um
+  contrato. · **Fonte:** `docs/product/ROADMAP-MVP-V2.md` §4 · `docs/mvp/FOR-MARKETS-PAGE.md`
+- **Dependências:** nenhuma · **Etapa:** **B2B-0** · **Etiquetas:** BUSINESS, DESIGN
+- **Aceite:** neutralidade escrita na página ("participar não compra posição no ranking");
+  nenhuma promessa de venda, tráfego ou métrica; nenhum telefone pessoal no código público;
+  nenhum logotipo de mercado; alvo de toque ≥ 48 px; funcional a partir de 320 px.
+- **Gate:** **sim** — revisão visual do Founder antes do merge.
+- **Fora de escopo:** painel do lojista, login, upload de planilha, integração com ERP,
+  destaque patrocinado, contrato, pagamento — todos em B2B-5 ou fora do MVP.
+- **Evidência:** capturas em 390, 430 e desktop, mais painel comparativo; testes de contrato da
+  rota.
+
+**Este card é novo.** Ele não existia no quadro e não substitui nenhum outro — a rota
+`/para-mercados` foi construída na Parte 3 sem card próprio, e B2B-0 é a primeira etapa que a
+trata como entregável com gate. Nenhum ID existente foi reutilizado nem reinterpretado.
 
 ---
 

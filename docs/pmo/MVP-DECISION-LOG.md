@@ -1025,3 +1025,127 @@ recuperável depois.
 - **Documentos:** `evidence/r2/staging-apply-r26.md`, `data/R2-APPLICATION-GATE.md`,
   `data/R2-CONTROLLED-APPLY-RUNBOOK.md`
 - **Status:** ativa
+
+### DL-028 — Roadmap MVP V2: duas trilhas, e o Card v2 antes da Home
+
+- **Data:** 2026-08-06
+- **Contexto:** desde 05/08/2026 conviviam duas ordens contraditórias. O roadmap visual de
+  `product/R3-COMPONENT-INVENTORY.md` §2 punha o Card v2 em **R3.2**, antes da Home; o
+  `MVP-EXECUTION-PLAN.md` punha o Card v2 em **R6**, depois da busca e da comparação. O
+  conflito estava registrado e explicitamente **não resolvido** — resolvê-lo sozinho seria
+  reescrever um plano normativo a partir de uma ordem que veio em mandato mas nunca virou
+  decisão.
+- **Decisão:** vale a **opção A** daquela nota. O Card v2 é R3.2, a Home é R3.3, a busca é R4, a
+  comparação é R5, e R6 passa a ser "detalhe, imagens, promoções e estados". Junto disso, o
+  roadmap ganha uma **segunda trilha**: B2B-0 a B2B-5, paralela à trilha B2C, registrada em
+  `product/ROADMAP-MVP-V2.md`.
+
+**A ordem não é preferência estética.** A Home é uma lista de cards. Desenhar a lista antes da
+unidade que a compõe obriga a desenhar duas vezes — e a segunda vez chega depois de a primeira
+já ter virado expectativa de alguém.
+
+**A trilha B2B existe porque o piloto depende de mercados que ninguém ouviu ainda.** Ela não é
+uma fase do produto do consumidor e não pode ser tratada como tal: `/para-mercados` continua
+sendo rota separada, nunca aba do app B2C, e o painel para lojista continua pós-MVP.
+
+- **Alternativas descartadas:** (a) opção B — manter o Card v2 em R6 e corrigir o roadmap
+  visual; foi descartada porque R3.1 e R3.2 já foram executadas na ordem nova, e o plano
+  descreveria um passado que não aconteceu; (b) deixar o conflito aberto por mais uma rodada —
+  ele já custou uma nota de reconciliação em três documentos, e o custo de mantê-lo cresce a
+  cada card do Trello que herda a etapa errada.
+- **O que não muda:** o escopo. Os três épicos, os habilitadores e a lista fechada de "Fora do
+  MVP" continuam em `product/ROADMAP-MVP-v3.md`, incorporados por referência e **não copiados**.
+  Nenhum gate foi aberto: produção, backfill, deploy, dado real e contato externo continuam
+  fechados.
+- **Documentos:** `product/ROADMAP-MVP-V2.md`, `product/ROADMAP-MVP-v3.md` (cabeçalho e §5),
+  `product/R3-COMPONENT-INVENTORY.md` §3, `pmo/MVP-EXECUTION-PLAN.md`, `pmo/TRELLO-MAPPING.md`
+- **Status:** ativa
+
+### DL-029 — North Star V2: as decisões chegaram, os binários não
+
+- **Data:** 2026-08-06
+- **Contexto:** o mandato de 06/08/2026 aprovou o North Star V2 como referência atual de
+  produto e design, e informou que os materiais estavam anexados.
+- **Decisão:** registrar as **decisões consolidadas** — as dezessete do mandato §3 — em
+  `product/NORTH-STAR-V2-ASSESSMENT.md`, com matriz elemento a elemento contra o North Star
+  original; e registrar a **ausência dos binários** como ausência, sem criar arquivo nenhum no
+  lugar deles.
+
+**Os arquivos não chegaram.** Procurei na mensagem do mandato, em
+`product/visual-north-star/`, em `~/Downloads` e `~/Desktop` filtrando por data posterior a
+04/08/2026, e no diretório de trabalho da sessão. O que existe é o PNG **original**,
+`7b7a28b5…`, inalterado, e cópias de evidências deste próprio repositório.
+
+**Um PNG inventado seria pior que a ausência.** Ele viraria referência de design de alguém, e a
+referência seria falsa — exatamente o risco que o contrato visual descreve quando diz que um
+mockup que vira dado é risco jurídico e de confiança, não detalhe estético.
+
+**O que decide produto sobreviveu à ausência.** As dezessete decisões vieram escritas e não
+dependem de nenhum PNG para valer. Três delas mudam o que já estava no código: cinco abas viram
+duas; "confiança da informação" vira quatro dimensões separadas, com relação comercial nunca
+disfarçada de procedência; e o histórico de preço sai do Card v2 (DL-030).
+
+- **Alternativas descartadas:** (a) reconstruir os mockups por interpretação do texto — seria
+  produzir um North Star autoral e chamá-lo de aprovado; (b) bloquear a missão inteira até os
+  arquivos chegarem — as decisões textuais são suficientes para tudo que esta rodada faz.
+- **O que não muda:** o North Star original não foi apagado, não será, e continua referenciado
+  pelo contrato visual. A hierarquia de autoridade é a mesma para as duas gerações: em conflito
+  funcional, ganham os contratos da `main`.
+- **Documentos:** `product/NORTH-STAR-V2-ASSESSMENT.md`,
+  `product/visual-north-star-v2/README.md`, `product/VISUAL-IMPLEMENTATION-CONTRACT.md`
+- **Status:** ativa
+
+### DL-030 — O histórico de preço sai do Card v2 até P-01 existir
+
+- **Data:** 2026-08-06
+- **Contexto:** o Card v2 do PR #89 exibia "antes R$ 14,90 · 13% mais barato que em 25/07/2026".
+  A regra estava correta, testada e alinhada a `data/OFFER-STATES.md` §5 — inclusive na parte
+  mais fácil de errar, que é exigir a data ao lado do percentual.
+- **Decisão:** remover o preço anterior e a variação percentual do Card v2 e da demonstração.
+  Voltam em R6/R8, depois que **P-01 — janela do preço anterior** (card MVP-DOCS-02) for
+  decidida.
+
+**O que faltava não era código, era contrato.** "Preço anterior" só significa alguma coisa
+depois que alguém disser qual observação anterior conta: a última? a de sete dias atrás? a mais
+alta da janela? Sem essa definição, dois cards com o mesmo dado podem exibir percentuais
+diferentes e os dois estarem "certos" — e um percentual que ninguém consegue defender é
+exatamente o tipo de número que corrói a confiança que o produto existe para construir.
+
+**A regra não foi enfraquecida, foi retirada.** Não sobrou um caminho desligado por
+configuração nem um campo escondido atrás de uma flag: quem reintroduzir isso em R6 vai
+reintroduzir contra o contrato que P-01 tiver produzido, e não contra uma implementação
+adivinhada em agosto.
+
+- **Alternativas descartadas:** (a) manter só no laboratório — o laboratório é o que o Founder
+  olha para aprovar; deixar ali é aprovar; (b) manter a função e não renderizar — código morto
+  que parece vivo é convite para alguém religá-lo sem ler esta entrada.
+- **O que não muda:** `data/OFFER-STATES.md` §5 continua íntegro e continua sendo a spec de
+  quando o preço anterior aparece. P-01 continua bloqueando **apenas** R8, como já estava
+  registrado.
+- **Documentos:** `product/NORTH-STAR-V2-ASSESSMENT.md` §3 item 7,
+  `design/R3-2-PRODUCT-CARD-V2-REPORT.md`, `product/CARD-V2-SPEC.md`
+- **Status:** ativa
+
+### DL-031 — Kit de entrevistas escrito, campo não iniciado
+
+- **Data:** 2026-08-06
+- **Contexto:** MVP-BUSINESS-01 estava em `Bloqueado` com o rótulo "PAUSADO PARA PLANO DE
+  DELEGAÇÃO" desde 04/08/2026. O aceite do card sempre exigiu plano e roteiro escritos **antes**
+  de qualquer contato.
+- **Decisão:** escrever o kit completo — hipóteses, roteiro de 20 a 30 minutos, três pitches,
+  folha de entrevista, critérios de sinal, template de síntese e material offline — em
+  `business/interviews/`, e **não realizar nenhuma entrevista**.
+
+**Escrever o roteiro é trabalho do CTO; ir a campo é decisão do Founder.** Os dois gates são
+diferentes e o segundo não foi aberto. Nenhuma mensagem foi enviada, nenhum mercado foi
+contatado, nenhum dado pessoal foi coletado, e o material offline não promete nada que o produto
+não tenha: a frase que ele usa é "esta é a experiência que estamos construindo para o piloto".
+
+- **Alternativas descartadas:** (a) esperar a autorização de campo para escrever o material — o
+  aceite do card exige a ordem inversa, e por bom motivo: material improvisado na véspera de uma
+  conversa é material que promete o que não existe.
+- **O que não muda:** contato com pessoa real continua exigindo autorização específica
+  (`PLANO-MESTRE.md` §11). B2B-5, o painel para mercados, continua pós-MVP.
+- **Documentos:** `business/interviews/README.md`, `product/ROADMAP-MVP-V2.md` §4,
+  `pmo/TRELLO-MAPPING.md`
+- **Status:** ativa

@@ -135,10 +135,19 @@ Nenhuma dessas etapas começa na missão que escreveu este documento.
 
 ---
 
-## 3. Conflito de etapa com o `TRELLO-MAPPING` — não resolvido aqui
+## 3. Conflito de etapa com o `TRELLO-MAPPING` — **RESOLVIDO EM 06/08/2026**
+
+> **Venceu a opção A.** O roadmap visual passa a valer: Card v2 em R3.2, Home em R3.3, busca em
+> R4, comparação em R5. A decisão é do Founder/PMO, veio no mandato de 06/08/2026, e está
+> registrada em [`../pmo/MVP-DECISION-LOG.md`](../pmo/MVP-DECISION-LOG.md) DL-028 e em
+> [`ROADMAP-MVP-V2.md`](./ROADMAP-MVP-V2.md) §3.
+>
+> O `MVP-EXECUTION-PLAN.md` e o `TRELLO-MAPPING.md` foram atualizados no mesmo PR — o conflito
+> não sobrevive em nenhum dos três documentos. O texto abaixo fica como registro do que estava
+> em disputa e de por que não foi resolvido sozinho.
 
 O roadmap acima coloca o **Card v2 antes da Home** (R3.2 → R3.3). O
-[`TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md) vigente registra outra coisa:
+[`TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md) **vigente até 06/08/2026** registrava outra coisa:
 
 | Card                                     | Etapa no mapping | Etapa neste roadmap |
 | ---------------------------------------- | ---------------- | ------------------- |
@@ -151,16 +160,17 @@ O roadmap acima coloca o **Card v2 antes da Home** (R3.2 → R3.3). O
 `MVP-EXECUTION-PLAN.md` por conta própria, a partir de uma ordem que veio no mandato mas que
 não foi registrada como decisão de reordenar o plano de execução — e o plano é normativo.
 
-O conflito é real e precisa de decisão explícita do Founder/PMO:
+O conflito era real e precisava de decisão explícita do Founder/PMO:
 
 - **opção A** — o roadmap visual (Card v2 primeiro) passa a valer, e as etapas dos quatro cards
   são atualizadas em PR próprio, com registro no decision log;
 - **opção B** — o `MVP-EXECUTION-PLAN.md` prevalece, e a §2 deste documento é corrigida para
   refletir R3/R4/R6.
 
-Enquanto não houver decisão, vale o `MVP-EXECUTION-PLAN.md`, pela ordem de precedência do
-[`docs/INDEX.md`](../INDEX.md). Este documento fica marcado como **pendente de reconciliação**
-neste ponto específico — e só neste.
+**Decidido em 06/08/2026: opção A.** As etapas dos quatro cards foram atualizadas no
+`TRELLO-MAPPING.md` e no quadro real, o `MVP-EXECUTION-PLAN.md` recebeu a sequência nova, e o
+registro está em [`../pmo/MVP-DECISION-LOG.md`](../pmo/MVP-DECISION-LOG.md) DL-028. Este
+documento deixa de estar pendente de reconciliação.
 
 Registrar o conflito custa um parágrafo. Descobri-lo no meio da implementação custa uma etapa
 inteira refeita.

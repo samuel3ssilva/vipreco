@@ -1,7 +1,17 @@
 # Plano de execução do MVP
 
-**Status: NORMATIVO** para a sequência. **Nenhuma etapa a partir de R1 está autorizada.** Autorizar
-implementação é ato separado do Founder/PMO.
+**Status: NORMATIVO** para o detalhamento de cada etapa. **A sequência vigente está em
+[`../product/ROADMAP-MVP-V2.md`](../product/ROADMAP-MVP-V2.md) §3 e §4** — duas trilhas, B2C e
+B2B. Autorizar implementação continua sendo ato separado do Founder/PMO.
+
+> **A ordem mudou em 06/08/2026 (DL-028).** O Card v2 passou de **R6** para **R3.2**, antes da
+> Home; a Home é R3.3; a busca é R4; a comparação é R5; R6 vira "detalhe, imagens, promoções e
+> estados". As fichas por etapa abaixo continuam corretas no **conteúdo** — objetivo, módulos,
+> migration, risco, rollback —; o que mudou é **quando** cada uma acontece. O título de cada
+> ficha carrega a etapa nova entre parênteses onde ela difere.
+>
+> R0 a R2 estão **concluídas**. R3.1 foi entregue (PR #78, `4362efa`) e R3.2 está em revisão
+> visual (PR #89, sem merge).
 
 Estimativas são **tamanhos relativos**, derivados do repositório real: número de arquivos afetados,
 existência de migration, e se há backfill com revisão humana. Não são estimativas de tempo.
@@ -10,21 +20,56 @@ existência de migration, e se há backfill com revisão humana. Não são estim
 
 ## Sequência
 
+**Vigente desde 06/08/2026 (DL-028):**
+
 ```
-R0.5 fonte da verdade            ◄── esta rodada
- └─ R1 produto exato
-     └─ R2 contrato de dados
-         └─ R3 protótipos
-             └─ R4 busca
-                 └─ R5 comparação
-                     └─ R6 Card v2      ◄── corte natural para o Gate V1
-                         └─ R7 imagens e promoções
-                             └─ R8 estados (gate) + analytics (gate separado)
-                                 └─ R9 QA e piloto
+R0  governança e rebaseline               ✔ concluída
+ └─ R1 produto exato e equivalência        ✔ concluída
+     └─ R2 dados e segurança em staging    ✔ concluída
+         └─ R3.0 North Star original       ✔ concluída
+             └─ R3.1 fundação visual       ✔ concluída  (PR #78, 4362efa)
+                 └─ R3.2 Card v2           ◄── em revisão visual (PR #89, sem merge)
+                     └─ R3.3 Home / Achados
+                         └─ R4 busca por produto exato
+                             └─ R5 comparação do mesmo produto
+                                 └─ R6 detalhe, imagens, promoções e estados
+                                     └─ R7 WhatsApp, analytics, acessibilidade e QA
+                                         └─ R8 produção, domínio e segurança final
+                                             └─ R9 piloto Artemis
 ```
 
-**Corte recomendado:** se o objetivo for chegar rápido a uma comparação confiável para o Gate V1, o
-corte natural é **R0.5–R6**. R7 e R8 não bloqueiam E2 e concentram os dois maiores riscos.
+Em paralelo, a trilha B2B — `B2B-0` a `B2B-5`,
+[`../product/ROADMAP-MVP-V2.md`](../product/ROADMAP-MVP-V2.md) §4.
+
+**Sequência anterior, histórica** (R0.5 → R1 → R2 → R3 protótipos → R4 busca → R5 comparação →
+R6 Card v2 → R7 → R8 → R9). Ela punha o Card v2 depois da busca e da comparação; a inversão está
+justificada em DL-028 e em [`../product/ROADMAP-MVP-V2.md`](../product/ROADMAP-MVP-V2.md) §5 — a
+Home é uma lista de cards, e desenhar a lista antes da unidade é desenhar duas vezes.
+
+**Corte recomendado:** para chegar a uma comparação confiável no Gate V1, o corte natural vai até
+**R5**. R6 e R7 não bloqueiam E2, e R8 concentra os dois maiores riscos do projeto.
+
+### De qual ficha sai cada etapa nova
+
+As fichas deste documento não foram reescritas — o conteúdo delas (objetivo, módulos, migration,
+risco, rollback) continua válido. O que mudou foi **onde cada uma cai na sequência**. Reescrever
+oito fichas para renumerar títulos trocaria informação verificada por churn de texto; a tabela
+abaixo faz o mesmo trabalho sem esse risco.
+
+| Etapa vigente | Ficha que a descreve                       | Observação                                                                    |
+| ------------- | ------------------------------------------ | ----------------------------------------------------------------------------- |
+| R0 / R0.5     | [R0.5](#r05--fonte-da-verdade-esta-rodada) | concluída                                                                     |
+| R1            | [R1](#r1--produto-exato)                   | concluída                                                                     |
+| R2            | [R2](#r2--contrato-de-dados)               | concluída; aplicada em staging                                                |
+| R3.0 / R3.1   | [R3](#r3--protótipos)                      | R3.0 é o North Star; R3.1 é a fundação visual                                 |
+| **R3.2**      | [R6](#r6--card-v2)                         | **o Card v2 subiu de R6 para cá** — é a mudança de DL-028                     |
+| R3.3          | [R4](#r4--busca) (parte da Home)           | a Home vem antes da busca; a ficha R4 cobre as duas e é executada em dois PRs |
+| R4            | [R4](#r4--busca) (parte da busca)          | —                                                                             |
+| R5            | [R5](#r5--comparação)                      | —                                                                             |
+| R6            | [R7](#r7--imagens-e-promoções)             | renomeada para "detalhe, imagens, promoções e estados"                        |
+| R7            | —                                          | WhatsApp e acessibilidade já existem; analytics vem da ficha R8               |
+| R8            | [R8](#r8--estados-e-analytics)             | mais produção e domínio, hoje pausados                                        |
+| R9            | [R9](#r9--qa-e-piloto)                     | —                                                                             |
 
 ---
 

@@ -16,17 +16,20 @@ próprio documento.
 
 ## Produto — o que construir
 
-| Documento                                                                                | Estado                                                                 |
-| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO** — fonte oficial do escopo de produto                     |
-| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                 |
-| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                     |
-| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                     |
-| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                           |
-| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo |
-| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                          |
-| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                            |
-| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA** — o PNG aprovado; **não é fonte de dado**               |
+| Documento                                                                                | Estado                                                                              |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [`product/ROADMAP-MVP-V2.md`](product/ROADMAP-MVP-V2.md)                                 | **NORMATIVO** — o roadmap vigente: trilha B2C e trilha B2B                          |
+| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO no escopo** (épicos, "Fora do MVP"); **HISTÓRICO como roadmap**         |
+| [`product/NORTH-STAR-V2-ASSESSMENT.md`](product/NORTH-STAR-V2-ASSESSMENT.md)             | **NORMATIVO** — as decisões consolidadas do North Star V2                           |
+| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                              |
+| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                                  |
+| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                                  |
+| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                                        |
+| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo              |
+| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                                       |
+| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                                         |
+| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA HISTÓRICA** — o PNG aprovado em 05/08; **não é fonte de dado**         |
+| [`product/visual-north-star-v2/`](product/visual-north-star-v2/)                         | **REFERÊNCIA** — pasta dos assets do V2; **vazia: os binários não foram recebidos** |
 
 ## Dados — como o dado é
 
@@ -66,14 +69,14 @@ entram em nenhuma migration de R1/R2:
 
 ## PMO — decisão e execução
 
-| Documento                                                          | Estado                                                                     |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| [`pmo/MVP-DECISION-LOG.md`](pmo/MVP-DECISION-LOG.md)               | **NORMATIVO** — matriz D1–D12, pendências e log                            |
-| [`pmo/MVP-EXECUTION-PLAN.md`](pmo/MVP-EXECUTION-PLAN.md)           | **NORMATIVO** — sequência R1–R9                                            |
-| [`pmo/TECHNICAL-DEBT-REGISTER.md`](pmo/TECHNICAL-DEBT-REGISTER.md) | **NORMATIVO**                                                              |
-| [`pmo/TRELLO-MAPPING.md`](pmo/TRELLO-MAPPING.md)                   | **NORMATIVO** — conteúdo do quadro; sincronizado com o Trello real         |
-| [`pmo/trello/README.md`](pmo/trello/README.md)                     | **OPERACIONAL** — guia de uso do quadro; não decide escopo                 |
-| [`pmo/DEPENDENCY-POLICY.md`](pmo/DEPENDENCY-POLICY.md)             | **NORMATIVO** — política de dependências e inventário dos seis PRs abertos |
+| Documento                                                          | Estado                                                                                 |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [`pmo/MVP-DECISION-LOG.md`](pmo/MVP-DECISION-LOG.md)               | **NORMATIVO** — matriz D1–D12, pendências e log                                        |
+| [`pmo/MVP-EXECUTION-PLAN.md`](pmo/MVP-EXECUTION-PLAN.md)           | **NORMATIVO** no detalhe de cada etapa; a sequência vigente é a do `ROADMAP-MVP-V2.md` |
+| [`pmo/TECHNICAL-DEBT-REGISTER.md`](pmo/TECHNICAL-DEBT-REGISTER.md) | **NORMATIVO**                                                                          |
+| [`pmo/TRELLO-MAPPING.md`](pmo/TRELLO-MAPPING.md)                   | **NORMATIVO** — conteúdo do quadro; sincronizado com o Trello real                     |
+| [`pmo/trello/README.md`](pmo/trello/README.md)                     | **OPERACIONAL** — guia de uso do quadro; não decide escopo                             |
+| [`pmo/DEPENDENCY-POLICY.md`](pmo/DEPENDENCY-POLICY.md)             | **NORMATIVO** — política de dependências e inventário dos seis PRs abertos             |
 
 ## Pós-MVP — registrado, não autorizado
 
@@ -142,5 +145,6 @@ Havendo conflito, vence o de cima:
 1. `CLAUDE.md` — princípios invioláveis e regras de trabalho no código
 2. `PLANO-MESTRE.md` — governança, gates, neutralidade, ações proibidas
 3. `docs/security/` — o que a segurança proíbe
-4. `docs/product/ROADMAP-MVP-v3.md` e os documentos normativos de produto e dados
+4. `docs/product/ROADMAP-MVP-V2.md` — o roadmap vigente, e `ROADMAP-MVP-v3.md` no escopo que ele
+   incorpora por referência; depois os demais documentos normativos de produto e dados
 5. o restante

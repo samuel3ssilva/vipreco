@@ -1,9 +1,21 @@
 # Roadmap MVP v3 — documento normativo do escopo de produto
 
-**Status: NORMATIVO.** Este documento é a fonte oficial de verdade do **escopo de produto** do MVP
-do ViPreço a partir de 02/08/2026. Onde houver contradição com documentos anteriores sobre escopo de
-produto, este documento prevalece — e o documento anterior recebe a marcação
-`SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3`.
+> **SUBSTITUÍDO COMO ROADMAP POR [`ROADMAP-MVP-V2.md`](./ROADMAP-MVP-V2.md) EM 06/08/2026.**
+>
+> Este documento **não foi apagado e não será**. Ele continua sendo a fonte do que decidiu sobre
+> **escopo** — os três épicos (§2), os habilitadores (§3), a lista fechada de "Fora do MVP" (§4) e
+> o que continua verdade (§6) —, e o `ROADMAP-MVP-V2.md` incorpora essas seções por referência em
+> vez de copiá-las.
+>
+> O que mudou é o **roadmap**: a sequência da §5 abaixo é histórica. A ordem vigente está no
+> `ROADMAP-MVP-V2.md` §3, com duas trilhas — B2C (R0 a R9) e B2B (B2B-0 a B2B-5). O `V2` do nome
+> não é uma versão anterior ao `v3`: são numerações de coisas diferentes, e o motivo está escrito
+> no §0 daquele documento.
+
+**Status: NORMATIVO no escopo de produto; HISTÓRICO como roadmap.** Este documento foi a fonte
+oficial de verdade do **escopo de produto** do MVP do ViPreço a partir de 02/08/2026. Onde houver
+contradição com documentos anteriores sobre escopo de produto, este documento prevalece — e o
+documento anterior recebe a marcação `SUPERSEDED FOR MVP PRODUCT SCOPE BY ROADMAP-MVP-v3`.
 
 **O que este documento NÃO substitui:** governança (`PLANO-MESTRE.md` §0, §9, §14, §15), segurança
 (`docs/security/`), infraestrutura e operação (`docs/operations/`), acessibilidade
@@ -169,7 +181,12 @@ esta lista.
 
 ---
 
-## 5. Sequência de execução
+## 5. Sequência de execução — **HISTÓRICA**
+
+> A sequência abaixo é o registro de 02/08/2026. **A ordem vigente está em
+> [`ROADMAP-MVP-V2.md`](./ROADMAP-MVP-V2.md) §3 e §4**, com o Card v2 em R3.2 (antes da Home) e
+> uma trilha B2B paralela. A mudança está registrada em
+> [`../pmo/MVP-DECISION-LOG.md`](../pmo/MVP-DECISION-LOG.md) DL-028.
 
 Detalhamento em [`../pmo/MVP-EXECUTION-PLAN.md`](../pmo/MVP-EXECUTION-PLAN.md).
 

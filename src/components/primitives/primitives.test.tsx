@@ -126,6 +126,37 @@ describe("Surface, Divider e Skeleton", () => {
     // exatamente o incômodo que ele existia para evitar.
     expect(html(<Skeleton className="h-9 w-1/2" />)).toContain("h-9 w-1/2");
   });
+
+  it("a superfície REPASSA atributo de acessibilidade — R3.2 descobriu que ela não repassava", () => {
+    // Regressão de um defeito de verdade. A primeira versão aceitava só as seis props
+    // próprias, e um `<Surface as="article" aria-labelledby={id}>` saía como `<article>`
+    // SEM rótulo nenhum: o card ficava perfeito para quem enxerga e anônimo para quem usa
+    // leitor de tela. Foi o teste de RENDER do Card v2 que pegou — o código-fonte tinha o
+    // atributo escrito, e o HTML não tinha.
+    const saida = html(
+      <Surface as="article" aria-labelledby="titulo-x" id="caixa">
+        Conteúdo
+      </Surface>,
+    );
+    expect(saida).toContain("<article");
+    expect(saida).toContain('aria-labelledby="titulo-x"');
+    expect(saida).toContain('id="caixa"');
+  });
+
+  it("e continua compondo a própria classe com a que recebe", () => {
+    // Controle: repassar o resto não pode ter passado a sobrescrever o `className` montado.
+    const saida = html(<Surface className="w-32">Conteúdo</Surface>);
+    expect(saida).toContain("bg-card");
+    expect(saida).toContain("w-32");
+  });
+
+  it("`Stack` e `Inline` também repassam — a armadilha era da família toda", () => {
+    // Encontrada na `Surface` e conferida nas vizinhas: `id`, `aria-*` e `role` sumiam em
+    // silêncio em qualquer uma delas. Uma primitiva de layout que engole atributo de
+    // acessibilidade é uma regressão esperando por um chamador distraído.
+    expect(html(<Stack id="secao-x">c</Stack>)).toContain('id="secao-x"');
+    expect(html(<Inline role="group">c</Inline>)).toContain('role="group"');
+  });
 });
 
 describe("Stack, Inline e Container", () => {

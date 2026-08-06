@@ -27,28 +27,42 @@ continua sendo o registro do que foi aprovado em 05/08/2026.
 
 ---
 
-## 2. Assets do North Star V2 — **NÃO RECEBIDOS**
+## 2. Assets do North Star V2 — **RECEBIDOS EM 06/08/2026**
 
-O mandato informa que os materiais do North Star V2 foram anexados. **Eles não chegaram a esta
-sessão e não estão acessíveis em lugar nenhum que eu possa ler.**
+A primeira versão deste documento registrava que os materiais anunciados no mandato não tinham
+chegado, e que nada seria inventado no lugar deles. **Eles chegaram no mesmo dia**, no pacote
+`vipreco-north-star-v2-fable.zip`
+(`c875d49ec6f4c5d5d2cf3d5954559f874fe1843a404a63eb955b36364fe7018e`, 3 489 401 bytes).
 
-O que foi verificado, e como:
+Versionados byte a byte em [`visual-north-star-v2/`](./visual-north-star-v2/), com ficha completa
+de hash, dimensões, tamanho, origem e data em
+[`visual-north-star-v2/README.md`](./visual-north-star-v2/README.md):
 
-| Onde procurei                                         | O que encontrei                                                            |
-| ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| Mensagem do mandato                                   | nenhum anexo binário                                                       |
-| `docs/product/visual-north-star/`                     | apenas o PNG **original**, `7b7a28b5…`, inalterado                         |
-| `~/Downloads` e `~/Desktop`, arquivos após 04/08/2026 | só cópias de evidências deste próprio repositório e do North Star original |
-| Diretório de trabalho da sessão                       | nada correspondente                                                        |
+- **as cinco telas**, 1206 × 2622 px cada, em `telas/`;
+- **o documento do North Star V2** e **o assessment de UX**, em `fonte/`.
 
-**Nenhum arquivo foi criado para preencher a lacuna.** Um PNG inventado com nome de North Star
-V2 seria pior que a ausência: ele viraria referência de design de alguém, e a referência seria
-falsa. O diretório [`visual-north-star-v2/`](./visual-north-star-v2/) existe com um `README.md`
-que registra exatamente isto — e é onde os arquivos entram quando chegarem, com hash, dimensões,
-origem e data medidos na hora.
+Três decisões de registro, todas com o motivo escrito na ficha:
 
-**O que sobreviveu à ausência dos binários** é o que de fato decide produto: as decisões
-consolidadas da §4, que vieram escritas no mandato e não dependem de nenhum PNG para valer.
+1. **O North Star original não foi substituído**, e há prova: o PNG que veio dentro do pacote,
+   em `uploads/`, tem exatamente o mesmo SHA-256 (`7b7a28b5…`) do que já estava versionado em
+   [`visual-north-star/`](./visual-north-star/). É o mesmo arquivo, usado pelo Fable como
+   referência. Não havia o que substituir.
+2. **O `ViPreco Redesign.dc.html` ficou fora do repositório**, com o hash registrado. Ele é o
+   passo intermediário entre o assessment e o V2, e os mockups dele mostram redes reais rotuladas
+   como parceiras, prova social inventada e histórico de preço com percentual — as três coisas
+   que o próprio V2 corrigiu. Este repositório é público. A decisão foi minha, está justificada
+   na ficha e é reversível com um `cp`.
+3. **O runtime do Fable** (`support.js`, `doc-page.js`, `ios-frame.jsx`) e a miniatura ficaram
+   fora: são ferramenta, não asset do produto.
+
+**O documento não é só as cinco telas.** Ele tem oito seções, e três delas não existem como
+imagem em lugar nenhum: os **oito estados de ausência**, a tabela **antes/depois** contra o North
+Star original e a classificação de **impacto no roadmap** em quatro faixas. É por isso que o HTML
+foi versionado, e não apenas os PNG.
+
+**A matriz da §3 foi escrita antes dos binários chegarem, a partir do texto do mandato.** Ela foi
+reconferida contra o documento recebido: as decisões batem, e as três células que diziam "não
+recebida" puderam ser preenchidas com a fonte. O que mudou está marcado na §3.1.
 
 ---
 
@@ -58,8 +72,9 @@ Legenda de estado: **aplicado** = já está no código da `main` ou do PR em rev
 **decidido** = decisão registrada, implementação numa fase futura ·
 **fora de escopo** = não entra no MVP.
 
-A coluna "Proposta do North Star V2" registra a resolução que veio no mandato §3. Onde não veio
-proposta textual, está escrito **não recebida** — e nada foi inferido para preencher a célula.
+A coluna "Proposta do North Star V2" registra a resolução que veio no mandato §3 e, desde
+06/08/2026, foi reconferida contra o documento recebido (§2). Nada foi inferido: cada célula sai
+do mandato ou do documento, e as três que diziam "não recebida" agora saem do documento.
 
 | #   | Elemento no North Star original                                                   | Problema                                                                                           | Proposta do North Star V2                                                        | Decisão consolidada                                                                               | Fase       | Requisito de dados             | Estado                                        |
 | --- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------- | ------------------------------ | --------------------------------------------- |
@@ -75,12 +90,12 @@ proposta textual, está escrito **não recebida** — e nada foi inferido para p
 | 10  | Proximidade sugerida sem distância                                                | distância exige geocodificação e consentimento                                                     | **distância depende de consentimento e geocodificação**                          | não entra no MVP; bairro é a âncora                                                               | pós-MVP    | geocodificação                 | **fora de escopo**                            |
 | 11  | "Promoção: Leve 3, pague 2" isolada                                               | promoção sem a condição e sem o desembolso é meia informação                                       | **promoções mostram condição e desembolso**                                      | condição sempre junto; preço efetivo **dentro** da linha da condição, nunca sozinho               | R3.2 → R6  | `PROMOTION-TYPES`              | **aplicado** parcialmente (condição em texto) |
 | 12  | "Confiança da informação" com mercado, fonte, atualização e validade num bloco só | mistura quatro dimensões que respondem perguntas diferentes                                        | **fonte, atualização, confirmação e relação comercial são dimensões diferentes** | quatro dimensões distintas; relação comercial **nunca** se disfarça de procedência                | R6         | `source_type`, `observed_at`   | **decidido**                                  |
-| 13  | Logotipos de rede nos cards (Bom Preço, Mix Mateus, Assaí)                        | imagem de terceiro sem direito de uso; sugere parceria inexistente                                 | não recebida                                                                     | identificação **textual** do mercado até haver autorização registrada                             | R3.2       | `markets.name`                 | **aplicado**                                  |
+| 13  | Logotipos de rede nos cards (Bom Preço, Mix Mateus, Assaí)                        | imagem de terceiro sem direito de uso; sugere parceria inexistente                                 | **mercados e marcas fictícios; ilustrativo marcado com `*`**                     | identificação **textual** do mercado até haver autorização registrada                             | R3.2       | `markets.name`                 | **aplicado**                                  |
 | 14  | Nenhuma marcação de conteúdo pago                                                 | o mockup não distingue orgânico de pago porque não previu o pago                                   | **parceria ou patrocínio nunca altera ranking**                                  | seção separada e rotulada; a ordem é preço → observação → `id`, sempre                            | R6+        | contrato normativo inexistente | **decidido** — nada se desenha antes          |
 | 15  | `R$ 35,98/kg` em **todos** os cards                                               | exige quantidade estruturada e confiável, que só existe depois de E1                               | **preço unitário depende de quantidade confiável**                               | condicional: `calculation_status = ok` ou o campo **some**                                        | R3.2       | E1 · `quantity_value`/`unit`   | **aplicado**                                  |
 | 16  | Todos os cards completos e vigentes                                               | um mockup só mostra o caso bom; o produto real vive de casos incompletos                           | **estados incompletos fazem parte do produto**                                   | sem imagem, sem validade, expirada, desatualizada e erro parcial são variantes de primeira classe | R3.2       | `OFFER-STATES`                 | **aplicado** (8 variantes)                    |
-| 17  | Sino de notificação no header                                                     | notificações estão fora do MVP                                                                     | não recebida                                                                     | não entra                                                                                         | —          | —                              | **fora de escopo**                            |
-| 18  | Aba "Favoritos"                                                                   | fora do MVP                                                                                        | não recebida                                                                     | não entra                                                                                         | —          | —                              | **fora de escopo**                            |
+| 17  | Sino de notificação no header                                                     | notificações estão fora do MVP                                                                     | **removido** ("Removido: sino…")                                                 | não entra                                                                                         | —          | —                              | **fora de escopo**                            |
+| 18  | Aba "Favoritos"                                                                   | fora do MVP                                                                                        | **removido** ("abas Favoritos/Comparar/Mais")                                    | não entra                                                                                         | —          | —                              | **fora de escopo**                            |
 | 19  | Ausente no original                                                               | —                                                                                                  | **Lista de compras permanece pós-piloto**                                        | não entra no MVP nem no piloto                                                                    | pós-piloto | —                              | **fora de escopo**                            |
 | 20  | Ausente no original                                                               | —                                                                                                  | **painel completo para mercados permanece pós-MVP**                              | B2B-5; `/para-mercados` **não** é painel                                                          | pós-MVP    | —                              | **fora de escopo**                            |
 
@@ -103,6 +118,42 @@ contrato.
 **#1 e #2 — a navegação.** Cinco abas viram duas. A decisão não é de estética: cada aba é uma
 promessa de que existe uma tela que se sustenta sozinha, e "Comparar" sem produto escolhido não
 se sustenta.
+
+### 3.1 O que o documento acrescentou, quando chegou
+
+A matriz foi escrita em 06/08/2026 a partir do texto do mandato, antes dos binários. Com o
+documento em mãos ([`visual-north-star-v2/fonte/north-star-v2.html`](./visual-north-star-v2/fonte/north-star-v2.html)),
+nenhuma linha precisou ser desdita. Três ganharam fonte, e três coisas novas entraram.
+
+**As três células que diziam "não recebida" agora têm origem.** #13 (logotipos), #17 (sino) e #18
+(aba Favoritos): a seção "Racional de design" do documento lista, na tela 1, _"Removido: sino,
+logos de mercado, 2º CTA verde, abas Favoritos/Comparar/Mais"_, e a tabela antes/depois troca
+_"Marcas e redes reais (Pilão, Assaí, Mix Mateus) como se fossem parceiras"_ por _"Mercados e
+marcas fictícios; números marcados como ilustrativos (\*)"_.
+
+**O documento confirma duas pendências já registradas, agora com fonte citável.** "Navegação com
+2 abas · 1 CTA por tela" está na faixa _"Necessária para o MVP"_ da classificação de roadmap, e o
+app hoje tem quatro abas. "Histórico de preço e alertas de queda" está na faixa _"Fora do escopo
+atual"_, e a Home ainda exibe "antes R$ 29,90". As duas são R3.3.
+
+**E ele acrescenta uma distinção que a matriz não fazia: diferença observada ≠ histórico.** As
+cinco telas dizem "R$ 0,50 abaixo da próxima oferta observada". Isso é a distância para o
+**segundo mercado da mesma comparação, medida no mesmo instante** — não para um preço passado. A
+regra escrita é _"substitui 'economize': sempre com universo delimitado e só entre ofertas
+comparáveis"_.
+
+A diferença importa para o planejamento: essa não depende de P-01 nem de `price_events`, porque
+os dois preços já estão na mesma consulta que ordena a comparação. Ela não é o que DL-030 removeu
+e não está bloqueada pelo mesmo contrato. Continua **não implementada**, e entra na fase da
+comparação (R5/R6), sujeita a uma regra explícita sobre o que fazer quando só há um mercado.
+
+**Um alerta de leitura, e é o motivo de o assessment estar versionado com rótulo.** O
+[`mvp-assessment.html`](./visual-north-star-v2/fonte/mvp-assessment.html) é a revisão de UX que
+**precedeu** o V2, e o plano de ação dele recomenda coisas que o V2 depois rejeitou: prova social
+("2.300 vizinhos de Artemis já recebem"), economia contra preço anterior com percentual,
+sparkline de 30 dias, alerta de queda e um selo "Parceiro oficial" que dá presença mais rica a
+quem participa. Esta última contraria a neutralidade do `PLANO-MESTRE.md` diretamente. O
+assessment é **entrada**, não decisão. Quem o executar como plano reinstala o que o V2 tirou.
 
 ---
 

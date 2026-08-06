@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<script src="./doc-page.js"></script>
+<style>
+  html { -webkit-font-smoothing: antialiased; }
+  body { margin: 0; font-family: 'Libre Franklin', sans-serif; color: #1c2420; }
+  doc-page:not(:defined) { visibility: hidden; }
+  a { color: #1f6f43; } a:hover { color: #14532d; }
+</style>
+</helmet>
+<doc-page margin="0.85in">
+  <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1f6f43; font-weight: 600; margin-bottom: 10px;">UX / Product Strategy Review · Pilot Readiness</div>
+  <h1 style="font-family: 'Source Serif 4', serif; font-size: 34px; font-weight: 700; line-height: 1.15; margin: 0 0 8px;">ViPreço MVP — Complete Assessment</h1>
+  <p style="font-size: 14px; color: #5a655e; margin: 0 0 28px;">Five screens reviewed: Home/Achados · Search · Comparison · Deal Detail · WhatsApp Opt-in. Audiences: end customer (B2C) and supermarket owner (B2B). Scope: pre-pilot, Artemis region.</p>
+
+  <h2 style="font-family: 'Source Serif 4', serif; font-size: 22px; font-weight: 700; margin: 34px 0 12px; padding-top: 14px; border-top: 2px solid #1c2420;">1. Executive Summary</h2>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 14px;">The MVP is unusually disciplined for this stage: one job per screen, a coherent green/yellow identity, and transparency (source, collection date, validity) present on every surface. The Home → Search → Compare → Detail → WhatsApp journey is logical and the CTA language ("Comparar em 3 mercados") is consistent and predictable. WhatsApp as the retention channel is the right call for the Brazilian market.</p>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 14px;"><strong>The core problem: the app shows prices but never shows savings.</strong> Nowhere does a user see "you save R$ 1,50" — the single number that makes the value proposition land instantly. Second: trust is communicated with repeated small grey text instead of a compact visual badge system, so the app's biggest differentiator reads as clutter. Third: "mercados próximos" is claimed but never proven — no neighborhood selector, no distance on any store. Fourth: the 5-tab navigation promises destinations ("Comparar", "Favoritos") the MVP doesn't support as standalone flows. Fifth: there is nothing on screen a supermarket owner would recognize as being <em>for them</em>.</p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0 6px; break-inside: avoid;">
+    <div style="border: 1px solid #cfdad2; border-radius: 8px; padding: 14px 16px;">
+      <div style="font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #1f6f43; font-weight: 700; margin-bottom: 8px;">Key strengths</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: #2a332d;">
+        <li>Transparency metadata on every screen — rare and valuable</li>
+        <li>Exact-product focus avoids the "generic match" credibility trap</li>
+        <li>Predictable, repeated CTA pattern; low learning cost</li>
+        <li>WhatsApp opt-in is benefit-led, with an explicit "no spam" promise</li>
+        <li>Comparison screen ranks cheapest-first with honest disclaimers</li>
+      </ul>
+    </div>
+    <div style="border: 1px solid #e4d3b0; background: #fdf9ef; border-radius: 8px; padding: 14px 16px;">
+      <div style="font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8a6a1f; font-weight: 700; margin-bottom: 8px;">Biggest bottlenecks</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: #2a332d;">
+        <li>Savings never quantified — prices without deltas</li>
+        <li>Trust expressed as repeated text, not a badge system</li>
+        <li>No location context (neighborhood, distance, radius)</li>
+        <li>Nav overpromises: 2 real flows, 5 tabs</li>
+        <li>Zero visible B2B value; merchants see only a race to the bottom</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 style="font-family: 'Source Serif 4', serif; font-size: 22px; font-weight: 700; margin: 36px 0 12px; padding-top: 14px; border-top: 2px solid #1c2420;">2. Screen-by-Screen Breakdown</h2>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 22px 0 8px;">Screen 1 — Home / Achados</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;"><strong>What works:</strong> "Destaque do dia" is the right anchor; the search placeholder ("arroz, café, leite…") teaches usage; one hero card + a short list is honest for MVP inventory.</p>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li><strong>Add a location anchor at the top.</strong> "Achados de Artemis" is a headline, not a control. Make it a tappable neighborhood selector with a pin icon — it proves "nearby" and prepares multi-region expansion.</li>
+    <li><strong>Two competing green CTAs.</strong> "Comparar em 3 mercados" (hero) and "Receber achados no WhatsApp" fight for primacy. Demote WhatsApp to an outline/ghost button or a dismissible banner; one filled primary per screen.</li>
+    <li><strong>Hero card hierarchy:</strong> price (R$ 17,99) should be the largest element after the product name; the source/validity lines should collapse into two compact chips ("Comunidade · 24/05" and "Válido até 27/05"). Add the missing number: <em>"R$ 1,50 mais barato que o 2º mercado."</em></li>
+    <li><strong>"Outros achados" rows are inert:</strong> no savings signal, no store distance, no tap affordance. Add a right-aligned green delta ("−R$ 2,10") and a chevron.</li>
+    <li><strong>Missing for MVP:</strong> quick-search category chips under the search bar (café, arroz, leite) — cheap to build, removes typing for the top-5 queries.</li>
+  </ul>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 22px 0 8px;">Screen 2 — Search Results</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;"><strong>What works:</strong> exact-product results with brand, size, unit price and best observed price; the "suggest a product" fallback turns dead ends into data collection.</p>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li><strong>"Menor preço observado" repeats on every card</strong> — it's a column header pretending to be body text. Say it once above the list ("Mostrando o menor preço observado em cada produto") and free three lines of vertical space.</li>
+    <li><strong>Three stacked full-width dark buttons are heavy.</strong> Make the whole card tappable (it's the obvious expectation) and reduce the CTA to a text button with chevron: "Comparar em 3 mercados ›".</li>
+    <li><strong>No sort/filter.</strong> Even a single toggle — "por preço / por preço por kg" — matters here: R$ 17,99 (35,98/kg) vs R$ 18,49 (36,98/kg) is exactly the comparison unit price exists for.</li>
+    <li><strong>The "Não encontrou?" module is good but passive.</strong> It reads as a footnote. Give it a real button ("Sugerir produto") and keep the container light grey — it should never outweigh a result card. Its placement at list end is correct; don't move it up.</li>
+  </ul>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 22px 0 8px;">Screen 3 — Product Comparison</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;"><strong>What works:</strong> the strongest screen. Cheapest-first ranking with numbered positions, per-store metadata, promo conditions ("Limite de 2 por cliente") and an honest disclaimer.</p>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li><strong>Crown the winner.</strong> Row #1 should be visually distinct: green border/fill, a "Melhor preço" tag, and the delta that sells the app — <em>"R$ 1,50 mais barato que o 2º".</em> Right now #1 and #3 have identical visual weight.</li>
+    <li><strong>Do the promo math for the user.</strong> "Leve 3, pague 2" on a R$ 17,99 item means an effective R$ 11,99/unit — that computed number should appear on the chip ("Leve 3, pague 2 → R$ 11,99/un"). Multi-buy promos scan as noise until the app translates them into a price.</li>
+    <li><strong>Metadata is tripled.</strong> Fonte + data + validade repeat as two icon-lines per store. Compress to a single line per row ("Comunidade · 24/05 · até 27/05") and reserve the expanded version for the detail screen.</li>
+    <li><strong>Add distance per store</strong> ("1,2 km") — it's the second variable in every real decision, and it's the time-saving half of the value proposition.</li>
+    <li><strong>The "Importante" disclaimer</strong> is correct but shouts (title + filled box). One quiet grey line at list end retains honesty without undermining confidence.</li>
+  </ul>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 22px 0 8px;">Screen 4 — Deal Detail</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;"><strong>What works:</strong> strike-through previous price; the "Confiança da informação" table is the product's signature idea and belongs here.</p>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li><strong>"Abrir no WhatsApp" is semantically ambiguous</strong> — open what? A chat with whom? If it sends the deal to the user's own WhatsApp, label the outcome: "Enviar oferta para meu WhatsApp". If the primary job here is "go buy it", the primary CTA should be <strong>"Como chegar"</strong> (map/route), with WhatsApp and Compartilhar as secondary. A detail screen whose main action is a messaging app suggests the app doesn't believe in its own next step.</li>
+    <li><strong>Turn the trust table into a trust loop.</strong> Add "Confirmado por 12 pessoas esta semana" plus two micro-actions: <em>"✓ Confirmei este preço"</em> and <em>"Reportar preço diferente"</em>. This converts passive metadata into community validation — and generates the freshness data the whole product depends on.</li>
+    <li><strong>Show the saving, twice:</strong> vs the previous price ("−12% · você economiza R$ 2,50") and vs the most expensive nearby market. The strike-through alone makes the user do arithmetic.</li>
+    <li><strong>Missing, high-value:</strong> a 30-day price sparkline (even 4 data points) and "Avise-me se baixar" — both directly monetize the data you're already collecting and give users a reason to return.</li>
+  </ul>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 22px 0 8px;">Screen 5 — WhatsApp Opt-in</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;"><strong>What works:</strong> benefit-led structure, explicit "sem spam" and "pode sair quando quiser" — good consent design.</p>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li><strong>Trigger it contextually, not as a destination.</strong> The screen converts best after a moment of demonstrated value — right after a comparison or a saved deal ("Quer receber achados como este?").</li>
+    <li><strong>Add frequency and scope controls</strong> (daily/weekly; my neighborhood only) — one extra row that dramatically reduces churn from the channel.</li>
+    <li><strong>Add social proof:</strong> "2.300 vizinhos de Artemis já recebem" — the single most effective element on opt-in screens; even a modest true number works.</li>
+    <li><strong>The confetti/percent decorations around the WhatsApp logo read as clip-art</strong> — and oversized third-party logo use carries brand-guideline risk. A small monochrome glyph next to your own headline is safer and looks more professional.</li>
+  </ul>
+
+  <h2 style="font-family: 'Source Serif 4', serif; font-size: 22px; font-weight: 700; margin: 36px 0 12px; padding-top: 14px; border-top: 2px solid #1c2420;">3. Cross-Cutting Analysis</h2>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 20px 0 8px;">Global UX &amp; Navigation</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;">The core journey is logical and short — good. The structural issue is the bottom bar: <strong>"Comparar" is not a destination</strong> (comparison is always contextual to a product; a global tab lands nowhere sensible) and "Favoritos" has no visible supporting flow in the MVP. Ship <strong>three tabs — Achados · Buscar · Lista</strong> (or Favoritos, if lists slip) — and grow later. A shopping list is the highest-leverage missing feature: it aggregates deals into a basket total per store, which is where "how much do I save this week?" becomes real.</p>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 20px 0 8px;">UI / Design System</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;">The green/yellow palette is appropriate and ownable, but under-systematized. Recommend explicit tokens: <strong>green = action + best price</strong> (filled CTAs, winner rows, savings deltas); <strong>yellow = highlight + promo</strong> ("Destaque do dia", multi-buy chips); grey scale strictly for metadata. Today too many elements sit at the same small-grey level, so nothing pops. Typography needs a firmer scale: price XL/bold, product name L/semibold, unit price S, metadata XS chips. Cards need more internal padding and fewer hairlines — let whitespace do the separation. Audit icons for a single family/weight; the current mix (clock, calendar, checkmarks) varies in style.</p>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 20px 0 8px;">B2C Value — Making Savings Visceral</h3>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li>A <strong>green savings delta on every price</strong> ("−R$ 1,50 vs 2º lugar") — the one change that touches all five screens.</li>
+    <li>Translate every multi-buy promo into an <strong>effective unit price</strong>, automatically.</li>
+    <li>Distance chips make the <em>time</em> saving tangible; a running "você já economizou R$ 34 este mês" tally (post-pilot) makes it habitual.</li>
+  </ul>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 20px 0 8px;">B2B Value — From Threat to Channel</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;">As designed, a merchant sees only a leaderboard that punishes anyone who isn't #1 — a race to the bottom. Three UI moves reframe it:</p>
+  <ul style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; padding-left: 20px;">
+    <li><strong>"Parceiro oficial" badge:</strong> merchants who supply official prices get a verified badge and richer presence (logo, hours, address). This is the recruitment pitch in pixel form — join and your data is authoritative, not crowdsourced about you.</li>
+    <li><strong>Promos as differentiation:</strong> the comparison already surfaces "Leve 3, pague 2" — lean in. A store that isn't cheapest per unit can still win the row via promo mechanics, loyalty perks, or bundle deals. That's the anti-race-to-the-bottom story to tell owners.</li>
+    <li><strong>Measurable foot traffic:</strong> "Como chegar" taps, deal shares, and price confirmations per store are countable events. Even a simple monthly WhatsApp report to merchants — "sua loja apareceu em 1.400 comparações, 230 pessoas traçaram rota" — is the B2B retention product. Instrument these events now; a labeled "Oferta patrocinada" slot becomes the revenue line later.</li>
+  </ul>
+
+  <h3 style="font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 700; margin: 20px 0 8px;">Trust &amp; Data Validation</h3>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;">"Coleta da comunidade" is honest but, repeated as plain text, it reads as "unverified". Replace it with a <strong>three-tier visual badge system</strong>, used identically everywhere:</p>
+  <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 0 0 12px; break-inside: avoid;">
+    <thead>
+      <tr style="border-bottom: 1.5px solid #1c2420; text-align: left;">
+        <th style="padding: 6px 10px 6px 0; font-weight: 600;">Tier</th>
+        <th style="padding: 6px 10px; font-weight: 600;">Badge</th>
+        <th style="padding: 6px 0; font-weight: 600;">Meaning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 7px 10px 7px 0; vertical-align: top;">1</td>
+        <td style="padding: 7px 10px; vertical-align: top; white-space: nowrap;"><span style="background: #eef2ee; border-radius: 99px; padding: 2px 8px; font-size: 12px;">Comunidade</span></td>
+        <td style="padding: 7px 0; vertical-align: top;">Single community report, with date</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 7px 10px 7px 0; vertical-align: top;">2</td>
+        <td style="padding: 7px 10px; vertical-align: top; white-space: nowrap;"><span style="background: #e3efe6; color: #14532d; border-radius: 99px; padding: 2px 8px; font-size: 12px;">✓ Confirmado ×12</span></td>
+        <td style="padding: 7px 0; vertical-align: top;">Corroborated by multiple users this week</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 7px 10px 7px 0; vertical-align: top;">3</td>
+        <td style="padding: 7px 10px; vertical-align: top; white-space: nowrap;"><span style="background: #14532d; color: #fff; border-radius: 99px; padding: 2px 8px; font-size: 12px;">Oficial do mercado</span></td>
+        <td style="padding: 7px 0; vertical-align: top;">Supplied/validated by the merchant (B2B hook)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size: 14.5px; line-height: 1.65; margin: 0 0 10px;">Pair it with <strong>color-coded freshness</strong> (green ≤48h, amber ≤5 days, grey older) and the confirm/report loop from Screen 4. The tier system does triple duty: cleaner UI, stronger consumer trust, and a concrete reason for merchants to join (tier 3 is only reachable by partnering).</p>
+
+  <h2 style="font-family: 'Source Serif 4', serif; font-size: 22px; font-weight: 700; margin: 36px 0 12px; padding-top: 14px; border-top: 2px solid #1c2420;">4. Action Plan — Top 5 Before Pilot</h2>
+  <table style="width: 100%; border-collapse: collapse; font-size: 13.5px;">
+    <thead>
+      <tr style="border-bottom: 1.5px solid #1c2420; text-align: left;">
+        <th style="padding: 6px 10px 6px 0; font-weight: 600; width: 24px;">#</th>
+        <th style="padding: 6px 10px; font-weight: 600;">Recommendation</th>
+        <th style="padding: 6px 10px; font-weight: 600; white-space: nowrap;">Impact</th>
+        <th style="padding: 6px 0; font-weight: 600; white-space: nowrap;">Effort</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 8px 10px 8px 0; vertical-align: top; font-weight: 700;">1</td>
+        <td style="padding: 8px 10px; vertical-align: top;"><strong>Quantify savings everywhere.</strong> Green delta vs next-cheapest on hero, results, comparison winner, and detail; auto-computed effective unit price on every multi-buy promo.</td>
+        <td style="padding: 8px 10px; vertical-align: top; color: #14532d; font-weight: 600;">Very high</td>
+        <td style="padding: 8px 0; vertical-align: top;">Low</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 8px 10px 8px 0; vertical-align: top; font-weight: 700;">2</td>
+        <td style="padding: 8px 10px; vertical-align: top;"><strong>Ship the trust-badge system + confirm/report loop.</strong> Replaces repeated metadata text, adds freshness color-coding, and starts the community validation flywheel.</td>
+        <td style="padding: 8px 10px; vertical-align: top; color: #14532d; font-weight: 600;">Very high</td>
+        <td style="padding: 8px 0; vertical-align: top;">Medium</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 8px 10px 8px 0; vertical-align: top; font-weight: 700;">3</td>
+        <td style="padding: 8px 10px; vertical-align: top;"><strong>Add location truth.</strong> Neighborhood selector on Home; distance chip on every store mention; "Como chegar" as the detail screen's primary CTA (WhatsApp secondary, relabeled by outcome).</td>
+        <td style="padding: 8px 10px; vertical-align: top; color: #14532d; font-weight: 600;">High</td>
+        <td style="padding: 8px 0; vertical-align: top;">Medium</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #dfe6e1;">
+        <td style="padding: 8px 10px 8px 0; vertical-align: top; font-weight: 700;">4</td>
+        <td style="padding: 8px 10px; vertical-align: top;"><strong>Simplify navigation and CTA hierarchy.</strong> Three tabs (Achados · Buscar · Lista); one filled primary CTA per screen; winner row highlighted on comparison; lighter result cards (whole card tappable).</td>
+        <td style="padding: 8px 10px; vertical-align: top; color: #14532d; font-weight: 600;">High</td>
+        <td style="padding: 8px 0; vertical-align: top;">Low</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 10px 8px 0; vertical-align: top; font-weight: 700;">5</td>
+        <td style="padding: 8px 10px; vertical-align: top;"><strong>Seed B2B value now.</strong> "Parceiro oficial" badge (= trust tier 3), promo mechanics as a visible way to win without the lowest price, and event instrumentation (route taps, shares, confirmations) so pilot merchants get a traffic report.</td>
+        <td style="padding: 8px 10px; vertical-align: top; color: #14532d; font-weight: 600;">High</td>
+        <td style="padding: 8px 0; vertical-align: top;">Medium</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size: 13px; color: #5a655e; line-height: 1.6; margin: 18px 0 0;">Deferred (post-pilot, deliberately): shopping list with per-store basket totals, price-history sparklines and drop alerts, monthly savings tally, sponsored placements, loyalty/coupon integrations. All depend on data the instrumented pilot will generate.</p>
+</doc-page>
+</x-dc>
+</body>
+</html>

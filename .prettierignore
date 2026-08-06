@@ -6,3 +6,8 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+
+# Artefatos recebidos, versionados byte a byte, com SHA-256 publicado na ficha de
+# docs/product/visual-north-star-v2/README.md. Formatar aqui quebraria o hash e a ficha
+# passaria a descrever um arquivo que não existe mais.
+docs/product/visual-north-star-v2/fonte

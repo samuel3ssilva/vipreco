@@ -16,20 +16,20 @@ próprio documento.
 
 ## Produto — o que construir
 
-| Documento                                                                                | Estado                                                                              |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [`product/ROADMAP-MVP-V2.md`](product/ROADMAP-MVP-V2.md)                                 | **NORMATIVO** — o roadmap vigente: trilha B2C e trilha B2B                          |
-| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO no escopo** (épicos, "Fora do MVP"); **HISTÓRICO como roadmap**         |
-| [`product/NORTH-STAR-V2-ASSESSMENT.md`](product/NORTH-STAR-V2-ASSESSMENT.md)             | **NORMATIVO** — as decisões consolidadas do North Star V2                           |
-| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                              |
-| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                                  |
-| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                                  |
-| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                                        |
-| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo              |
-| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                                       |
-| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                                         |
-| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA HISTÓRICA** — o PNG aprovado em 05/08; **não é fonte de dado**         |
-| [`product/visual-north-star-v2/`](product/visual-north-star-v2/)                         | **REFERÊNCIA** — pasta dos assets do V2; **vazia: os binários não foram recebidos** |
+| Documento                                                                                | Estado                                                                        |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`product/ROADMAP-MVP-V2.md`](product/ROADMAP-MVP-V2.md)                                 | **NORMATIVO** — o roadmap vigente: trilha B2C e trilha B2B                    |
+| [`product/ROADMAP-MVP-v3.md`](product/ROADMAP-MVP-v3.md)                                 | **NORMATIVO no escopo** (épicos, "Fora do MVP"); **HISTÓRICO como roadmap**   |
+| [`product/NORTH-STAR-V2-ASSESSMENT.md`](product/NORTH-STAR-V2-ASSESSMENT.md)             | **NORMATIVO** — as decisões consolidadas do North Star V2                     |
+| [`product/PRODUCT-PRINCIPLES.md`](product/PRODUCT-PRINCIPLES.md)                         | **NORMATIVO** — critérios de desempate                                        |
+| [`product/CANONICAL-PRODUCT-SPEC.md`](product/CANONICAL-PRODUCT-SPEC.md)                 | **NORMATIVO** — E1                                                            |
+| [`product/COMPARISON-SPEC.md`](product/COMPARISON-SPEC.md)                               | **NORMATIVO** — E2                                                            |
+| [`product/CARD-V2-SPEC.md`](product/CARD-V2-SPEC.md)                                     | **NORMATIVO** — alvo do card                                                  |
+| [`product/VISUAL-IMPLEMENTATION-CONTRACT.md`](product/VISUAL-IMPLEMENTATION-CONTRACT.md) | **NORMATIVO** — direção visual; o conteúdo do North Star é ilustrativo        |
+| [`product/R3-SCREEN-SPEC.md`](product/R3-SCREEN-SPEC.md)                                 | **NORMATIVO** — as cinco telas, campo a campo                                 |
+| [`product/R3-COMPONENT-INVENTORY.md`](product/R3-COMPONENT-INVENTORY.md)                 | **NORMATIVO** — componentes e roadmap R3→R7                                   |
+| [`product/visual-north-star/`](product/visual-north-star/)                               | **REFERÊNCIA HISTÓRICA** — o PNG aprovado em 05/08; **não é fonte de dado**   |
+| [`product/visual-north-star-v2/`](product/visual-north-star-v2/)                         | **REFERÊNCIA** — as cinco telas e os dois documentos do V2, com ficha de hash |
 
 ## Dados — como o dado é
 

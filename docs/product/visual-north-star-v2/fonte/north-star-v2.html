@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #f4efe2; font-family: 'Figtree', sans-serif; color: #1c2420; -webkit-font-smoothing: antialiased; }
+  a { color: #1f6f43; } a:hover { color: #14532d; }
+</style>
+</helmet>
+
+<!-- ═══════════════ A · NORTH STAR V2 ═══════════════ -->
+<section id="ns-board" style="padding: 56px 64px 40px; min-width: 2440px;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-bottom: 8px;">
+    <div>
+      <div style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #1f6f43; font-weight: 700; margin-bottom: 8px;">North Star v2 · Piloto Artemis, Piracicaba – SP</div>
+      <h1 style="margin: 0; font-size: 44px; font-weight: 800; letter-spacing: -0.02em; color: #14532d;">ViPreço — preço com procedência</h1>
+      <p style="margin: 8px 0 0; font-size: 15.5px; color: #5a655e; max-width: 760px; line-height: 1.5;">O ViPreço não mostra apenas uma diferença de preço. Ele explica quando essa diferença é realmente comparável.</p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; max-width: 900px; justify-content: flex-end;">
+      <span style="background: #fff; border: 1px solid #dfe6e1; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #14532d;">Produto exato antes do preço</span>
+      <span style="background: #fff; border: 1px solid #dfe6e1; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #14532d;">Nenhuma promessa absoluta</span>
+      <span style="background: #fff; border: 1px solid #dfe6e1; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #14532d;">Comparação só quando comparável</span>
+      <span style="background: #fff; border: 1px solid #dfe6e1; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #14532d;">Confiança ≠ parceria</span>
+      <span style="background: #fff; border: 1px solid #dfe6e1; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #14532d;">1 CTA por tela</span>
+      <span style="background: #fff; border: 1px solid #dfe6e1; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #14532d;">Funciona sem GPS</span>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 44px; align-items: flex-start; margin-top: 36px;">
+
+    <!-- TELA 1 · HOME -->
+    <div id="tela1" style="width: 402px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;" data-screen-label="Tela 1 · Home / Achados">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="height: 100%; background: #faf8f2; display: flex; flex-direction: column; font-family: 'Figtree', sans-serif; color: #1c2420;">
+          <div style="flex: 1; overflow: hidden; padding: 60px 18px 0; display: flex; flex-direction: column; gap: 13px;">
+            <div style="font-size: 22px; font-weight: 800; color: #14532d;">ViPreço<span style="color: #d9a514;">.</span></div>
+            <div style="display: flex; align-items: center; gap: 10px; background: #eaf3ec; border: 1px solid #d3e4d8; border-radius: 12px; padding: 10px 14px;">
+              <span style="font-size: 15px;">📍</span>
+              <div style="flex: 1;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #14532d;">Você está vendo ofertas de Artemis</div>
+                <div style="font-size: 11.5px; color: #5a655e;">Piracicaba – SP</div>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; color: #1f6f43;">alterar</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px;">
+              <span style="font-size: 14px; color: #8a948d;">🔍</span>
+              <span style="font-size: 14px; color: #8a948d;">Busque um produto exato — café, arroz…</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <span style="background: #fff; border: 1px solid #e7e3d7; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #3a453e;">Café</span>
+              <span style="background: #fff; border: 1px solid #e7e3d7; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #3a453e;">Arroz</span>
+              <span style="background: #fff; border: 1px solid #e7e3d7; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #3a453e;">Leite</span>
+              <span style="background: #fff; border: 1px solid #e7e3d7; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #3a453e;">Óleo</span>
+            </div>
+            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 2px;">
+              <span style="font-size: 15px; font-weight: 800;">Achados de hoje</span>
+              <span style="font-size: 11.5px; color: #8a948d;">atualizado hoje</span>
+            </div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 16px; overflow: hidden;">
+              <div style="background: #fbf3dc; padding: 7px 16px; font-size: 11.5px; font-weight: 700; color: #8a6a1f; letter-spacing: 0.05em; text-transform: uppercase;">Destaque de hoje</div>
+              <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 12px;">
+                  <div style="width: 62px; height: 62px; border-radius: 10px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 6px, #eae5d6 6px, #eae5d6 12px); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: #8a948d; text-align: center;">embalagem<br>500 g</div>
+                  <div style="flex: 1;">
+                    <div style="font-size: 16px; font-weight: 800; line-height: 1.25;">Café Serra Alta Tradicional</div>
+                    <div style="font-size: 12.5px; color: #6b7570; margin-top: 2px;">Torrado e moído · pacote · 500 g</div>
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 7px;">
+                      <span style="font-size: 26px; font-weight: 800; color: #14532d;">R$ 17,99</span>
+                      <span style="font-size: 12px; color: #8a948d;">R$ 35,98/kg</span>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size: 12.5px; font-weight: 700; color: #1f6f43;">R$ 0,50 abaixo da próxima oferta observada</div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #3a453e;">
+                  <span style="font-weight: 700;">Supermercado Artemis</span>
+                  <span style="color: #8a948d;">· Centro</span>
+                  <span style="background: #eaf3ec; color: #14532d; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2.5px 9px; margin-left: auto; display: inline-flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #22a55a;"></span>hoje</span>
+                </div>
+                <div style="background: #14532d; color: #fff; text-align: center; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700;">Comparar em 3 mercados monitorados</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 11px;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 5px, #eae5d6 5px, #eae5d6 10px);"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 13.5px; font-weight: 700;">Arroz Branco Ouro do Campo · tipo 1 · 5 kg</div>
+                  <div style="font-size: 11.5px; color: #6b7570;">Mercado do Bairro · Centro · hoje</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 15px; font-weight: 800; color: #14532d;">R$ 23,90</div>
+                  <div style="font-size: 10.5px; color: #6b7570;">2 mercados</div>
+                </div>
+                <span style="color: #b9c1ba; font-size: 16px;">›</span>
+              </div>
+              <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 11px;">
+                <div style="width: 42px; height: 42px; border-radius: 8px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 5px, #eae5d6 5px, #eae5d6 10px);"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 13.5px; font-weight: 700;">Leite Integral Boa Serra · caixa · 1 L</div>
+                  <div style="font-size: 11.5px; color: #6b7570;">Mercado Exemplo A · Vila Nova · hoje</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 15px; font-weight: 800; color: #14532d;">R$ 4,69</div>
+                  <div style="font-size: 10.5px; color: #6b7570;">3 mercados</div>
+                </div>
+                <span style="color: #b9c1ba; font-size: 16px;">›</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #d3e4d8; border-radius: 12px; padding: 10px; font-size: 13px; font-weight: 700; color: #1f6f43;">Receber achados no WhatsApp</div>
+          </div>
+          <div style="border-top: 1px solid #e7e3d7; background: #fff; display: flex; justify-content: center; gap: 10px; padding: 10px 0 30px;">
+            <span style="background: #14532d; color: #fff; border-radius: 999px; padding: 9px 26px; font-size: 13.5px; font-weight: 700;">Achados</span>
+            <span style="color: #6b7570; border-radius: 999px; padding: 9px 26px; font-size: 13.5px; font-weight: 600;">Buscar</span>
+          </div>
+        </div>
+      </x-import>
+      <div style="text-align: center;">
+        <div style="font-size: 15px; font-weight: 800; color: #14532d;">1 · Home / Achados de Artemis</div>
+        <div style="font-size: 12.5px; color: #5a655e; line-height: 1.5; margin-top: 3px;">Região explícita, identidade exata antes do preço, diferença observada com universo delimitado, 1 CTA. Navegação reduzida a 2 abas.</div>
+      </div>
+    </div>
+
+    <!-- TELA 2 · BUSCA -->
+    <div id="tela2" style="width: 402px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;" data-screen-label="Tela 2 · Busca">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="height: 100%; background: #faf8f2; display: flex; flex-direction: column; font-family: 'Figtree', sans-serif; color: #1c2420;">
+          <div style="flex: 1; overflow: hidden; padding: 60px 18px 0; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px; color: #3a453e;">‹</span>
+              <div style="flex: 1; display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid #1f6f43; border-radius: 12px; padding: 11px 14px;">
+                <span style="font-size: 14px; color: #8a948d;">🔍</span>
+                <span style="font-size: 14.5px; font-weight: 600; flex: 1;">café</span>
+                <span style="width: 18px; height: 18px; border-radius: 50%; background: #e7e3d7; color: #6b7570; font-size: 10px; display: flex; align-items: center; justify-content: center;">✕</span>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #6b7570;">Preços observados nos mercados monitorados em Artemis.</div>
+            <div style="font-size: 12.5px; font-weight: 800; color: #3a453e; letter-spacing: 0.04em; text-transform: uppercase;">Produtos exatos</div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 12px;">
+                <div style="width: 52px; height: 52px; border-radius: 9px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 5px, #eae5d6 5px, #eae5d6 10px);"></div>
+                <div style="flex: 1;">
+                  <div style="font-size: 15px; font-weight: 800;">Café Serra Alta Tradicional</div>
+                  <div style="font-size: 12px; color: #6b7570;">Torrado e moído · pacote · 500 g</div>
+                </div>
+                <span style="color: #b9c1ba; font-size: 17px;">›</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span style="font-size: 22px; font-weight: 800; color: #14532d;">R$ 17,99</span>
+                <span style="font-size: 11.5px; color: #8a948d;">R$ 35,98/kg</span>
+              </div>
+              <div style="font-size: 12px; color: #3a453e;">Menor preço observado entre <strong>3 mercados</strong> · <span style="color: #1f6f43; font-weight: 700;">R$ 0,50 abaixo da próxima oferta</span></div>
+              <div style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #6b7570;">
+                Supermercado Artemis · Centro
+                <span style="background: #eaf3ec; color: #14532d; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2px 9px; margin-left: auto; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #22a55a;"></span>hoje</span>
+              </div>
+            </div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 12px;">
+                <div style="width: 52px; height: 52px; border-radius: 9px; background: #f1ede1; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: #8a948d; text-align: center; border: 1px dashed #d8d4c8;">sem imagem<br>confirmada</div>
+                <div style="flex: 1;">
+                  <div style="font-size: 15px; font-weight: 800;">Café Dois Rios Tradicional</div>
+                  <div style="font-size: 12px; color: #6b7570;">Torrado e moído · pacote · 500 g</div>
+                </div>
+                <span style="color: #b9c1ba; font-size: 17px;">›</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span style="font-size: 22px; font-weight: 800; color: #14532d;">R$ 16,79</span>
+                <span style="font-size: 11.5px; color: #8a948d;">R$ 33,58/kg</span>
+              </div>
+              <div style="font-size: 12px; color: #3a453e;">Menor preço observado entre <strong>2 mercados</strong></div>
+              <div style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #6b7570;">
+                Mercado Exemplo A · Vila Nova
+                <span style="background: #fbf3dc; color: #8a6a1f; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2px 9px; margin-left: auto; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #e0a72c;"></span>há 2 dias</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="flex: 1; height: 1px; background: #e0dccd;"></div>
+              <span style="font-size: 12px; font-weight: 800; color: #8a948d; letter-spacing: 0.04em; text-transform: uppercase;">Similares — quantidade diferente</span>
+              <div style="flex: 1; height: 1px; background: #e0dccd;"></div>
+            </div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 14px; padding: 13px 16px; display: flex; flex-direction: column; gap: 7px; opacity: 0.92;">
+              <div style="display: flex; gap: 12px;">
+                <div style="width: 46px; height: 46px; border-radius: 9px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 5px, #eae5d6 5px, #eae5d6 10px);"></div>
+                <div style="flex: 1;">
+                  <div style="font-size: 14px; font-weight: 800;">Café Monte Claro Tradicional</div>
+                  <div style="font-size: 12px; color: #6b7570;">Torrado e moído · pacote · <strong>250 g</strong></div>
+                </div>
+                <span style="color: #b9c1ba; font-size: 17px;">›</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span style="font-size: 19px; font-weight: 800; color: #3a453e;">R$ 10,99</span>
+                <span style="font-size: 11.5px; color: #8a948d;">R$ 43,96/kg</span>
+              </div>
+              <div style="font-size: 11.5px; color: #8a948d;">Não entra na comparação dos pacotes de 500 g.</div>
+            </div>
+            <div style="background: #f0ede1; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <div style="flex: 1; font-size: 12.5px; color: #5a655e;">Não encontrou o que procurava?</div>
+              <div style="background: #fff; border: 1px solid #d3e4d8; color: #1f6f43; font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 7px 14px; white-space: nowrap;">Sugerir produto</div>
+            </div>
+          </div>
+          <div style="border-top: 1px solid #e7e3d7; background: #fff; display: flex; justify-content: center; gap: 10px; padding: 10px 0 30px;">
+            <span style="color: #6b7570; border-radius: 999px; padding: 9px 26px; font-size: 13.5px; font-weight: 600;">Achados</span>
+            <span style="background: #14532d; color: #fff; border-radius: 999px; padding: 9px 26px; font-size: 13.5px; font-weight: 700;">Buscar</span>
+          </div>
+        </div>
+      </x-import>
+      <div style="text-align: center;">
+        <div style="font-size: 15px; font-weight: 800; color: #14532d;">2 · Resultados da busca</div>
+        <div style="font-size: 12.5px; color: #5a655e; line-height: 1.5; margin-top: 3px;">Exatos primeiro, similares separados. Universo delimitado dito 1 vez. Card inteiro clicável; placeholder digno quando falta imagem.</div>
+      </div>
+    </div>
+
+    <!-- TELA 3 · COMPARAÇÃO -->
+    <div id="tela3" style="width: 402px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;" data-screen-label="Tela 3 · Comparação">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="height: 100%; background: #faf8f2; display: flex; flex-direction: column; font-family: 'Figtree', sans-serif; color: #1c2420;">
+          <div style="flex: 1; overflow: hidden; padding: 60px 18px 0; display: flex; flex-direction: column; gap: 11px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 20px; color: #3a453e;">‹</span>
+              <span style="font-size: 15px; font-weight: 700;">Comparar produto</span>
+              <span style="font-size: 15px; color: #3a453e;">⇪</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 10px 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 8px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 5px, #eae5d6 5px, #eae5d6 10px);"></div>
+              <div style="flex: 1;">
+                <div style="font-size: 14.5px; font-weight: 800;">Café Serra Alta Tradicional</div>
+                <div style="font-size: 11.5px; color: #6b7570;">Torrado e moído · pacote · 500 g</div>
+              </div>
+              <span style="background: #eaf3ec; color: #14532d; font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px;">Produto exato</span>
+            </div>
+            <div style="font-size: 13.5px; font-weight: 800;">Menor preço observado entre 3 mercados monitorados</div>
+            <div style="background: #eef6f0; border: 1.5px solid #9dc4aa; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 21px; height: 21px; border-radius: 50%; background: #14532d; color: #fff; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center;">1</span>
+                <div style="flex: 1;">
+                  <span style="font-size: 14.5px; font-weight: 800;">Supermercado Artemis</span>
+                  <div style="font-size: 11.5px; color: #5a655e;">Centro</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 21px; font-weight: 800; color: #14532d;">R$ 17,99</div>
+                  <div style="font-size: 10.5px; color: #6b7570;">R$ 35,98/kg</div>
+                </div>
+                <span style="color: #8a948d; font-size: 15px; margin-left: 2px;">⋯</span>
+              </div>
+              <div style="font-size: 12px; font-weight: 700; color: #1f6f43;">R$ 0,50 abaixo da próxima oferta observada</div>
+              <div style="font-size: 11px; color: #6b7570;">Coleta da comunidade · atualizado hoje · válido até 27/05*</div>
+            </div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 21px; height: 21px; border-radius: 50%; background: #eeebe0; color: #5a655e; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center;">2</span>
+                <div style="flex: 1;">
+                  <span style="font-size: 14.5px; font-weight: 700;">Mercado Exemplo A</span>
+                  <div style="font-size: 11.5px; color: #5a655e;">Vila Nova</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 18px; font-weight: 800; color: #3a453e;">R$ 18,49</div>
+                  <div style="font-size: 10.5px; color: #8a948d;">R$ 36,98/kg</div>
+                </div>
+                <span style="color: #8a948d; font-size: 15px; margin-left: 2px;">⋯</span>
+              </div>
+              <div style="font-size: 11px; color: #6b7570;">Encarte verificado · há 2 dias · válido até 26/05*</div>
+            </div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 21px; height: 21px; border-radius: 50%; background: #eeebe0; color: #5a655e; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center;">3</span>
+                <div style="flex: 1;">
+                  <span style="font-size: 14.5px; font-weight: 700;">Mercado do Bairro</span>
+                  <div style="font-size: 11.5px; color: #5a655e;">Centro</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 18px; font-weight: 800; color: #3a453e;">R$ 19,49</div>
+                  <div style="font-size: 10.5px; color: #8a948d;">R$ 38,98/kg</div>
+                </div>
+                <span style="color: #8a948d; font-size: 15px; margin-left: 2px;">⋯</span>
+              </div>
+              <div style="font-size: 11px; color: #6b7570;">Coleta da comunidade · há 2 dias · validade não informada</div>
+            </div>
+            <div style="background: #fff; border: 1px dashed #d0b874; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 11px; font-weight: 800; color: #8a6a1f; letter-spacing: 0.05em; text-transform: uppercase;">Promoção condicionada — fora do ranking unitário</div>
+              <div style="font-size: 13px; font-weight: 700;">Mercado Exemplo A · Leve 3, pague 2</div>
+              <div style="font-size: 12px; color: #3a453e;">Total no caixa: <strong>R$ 36,98</strong> · preço efetivo: <strong>R$ 12,33 por unidade</strong></div>
+              <div style="font-size: 11px; color: #6b7570;">Vale só levando 3 · limite de 1 kit por cliente* · até 26/05*</div>
+            </div>
+            <div style="font-size: 10.5px; color: #8a948d; line-height: 1.5; text-align: center; padding: 0 6px;">Ordenado pelo menor preço observado. Promoções condicionadas aparecem separadamente. Conteúdo pago não altera esta ordem.</div>
+          </div>
+        </div>
+      </x-import>
+      <div style="text-align: center;">
+        <div style="font-size: 15px; font-weight: 800; color: #14532d;">3 · Comparação do produto</div>
+        <div style="font-size: 12.5px; color: #5a655e; line-height: 1.5; margin-top: 3px;">Destaque sutil no 1º, procedência em 1 linha por oferta, promoção condicionada separada do ranking (total + efetivo). Ações movidas para o menu ⋯.</div>
+      </div>
+    </div>
+
+    <!-- TELA 4 · DETALHE -->
+    <div id="tela4" style="width: 402px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;" data-screen-label="Tela 4 · Detalhe da oferta">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="height: 100%; background: #faf8f2; display: flex; flex-direction: column; font-family: 'Figtree', sans-serif; color: #1c2420;">
+          <div style="flex: 1; overflow: hidden; padding: 60px 18px 0; display: flex; flex-direction: column; gap: 11px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 20px; color: #3a453e;">‹</span>
+              <span style="font-size: 15px; font-weight: 700;">Detalhe da oferta</span>
+              <span style="font-size: 15px; color: #3a453e;">⋯</span>
+            </div>
+            <div style="display: flex; gap: 13px; align-items: center;">
+              <div style="width: 76px; height: 76px; border-radius: 12px; background: repeating-linear-gradient(45deg, #f1ede1, #f1ede1 6px, #eae5d6 6px, #eae5d6 12px); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: #8a948d; text-align: center;">embalagem<br>500 g</div>
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                  <span style="font-size: 16.5px; font-weight: 800; line-height: 1.2;">Café Serra Alta Tradicional</span>
+                </div>
+                <div style="font-size: 12.5px; color: #6b7570; margin-top: 2px;">Torrado e moído · pacote · 500 g</div>
+                <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+                  <span style="font-size: 28px; font-weight: 800; color: #14532d;">R$ 17,99</span>
+                  <span style="font-size: 12px; color: #8a948d;">R$ 35,98/kg</span>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #1f6f43;">R$ 0,50 abaixo da próxima oferta observada entre 3 mercados</div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                  <span style="font-size: 14.5px; font-weight: 800;">Supermercado Artemis</span>
+                  <span style="border: 1px solid #d8d4c8; color: #6b7570; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 2px 8px;">Mercado parceiro</span>
+                </div>
+                <div style="font-size: 12px; color: #5a655e; margin-top: 3px;">Centro de Artemis · Rua Ilustrativa, 123*</div>
+                <div style="font-size: 11px; color: #8a948d; margin-top: 2px;">Distância e tempo aparecem com localização autorizada.</div>
+              </div>
+            </div>
+            <div style="background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #5a655e;">Procedência da informação</div>
+              <div style="display: grid; grid-template-columns: 92px 1fr; gap: 5px 10px; font-size: 12.5px;">
+                <span style="color: #8a948d;">Fonte</span><span style="font-weight: 600;">Coleta da comunidade</span>
+                <span style="color: #8a948d;">Atualização</span><span style="font-weight: 600; color: #14532d;">Atualizado hoje · 08:32*</span>
+                <span style="color: #8a948d;">Validade</span><span style="font-weight: 600;">Até 27/05*</span>
+                <span style="color: #8a948d;">Confirmação</span><span style="font-weight: 600;">Confirmado por 4 pessoas*</span>
+              </div>
+              <div style="display: flex; gap: 14px; border-top: 1px solid #f0ede1; padding-top: 9px;">
+                <span style="font-size: 12.5px; font-weight: 700; color: #1f6f43;">✓ Confirmar preço</span>
+                <span style="font-size: 12.5px; font-weight: 700; color: #8a948d;">Reportar diferença</span>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #6b7570; background: #f0ede1; border-radius: 10px; padding: 9px 13px;">Sem promoção vigente para esta oferta.</div>
+            <div style="font-size: 11.5px; color: #8a948d; text-align: center;">Confira preço e disponibilidade no mercado antes de comprar.</div>
+            <div style="background: #14532d; color: #fff; text-align: center; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700;">Como chegar</div>
+            <div style="display: flex; gap: 8px;">
+              <div style="flex: 1; border: 1.5px solid #d3e4d8; color: #1f6f43; text-align: center; border-radius: 12px; padding: 11px; font-size: 13px; font-weight: 700;">Enviar para meu WhatsApp</div>
+              <div style="flex: 1; border: 1.5px solid #e7e3d7; color: #5a655e; text-align: center; border-radius: 12px; padding: 11px; font-size: 13px; font-weight: 700;">Compartilhar</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div style="text-align: center;">
+        <div style="font-size: 15px; font-weight: 800; color: #14532d;">4 · Detalhe da oferta</div>
+        <div style="font-size: 12.5px; color: #5a655e; line-height: 1.5; margin-top: 3px;">Procedência completa em 4 dimensões separadas; "Mercado parceiro" neutro, fora da confiança. CTA único "Como chegar"; WhatsApp explicado ("Enviar para meu WhatsApp").</div>
+      </div>
+    </div>
+
+    <!-- TELA 5 · WHATSAPP -->
+    <div id="tela5" style="width: 402px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;" data-screen-label="Tela 5 · WhatsApp contextual">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="height: 100%; background: rgba(22,34,27,0.42); display: flex; flex-direction: column; justify-content: flex-end; font-family: 'Figtree', sans-serif; color: #1c2420;">
+          <div style="background: #faf8f2; border-radius: 24px 24px 0 0; padding: 14px 22px 44px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="width: 40px; height: 4px; border-radius: 999px; background: #d8d4c8; align-self: center;"></div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #14532d; color: #fff; font-size: 17px; display: flex; align-items: center; justify-content: center;">✆</div>
+              <div style="font-size: 18px; font-weight: 800; line-height: 1.25;">Quer receber achados como este?</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 9px; background: #fff; border: 1px solid #e7e3d7; border-radius: 12px; padding: 13px 15px; font-size: 12.5px; color: #2a332d;">
+              <div style="display: flex; gap: 10px;"><span style="color: #8a948d; width: 78px; flex-shrink: 0;">Região</span><span style="font-weight: 600;">Artemis · Piracicaba – SP</span></div>
+              <div style="display: flex; gap: 10px;"><span style="color: #8a948d; width: 78px; flex-shrink: 0;">Conteúdo</span><span style="font-weight: 600;">Novos achados e mudanças de preço observadas</span></div>
+              <div style="display: flex; gap: 10px;"><span style="color: #8a948d; width: 78px; flex-shrink: 0;">Frequência</span><span style="font-weight: 600;">Poucas mensagens por semana, em ajuste durante o piloto</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #2a332d;">
+              <div style="display: flex; gap: 8px;"><span style="color: #1f8a4c; font-weight: 800;">✓</span> Sem spam — só quando houver novidade relevante</div>
+              <div style="display: flex; gap: 8px;"><span style="color: #1f8a4c; font-weight: 800;">✓</span> Você pode sair quando quiser</div>
+            </div>
+            <div style="background: #14532d; color: #fff; text-align: center; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700;">Receber achados no WhatsApp</div>
+            <div style="text-align: center; font-size: 13px; font-weight: 700; color: #6b7570;">Agora não</div>
+          </div>
+        </div>
+      </x-import>
+      <div style="text-align: center;">
+        <div style="font-size: 15px; font-weight: 800; color: #14532d;">5 · WhatsApp contextual</div>
+        <div style="font-size: 12.5px; color: #5a655e; line-height: 1.5; margin-top: 3px;">Bottom sheet após a demonstração de valor. Região, conteúdo e frequência honestos; sem números sociais inventados, sem logo gigante.</div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top: 28px; font-size: 12px; color: #8a948d;">* Conteúdo ilustrativo para avaliação de layout — preços, mercados, datas, endereços e confirmações não são reais. Nenhuma rede real é apresentada como parceira.</div>
+</section>
+
+<!-- ═══════════════ C · ESTADOS DE AUSÊNCIA ═══════════════ -->
+<section id="estados" style="padding: 40px 64px; min-width: 2440px; border-top: 2px solid #e0dccd;">
+  <h2 style="margin: 0 0 6px; font-size: 28px; font-weight: 800; color: #14532d;">Estados de ausência — parte do produto, não erro</h2>
+  <p style="margin: 0 0 24px; font-size: 14px; color: #5a655e;">Como o design se comporta quando falta imagem, validade, quantidade, distância, promoção ou comparação.</p>
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">1 · Card sem imagem</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px; display: flex; gap: 12px; align-items: center;">
+        <div style="width: 52px; height: 52px; border-radius: 9px; background: #f1ede1; border: 1px dashed #d8d4c8; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: #8a948d; text-align: center;">sem imagem<br>confirmada</div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 800;">Café Dois Rios Tradicional</div>
+          <div style="font-size: 11.5px; color: #6b7570;">Torrado e moído · 500 g</div>
+          <div style="font-size: 16px; font-weight: 800; color: #14532d; margin-top: 4px;">R$ 16,79</div>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Placeholder digno e identificado. Nunca imagem "parecida" — imagem errada é pior que nenhuma.</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">2 · Oferta desatualizada</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px;">
+        <div style="font-size: 14px; font-weight: 800; color: #6b7570;">Arroz Ouro do Campo · 5 kg</div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+          <span style="font-size: 18px; font-weight: 800; color: #8a948d;">R$ 23,90</span>
+          <span style="background: #f0ede1; color: #6b7570; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px;">Atualizado há 9 dias</span>
+        </div>
+        <div style="font-size: 11.5px; color: #8a948d; margin-top: 6px;">Preço pode ter mudado. Confira no mercado ou confirme para atualizar.</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Preço perde o verde e o destaque; a idade do dado vira o elemento principal. Sai do ranking de "menor observado".</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">3 · Promoção condicionada</div>
+      <div style="border: 1px dashed #d0b874; border-radius: 12px; padding: 12px 14px;">
+        <div style="font-size: 11px; font-weight: 800; color: #8a6a1f; text-transform: uppercase; letter-spacing: 0.05em;">Promoção condicionada</div>
+        <div style="font-size: 13.5px; font-weight: 700; margin-top: 4px;">Leve 3, pague 2 — Mercado Exemplo A</div>
+        <div style="font-size: 12.5px; margin-top: 4px;">Total no caixa: <strong>R$ 36,98</strong> · efetivo: <strong>R$ 12,33/un</strong></div>
+        <div style="font-size: 11px; color: #6b7570; margin-top: 4px;">Vale só levando 3 · exige clube do mercado* · limite 1 kit* · até 26/05*</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Condição, desembolso total e preço efetivo sempre juntos. Nunca classificada silenciosamente como melhor oferta unitária.</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">4 · Quantidade não confiável</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px;">
+        <div style="font-size: 14px; font-weight: 800;">Feijão Carioca Boa Terra</div>
+        <div style="font-size: 11.5px; color: #6b7570;">Pacote · <span style="background: #f0ede1; border-radius: 999px; padding: 1px 8px; font-weight: 700;">quantidade não confirmada</span></div>
+        <div style="font-size: 18px; font-weight: 800; color: #14532d; margin-top: 5px;">R$ 8,49</div>
+        <div style="font-size: 11.5px; color: #8a948d; margin-top: 3px;">Sem preço por kg — informamos quando a quantidade for confirmada.</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Sem R$/kg inferido, sem entrada em comparação. A ausência é explicada, não escondida.</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">5 · Comparação indisponível</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 16px 14px; text-align: center;">
+        <div style="font-size: 14px; font-weight: 800;">Comparação indisponível</div>
+        <div style="font-size: 12px; color: #6b7570; line-height: 1.5; margin-top: 5px;">Só encontramos 1 mercado com esta oferta vigente e comparável em Artemis.</div>
+        <div style="display: inline-block; background: #14532d; color: #fff; font-size: 12.5px; font-weight: 700; border-radius: 10px; padding: 9px 18px; margin-top: 10px;">Ver a oferta encontrada</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Também usado quando condições são incompatíveis, preços estão desatualizados ou a identidade não foi confirmada.</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">6 · Produto não encontrado</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 16px 14px; text-align: center;">
+        <div style="font-size: 14px; font-weight: 800;">Ainda não monitoramos "azeite trufado"</div>
+        <div style="font-size: 12px; color: #6b7570; line-height: 1.5; margin-top: 5px;">Sugira o produto e avisaremos quando ele entrar no monitoramento de Artemis.</div>
+        <div style="display: inline-block; background: #14532d; color: #fff; font-size: 12.5px; font-weight: 700; border-radius: 10px; padding: 9px 18px; margin-top: 10px;">Sugerir produto</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Beco sem saída vira coleta de demanda para o piloto.</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">7 · Sem achados hoje (Home)</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 16px 14px; text-align: center;">
+        <div style="font-size: 14px; font-weight: 800;">Sem achados novos hoje</div>
+        <div style="font-size: 12px; color: #6b7570; line-height: 1.5; margin-top: 5px;">Nenhuma oferta relevante foi observada hoje em Artemis. Busque um produto para comparar preços vigentes.</div>
+        <div style="display: inline-block; background: #14532d; color: #fff; font-size: 12.5px; font-weight: 700; border-radius: 10px; padding: 9px 18px; margin-top: 10px;">Buscar um produto</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">A Home admite dias fracos sem inflar "destaques" artificiais.</div>
+    </div>
+    <div style="width: 348px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 16px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">8 · Com localização autorizada</div>
+      <div style="border: 1px solid #e7e3d7; border-radius: 12px; padding: 12px 14px;">
+        <div style="display: flex; align-items: center; gap: 7px;">
+          <span style="font-size: 14px; font-weight: 800;">Supermercado Artemis</span>
+          <span style="background: #f0ede1; color: #5a655e; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px;">850 m* · ~11 min a pé*</span>
+        </div>
+        <div style="font-size: 11.5px; color: #6b7570; margin-top: 3px;">Centro de Artemis · Rua Ilustrativa, 123*</div>
+      </div>
+      <div style="font-size: 12px; color: #5a655e; line-height: 1.5; margin-top: 10px;">Distância e tempo só aparecem com GPS autorizado e geocodificação confiável. Sem autorização, mostra mercado + bairro — nunca bloqueia a experiência.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ D · ANTES / DEPOIS ═══════════════ -->
+<section id="antes-depois" style="padding: 40px 64px; min-width: 2440px; border-top: 2px solid #e0dccd;">
+  <h2 style="margin: 0 0 6px; font-size: 28px; font-weight: 800; color: #14532d;">Antes / Depois</h2>
+  <p style="margin: 0 0 24px; font-size: 14px; color: #5a655e;">North Star original × versão 2 — principais mudanças e por que cada uma melhora o MVP.</p>
+  <div style="display: flex; gap: 36px; align-items: flex-start;">
+    <div style="width: 760px; flex-shrink: 0;">
+      <div style="font-size: 12px; font-weight: 800; color: #8a948d; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px;">Antes — North Star original</div>
+      <img src="uploads/vipreco-mvp-north-star.png" style="width: 100%; border-radius: 14px; border: 1px solid #dfe6e1;" alt="North Star original do ViPreço">
+    </div>
+    <div style="flex: 1; min-width: 900px;">
+      <div style="font-size: 12px; font-weight: 800; color: #1f6f43; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px;">Depois — o que mudou e por quê</div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid #dfe6e1;">
+        <thead>
+          <tr style="background: #14532d; color: #fff; text-align: left;">
+            <th style="padding: 10px 14px; font-weight: 700; width: 150px;">Área</th>
+            <th style="padding: 10px 14px; font-weight: 700;">Antes</th>
+            <th style="padding: 10px 14px; font-weight: 700;">Depois (v2)</th>
+            <th style="padding: 10px 14px; font-weight: 700;">Por que melhora o MVP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Promessa</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">"Melhor preço perto de você", "Economize R$ X"</td>
+            <td style="padding: 10px 14px; vertical-align: top;">"Menor preço observado entre 3 mercados monitorados" + "R$ 0,50 abaixo da próxima oferta"</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Nenhuma frase promete mais do que os dados provam; protege a credibilidade no piloto.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Confiança</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Texto longo repetido ("Fonte: coleta da comunidade 24/05 às 08:32") em todos os cards</td>
+            <td style="padding: 10px 14px; vertical-align: top;">4 dimensões separadas (fonte · atualização · confirmação · relação comercial) com divulgação progressiva: resumo no card, completo no detalhe</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Menos densidade, mais clareza; parceria não se disfarça de confiança.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Navegação</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">5 abas (Achados, Buscar, Comparar, Favoritos, Mais) + sino</td>
+            <td style="padding: 10px 14px; vertical-align: top;">2 abas (Achados · Buscar); comparação e detalhe nascem do fluxo</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Nenhuma aba vazia prometendo o que o MVP não tem.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Promoções</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Tag "Leve 3, pague 2" misturada ao ranking</td>
+            <td style="padding: 10px 14px; vertical-align: top;">Bloco separado com condição + total no caixa (R$ 36,98) + efetivo (R$ 12,33/un) + limites</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Promoção condicionada não vence silenciosamente a oferta unitária; o desembolso real fica visível.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Localização</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Endereços de São Luís; sem contexto de região; distâncias implícitas</td>
+            <td style="padding: 10px 14px; vertical-align: top;">"Você está vendo ofertas de Artemis"; mercado + bairro por padrão; distância/rota só com GPS autorizado</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Funciona sem GPS e sem inventar dados; pronto para o piloto real.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">CTAs</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">2–3 botões verdes por tela; "Abrir no WhatsApp" ambíguo</td>
+            <td style="padding: 10px 14px; vertical-align: top;">1 botão preenchido por tela; detalhe = "Como chegar"; "Enviar para meu WhatsApp" explica a ação</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Ação principal previsível em 5 segundos.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #efece1;">
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Conteúdo</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Marcas e redes reais (Pilão, Assaí, Mix Mateus) como se fossem parceiras</td>
+            <td style="padding: 10px 14px; vertical-align: top;">Mercados e marcas fictícios; números marcados como ilustrativos (*)</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Sem risco jurídico/reputacional; sem prova social inventada.</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 14px; font-weight: 700; vertical-align: top;">Estados</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">Só o caminho feliz</td>
+            <td style="padding: 10px 14px; vertical-align: top;">8 estados de ausência desenhados como parte do produto</td>
+            <td style="padding: 10px 14px; vertical-align: top; color: #5a655e;">O piloto vai viver de dados incompletos; o design já sabe se comportar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ E · RACIONAL DE DESIGN ═══════════════ -->
+<section id="racional" style="padding: 40px 64px; min-width: 2440px; border-top: 2px solid #e0dccd;">
+  <h2 style="margin: 0 0 6px; font-size: 28px; font-weight: 800; color: #14532d;">Racional de design</h2>
+  <p style="margin: 0 0 24px; font-size: 14px; color: #5a655e;">Hierarquia, CTA e o que foi removido ou movido para o detalhe, tela a tela.</p>
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <div style="width: 430px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 18px 20px; font-size: 13px; line-height: 1.55;">
+      <div style="font-size: 15px; font-weight: 800; color: #14532d; margin-bottom: 8px;">Tela 1 · Home</div>
+      <div><strong>Hierarquia:</strong> região → busca → destaque (identidade → preço → diferença → procedência resumida) → outros achados.</div>
+      <div style="margin-top: 6px;"><strong>CTA:</strong> "Comparar em 3 mercados monitorados".</div>
+      <div style="margin-top: 6px;"><strong>Removido:</strong> sino, logos de mercado, 2º CTA verde, abas Favoritos/Comparar/Mais.</div>
+      <div style="margin-top: 6px;"><strong>Movido ao detalhe:</strong> fonte completa, validade, confirmação.</div>
+    </div>
+    <div style="width: 430px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 18px 20px; font-size: 13px; line-height: 1.55;">
+      <div style="font-size: 15px; font-weight: 800; color: #14532d; margin-bottom: 8px;">Tela 2 · Busca</div>
+      <div><strong>Hierarquia:</strong> termo → explicação única do universo → exatos → similares separados → sugestão.</div>
+      <div style="margin-top: 6px;"><strong>CTA:</strong> o próprio card (inteiro clicável) abre a comparação.</div>
+      <div style="margin-top: 6px;"><strong>Removido:</strong> "menor preço observado" repetido por card; botões pesados por card.</div>
+      <div style="margin-top: 6px;"><strong>Regra:</strong> R$/kg só com quantidade confirmada; diferença só quando comparável.</div>
+    </div>
+    <div style="width: 430px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 18px 20px; font-size: 13px; line-height: 1.55;">
+      <div style="font-size: 15px; font-weight: 800; color: #14532d; margin-bottom: 8px;">Tela 3 · Comparação</div>
+      <div><strong>Hierarquia:</strong> identidade exata → título com universo → ranking unitário → promoções condicionadas → explicação do ranking.</div>
+      <div style="margin-top: 6px;"><strong>CTA:</strong> tocar numa oferta abre o detalhe; destaque do 1º é sutil (fundo suave, sem grito).</div>
+      <div style="margin-top: 6px;"><strong>Removido:</strong> Confirmar/Reportar repetidos por linha (→ menu ⋯ e detalhe); ícones e datas duplicadas.</div>
+      <div style="margin-top: 6px;"><strong>Neutralidade:</strong> "Conteúdo pago não altera esta ordem" escrito na tela.</div>
+    </div>
+    <div style="width: 430px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 18px 20px; font-size: 13px; line-height: 1.55;">
+      <div style="font-size: 15px; font-weight: 800; color: #14532d; margin-bottom: 8px;">Tela 4 · Detalhe</div>
+      <div><strong>Hierarquia:</strong> identidade → preço → diferença → mercado (parceria neutra) → procedência em 4 dimensões → aviso → ação.</div>
+      <div style="margin-top: 6px;"><strong>CTA:</strong> "Como chegar"; secundários outline ("Enviar para meu WhatsApp", "Compartilhar"); Confirmar/Reportar como ações de texto.</div>
+      <div style="margin-top: 6px;"><strong>Confiança ≠ parceria:</strong> "Mercado parceiro" é chip cinza informativo, fora do bloco de procedência, sem alterar ordem nem cor.</div>
+    </div>
+    <div style="width: 430px; background: #fff; border: 1px solid #dfe6e1; border-radius: 14px; padding: 18px 20px; font-size: 13px; line-height: 1.55;">
+      <div style="font-size: 15px; font-weight: 800; color: #14532d; margin-bottom: 8px;">Tela 5 · WhatsApp</div>
+      <div><strong>Hierarquia:</strong> pergunta → o que você recebe (região, conteúdo, frequência) → garantias → ação.</div>
+      <div style="margin-top: 6px;"><strong>CTA:</strong> "Receber achados no WhatsApp" + "Agora não".</div>
+      <div style="margin-top: 6px;"><strong>Removido:</strong> logo gigante, confetes, números sociais inventados, promessa de frequência diária.</div>
+      <div style="margin-top: 6px;"><strong>Forma:</strong> bottom sheet contextual; página independente só para campanhas externas.</div>
+    </div>
+    <div style="width: 430px; background: #eef6f0; border: 1px solid #cfe2d5; border-radius: 14px; padding: 18px 20px; font-size: 13px; line-height: 1.55;">
+      <div style="font-size: 15px; font-weight: 800; color: #14532d; margin-bottom: 8px;">Regras globais</div>
+      <div><strong>Densidade:</strong> card = identidade, preço, mercado, diferença válida, atualização, ação. O resto vai para o detalhe.</div>
+      <div style="margin-top: 6px;"><strong>Diferença observada</strong> substitui "economize": sempre com universo delimitado e só entre ofertas comparáveis.</div>
+      <div style="margin-top: 6px;"><strong>Localização:</strong> bairro por padrão; distância/tempo/rota apenas com GPS autorizado.</div>
+      <div style="margin-top: 6px;"><strong>B2B:</strong> instrumentar toques em "Como chegar", compartilhamentos e confirmações por mercado — relatório mensal ao lojista, fora das telas do consumidor.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ F · IMPACTO NO ROADMAP ═══════════════ -->
+<section id="roadmap" style="padding: 40px 64px 72px; min-width: 2440px; border-top: 2px solid #e0dccd;">
+  <h2 style="margin: 0 0 6px; font-size: 28px; font-weight: 800; color: #14532d;">Impacto potencial no roadmap</h2>
+  <p style="margin: 0 0 24px; font-size: 14px; color: #5a655e;">Classificação indicativa das ideias visuais — não é decisão definitiva de roadmap.</p>
+  <div style="display: flex; gap: 20px; align-items: flex-start;">
+    <div style="flex: 1; background: #fff; border-top: 4px solid #14532d; border-left: 1px solid #dfe6e1; border-right: 1px solid #dfe6e1; border-bottom: 1px solid #dfe6e1; border-radius: 12px; padding: 18px 20px;">
+      <div style="font-size: 14px; font-weight: 800; color: #14532d; margin-bottom: 12px;">1 · Necessária para o MVP</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #2a332d;">
+        <li>Identidade exata (marca, variante, quantidade, embalagem)</li>
+        <li>Conjunto preço + fonte + atualização + validade</li>
+        <li>Universo delimitado ("entre 3 mercados monitorados")</li>
+        <li>Diferença observada só quando comparável</li>
+        <li>Promoção condicionada com total + preço efetivo</li>
+        <li>Região explícita, funcionando sem GPS</li>
+        <li>Navegação com 2 abas · 1 CTA por tela</li>
+        <li>Estados de ausência desenhados</li>
+      </ul>
+    </div>
+    <div style="flex: 1; background: #fff; border-top: 4px solid #1f8a4c; border-left: 1px solid #dfe6e1; border-right: 1px solid #dfe6e1; border-bottom: 1px solid #dfe6e1; border-radius: 12px; padding: 18px 20px;">
+      <div style="font-size: 14px; font-weight: 800; color: #1f8a4c; margin-bottom: 12px;">2 · Recomendada para o piloto</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #2a332d;">
+        <li>WhatsApp contextual pós-comparação</li>
+        <li>Confirmar preço / Reportar diferença no detalhe</li>
+        <li>Separação "exatos × similares" na busca</li>
+        <li>Chips de busca rápida</li>
+        <li>Explicação do ranking na comparação</li>
+        <li>Chip neutro "Mercado parceiro"</li>
+        <li>Sugestão de produto não encontrado</li>
+      </ul>
+    </div>
+    <div style="flex: 1; background: #fff; border-top: 4px solid #d9a514; border-left: 1px solid #dfe6e1; border-right: 1px solid #dfe6e1; border-bottom: 1px solid #dfe6e1; border-radius: 12px; padding: 18px 20px;">
+      <div style="font-size: 14px; font-weight: 800; color: #8a6a1f; margin-bottom: 12px;">3 · Pode entrar depois do piloto</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #2a332d;">
+        <li>Distância, tempo e rota com GPS autorizado</li>
+        <li>Contagem real de confirmações da comunidade</li>
+        <li>"Encarte verificado" como fonte escalada</li>
+        <li>Frequência configurável no WhatsApp</li>
+        <li>Conteúdo patrocinado claramente identificado</li>
+        <li>Relatório mensal de tráfego ao lojista (B2B)</li>
+      </ul>
+    </div>
+    <div style="flex: 1; background: #fff; border-top: 4px solid #b9c1ba; border-left: 1px solid #dfe6e1; border-right: 1px solid #dfe6e1; border-bottom: 1px solid #dfe6e1; border-radius: 12px; padding: 18px 20px;">
+      <div style="font-size: 14px; font-weight: 800; color: #6b7570; margin-bottom: 12px;">4 · Fora do escopo atual</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #2a332d;">
+        <li>Lista de compras / cesta completa</li>
+        <li>Histórico de preço e alertas de queda</li>
+        <li>Cashback, cupons, fidelidade</li>
+        <li>Login obrigatório / perfil completo</li>
+        <li>Marketplace, checkout, compra no app</li>
+        <li>Feed social, gamificação</li>
+        <li>Painel B2B dentro do app do consumidor</li>
+      </ul>
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

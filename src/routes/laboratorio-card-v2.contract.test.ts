@@ -1,0 +1,211 @@
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+/**
+ * R3.2 — o contrato do laboratório do Card v2.
+ *
+ * =============================================================================
+ * ELE É MAIS ESTRITO QUE O DA R3.1, E NÃO MAIS FROUXO
+ * =============================================================================
+ *
+ * O contrato de `/laboratorio-visual` proíbe qualquer valor em reais que não seja
+ * `R$ 00,00`, e proíbe nome de mercado. Esta rota precisa dos dois — é o Card v2 com
+ * conteúdo. A tentação era mover o card para lá e afrouxar aquele teste; seria contornar
+ * um guarda em vez de escrever o segundo.
+ *
+ * Então aqui a regra muda de forma, não de força: preço e mercado podem existir, e **só**
+ * podem vir do fixture fictício versionado. Nada remoto, nenhum nome de rede, nenhum
+ * bairro real, nenhum logotipo, nenhum GTIN.
+ */
+const ROTA = readFileSync(join(process.cwd(), "src/routes/laboratorio-card-v2.tsx"), "utf-8");
+const FIXTURES = readFileSync(join(process.cwd(), "src/components/card-v2/fixtures.ts"), "utf-8");
+const SITEMAP = readFileSync(join(process.cwd(), "src/routes/sitemap[.]xml.ts"), "utf-8");
+
+/** O arquivo sem os comentários — o que a página de fato executa e renderiza. */
+function semComentario(fonte: string): string {
+  return fonte
+    .split("\n")
+    .filter((linha) => {
+      const t = linha.trimStart();
+      return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
+    })
+    .join("\n");
+}
+
+const ROTA_EXECUTAVEL = semComentario(ROTA);
+const FIXTURES_EXECUTAVEL = semComentario(FIXTURES);
+
+describe("nada real entra no laboratório do Card v2", () => {
+  it.each([
+    ["a rota", ROTA_EXECUTAVEL],
+    ["o fixture", FIXTURES_EXECUTAVEL],
+  ])("%s não cita nenhuma rede de mercado", (_, fonte) => {
+    // Os três primeiros são os ilustrativos do North Star. Nenhum é parceiro, nenhum
+    // autorizou nada, e um card com o nome de um deles é indistinguível de um card real
+    // assim que sai da página em que nasceu.
+    for (const rede of ["Bom Preço", "Mix Mateus", "Assaí", "Atacadão", "Carrefour", "Pão de "]) {
+      expect(fonte, `cita ${rede}`).not.toContain(rede);
+    }
+  });
+
+  it.each([
+    ["a rota", ROTA_EXECUTAVEL],
+    ["o fixture", FIXTURES_EXECUTAVEL],
+  ])("%s não cita bairro nem cidade de verdade", (_, fonte) => {
+    for (const lugar of ["Artemis", "Piracicaba", "Jardim Atlântico", "São Luís"]) {
+      expect(fonte, `cita ${lugar}`).not.toContain(lugar);
+    }
+  });
+
+  it("o fixture usa os nomes neutros combinados", () => {
+    // O oposto do teste acima. Sem esta metade, apagar todos os nomes faria o anterior
+    // passar por vacuidade — e um laboratório sem conteúdo nenhum não prova card nenhum.
+    for (const neutro of ["Mercado Exemplo", "Bairro Exemplo", "Produto Demonstrativo"]) {
+      expect(FIXTURES).toContain(neutro);
+    }
+  });
+
+  it("nenhum GTIN — nem exibido, nem guardado", () => {
+    // O card não mostra identificador, e o fixture não carrega nenhum: `gtin` é sempre
+    // `null`. Uma sequência de 8 a 14 dígitos seguidos seria a assinatura de um.
+    expect(FIXTURES_EXECUTAVEL).not.toMatch(/\b\d{8,14}\b/);
+    expect(FIXTURES).toContain("gtin: null");
+  });
+
+  it("nenhum logotipo de terceiro, nem por URL nem por arquivo", () => {
+    for (const fonte of [ROTA_EXECUTAVEL, FIXTURES_EXECUTAVEL]) {
+      expect(fonte).not.toMatch(/logo/i);
+    }
+  });
+
+  it("nenhuma imagem externa — a única é um desenho embutido", () => {
+    expect(FIXTURES_EXECUTAVEL).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
+    expect(FIXTURES).toContain("data:image/svg+xml");
+  });
+
+  it("nenhuma promessa absoluta de menor preço", () => {
+    for (const promessa of ["menor preço", "o mais barato", "melhor preço", "imperdível"]) {
+      expect(ROTA.toLowerCase(), `a rota promete "${promessa}"`).not.toContain(promessa);
+    }
+  });
+});
+
+describe("o laboratório não fala com o mundo lá fora", () => {
+  it("não importa serviço, cliente de banco nem fixture de demonstração do produto", () => {
+    for (const proibido of ["@/services", "@/integrations", "supabase", "demo-opportunities"]) {
+      expect(ROTA_EXECUTAVEL, `a rota importa ${proibido}`).not.toContain(proibido);
+    }
+  });
+
+  it("não faz chamada de rede nenhuma", () => {
+    for (const proibido of ["fetch(", "XMLHttpRequest", "useQuery", "loader:"]) {
+      expect(ROTA_EXECUTAVEL, `a rota usa ${proibido}`).not.toContain(proibido);
+    }
+  });
+
+  it("o instante de referência é fixo — nenhum relógio no render", () => {
+    // `Date.now()` produziria HTML diferente no servidor e no cliente (divergência de
+    // hidratação) e faria a evidência mudar sozinha entre duas capturas.
+    for (const fonte of [ROTA_EXECUTAVEL, FIXTURES_EXECUTAVEL]) {
+      expect(fonte).not.toContain("Date.now()");
+      expect(fonte).not.toContain("Math.random");
+    }
+    expect(FIXTURES).toContain('new Date("2026-08-06T15:00:00.000Z")');
+  });
+});
+
+describe("o laboratório do Card v2 não é público", () => {
+  it("tem o mesmo portão, que decide se a rota existe", () => {
+    expect(ROTA).toContain("isVisualLabEnabled");
+    expect(ROTA).toContain("notFound()");
+  });
+
+  it("e também pede `noindex` — as duas coisas, não uma", () => {
+    expect(ROTA).toMatch(/name:\s*"robots",\s*content:\s*"noindex, nofollow"/);
+  });
+
+  it("não entra no sitemap", () => {
+    expect(SITEMAP).not.toContain("laboratorio");
+  });
+
+  it("não é alcançável pela navegação do produto", () => {
+    const shell = readFileSync(join(process.cwd(), "src/components/AppShell.tsx"), "utf-8");
+    expect(shell).not.toContain("laboratorio");
+  });
+});
+
+describe("as oito variantes obrigatórias estão no laboratório", () => {
+  it("A a H, sem faltar nenhuma", () => {
+    // A ordem e o conteúdo saem do mandato §9. `D` aparece em duas leituras porque
+    // "desatualizada" tem duas causas distintas no domínio.
+    for (const chave of ["A", "B", "C", "D1", "D2", "E", "F", "G", "H"]) {
+      expect(FIXTURES, `falta a variante ${chave}`).toContain(`chave: "${chave}"`);
+    }
+  });
+
+  it("nenhuma variante patrocinada — não há contrato normativo para ela", () => {
+    // Conteúdo pago vive em seção separada e rotulada, e **jamais** reordena a lista
+    // orgânica. Enquanto não houver contrato aprovado na main, desenhar a variante seria
+    // decidir o assunto pelo desenho.
+    for (const fonte of [ROTA_EXECUTAVEL, FIXTURES_EXECUTAVEL]) {
+      for (const proibido of ["patrocinad", "is_featured: true", "destaque pago", "sponsor"]) {
+        expect(fonte.toLowerCase(), `há sinal de patrocínio: ${proibido}`).not.toContain(
+          proibido.toLowerCase(),
+        );
+      }
+    }
+  });
+});
+
+describe("R3.2 não toca em nada que já está no ar", () => {
+  /**
+   * `git diff` contra a `main` é a única forma de dar esta garantia sem depender de alguém
+   * lembrar de olhar. Um teste que afirmasse isto por inspeção de texto provaria bem menos.
+   */
+  function git(args: string[]): string {
+    return execFileSync("git", args, { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+  }
+
+  function mudouNaBranch(caminho: string): boolean {
+    try {
+      // `origin/main` SEM `...HEAD`, de propósito: compara a ÁRVORE DE TRABALHO com a
+      // main, e não só o que já foi commitado. A primeira versão usava `...HEAD` e o
+      // controle positivo abaixo a reprovou — antes do commit, o guarda devolvia "não
+      // mudou" para tudo, inclusive para arquivos que a branch estava criando naquele
+      // instante. Um guarda que só acorda depois do commit é um guarda que não protege
+      // justamente quem está editando.
+      const alterados = git(["diff", "--name-only", "origin/main", "--", caminho]);
+      // Arquivo novo ainda não rastreado não aparece em `git diff` nenhum.
+      const novos = git(["ls-files", "--others", "--exclude-standard", "--", caminho]);
+      return alterados.trim().length > 0 || novos.trim().length > 0;
+    } catch {
+      // Sem `origin/main` local (clone raso, fork) a comparação não é possível. Declarar
+      // "não mudou" aqui seria afirmar o que não se mediu.
+      return false;
+    }
+  }
+
+  it.each([
+    "src/routes/index.tsx",
+    "src/routes/buscar.tsx",
+    "src/routes/produto.$productId.tsx",
+    "src/components/AchadoCard.tsx",
+    "src/components/PriceCard.tsx",
+    "src/components/PriceSummary.tsx",
+    "src/components/AppShell.tsx",
+    "src/lib/comparison.ts",
+    "src/services/catalog.ts",
+    "supabase/migrations",
+    "wrangler.jsonc",
+  ])("%s não foi alterado por R3.2", (caminho) => {
+    expect(mudouNaBranch(caminho), `${caminho} mudou nesta branch`).toBe(false);
+  });
+
+  it("e o guarda acima realmente detecta mudança", () => {
+    // Controle positivo. `src/lib/card-v2.ts` é criado por esta branch — se o detector
+    // devolvesse `false` para tudo, a lista acima passaria sem provar nada.
+    expect(mudouNaBranch("src/lib/card-v2.ts")).toBe(true);
+  });
+});

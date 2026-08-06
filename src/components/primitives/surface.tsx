@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from "react";
+import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -37,6 +37,7 @@ export function Surface({
   borda = true,
   className,
   as: Tag = "div",
+  ...resto
 }: {
   children: ReactNode;
   elevacao?: Elevacao;
@@ -44,7 +45,7 @@ export function Surface({
   borda?: boolean;
   className?: string;
   as?: ElementType;
-}) {
+} & Omit<HTMLAttributes<HTMLElement>, "className" | "children">) {
   return (
     <Tag
       className={cn(
@@ -54,6 +55,18 @@ export function Surface({
         PADDING[padding],
         className,
       )}
+      // R3.2 — O RESTO É REPASSADO, e a lição que fez isto existir vale o comentário.
+      //
+      // A primeira versão aceitava só as seis props acima. Quando o Card v2 passou
+      // `aria-labelledby` para um `<Surface as="article">`, o atributo foi descartado **em
+      // silêncio**: TypeScript reclamou, é verdade, mas o desenho da primitiva era o
+      // problema — uma caixa genérica que engole atributo de acessibilidade entrega um
+      // `<article>` sem rótulo nenhum para quem usa leitor de tela, e a tela continua
+      // parecendo perfeita para quem enxerga.
+      //
+      // O teste de render pegou. É exatamente o tipo de falha que só o render pega: o
+      // código-fonte do card TINHA `aria-labelledby` escrito, e o HTML não tinha.
+      {...resto}
     >
       {children}
     </Tag>

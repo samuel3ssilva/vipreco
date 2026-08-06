@@ -3,18 +3,46 @@
 Capturas geradas em navegador de verdade por `scripts/visual/screenshot-para-mercados.ts`,
 contra o servidor de desenvolvimento local.
 
-**Recapturadas em 06/08/2026**, depois que o Founder/PMO decidiu a copy da primeira dobra. Todas
-as imagens abaixo mostram o H1 vigente, "Mostre suas ofertas no piloto do ViPreço em Artemis".
+**Recapturadas em 06/08/2026**, depois do shell B2B e da copy decidida. Todas as imagens abaixo
+mostram a página **sem a barra inferior do consumidor**.
 
-| Arquivo                              | O que é                             | Viewport CSS | PNG (DPR 2) |
-| ------------------------------------ | ----------------------------------- | ------------ | ----------- |
-| `para-mercados-390.png`              | página inteira                      | 390 px       | 780 × 15002 |
-| `para-mercados-430.png`              | página inteira                      | 430 px       | 860 × 14550 |
-| `para-mercados-desktop.png`          | página inteira                      | 1280 px      | 2560 × 8484 |
-| `para-mercados-comparison-board.png` | a rota anterior ao lado da proposta | 1400 px      | 2800 × 5460 |
+| Arquivo                              | O que é                             | Viewport CSS | PNG (DPR 2) | SHA-256 (12)   |
+| ------------------------------------ | ----------------------------------- | ------------ | ----------- | -------------- |
+| `para-mercados-390.png`              | página inteira                      | 390 px       | 780 × 15178 | `b91ec135ad2b` |
+| `para-mercados-430.png`              | página inteira                      | 430 px       | 860 × 14678 | `54c983ba8027` |
+| `para-mercados-desktop.png`          | página inteira                      | 1280 px      | 2560 × 8682 | `4385ea61dee4` |
+| `para-mercados-comparison-board.png` | a rota anterior ao lado da proposta | 1400 px      | 2800 × 5732 | `158631a295da` |
 
-A página ficou **112 px mais alta a 390 px** que na captura anterior. É o custo do novo H1, que
-ocupa três linhas em vez de duas nessa largura, mais a linha própria de "ainda não está no ar".
+```bash
+shasum -a 256 docs/evidence/visual/b2b0/*.png
+```
+
+Um `.painel-b2b0.tmp.html` de 4 MB tinha entrado na pasta e no commit anterior: o script escrevia
+o HTML do painel aqui em vez de na pasta temporária do sistema, o nome começa com ponto, e um
+`git add -A` versionou. O arquivo saiu, e o script passou a usar `mkdtemp`.
+
+### A rota B2B saiu da casca do consumidor
+
+A captura anterior mostrava, encostada no polegar, uma barra com **Achados · Buscar · Ajuda ·
+Mercados**, e a aba "Mercados" marcada como a página atual. Um dono de mercado lê isso como
+"entrei no aplicativo do consumidor e estou numa seção dele". Não é: o contrato aprovado diz rota
+separada, **nunca** aba do app B2C.
+
+`/para-mercados` passou a usar um shell próprio, `MarketShell`: marca, conteúdo, link discreto
+para a experiência do morador no rodapé, e nada mais. **Zero elementos `<nav>` na página**, medido
+no navegador. O `AppShell` **não foi tocado** — o guarda de `git` em
+`para-mercados.contract.test.ts` compara oito arquivos do consumidor com `origin/main` e reprova
+se qualquer um deles tiver mudado.
+
+O CTA fixo do mobile desceu junto: sem barra para sobrevoar, `alturaDaBarra` é zero e o botão
+encosta na área segura do aparelho, em vez de flutuar 56 px acima de nada. O padrão do
+`StickyCta` não mudou, então a Home continua com o comportamento de sempre.
+
+### O que mudou de altura, e por quê
+
+A página ganhou **176 px a 390 px** em relação à captura da manhã (15 002 → 15 178). O rodapé
+próprio acrescenta; a frase isolada "o ViPreço ainda não está no ar", removida por decisão do
+Founder/PMO, devolve parte. A soma é positiva e é o rodapé.
 
 Para regerar:
 

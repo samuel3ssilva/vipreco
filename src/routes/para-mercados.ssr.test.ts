@@ -49,17 +49,29 @@ describe("primeira dobra da proposta", () => {
     const subtitulo = corpo.indexOf(
       "Estamos preparando um teste local para ajudar consumidores a encontrar e comparar ofertas com produto exato, fonte, data e validade.",
     );
-    // A primeira dobra diz que o produto não está no ar ANTES de qualquer promessa. Um lojista
-    // que descobre isso no meio da conversa relê tudo o que ouviu antes com desconfiança.
-    // "Estamos preparando" sugere; "ainda não está no ar" afirma. As duas coisas ficam.
-    const subtexto = corpo.indexOf("ainda não está no ar");
+    // Depois do subtítulo vem o tamanho do piloto, e só então o convite.
+    const tamanho = corpo.indexOf("O piloto começa pequeno");
     const acao = corpo.indexOf("Quero conversar sobre o piloto");
 
     expect(eyebrow).toBeGreaterThan(-1);
     expect(titulo).toBeGreaterThan(eyebrow);
     expect(subtitulo).toBeGreaterThan(titulo);
-    expect(subtexto).toBeGreaterThan(subtitulo);
-    expect(acao).toBeGreaterThan(subtexto);
+    expect(tamanho).toBeGreaterThan(subtitulo);
+    expect(acao).toBeGreaterThan(tamanho);
+  });
+
+  it("não repete quatro vezes que o produto não está no ar", () => {
+    // DECISÃO DO FOUNDER/PMO, 06/08/2026. A frase isolada "O ViPreço ainda não está no ar"
+    // saiu da primeira dobra por redundância: o banner de ambiente de teste já diz, o
+    // subtítulo já diz ("estamos preparando"), e a microcopy abaixo do convite já diz ("o
+    // piloto ainda está em preparação"). A quarta repetição não acrescenta honestidade; ela
+    // gasta a atenção de quem tem vinte minutos.
+    //
+    // O teste guarda os DOIS lados: a frase não volta, e as que ficaram não somem.
+    const corpo = html.slice(html.indexOf("<body"));
+    expect(corpo).not.toContain("ainda não está no ar");
+    expect(corpo).toContain("Estamos preparando um teste local");
+    expect(corpo).toContain("O piloto ainda está em preparação.");
   });
 
   it("o título não promete resultado ao mercado", () => {

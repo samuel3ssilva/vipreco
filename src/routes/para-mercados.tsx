@@ -12,7 +12,7 @@ import {
   Store,
   Tag,
 } from "lucide-react";
-import { AppShell } from "@/components/AppShell";
+import { MarketShell } from "@/components/MarketShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StickyMarketCta } from "@/components/StickyMarketCta";
@@ -358,7 +358,7 @@ function ExemploDeAchado() {
 
 function ForMarketsPage() {
   return (
-    <AppShell>
+    <MarketShell>
       <div className="space-y-10">
         <section
           aria-labelledby="proposta-titulo"
@@ -383,14 +383,17 @@ function ForMarketsPage() {
               Estamos preparando um teste local para ajudar consumidores a encontrar e comparar
               ofertas com produto exato, fonte, data e validade.
             </p>
-            {/* A frase desconfortável continua na primeira dobra, e não no rodapé. "Estamos
-                preparando" sugere que o produto não está no ar; "ainda não está no ar" afirma. Um
-                lojista que descobre isso no meio da conversa passa a reler tudo o que ouviu antes
-                com desconfiança, e com razão. O teste de ordem em `para-mercados.ssr.test.ts`
-                existe para que nenhuma revisão de copy apague essa afirmação sem querer. */}
+            {/* A FRASE "O VIPREÇO AINDA NÃO ESTÁ NO AR" SAIU DAQUI, POR DECISÃO DO FOUNDER/PMO
+                em 06/08/2026. Eu a tinha mantido em linha própria por achar que "estamos
+                preparando" apenas sugere, enquanto ela afirma. O Founder decidiu o contrário, e
+                a razão é boa: a mesma informação aparece três vezes na primeira dobra — no
+                banner de ambiente de teste no topo, no subtítulo, e na microcopy logo abaixo do
+                convite. Dizer quatro vezes que o produto não existe faz o lojista parar de ler.
+
+                O que continua é o que a frase NÃO dizia: o tamanho do piloto. */}
             <p className="mt-2 max-w-prose text-base text-muted-foreground">
-              O ViPreço <strong className="text-foreground">ainda não está no ar</strong>. O piloto
-              começa pequeno: alguns produtos, algumas semanas, e a devolutiva do que aconteceu.
+              O piloto começa pequeno: alguns produtos, algumas semanas, e a devolutiva do que
+              aconteceu.
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -697,6 +700,6 @@ function ForMarketsPage() {
 
       {/* Só no mobile, e só quando nenhum dos dois convites do fluxo está na tela. */}
       <StickyMarketCta />
-    </AppShell>
+    </MarketShell>
   );
 }

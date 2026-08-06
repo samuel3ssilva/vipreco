@@ -62,11 +62,16 @@ depende só dele, e é verdadeira no dia em que a página é lida. O subtítulo 
 dimensões que o produto se compromete a exibir — produto exato, fonte, data e validade —, que são
 exatamente as do card real.
 
-**A afirmação "ainda não está no ar" continua na primeira dobra**, agora numa linha própria logo
-abaixo do subtítulo. "Estamos preparando" sugere que o produto não existe ainda; "ainda não está
-no ar" afirma. A diferença importa numa conversa em que a pergunta seguinte costuma ser "quantas
-pessoas usam?". `para-mercados.ssr.test.ts` verifica a ordem eyebrow → H1 → subtítulo →
-"ainda não está no ar" → CTA, e reprova se o H1 antigo voltar.
+**A frase isolada "o ViPreço ainda não está no ar" saiu**, por decisão do Founder/PMO no mesmo
+dia. Eu a tinha mantido em linha própria por achar que "estamos preparando" apenas sugere,
+enquanto ela afirma. A decisão foi a contrária, e a razão é boa: a mesma informação já aparece
+**três vezes** na primeira dobra, no banner de ambiente de teste, no subtítulo e na microcopy
+abaixo do convite. A quarta repetição não acrescenta honestidade; gasta a atenção de quem tem
+vinte minutos. O que ficou no lugar dela é o que ela não dizia: o tamanho do piloto.
+
+`para-mercados.ssr.test.ts` guarda os dois lados — verifica a ordem eyebrow → H1 → subtítulo →
+tamanho do piloto → CTA, reprova se o H1 antigo voltar, reprova se a frase removida voltar, e
+reprova se as duas que ficaram sumirem.
 
 **O ponto final.** O mandato cita os três textos entre aspas e com ponto. O H1 e o CTA vão para a
 tela **sem** ponto; o subtítulo vai **com**, porque é prosa corrida. A leitura vem do próprio
@@ -74,6 +79,37 @@ B2B-0, que citou "Leve mais consumidores de Artemis até suas ofertas." e "Quero
 piloto." do mesmo jeito, e os dois foram implementados sem ponto e aprovados assim: o ponto ali é
 pontuação da frase que cita, não do rótulo citado. Se a leitura estiver errada, é uma linha para
 desfazer.
+
+### A casca da página: `MarketShell`, e não `AppShell`
+
+A rota usava o shell do consumidor, e o Gate visual de 06/08/2026 mostrou o preço disso: a
+captura tinha, encostada no polegar, uma barra com **Achados · Buscar · Ajuda · Mercados**, com
+"Mercados" marcada como a página atual. Um dono de mercado lê isso como "entrei no aplicativo do
+consumidor". O contrato aprovado diz o contrário: rota separada, **nunca** aba do app B2C
+([`NORTH-STAR-V2-ASSESSMENT.md`](../product/NORTH-STAR-V2-ASSESSMENT.md) §3, item 5).
+
+`src/components/MarketShell.tsx` tem quatro coisas e nada além delas:
+
+| Tem                                              | Não tem                                          |
+| ------------------------------------------------ | ------------------------------------------------ |
+| logotipo, com rótulo acessível dizendo aonde vai | barra inferior de navegação                      |
+| o conteúdo da página                             | aba "Mercados", aba "Ajuda", aba "Achados"       |
+| link discreto para a experiência do morador      | botão principal "Buscar" no cabeçalho            |
+| rodapé com a localidade do piloto                | qualquer rota que sugira a jornada do consumidor |
+
+**Um shell novo, e não bandeiras no antigo.** A alternativa era passar `semBarraInferior`,
+`semBuscar` e `semAbas` ao `AppShell` até sobrar o logotipo: quatro condicionais novas num
+componente que a Home, a busca e a comparação usam, cada uma um caminho a mais para quebrar sem
+que ninguém perceba. O `AppShell` não foi tocado, e `para-mercados.contract.test.ts` prova isso
+com `git diff` contra `origin/main` em oito arquivos do consumidor — não por inspeção de texto.
+
+**O link para o consumidor é discreto de propósito.** O lojista precisa poder ver o que o morador
+vê; ele não precisa ser levado para lá no meio da leitura. Por isso o link vive no rodapé, em
+peso de texto, e não numa aba encostada no polegar.
+
+**O CTA fixo do mobile desceu junto.** Sem barra para sobrevoar, ele encosta na área segura do
+aparelho. O `StickyCta` ganhou um parâmetro com o padrão de 56 px inalterado, então a Home
+continua exatamente como estava.
 
 **"Conhecer" virou "conversar"** porque conhecer é passivo e não pede nada; conversar nomeia
 exatamente o que está sendo pedido, que são vinte minutos.

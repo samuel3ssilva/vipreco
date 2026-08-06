@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { compararComMain } from "@/test-support/git-guard";
 
 function ler(...caminho: string[]): string {
   return readFileSync(join(process.cwd(), ...caminho), "utf-8");
@@ -14,6 +15,7 @@ const rota = ler("src", "routes", "para-mercados.tsx");
 const cta = ler("src", "components", "MarketWhatsAppCta.tsx");
 const fixo = ler("src", "components", "StickyMarketCta.tsx");
 const shell = ler("src", "components", "AppShell.tsx");
+const shellB2B = ler("src", "components", "MarketShell.tsx");
 
 describe("a página não consulta nada", () => {
   it("a rota não tem loader — nada é buscado para renderizá-la", () => {
@@ -111,8 +113,99 @@ describe("hierarquia de títulos", () => {
   });
 });
 
+/**
+ * A ROTA B2B NÃO É UMA ABA DO APP DO CONSUMIDOR.
+ *
+ * O Gate visual de 06/08/2026 mostrou a captura com uma barra inferior de quatro abas
+ * (Achados · Buscar · Ajuda · Mercados) encostada no polegar, e a aba "Mercados" marcada como
+ * a página atual. Um dono de mercado lê isso como "entrei no aplicativo do consumidor".
+ *
+ * O contrato aprovado diz o contrário, com todas as letras: rota separada, **nunca** aba do
+ * app B2C (`NORTH-STAR-V2-ASSESSMENT.md` §3, item 5). Estes testes são o que impede a volta.
+ */
+describe("o shell B2B é separado do app do consumidor", () => {
+  it("a rota usa MarketShell, e não o AppShell", () => {
+    expect(rota).toContain('import { MarketShell } from "@/components/MarketShell"');
+    expect(rota).toContain("<MarketShell>");
+    expect(rota).not.toContain("AppShell");
+  });
+
+  it("o shell B2B não tem barra inferior nenhuma", () => {
+    // `fixed … bottom-0` é a assinatura da barra do AppShell. Nenhuma variação dela entra aqui.
+    expect(shellB2B).not.toContain("bottom-0");
+    expect(shellB2B).not.toContain("inset-x-0");
+    // E nenhuma lista de abas: a barra do AppShell é um `NAV.map` dentro de um `<ul>`.
+    expect(shellB2B).not.toContain("NAV");
+    expect(shellB2B).not.toContain("<ul");
+  });
+
+  it("o shell B2B não oferece nenhuma aba do consumidor", () => {
+    for (const aba of ["Achados", "Buscar", "Ajuda", "Mercados", "Como funciona"]) {
+      expect(shellB2B, `o shell B2B oferece a aba "${aba}"`).not.toContain(`>${aba}<`);
+    }
+    // O botão principal "Buscar" do cabeçalho mobile também não vem junto.
+    expect(shellB2B).not.toContain('to="/buscar"');
+    expect(shellB2B).not.toContain("btn-primary");
+  });
+
+  it("o shell B2B tem marca, conteúdo, link discreto para o morador e rodapé", () => {
+    expect(shellB2B).toContain("vipreco-simbolo.svg");
+    expect(shellB2B).toContain('id="conteudo"');
+    expect(shellB2B).toContain("<footer");
+    expect(shellB2B).toContain("Ver a experiência do morador");
+    // Discreto quer dizer texto, e não botão: um link no rodapé, não uma aba no polegar.
+    const rodape = shellB2B.slice(shellB2B.indexOf("<footer"));
+    expect(rodape).toContain("underline");
+    expect(rodape).not.toContain("btn-base");
+  });
+
+  it("o shell B2B mantém a rota acessível pelo teclado desde o primeiro Tab", () => {
+    expect(shellB2B).toContain('href="#conteudo"');
+    expect(shellB2B).toContain("Pular para o conteúdo");
+    // O banner de ambiente de teste continua: é a primeira coisa que diz que isto não é a
+    // versão pública, e a decisão do Founder de tirar a frase do hero conta com ele.
+    expect(shellB2B).toContain("StagingBanner");
+  });
+
+  it("o shell B2B não introduziu nenhuma cor nova", () => {
+    // A marca usa um par tipografia+cor que já existe no AppShell, com a mesma justificativa
+    // de contraste. Qualquer hex que apareça aqui e não lá seria valor solto fora dos tokens.
+    const hex = (fonte: string) => new Set(fonte.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []);
+    for (const cor of hex(shellB2B)) {
+      expect(hex(shell), `${cor} não existe no AppShell — é cor nova`).toContain(cor);
+    }
+  });
+});
+
+/**
+ * O guarda de `git`, e não inspeção de texto.
+ *
+ * O mandato exige que Home, busca, comparação e ranking fiquem inalterados. Uma lista de
+ * `expect(fonte).toContain(...)` provaria que certas frases sobreviveram; `git diff` contra
+ * `origin/main` prova que o arquivo inteiro é o mesmo. E quando a comparação é impossível o
+ * guarda **lança**, em vez de responder "intacto" sem ter medido.
+ */
+describe("as rotas do consumidor não foram tocadas", () => {
+  it.each([
+    "src/routes/index.tsx",
+    "src/routes/buscar.tsx",
+    "src/routes/produto.$productId.tsx",
+    "src/components/AppShell.tsx",
+    "src/components/AchadoCard.tsx",
+    "src/components/PriceCard.tsx",
+    "src/components/PriceSummary.tsx",
+    "src/lib/comparison.ts",
+  ])("%s continua idêntico à main", (caminho) => {
+    expect(compararComMain(caminho), `${caminho} mudou nesta branch`).toBe("intacto");
+  });
+});
+
 describe("navegação sem circularidade", () => {
-  it("a pill do header some quando já se está em /para-mercados", () => {
+  it("a pill do header do AppShell continua sabendo de /para-mercados", () => {
+    // Redundância deliberada. Desde que a rota ganhou shell próprio, este ramo do AppShell
+    // não tem como ser alcançado por ela — mas o AppShell NÃO FOI TOCADO, de propósito:
+    // mexer nele para remover um ramo agora ocioso quebraria a garantia de que a Home sai
+    // byte a byte igual à da main, que é justamente o que o Gate precisa.
     expect(shell).toContain('state.location.pathname === "/para-mercados"');
     expect(shell).toContain("naPaginaDeMercados ? null : (");
   });

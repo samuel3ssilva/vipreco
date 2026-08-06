@@ -154,7 +154,11 @@ describe("sem acoplar as duas rotas", () => {
 describe("posição, alvo de toque e movimento", () => {
   it("fica acima da barra inferior, respeitando a área segura do aparelho", () => {
     expect(mecanismo).toContain("env(safe-area-inset-bottom");
-    expect(mecanismo).toContain("calc(3.5rem +");
+    expect(mecanismo).toContain("calc(${alturaDaBarra} +");
+    // AQUI A BARRA NÃO EXISTE. `/para-mercados` passou a ter shell próprio, sem barra
+    // inferior: o CTA fixo desce até a área segura em vez de flutuar 56 px acima de nada.
+    // O padrão de 3.5 rem continua valendo para quem não passa o parâmetro, que é a Home.
+    expect(fixo).toContain('alturaDaBarra="0rem"');
   });
 
   it("não cobre o último conteúdo da página", () => {

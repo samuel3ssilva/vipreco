@@ -19,7 +19,8 @@
  *   bun scripts/visual/comparison-board-para-mercados.ts --antes=<pasta com antes-390.png>
  */
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const DESTINO = join(process.cwd(), "docs/evidence/visual/b2b0");
@@ -37,10 +38,17 @@ const PASTA_ANTES = arg("antes", "");
 /** O que a página passou a fazer, e por quê. */
 const MUDANCAS = [
   {
+    o: "CASCA DA PÁGINA",
+    antes:
+      "A rota usava o AppShell do consumidor. A captura mostrava, encostada no polegar, uma barra com Achados · Buscar · Ajuda · Mercados, com a aba “Mercados” marcada como a página atual. Um dono de mercado lê isso como “entrei no aplicativo do consumidor e estou numa seção dele”.",
+    depois:
+      "Shell próprio, `MarketShell`: marca, conteúdo, link discreto para a experiência do morador no rodapé, e nada mais. Zero barras inferiores, zero abas, nenhum botão “Buscar” no cabeçalho. O contrato aprovado diz rota separada, NUNCA aba do app B2C. O AppShell não foi tocado, e o guarda de git prova que Home, busca e comparação saem idênticas à main.",
+  },
+  {
     o: "Hero",
     antes: "“Seu mercado mais perto de quem compra no bairro.”",
     depois:
-      "“Mostre suas ofertas no piloto do ViPreço em Artemis.” Copy decidida pelo Founder/PMO em 06/08/2026: diz o que o mercado FAZ, não o que ele GANHA. E a primeira dobra segue afirmando que o produto ainda não está no ar — um lojista que descobre isso no meio da conversa relê tudo o que ouviu antes com desconfiança, e com razão.",
+      "“Mostre suas ofertas no piloto do ViPreço em Artemis.” Copy decidida pelo Founder/PMO em 06/08/2026: diz o que o mercado FAZ, não o que ele GANHA. A frase isolada “o ViPreço ainda não está no ar” saiu por decisão do Founder: a mesma informação já aparece no banner de ambiente de teste, no subtítulo e na microcopy do convite. Quatro repetições fazem o lojista parar de ler.",
   },
   {
     o: "Como o consumidor encontra o mercado",
@@ -94,7 +102,7 @@ const FORA = [
   "QR CODE: depende de uma URL estável e aprovada, que só existe em R8.",
   "CAPTURA DE TELA DO PRODUTO: o único exemplo visual continua sendo o card estático rotulado “Exemplo fictício”. Uma imagem com cara de produto pronto, numa página que um lojista lê como proposta, promete um produto que não está no ar.",
   "NÚMERO DE USUÁRIO, TRÁFEGO OU RESULTADO: não existem.",
-  "ABA INFERIOR NO APP B2C: `/para-mercados` continua sendo rota separada.",
+  "ABA INFERIOR NO APP B2C: `/para-mercados` é rota separada, e desde 06/08/2026 tem shell próprio. Nenhuma barra do consumidor aparece aqui, e a rota não é alcançável por aba nenhuma.",
 ] as const;
 
 const base64 = (caminho: string) => readFileSync(caminho).toString("base64");
@@ -225,7 +233,14 @@ async function principal() {
   }
 
   mkdirSync(DESTINO, { recursive: true });
-  const htmlPath = join(DESTINO, ".painel-b2b0.tmp.html");
+  // PASTA TEMPORÁRIA DO SISTEMA, E NÃO A PASTA DE EVIDÊNCIA.
+  //
+  // A versão anterior escrevia `.painel-b2b0.tmp.html` dentro de `docs/evidence/visual/b2b0/`
+  // e nunca apagava. O arquivo tem 4 MB (as duas capturas embutidas em base64), começa com
+  // ponto — então some do `ls` — e entrou num commit por um `git add -A`. Lixo versionado é
+  // pior que lixo: ele passa a ser diff, revisão e histórico para sempre.
+  const pasta = mkdtempSync(join(tmpdir(), "vipreco-board-b2b0-"));
+  const htmlPath = join(pasta, "painel.html");
   writeFileSync(htmlPath, montarHtml(), "utf-8");
 
   const chrome = spawn(

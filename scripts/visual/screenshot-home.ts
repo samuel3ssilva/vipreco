@@ -50,6 +50,19 @@ interface Medida {
   ctaMenorQue48: number;
   h1: number;
   historicoDePreco: number;
+  /**
+   * O CTA do WhatsApp aparece? Não é curiosidade: `MarketWhatsAppCta` falha fechado quando
+   * `VITE_WHATSAPP_NUMBER` não existe, e o bloco simplesmente não é renderizado. Staging
+   * DEFINE a variável (ver `.github/workflows/deploy-staging.yml`); um `.env` local sem ela
+   * produz a mesma Home com **434 px a menos** — e duas capturas assim são diferentes sem que
+   * uma linha de código tenha mudado.
+   *
+   * Foi exatamente o que aconteceu ao recapturar em 06/08/2026: 7380 px contra 6946 px, com
+   * hash diferente, o que se lê como "a evidência envelheceu" quando na verdade é "o ambiente
+   * mudou". A medição é impressa e o script AVISA — a evidência do Gate precisa mostrar o que
+   * o entrevistado vai ver em staging, não o que um build sem o segredo renderiza.
+   */
+  whatsapp: number;
 }
 
 const MEDIR_PAGINA = `({
@@ -62,6 +75,7 @@ const MEDIR_PAGINA = `({
     .filter(a => a.getClientRects().length > 0 && a.getBoundingClientRect().height < 48).length,
   h1: document.querySelectorAll('h1').length,
   historicoDePreco: (document.body.innerText.match(/antes\\\\s*R\\\\$/gi) || []).length,
+  whatsapp: document.querySelectorAll('a[href*="wa.me"]').length,
 })`;
 
 async function principal() {
@@ -69,6 +83,18 @@ async function principal() {
   if (resposta === null || !resposta.ok) {
     console.error(`ERRO: ${BASE}${ROTA} não respondeu. Suba o servidor antes (bun run dev).`);
     process.exit(1);
+  }
+
+  // O AVISO VEM ANTES DE QUALQUER FOTO. Capturar e só depois descobrir que o ambiente estava
+  // incompleto custa uma rodada de evidência — e o custo real é a evidência publicada, que não
+  // morre (ver DL-033).
+  const html = await resposta.text();
+  if (!html.includes("wa.me")) {
+    console.warn(
+      "\nAVISO: esta Home NÃO tem o CTA do WhatsApp — `VITE_WHATSAPP_NUMBER` não está no `.env`.\n" +
+        "Staging DEFINE essa variável, então a captura vai sair ~434 px mais curta do que o que\n" +
+        "o entrevistado vê. Continue apenas se a evidência for para outro fim que não o Gate.\n",
+    );
   }
 
   mkdirSync(DESTINO, { recursive: true });
@@ -103,7 +129,8 @@ async function principal() {
         `  ${String(largura).padStart(4)} px — scrollWidth ${m.scrollWidth}, clientWidth ` +
           `${m.clientWidth}${estoura ? "  *** ESTOURA ***" : "  ok"}, ` +
           `${m.cards} cards, ${m.abas} abas na barra, ${m.abasCabecalho} no cabeçalho, ${m.h1} h1, ` +
-          `CTA abaixo de 48 px: ${m.ctaMenorQue48}, histórico de preço: ${m.historicoDePreco}`,
+          `CTA abaixo de 48 px: ${m.ctaMenorQue48}, histórico de preço: ${m.historicoDePreco}, ` +
+          `CTA WhatsApp: ${m.whatsapp}`,
       );
       if (estoura) throw new Error(`a página estoura horizontalmente a ${largura} px.`);
       if (m.ctaMenorQue48 > 0) {

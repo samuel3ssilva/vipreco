@@ -20,6 +20,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # HISTÓRICO COMPLETO, E NÃO POR CAPRICHO.
+          #
+          # O padrão do `actions/checkout` é um clone raso (`fetch-depth: 1`), e num clone
+          # raso `origin/main` NÃO EXISTE no runner. Os contratos de laboratório provam
+          # "a Home, a busca, a comparação e o ranking continuam intactos" comparando a
+          # árvore com `origin/main` — sem ela, essa prova não acontecia, e o check ficava
+          # verde sem ter medido nada. Ou seja: o único lugar em que alguém lê o verde como
+          # garantia era exatamente o lugar em que a garantia não era produzida.
+          #
+          # Com `0`, o checkout traz todas as refs, `origin/main` passa a existir e a
+          # comparação é real. A outra metade da correção está em `src/test-support/
+          # git-guard.ts`, que LANÇA quando não consegue comparar: se esta linha for
+          # removida um dia, o CI fica vermelho com o motivo escrito, em vez de silencioso.
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2

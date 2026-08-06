@@ -5,9 +5,9 @@ contra o servidor de desenvolvimento local.
 
 | Arquivo                              | O que é                             | Viewport CSS | PNG (DPR 2) |
 | ------------------------------------ | ----------------------------------- | ------------ | ----------- |
-| `para-mercados-390.png`              | página inteira                      | 390 px       | 780 × 14756 |
-| `para-mercados-430.png`              | página inteira                      | 430 px       | 860 × 14154 |
-| `para-mercados-desktop.png`          | página inteira                      | 1280 px      | 2560 × 8160 |
+| `para-mercados-390.png`              | página inteira                      | 390 px       | 780 × 14890 |
+| `para-mercados-430.png`              | página inteira                      | 430 px       | 860 × 14364 |
+| `para-mercados-desktop.png`          | página inteira                      | 1280 px      | 2560 × 8442 |
 | `para-mercados-comparison-board.png` | a rota anterior ao lado da proposta | 1400 px      | 2800 × 5422 |
 
 Para regerar:
@@ -53,6 +53,9 @@ esquecido passaria despercebido.
 
 A rota anterior tinha **8 seções**; a proposta tem **11**. As três novas são "como o consumidor
 encontra o seu mercado", "o que pedimos ao seu mercado" e "benefícios potenciais".
+
+**As capturas são posteriores à revisão especializada** e já mostram as nove recomendações
+adotadas — inclusive as duas de severidade alta que ela encontrou.
 
 ---
 

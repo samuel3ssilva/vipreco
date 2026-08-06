@@ -80,9 +80,20 @@ const EXEMPLO = {
   valor: "14,90",
   precoFalado: "14 reais e 90 centavos",
   mercado: "Mercado de exemplo",
+  // AS DUAS DATAS APODRECEM, E O TESTE É O ALARME.
+  //
+  // A versão anterior dizia "válido até 05/08/2026" e ficou no ar em 06/08: o card vitrine
+  // da página exibia uma oferta VENCIDA, que é exatamente o estado que `isValidPrice()`
+  // esconde no produto de verdade. O comentário antigo defendia a data absoluta contra o
+  // "ontem" congelado, e defendia bem — só que data absoluta também vence.
+  //
+  // Corrigir a data sem mais nada só adia o mesmo defeito. Por isso
+  // `para-mercados.contract.test.ts` reprova quando `validoAte` está no passado: o
+  // apodrecimento passa a ser um teste vermelho com o conserto escrito, em vez de uma
+  // mentira silenciosa numa página que um lojista lê como proposta.
   /** Meio-dia UTC: qualquer hora entre 03h e 21h cai no mesmo dia no fuso do piloto. */
-  observadoEm: "2026-07-31T12:00:00.000Z",
-  validoAte: "2026-08-05T12:00:00.000Z",
+  observadoEm: "2026-11-24T12:00:00.000Z",
+  validoAte: "2026-12-05T12:00:00.000Z",
   origem: "informado pelo mercado",
 } as const;
 
@@ -161,7 +172,7 @@ const ETAPAS = [
   {
     Icon: MessagesSquare,
     titulo: "5. Devolutiva",
-    texto: "Volto e conto o que aconteceu, inclusive se não funcionar.",
+    texto: "Quem conduz o piloto volta e conta o que aconteceu, inclusive se não funcionar.",
   },
 ] as const;
 
@@ -170,11 +181,17 @@ const ETAPAS = [
  *
  * A lista é curta porque o pedido é curto. Cada item aqui é uma coisa que uma pessoa pode fazer
  * numa tarde; nenhum deles é "instalar", "integrar" ou "assinar".
+ *
+ * O item das atualizações entrou depois da revisão especializada, e entrou por honestidade: a
+ * etapa 4 mede duas ou três semanas e pressupõe preço vivo. Sem essa linha, o lojista aceita
+ * "uma validação pequena" e descobre o envio recorrente só na conversa — que é puxá-lo por
+ * isca. O pedido fica maior; o aceite fica informado.
  */
 const PEDIDOS = [
   "Uma conversa de vinte minutos",
-  "Entender como o preço e a promoção funcionam hoje no seu mercado",
+  "Contar como o preço e a promoção funcionam hoje no seu mercado",
   "Uma validação pequena, dos preços daquela amostra",
+  "Atualizações dos preços durante o piloto, no ritmo que for combinado",
   "Autorização para usar o nome e o endereço do mercado",
   "Sua opinião honesta depois",
   "Uma pessoa de contato",
@@ -185,6 +202,9 @@ const PEDIDOS = [
  *
  * Nenhum deles foi medido, e nenhum pode ser medido antes do piloto. O verbo de cada linha é
  * condicional ou de possibilidade; a página inteira cai se um deles virar promessa.
+ *
+ * "As ofertas ALCANÇAM quem não está no grupo" era a única linha no indicativo, e com zero
+ * usuários o alcance de hoje é zero. Virou "podem alcançar" depois da revisão especializada.
  */
 const BENEFICIOS = [
   {
@@ -193,7 +213,8 @@ const BENEFICIOS = [
   },
   {
     titulo: "Divulgação além dos canais atuais",
-    texto: "As ofertas alcançam quem não está no grupo de WhatsApp nem passa em frente à loja.",
+    texto:
+      "As ofertas podem alcançar quem não está no grupo de WhatsApp nem passa em frente à loja.",
   },
   {
     titulo: "Público com intenção",
@@ -202,10 +223,6 @@ const BENEFICIOS = [
   {
     titulo: "Aprendizado sobre a região",
     texto: "O que as pessoas de Artemis procuram: informação que hoje ninguém tem.",
-  },
-  {
-    titulo: "Métricas simples, no futuro",
-    texto: "Quando existirem. Hoje não existem, e nenhum número é prometido.",
   },
 ] as const;
 
@@ -256,6 +273,15 @@ const DUVIDAS = [
       "Não. A compra acontece diretamente no mercado. O ViPreço mostra a informação; quem vende é a loja.",
   },
   {
+    // Custo é das primeiras dúvidas de qualquer dono de mercado, e estava em sexto lugar.
+    // Nada de gratuidade permanente prometida, nada de mensalidade, contrato ou preço
+    // inventado: o que a página pode dizer com honestidade é que ainda não há condição
+    // definida e que ninguém será cobrado sem combinar antes.
+    pergunta: "O piloto custa alguma coisa?",
+    resposta:
+      "O piloto ainda está em preparação. As condições serão combinadas na conversa inicial. Nada será cobrado sem acordo prévio.",
+  },
+  {
     pergunta: "O ViPreço altera o preço no caixa?",
     resposta:
       "Não. O preço final, o estoque e a operação da loja continuam sob responsabilidade do mercado. O produto pode acabar antes da validade informada.",
@@ -276,19 +302,11 @@ const DUVIDAS = [
       "Pagamento não muda a ordem dos resultados. Se um dia existir conteúdo comercial, ele será identificado como tal e ficará fora da comparação.",
   },
   {
-    // Nada de gratuidade prometida, nada de mensalidade, contrato ou preço inventado: o que a
-    // página pode dizer com honestidade é que ainda não há condição definida e que ninguém será
-    // cobrado sem combinar antes.
-    pergunta: "O piloto custa alguma coisa?",
-    resposta:
-      "O piloto ainda está em preparação. As condições serão combinadas na conversa inicial. Nada será cobrado sem acordo prévio.",
-  },
-  {
     // A pergunta que um dono de mercado faz de verdade. A resposta não pode esconder que o que é
     // publicado é público, nem sugerir controle sobre o que o ViPreço verifica por conta própria.
     pergunta: "Outros mercados poderão ver meus preços?",
     resposta:
-      "Sim. Tudo o que for publicado no ViPreço é público para moradores e mercados. Você escolhe quais informações do seu mercado deseja enviar e pode pedir correção ou retirada do que forneceu. Informações verificadas pelo ViPreço seguem as mesmas regras para todos.",
+      "Sim. Tudo o que for publicado no ViPreço é público para moradores e mercados. Você escolhe quais informações do seu mercado deseja enviar e pode pedir correção ou retirada do que forneceu. Informações verificadas pelo ViPreço seguem as mesmas regras para todos. Vale lembrar: o preço da gôndola e do encarte já é público hoje. E a comparação é sempre de um produto exato, então não é a sua cesta contra a do concorrente.",
   },
   {
     pergunta: "Como demonstrar interesse?",
@@ -456,7 +474,7 @@ function ForMarketsPage() {
               O que pedimos ao seu mercado
             </h2>
             <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              Seis coisas, e nenhuma delas é instalar, integrar ou assinar.
+              Sete coisas, e nenhuma delas é instalar, integrar ou assinar.
             </p>
           </div>
 
@@ -496,6 +514,15 @@ function ForMarketsPage() {
               </li>
             ))}
           </ul>
+
+          {/* "Métricas simples, no futuro" era o quinto card desta lista, e a revisão
+              especializada apontou o óbvio: um benefício que se declara inexistente engorda a
+              lista sem acrescentar nada. O conteúdo continua na página, no lugar certo — a
+              devolutiva da etapa 5 é o que de fato existe hoje. */}
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Número, só quando existir. O que existe hoje é a devolutiva: no fim do piloto, contamos
+            o que aconteceu.
+          </p>
         </section>
 
         <section aria-labelledby="poucos-produtos-titulo" className="card-base space-y-2">
@@ -512,7 +539,7 @@ function ForMarketsPage() {
               entrevista, fora desta página. */}
           <p className="max-w-prose text-sm text-muted-foreground">
             O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou
-            produtos com estoque alto. Não é necessário cadastrar o mercado inteiro.
+            produtos com estoque alto.
           </p>
           <p className="max-w-prose text-sm text-muted-foreground">
             Quantos produtos e com que frequência é assunto da conversa inicial. Não existe

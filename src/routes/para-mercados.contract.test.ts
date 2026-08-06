@@ -137,3 +137,41 @@ describe("visual dentro do sistema já aprovado", () => {
     expect(rota).not.toMatch(/animate-|transition-/);
   });
 });
+
+describe("o exemplo fictício não pode mostrar uma oferta que o produto esconderia", () => {
+  /**
+   * ESTE TESTE FOI FEITO PARA FICAR VERMELHO UM DIA, E ISSO É O DESENHO.
+   *
+   * O card vitrine da página tem data absoluta de observação e de validade. Em 06/08/2026 ele
+   * dizia "válido até 05/08/2026": a página que apresenta o produto a um lojista exibia uma
+   * oferta VENCIDA — exatamente o estado que `isValidPrice()` esconde no produto de verdade.
+   *
+   * A defesa da data absoluta continua correta contra o "ontem" congelado, que erra no dia
+   * seguinte. O que faltava era o alarme: sem ele, a data apodrece em silêncio e ninguém olha.
+   *
+   * A contrapartida é real e está assumida: em algum momento este teste reprova um PR que não
+   * tem nada a ver com ele. É o preço de a alternativa ser pior — uma proposta comercial que
+   * mostra, para uma pessoa de verdade, um estado que o produto nunca mostraria. O conserto
+   * está na mensagem da falha, e leva um minuto.
+   */
+  const datas = (nome: string) => {
+    const achado = new RegExp(`${nome}: "([^"]+)"`).exec(rota);
+    expect(achado, `não achei ${nome} no fixture do exemplo`).not.toBeNull();
+    return new Date(achado![1]);
+  };
+
+  it("a validade do exemplo está no futuro", () => {
+    const validoAte = datas("validoAte");
+    expect(
+      validoAte.getTime(),
+      "O exemplo da página está VENCIDO. Empurre `observadoEm` e `validoAte` em " +
+        "`src/routes/para-mercados.tsx` para datas à frente de hoje — o card vitrine não pode " +
+        "exibir um estado que `isValidPrice()` esconderia no produto.",
+    ).toBeGreaterThan(Date.now());
+  });
+
+  it("a observação do exemplo é anterior à validade", () => {
+    // Uma oferta observada depois de vencer não é um caso raro: é dado impossível.
+    expect(datas("observadoEm").getTime()).toBeLessThan(datas("validoAte").getTime());
+  });
+});

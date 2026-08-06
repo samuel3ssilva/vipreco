@@ -70,12 +70,12 @@ describe("primeira dobra da proposta", () => {
     expect(html).toContain("Café torrado e moído, tradicional");
     expect(html).toContain("14,90");
     expect(html).toContain("Mercado de exemplo");
-    expect(html).toContain("31/07/2026 · informado pelo mercado");
+    expect(html).toContain("24/11/2026 · informado pelo mercado");
     expect(html).toContain("Informado pelo mercado");
   });
 
   it("mostra a validade em data absoluta, no formato do card real", () => {
-    expect(html).toContain("válido até 05/08/2026");
+    expect(html).toContain("válido até 05/12/2026");
   });
 
   it("nunca usa dia da semana nem dia relativo no card estático", () => {
@@ -222,7 +222,7 @@ describe("o que a página promete — e o que ela não promete", () => {
 
   it("diz que o mercado pode escolher os produtos que queira destacar", () => {
     expect(html).toContain(
-      "O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou produtos com estoque alto. Não é necessário cadastrar o mercado inteiro.",
+      "O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou produtos com estoque alto.",
     );
   });
 

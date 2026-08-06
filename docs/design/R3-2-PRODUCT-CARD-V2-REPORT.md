@@ -160,13 +160,35 @@ Comparando o valor cru contra o limiar de 1%, o próprio limiar que a regra desc
 fora. A comparação passou a ser feita sobre o valor estabilizado em seis casas, e o corte
 voltou a significar o que está escrito: **abaixo de 1% não é notícia; 1% é.**
 
-### 6.3 O guarda de "a Home não mudou" era vazio antes do commit
+### 6.3 O guarda de "a Home não mudou" era vazio — duas vezes
 
-O teste de contrato usava `git diff origin/main...HEAD`, que só enxerga o que já foi
-commitado — na árvore de trabalho ele devolvia "não mudou" para tudo, inclusive para
-arquivos que a branch estava criando naquele instante. Um controle positivo (`card-v2.ts`
-**deve** aparecer como novo) reprovou e expôs o problema. Passou a comparar a árvore de
-trabalho e a considerar arquivos ainda não rastreados.
+Um controle positivo (`card-v2.ts` **deve** aparecer como novo) reprovou duas vezes, e cada
+reprovação expôs um buraco diferente.
+
+**Localmente:** o teste usava `git diff origin/main...HEAD`, que só enxerga o que já foi
+commitado. Na árvore de trabalho ele devolvia "não mudou" para tudo, inclusive para arquivos
+que a branch estava criando naquele instante. Um guarda que só acorda depois do commit não
+protege quem está editando. Passou a comparar a árvore de trabalho e a considerar arquivos
+ainda não rastreados.
+
+**No CI:** `actions/checkout` clona com profundidade 1 por padrão, então `origin/main` **não
+existe** no runner. O `catch` devolvia `false` — literalmente **"não mudou"** — e o check
+ficava verde por vacuidade justamente onde alguém lê o verde como prova de que a Home
+continua intacta. Confirmado reproduzindo o cenário: um `git clone --depth 1` da própria
+branch não resolve `origin/main`.
+
+A resposta não é "não mudou": é **"não medi"**. O detector passou a ter três estados —
+`mudou`, `intacto`, `indisponivel` —, as asserções afirmam a propriedade que importa
+(**nunca `mudou`**), e o controle final exige coerência: ou a comparação é possível e o
+detector se prova, ou ela é impossível para **todos** os caminhos, e ninguém pode ler o verde
+como garantia.
+
+**Fica em aberto, e é uma linha:** `fetch-depth: 0` no `actions/checkout` de
+`.github/workflows/ci.yml` faria o guarda medir de verdade no CI. Alterar workflow está fora
+do escopo permitido deste PR, então vai como recomendação.
+
+O mesmo buraco existe em `src/routes/laboratorio-visual.contract.test.ts`, da R3.1, que usa
+a forma antiga e sem controle positivo. Corrigi-lo também está fora do escopo deste PR.
 
 ---
 

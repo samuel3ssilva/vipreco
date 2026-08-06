@@ -42,16 +42,40 @@ describe("primeira dobra da proposta", () => {
     // Só o corpo: a promessa também aparece na meta description, antes de tudo no documento.
     const corpo = html.slice(html.indexOf("<body"));
     const eyebrow = corpo.indexOf("Para mercados de Artemis");
-    const titulo = corpo.indexOf("Leve mais consumidores de Artemis até suas ofertas");
+    const titulo = corpo.indexOf("Mostre suas ofertas no piloto do ViPreço em Artemis");
+    // Subtítulo decidido pelo Founder/PMO em 06/08/2026, verificado ao pé da letra: ele diz o
+    // que o teste É antes de dizer o que o mercado ganha, e nomeia as quatro dimensões que o
+    // produto se compromete a mostrar.
+    const subtitulo = corpo.indexOf(
+      "Estamos preparando um teste local para ajudar consumidores a encontrar e comparar ofertas com produto exato, fonte, data e validade.",
+    );
     // A primeira dobra diz que o produto não está no ar ANTES de qualquer promessa. Um lojista
     // que descobre isso no meio da conversa relê tudo o que ouviu antes com desconfiança.
+    // "Estamos preparando" sugere; "ainda não está no ar" afirma. As duas coisas ficam.
     const subtexto = corpo.indexOf("ainda não está no ar");
     const acao = corpo.indexOf("Quero conversar sobre o piloto");
 
     expect(eyebrow).toBeGreaterThan(-1);
     expect(titulo).toBeGreaterThan(eyebrow);
-    expect(subtexto).toBeGreaterThan(titulo);
+    expect(subtitulo).toBeGreaterThan(titulo);
+    expect(subtexto).toBeGreaterThan(subtitulo);
     expect(acao).toBeGreaterThan(subtexto);
+  });
+
+  it("o título não promete resultado ao mercado", () => {
+    // A copy anterior ("Leve mais consumidores de Artemis até suas ofertas") prometia o efeito
+    // de um piloto que ainda não rodou, e contradizia a seção de neutralidade da própria
+    // página. O Founder/PMO decidiu a troca em 06/08/2026; este teste impede a volta.
+    expect(html).not.toContain("Leve mais consumidores");
+    expect(html).toContain("Mostre suas ofertas no piloto do ViPreço em Artemis");
+
+    // O H1 vai SEM ponto final, e o subtítulo COM. O mandato cita os três textos entre aspas e
+    // com ponto, do mesmo jeito que citou "Leve mais consumidores…" e "Quero conversar sobre o
+    // piloto." em B2B-0 — e os dois foram implementados sem ponto, sem objeção. O ponto ali é
+    // pontuação da frase que cita, não do rótulo citado. Título e botão não levam ponto; o
+    // subtítulo leva, porque é prosa corrida. Está no comentário do gate para o Founder
+    // desdizer em uma palavra se a leitura estiver errada.
+    expect(html).not.toContain("em Artemis.</h1>");
   });
 
   it("diz, junto do convite, que é conversa inicial e que o piloto está em preparação", () => {
@@ -144,7 +168,7 @@ describe("CTA principal e mensagem do WhatsApp", () => {
     expect(htmlSemDestino).not.toContain("wa.me");
     expect(htmlSemDestino).not.toContain("Quero conversar sobre o piloto");
     // A página continua completa: proposta, regras e dúvidas seguem lá.
-    expect(htmlSemDestino).toContain("Leve mais consumidores de Artemis até suas ofertas");
+    expect(htmlSemDestino).toContain("Mostre suas ofertas no piloto do ViPreço em Artemis");
     expect(htmlSemDestino).toContain("Dúvidas frequentes");
   });
 });
@@ -334,7 +358,7 @@ describe("pontuação da copy pública", () => {
     ] as const) {
       const publico = interfacePublica(fonte);
       // O recorte não pode ter comido a página: se sobrasse pouco, o teste passaria à toa.
-      expect(publico, nome).toContain("Leve mais consumidores de Artemis até suas ofertas");
+      expect(publico, nome).toContain("Mostre suas ofertas no piloto do ViPreço em Artemis");
       expect(publico, nome).toContain("Dúvidas frequentes");
       const travessoes = publico.match(/[—–]/g) ?? [];
       expect(travessoes, `${nome}: a interface não pode ter travessão`).toHaveLength(0);

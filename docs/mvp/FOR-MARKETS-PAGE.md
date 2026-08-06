@@ -33,16 +33,47 @@ A página explicava bem o que o mercado **envia** e mal o que o morador **vê**.
 uma loja, a segunda pergunta é a que decide — "e daí, quem me encontra?" —, e ela não tinha
 resposta em lugar nenhum.
 
-| Onde           | Antes                                             | Depois                                                                                         |
-| -------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Primeira dobra | "Seu mercado mais perto de quem compra no bairro" | "Leve mais consumidores de Artemis até suas ofertas", e o subtítulo diz que **não está no ar** |
-| Como funciona  | três passos, terminando em "o morador encontra"   | cinco etapas; as duas novas são **medir** e **devolutiva**                                     |
-| Neutralidade   | diluída numa lista: "A ordem não é vendida."      | a frase por extenso, em destaque                                                               |
-| CTA            | "Quero conhecer o piloto"                         | "Quero conversar sobre o piloto"                                                               |
+| Onde           | Antes                                             | Depois                                                                                                 |
+| -------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Primeira dobra | "Seu mercado mais perto de quem compra no bairro" | "Mostre suas ofertas no piloto do ViPreço em Artemis.", e a dobra segue dizendo que **não está no ar** |
+| Como funciona  | três passos, terminando em "o morador encontra"   | cinco etapas; as duas novas são **medir** e **devolutiva**                                             |
+| Neutralidade   | diluída numa lista: "A ordem não é vendida."      | a frase por extenso, em destaque                                                                       |
+| CTA            | "Quero conhecer o piloto"                         | "Quero conversar sobre o piloto"                                                                       |
 
 **O subtítulo da primeira dobra é a mudança que mais importa.** Um lojista que descobre no meio
 da conversa que o produto ainda não está no ar relê tudo o que ouviu antes com desconfiança — e
 com razão. Dizer isso na primeira dobra custa uma linha e compra a conversa inteira.
+
+### A copy da primeira dobra, decidida em 06/08/2026
+
+O H1 anterior — "Leve mais consumidores de Artemis até suas ofertas" — veio literal no mandato de
+B2B-0, e foi implementado assim. Ele tem um problema que o gate visual levantou: **promete um
+resultado** (mais consumidores) que nenhum piloto ainda mediu, e que a seção de neutralidade da
+própria página desmente três seções abaixo. O Founder/PMO decidiu a troca:
+
+| Elemento  | Texto vigente                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| H1        | "Mostre suas ofertas no piloto do ViPreço em Artemis."                                                                                 |
+| Subtítulo | "Estamos preparando um teste local para ajudar consumidores a encontrar e comparar ofertas com produto exato, fonte, data e validade." |
+| CTA       | "Quero conversar sobre o piloto."                                                                                                      |
+
+O novo H1 descreve **o que o mercado faz**, não o que ele ganha: mostrar ofertas é uma ação que
+depende só dele, e é verdadeira no dia em que a página é lida. O subtítulo nomeia as quatro
+dimensões que o produto se compromete a exibir — produto exato, fonte, data e validade —, que são
+exatamente as do card real.
+
+**A afirmação "ainda não está no ar" continua na primeira dobra**, agora numa linha própria logo
+abaixo do subtítulo. "Estamos preparando" sugere que o produto não existe ainda; "ainda não está
+no ar" afirma. A diferença importa numa conversa em que a pergunta seguinte costuma ser "quantas
+pessoas usam?". `para-mercados.ssr.test.ts` verifica a ordem eyebrow → H1 → subtítulo →
+"ainda não está no ar" → CTA, e reprova se o H1 antigo voltar.
+
+**O ponto final.** O mandato cita os três textos entre aspas e com ponto. O H1 e o CTA vão para a
+tela **sem** ponto; o subtítulo vai **com**, porque é prosa corrida. A leitura vem do próprio
+B2B-0, que citou "Leve mais consumidores de Artemis até suas ofertas." e "Quero conversar sobre o
+piloto." do mesmo jeito, e os dois foram implementados sem ponto e aprovados assim: o ponto ali é
+pontuação da frase que cita, não do rótulo citado. Se a leitura estiver errada, é uma linha para
+desfazer.
 
 **"Conhecer" virou "conversar"** porque conhecer é passivo e não pede nada; conversar nomeia
 exatamente o que está sendo pedido, que são vinte minutos.

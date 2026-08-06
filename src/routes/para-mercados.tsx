@@ -373,15 +373,24 @@ function ForMarketsPage() {
               id="proposta-titulo"
               className="font-display mt-1.5 text-3xl leading-tight sm:text-4xl"
             >
-              Leve mais consumidores de Artemis até suas ofertas
+              Mostre suas ofertas no piloto do ViPreço em Artemis
             </h1>
-            {/* O subtítulo diz a coisa desconfortável na primeira dobra, e não no rodapé: o
-                produto não está no ar. Um lojista que descobre isso no meio da conversa passa a
-                reler tudo o que ouviu antes com desconfiança — e com razão. */}
+            {/* Copy decidida pelo Founder/PMO em 06/08/2026, aplicada ao pé da letra. A versão
+                anterior ("Leve mais consumidores de Artemis até suas ofertas") prometia um
+                resultado que o piloto não pode garantir, e que a própria página desmentia três
+                seções abaixo. Esta diz o que o mercado FAZ, não o que ele GANHA. */}
             <p className="mt-2 max-w-prose text-base text-muted-foreground">
-              O ViPreço é um comparador de preços de bairro em preparação, e{" "}
-              <strong className="text-foreground">ainda não está no ar</strong>. O piloto começa
-              pequeno: alguns produtos, algumas semanas, e a devolutiva do que aconteceu.
+              Estamos preparando um teste local para ajudar consumidores a encontrar e comparar
+              ofertas com produto exato, fonte, data e validade.
+            </p>
+            {/* A frase desconfortável continua na primeira dobra, e não no rodapé. "Estamos
+                preparando" sugere que o produto não está no ar; "ainda não está no ar" afirma. Um
+                lojista que descobre isso no meio da conversa passa a reler tudo o que ouviu antes
+                com desconfiança, e com razão. O teste de ordem em `para-mercados.ssr.test.ts`
+                existe para que nenhuma revisão de copy apague essa afirmação sem querer. */}
+            <p className="mt-2 max-w-prose text-base text-muted-foreground">
+              O ViPreço <strong className="text-foreground">ainda não está no ar</strong>. O piloto
+              começa pequeno: alguns produtos, algumas semanas, e a devolutiva do que aconteceu.
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start">

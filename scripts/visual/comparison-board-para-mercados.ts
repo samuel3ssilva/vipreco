@@ -40,7 +40,7 @@ const MUDANCAS = [
     o: "Hero",
     antes: "“Seu mercado mais perto de quem compra no bairro.”",
     depois:
-      "“Leve mais consumidores de Artemis até suas ofertas.” O subtítulo diz na PRIMEIRA DOBRA que o produto ainda não está no ar — um lojista que descobre isso no meio da conversa relê tudo o que ouviu antes com desconfiança, e com razão.",
+      "“Mostre suas ofertas no piloto do ViPreço em Artemis.” Copy decidida pelo Founder/PMO em 06/08/2026: diz o que o mercado FAZ, não o que ele GANHA. E a primeira dobra segue afirmando que o produto ainda não está no ar — um lojista que descobre isso no meio da conversa relê tudo o que ouviu antes com desconfiança, e com razão.",
   },
   {
     o: "Como o consumidor encontra o mercado",

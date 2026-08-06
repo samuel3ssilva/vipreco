@@ -56,7 +56,18 @@ const PERMITIDOS = [
   // Ele cita o H1 da Home para provar que a rota vizinha continua renderizando. O guarda pegou
   // este arquivo sozinho, e a entrada só entrou aqui depois — que é a ordem certa.
   "src/routes/para-mercados.ssr.test.ts",
+  // A rota interna que produz `home-achados-states.png`, e o contrato dela. Os sete estados da
+  // seção de Achados não existem numa página do produto — a Home renderiza um por vez —, então
+  // a evidência exige uma tela que os mostre lado a lado. Ela é interna, fechada por padrão e
+  // responde 404 em staging e em produção.
+  "src/routes/laboratorio-home-estados.tsx",
+  "src/routes/laboratorio-home-estados.contract.test.ts",
+  // Gerado pelo próprio TanStack Router ao registrar a rota acima. Não é edição manual, mas o
+  // guarda mede o diff e não a intenção — e é bom que seja assim: uma rota nova aparecendo aqui
+  // sem que ninguém a tenha declarado é exatamente o que a lista precisa pegar.
+  "src/routeTree.gen.ts",
   "scripts/visual/screenshot-home.ts",
+  "scripts/visual/screenshot-home-estados.ts",
   "scripts/visual/comparison-board-home.ts",
   "docs/evidence/visual/r33/",
   "docs/product/",

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compararComMain } from "@/test-support/git-guard";
+import { VARIANTES } from "@/components/card-v2/fixtures";
 
 /**
  * R3.2 — o contrato do laboratório do Card v2.
@@ -99,6 +100,32 @@ describe("nada real entra no laboratório do Card v2", () => {
         expect(fonte, `há sinal de histórico: ${sinal}`).not.toContain(sinal);
       }
       expect(fonte.toLowerCase()).not.toMatch(/mais (barato|caro) que em/);
+    }
+  });
+
+  it("nenhuma LEGENDA do laboratório promete histórico de preço", () => {
+    // A LEGENDA É EVIDÊNCIA, E ENGANA TÃO BEM QUANTO O COMPONENTE.
+    //
+    // O teste acima olha o dado e a regra. Ele passou o tempo todo, e mesmo assim a
+    // captura do laboratório mostrava, logo acima da variante A, a frase "há observação
+    // anterior com data, então o percentual aparece". O card abaixo não mostrava
+    // percentual nenhum. Quem lê uma captura lê as duas coisas juntas, e acredita na
+    // legenda.
+    //
+    // Por isso a asserção é sobre o TEXTO RENDERIZADO das variantes, e não sobre o
+    // arquivo: é o que chega aos olhos de quem revisa o Gate.
+    const legendas = VARIANTES.map((v) => `${v.titulo} ${v.proposito}`.toLowerCase());
+    for (const legenda of legendas) {
+      for (const promessa of [
+        "percentual",
+        "preço anterior",
+        "observação anterior",
+        "economia",
+        "queda",
+        "antes r$",
+      ]) {
+        expect(legenda, `uma legenda do laboratório promete "${promessa}"`).not.toContain(promessa);
+      }
     }
   });
 

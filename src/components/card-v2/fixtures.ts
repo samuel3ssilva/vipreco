@@ -148,10 +148,20 @@ export const VARIANTES: readonly VarianteDoLaboratorio[] = [
   {
     chave: "A",
     titulo: "A. Oferta padrão",
+    // A LEGENDA MENTIA SOBRE O CARD AO LADO DELA.
+    //
+    // Até 06/08/2026 esta frase terminava com "há observação anterior com data, então o
+    // percentual aparece — em frase, não só em cor". O percentual saiu do card em DL-030,
+    // por falta do contrato P-01, e a legenda ficou. Quem olhasse a captura via um rótulo
+    // prometendo histórico de preço logo acima de um card que não mostra nenhum — e a
+    // leitura natural é que o card exibe o que a legenda anuncia.
+    //
+    // `laboratorio-card-v2.contract.test.ts` passou a reprovar qualquer legenda que prometa
+    // histórico: a evidência visual é lida por gente, e uma legenda errada engana tão bem
+    // quanto um componente errado.
     proposito:
       "Produto exato, imagem com correspondência aprovada, preço, mercado e procedência completa. " +
-      "A quantidade é estruturada e aprovada, então o preço unitário aparece; há observação anterior " +
-      "com data, então o percentual aparece — em frase, não só em cor.",
+      "A quantidade é estruturada e aprovada, então o preço unitário aparece.",
     destaque: true,
     oferta: oferta({
       id: "oferta-a",

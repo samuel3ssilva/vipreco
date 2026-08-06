@@ -3,14 +3,23 @@
 Capturas do laboratório do Card v2 (`/laboratorio-card-v2`), geradas em navegador de verdade
 por `scripts/visual/screenshot-card-v2.ts`, contra o servidor de desenvolvimento local.
 
-| Arquivo                        | O que é                               | Viewport CSS | PNG          |
-| ------------------------------ | ------------------------------------- | ------------ | ------------ |
-| `card-v2-320.png`              | página inteira                        | 320 px       | 640 × 21240  |
-| `card-v2-390.png`              | página inteira                        | 390 px       | 780 × 19494  |
-| `card-v2-desktop.png`          | página inteira                        | 1280 px      | 2560 × 14790 |
-| `card-v2-variants.png`         | recorte da grade "em lista"           | 900 px       | 3536 × 6364  |
-| `card-v2-list-390.png`         | **quatro cards consecutivos**         | 390 px       | 1528 × 6492  |
-| `card-v2-comparison-board.png` | North Star ao lado das oito variantes | 1400 px      | 2800 × 4860  |
+**Todas regeradas em 06/08/2026 a partir do head da branch**, depois da reconciliação da §"O
+alarme falso" abaixo.
+
+| Arquivo                        | O que é                                      | Viewport CSS | PNG          | SHA-256 (16) |
+| ------------------------------ | -------------------------------------------- | ------------ | ------------ | ------------ |
+| `card-v2-320.png`              | página inteira                               | 320 px       | 640 × 21150  | `f0dd705b…`  |
+| `card-v2-390.png`              | página inteira                               | 390 px       | 780 × 19448  | `51c83557…`  |
+| `card-v2-desktop.png`          | página inteira                               | 1280 px      | 2560 × 14744 | `6c4ba650…`  |
+| `card-v2-variants.png`         | recorte da grade "em lista"                  | 900 px       | 3536 × 6364  | `58431b13…`  |
+| `card-v2-list-390.png`         | **quatro cards consecutivos**                | 390 px       | 1528 × 6492  | `c5297eb4…`  |
+| `card-v2-comparison-board.png` | **North Star V2** ao lado das oito variantes | 1400 px      | 2800 × 7200  | `de5700eb…`  |
+
+Para conferir que os arquivos são estes:
+
+```bash
+shasum -a 256 docs/evidence/visual/r32/*.png
+```
 
 ### A captura da lista responde outra pergunta
 
@@ -27,12 +36,12 @@ Medido nesta execução: **400 px de CSS por card** a 390 px de largura.
 
 Mesma página, mesmas oito variantes, mesmo instante de referência:
 
-| Captura   | Antes  | Depois | Diferença      |
-| --------- | ------ | ------ | -------------- |
-| 320 px    | 22 184 | 21 240 | −944 px de PNG |
-| 390 px    | 20 158 | 19 494 | −664           |
-| desktop   | 15 404 | 14 790 | −614           |
-| variantes | 6 880  | 6 364  | −516           |
+| Captura   | Antes  | Depois | Diferença        |
+| --------- | ------ | ------ | ---------------- |
+| 320 px    | 22 184 | 21 150 | −1 034 px de PNG |
+| 390 px    | 20 158 | 19 448 | −710             |
+| desktop   | 15 404 | 14 744 | −660             |
+| variantes | 6 880  | 6 364  | −516             |
 
 Nenhum dos 17 itens da anatomia saiu por causa de altura. O que saiu foi **repetição**: a
 frase que explicava o selo de estado dizia o que a linha de procedência já provava três
@@ -62,9 +71,15 @@ produz.
 - **A cor nunca é o único canal.** Todo estado traz **rótulo escrito**; a tarja temporal do
   topo é decorativa e `aria-hidden`. A oferta fora da lista orgânica é distinguível por três
   canais independentes: o rótulo, o preço atenuado e a tarja.
-- **Nenhum histórico de preço.** "antes R$ 14,90 · 13% mais barato que em 25/07/2026" saiu do
-  card e do fixture em 06/08/2026 (DL-030). Falta o contrato — P-01, qual observação anterior
-  conta —, não a implementação.
+- **Nenhum histórico de preço, no card e na legenda.** "antes R$ 14,90 · 13% mais barato que em
+  25/07/2026" saiu do card e do fixture em 06/08/2026 (DL-030). Falta o contrato — P-01, qual
+  observação anterior conta —, não a implementação. A legenda que ainda o prometia também saiu;
+  ver "O alarme falso" abaixo.
+- **A diferença entre mercados não foi removida: ela ainda não existe.** O North Star V2 mostra
+  "R$ 0,50 abaixo da próxima oferta observada", que compara o primeiro e o segundo mercado da
+  mesma consulta, no mesmo instante. R3.2 entrega o card **isolado**: ele recebe uma oferta, não
+  um conjunto comparável, e não tem de onde tirar o segundo preço. Ela entra com a comparação, em
+  R5/R6. Não depende de P-01.
 - **Mercado é identificado por texto.** Nenhum logotipo, em nenhuma variante.
 - **Nenhum dado real.** "Mercado Exemplo", "Bairro Exemplo", "Produto Demonstrativo",
   instante de referência fixo, e nenhuma chamada de rede: a página não faz nenhuma.
@@ -88,6 +103,47 @@ ela cabe. São coisas diferentes, e só a segunda é verificação.
 Foco conferido por tecla `Tab` real, e não por `.focus()` programático — `:focus-visible`
 distingue os dois: anel de 2 px sólido em `--color-ring`, com 2 px de deslocamento, sobre um
 alvo de 48 px de altura.
+
+## O alarme falso do histórico de preço, e o que ele ensinou
+
+Na revisão de 06/08/2026 o Founder/PMO leu, na evidência, que o Card v2 ainda exibia "antes
+R$ …", "13% mais barato" e comparação com data histórica — enquanto o checkpoint afirmava que
+o histórico tinha sido removido. A contradição era real. **A causa não era nenhuma das duas
+coisas que se esperaria.**
+
+**Não era código obsoleto.** O histórico saiu em `7532290`, e `card-v2.test.ts` prova por dois
+caminhos que ele não volta: a visão não tem campo de preço anterior, e um `previous_price` na
+entrada não produz saída nenhuma.
+
+**Não era captura obsoleta.** Os seis PNG foram gerados **pelo mesmo commit** que removeu o
+histórico. Entre ele e o head (`3a8ad90`) só houve um merge de `main` que tocou 10 arquivos, todos
+em `docs/` — zero mudanças de render, verificado com `git diff` restrito aos diretórios que
+desenham o card.
+
+**Eram duas outras coisas, e as duas eram legítimas de confundir:**
+
+1. **A coluna de referência do painel comparativo era o North Star R3.0**, e é esse mockup que
+   mostra "Preço anterior: R$ 20,49" com queda percentual — porque é justamente o desenho que
+   está sendo criticado. Numa comparação lado a lado, a coluna da esquerda se lê como "o que
+   entregamos" com uma facilidade desconfortável. **Corrigido:** a comparação principal passou a
+   ser contra o **North Star V2**, a referência atual, cuja classificação de roadmap põe
+   "histórico de preço e alertas de queda" em _fora do escopo atual_. O R3.0 continua no painel,
+   embaixo, rotulado como histórico e com o motivo escrito.
+2. **A legenda da variante A ainda prometia o percentual.** Ela dizia "há observação anterior com
+   data, então o percentual aparece — em frase, não só em cor", logo acima de um card que não
+   mostra percentual nenhum. **Corrigido**, e agora há teste: `laboratorio-card-v2.contract.test.ts`
+   reprova qualquer legenda que fale em percentual, preço anterior, observação anterior, economia
+   ou queda.
+
+**A lição é a segunda.** O contrato provava o dado e a regra, e passou o tempo todo. Ninguém
+estava provando o **rótulo** — e quem revisa um Gate visual lê o rótulo e o card como uma coisa
+só. Uma legenda errada engana exatamente tão bem quanto um componente errado.
+
+O painel também ganhou um bloco em destaque, "Histórico de preço: onde ele aparece, e onde não
+aparece", que distingue três coisas que estavam sendo lidas como uma: o card entregue (não
+exibe), o R3.0 (exibe, e é a referência criticada) e a **diferença entre mercados** do V2
+("R$ 0,50 abaixo da próxima oferta observada"), que compara dois mercados no mesmo instante,
+não depende de P-01 e **não foi o que DL-030 removeu**.
 
 ## Dois defeitos que só apareceram ao OLHAR as imagens
 

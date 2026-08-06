@@ -17,13 +17,12 @@
  * o Founder decidiria sobre o que sobrou do corte.
  */
 
-import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { abrirChrome, capturarPagina, conectar, dimensoesDoPng, medir } from "./cdp";
 
 const DESTINO = join(process.cwd(), "docs/evidence/visual/r31");
-const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORTA = 9334;
 const LARGURA = 1400;
 
@@ -38,54 +37,6 @@ const DIVERGENCIAS = [
   "O mockup exibe R$/kg em todo card. O preço unitário é CONDICIONAL e depende de quantidade estruturada, que é E1 e ainda não existe em ambiente nenhum.",
   "R3.1 é FUNDAÇÃO: tokens, primitivas e laboratório. Nenhuma das cinco telas foi implementada, e a Home segue exatamente como estava.",
 ];
-
-const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-async function comTentativas<T>(fn: () => Promise<T>, tentativas = 40): Promise<T> {
-  let ultimo: unknown;
-  for (let i = 0; i < tentativas; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      ultimo = e;
-      await esperar(250);
-    }
-  }
-  throw ultimo;
-}
-
-class Sessao {
-  private id = 0;
-  private constructor(private ws: WebSocket) {}
-  static async abrir(url: string): Promise<Sessao> {
-    const ws = new WebSocket(url);
-    await new Promise<void>((ok, erro) => {
-      ws.addEventListener("open", () => ok(), { once: true });
-      ws.addEventListener("error", () => erro(new Error("WebSocket CDP não abriu")), {
-        once: true,
-      });
-    });
-    return new Sessao(ws);
-  }
-  enviar<T = Record<string, unknown>>(method: string, params: object = {}): Promise<T> {
-    const id = ++this.id;
-    return new Promise((ok) => {
-      const aoReceber = (ev: MessageEvent) => {
-        const msg: unknown = JSON.parse(String(ev.data));
-        if (typeof msg !== "object" || msg === null) return;
-        const { id: recebido, result } = msg as { id?: unknown; result?: unknown };
-        if (recebido !== id) return;
-        this.ws.removeEventListener("message", aoReceber);
-        ok(result as T);
-      };
-      this.ws.addEventListener("message", aoReceber);
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-  fechar() {
-    this.ws.close();
-  }
-}
 
 const base64 = (caminho: string) => readFileSync(caminho).toString("base64");
 
@@ -125,33 +76,11 @@ function montarHtml(): string {
 
 async function principal() {
   const html = montarHtml();
-  const chrome = spawn(
-    CHROME,
-    [
-      "--headless=new",
-      "--disable-gpu",
-      "--hide-scrollbars",
-      `--remote-debugging-port=${PORTA}`,
-      "--user-data-dir=/tmp/vipreco-board-perfil",
-      "about:blank",
-    ],
-    { stdio: "ignore" },
-  );
+  const chrome = abrirChrome(PORTA, "/tmp/vipreco-board-perfil");
 
   try {
-    const alvo = await comTentativas(async () => {
-      const r = await fetch(`http://127.0.0.1:${PORTA}/json/new?about:blank`, { method: "PUT" });
-      if (!r.ok) throw new Error(`/json/new devolveu ${r.status}`);
-      return (await r.json()) as { webSocketDebuggerUrl: string };
-    });
-    const s = await Sessao.abrir(alvo.webSocketDebuggerUrl);
-    await s.enviar("Page.enable");
-    await s.enviar("Emulation.setDeviceMetricsOverride", {
-      width: LARGURA,
-      height: 900,
-      deviceScaleFactor: 2,
-      mobile: false,
-    });
+    const s = await conectar(PORTA);
+
     // ARQUIVO, E NÃO `data:` URL. A primeira versão embutia as duas imagens numa data URL
     // de ~3 MB; o Chrome recusou a navegação em silêncio e o painel saiu BRANCO — com as
     // dimensões certas, porque a conferência de largura só olha o cabeçalho do PNG.
@@ -160,37 +89,35 @@ async function principal() {
     const pasta = mkdtempSync(join(tmpdir(), "vipreco-board-"));
     const arquivo = join(pasta, "board.html");
     writeFileSync(arquivo, html, "utf-8");
-    await s.enviar("Page.navigate", { url: `file://${arquivo}` });
-    await esperar(3000);
-    const { data } = await s.enviar<{ data: string }>("Page.captureScreenshot", {
-      format: "png",
-      captureBeyondViewport: true,
+
+    const bytes = await capturarPagina(s, {
+      url: `file://${arquivo}`,
+      largura: LARGURA,
+      movel: false,
+      espera: 3000,
     });
-    const bytes = Buffer.from(data, "base64");
-    const larguraPng = bytes.readUInt32BE(16);
-    if (larguraPng !== LARGURA * 2) {
-      throw new Error(`comparison-board saiu com ${larguraPng}px; esperava ${LARGURA * 2}px.`);
+
+    const { largura, altura } = dimensoesDoPng(bytes);
+    if (largura !== LARGURA * 2) {
+      throw new Error(`comparison-board saiu com ${largura}px; esperava ${LARGURA * 2}px.`);
     }
 
     // CONFERÊNCIA DE TINTA. Dimensão certa não prova conteúdo: a versão anterior gerou um
     // PNG 2800x1800 inteiramente branco e passou na checagem de largura sem reclamar.
     // Pergunta ao próprio navegador quantos pixels do painel não são o fundo.
-    const { result } = await s.enviar<{
-      result: { value: { imagens: number; altura: number; carregadas: number } };
-    }>("Runtime.evaluate", {
-      // Devolve um OBJETO. A primeira versão empacotava dois números em um só
-      // (`imagens * 1000 + altura`) e a altura passava de 1000, transbordando para a
-      // contagem de imagens: o painel correto foi reprovado dizendo "3 imagens".
-      // Codificação apertada economiza uma linha e paga com um diagnóstico que mente.
-      expression: `({
+    //
+    // Devolve um OBJETO. A primeira versão empacotava dois números em um só
+    // (`imagens * 1000 + altura`) e a altura passava de 1000, transbordando para a
+    // contagem de imagens: o painel correto foi reprovado dizendo "3 imagens".
+    // Codificação apertada economiza uma linha e paga com um diagnóstico que mente.
+    const medida = await medir<{ imagens: number; carregadas: number; altura: number }>(
+      s,
+      `({
         imagens: document.querySelectorAll('img').length,
         carregadas: [...document.querySelectorAll('img')].filter(i => i.naturalWidth > 0).length,
         altura: document.body.scrollHeight,
       })`,
-      returnByValue: true,
-    });
-    const medida = result?.value;
-    if (medida === undefined) throw new Error("não consegui medir o painel no navegador.");
+    );
     if (medida.imagens !== 2) {
       throw new Error(`o painel deveria ter 2 imagens e tem ${medida.imagens}.`);
     }
@@ -205,7 +132,7 @@ async function principal() {
     }
 
     writeFileSync(join(DESTINO, "comparison-board.png"), bytes);
-    console.log(`==> comparison-board.png — ${larguraPng}x${bytes.readUInt32BE(20)} px`);
+    console.log(`==> comparison-board.png — ${largura}x${altura} px`);
     s.fechar();
   } finally {
     chrome.kill();

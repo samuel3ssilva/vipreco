@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from "react";
+import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,14 +53,26 @@ const DISTRIBUICAO = {
   entre: "justify-between",
 } as const;
 
-interface BaseDeLayout {
+/**
+ * R3.2 — o resto das props é REPASSADO.
+ *
+ * A primeira versão aceitava só as seis próprias, e o efeito não era "a prop é ignorada":
+ * era um `<Surface as="article" aria-labelledby={id}>` saindo como `<article>` sem rótulo
+ * nenhum para leitor de tela, com a tela perfeita para quem enxerga. O defeito apareceu
+ * primeiro na `Surface`, e a mesma armadilha estava aqui — `id`, `aria-*`, `role` e
+ * `data-*` sumiam em silêncio.
+ *
+ * Uma primitiva de layout que engole atributo de acessibilidade não é neutra; é uma
+ * regressão de acessibilidade esperando por um chamador distraído.
+ */
+type BaseDeLayout = {
   children: ReactNode;
   gap?: Espaco;
   alinhar?: keyof typeof ALINHAMENTO;
   distribuir?: keyof typeof DISTRIBUICAO;
   className?: string;
   as?: ElementType;
-}
+} & Omit<HTMLAttributes<HTMLElement>, "className" | "children">;
 
 /** Empilha na vertical. O padrão de toda seção. */
 export function Stack({
@@ -70,6 +82,7 @@ export function Stack({
   distribuir = "inicio",
   className,
   as: Tag = "div",
+  ...resto
 }: BaseDeLayout) {
   return (
     <Tag
@@ -80,6 +93,7 @@ export function Stack({
         DISTRIBUICAO[distribuir],
         className,
       )}
+      {...resto}
     >
       {children}
     </Tag>
@@ -101,6 +115,7 @@ export function Inline({
   className,
   as: Tag = "div",
   quebrar = true,
+  ...resto
 }: BaseDeLayout & { quebrar?: boolean }) {
   return (
     <Tag
@@ -112,6 +127,7 @@ export function Inline({
         DISTRIBUICAO[distribuir],
         className,
       )}
+      {...resto}
     >
       {children}
     </Tag>

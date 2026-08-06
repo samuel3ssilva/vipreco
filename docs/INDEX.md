@@ -61,6 +61,19 @@ entram em nenhuma migration de R1/R2:
 | [`data/SOURCE-PRODUCT-ALIASES.md`](data/SOURCE-PRODUCT-ALIASES.md)     | **NORMATIVO como contrato** — **fora do MVP**. Alias **de fonte**, que é vínculo de identidade; não confundir com `search_aliases` |
 | [`data/PRICE-CONDITION-TAXONOMY.md`](data/PRICE-CONDITION-TAXONOMY.md) | **NORMATIVO como contrato** — **fora do MVP**. Ortogonal a `PROMOTION-TYPES.md`, que continua íntegro                              |
 
+## Negócio — a trilha B2B
+
+| Documento                                                                                | Estado                                                                             |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`business/interviews/README.md`](business/interviews/README.md)                         | **NORMATIVO** como procedimento de campo — B2B-1. **Nenhuma entrevista realizada** |
+| [`business/interviews/HYPOTHESES.md`](business/interviews/HYPOTHESES.md)                 | as dez hipóteses, com o que confirma e o que nega cada uma                         |
+| [`business/interviews/INTERVIEW-SCRIPT.md`](business/interviews/INTERVIEW-SCRIPT.md)     | o roteiro de 20 a 30 minutos                                                       |
+| [`business/interviews/PITCHES.md`](business/interviews/PITCHES.md)                       | 30 segundos, 2 minutos e 5 minutos                                                 |
+| [`business/interviews/INTERVIEW-SHEET.md`](business/interviews/INTERVIEW-SHEET.md)       | a folha a preencher                                                                |
+| [`business/interviews/SIGNAL-CRITERIA.md`](business/interviews/SIGNAL-CRITERIA.md)       | **NORMATIVO** — forte, moderado e fraco, decididos antes das conversas             |
+| [`business/interviews/SYNTHESIS-TEMPLATE.md`](business/interviews/SYNTHESIS-TEMPLATE.md) | como as conversas viram decisão de roadmap                                         |
+| [`business/interviews/offline/`](business/interviews/offline/)                           | o material de campo, autossuficiente e sem internet                                |
+
 ## Analytics
 
 | Documento                                                            | Estado                                                            |

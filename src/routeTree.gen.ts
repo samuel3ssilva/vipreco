@@ -15,6 +15,7 @@ import { Route as ComoFuncionaRouteImport } from './routes/como-funciona'
 import { Route as LaboratorioCardV2RouteImport } from './routes/laboratorio-card-v2'
 import { Route as LaboratorioVisualRouteImport } from './routes/laboratorio-visual'
 import { Route as ParaMercadosRouteImport } from './routes/para-mercados'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProdutoProductIdRouteImport } from './routes/produto.$productId'
 
@@ -48,6 +49,11 @@ const ParaMercadosRoute = ParaMercadosRouteImport.update({
   path: '/para-mercados',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/laboratorio-card-v2': typeof LaboratorioCardV2Route
   '/laboratorio-visual': typeof LaboratorioVisualRoute
   '/para-mercados': typeof ParaMercadosRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/laboratorio-card-v2': typeof LaboratorioCardV2Route
   '/laboratorio-visual': typeof LaboratorioVisualRoute
   '/para-mercados': typeof ParaMercadosRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/laboratorio-card-v2': typeof LaboratorioCardV2Route
   '/laboratorio-visual': typeof LaboratorioVisualRoute
   '/para-mercados': typeof ParaMercadosRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/laboratorio-card-v2'
     | '/laboratorio-visual'
     | '/para-mercados'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/produto/$productId'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/laboratorio-card-v2'
     | '/laboratorio-visual'
     | '/para-mercados'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/produto/$productId'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/laboratorio-card-v2'
     | '/laboratorio-visual'
     | '/para-mercados'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/produto/$productId'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   LaboratorioCardV2Route: typeof LaboratorioCardV2Route
   LaboratorioVisualRoute: typeof LaboratorioVisualRoute
   ParaMercadosRoute: typeof ParaMercadosRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ProdutoProductIdRoute: typeof ProdutoProductIdRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParaMercadosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   LaboratorioCardV2Route: LaboratorioCardV2Route,
   LaboratorioVisualRoute: LaboratorioVisualRoute,
   ParaMercadosRoute: ParaMercadosRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ProdutoProductIdRoute: ProdutoProductIdRoute,
 }

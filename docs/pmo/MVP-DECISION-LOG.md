@@ -1203,3 +1203,73 @@ DL-030 removeu.
 - **Documentos:** `product/visual-north-star-v2/README.md`,
   `product/NORTH-STAR-V2-ASSESSMENT.md` §2 e §3.1, `.prettierignore`
 - **Status:** ativa
+
+---
+
+### DL-033 — Evidência publicada envelhece sozinha, e o link fixado não avisa
+
+- **Data:** 06/08/2026
+- **Decisão do:** CTO, depois de defeito relatado pelo Founder
+- **Contexto:** o Founder baixou a evidência visual direto dos comentários dos PRs #89 e #93 e
+  leu nela coisas que o código não fazia: o H1 antigo de `/para-mercados` com a barra do
+  consumidor, e o painel do Card v2 com R3.0 como direção aprovada e preço anterior.
+
+**Os arquivos versionados estavam corretos. Os heads estavam corretos. Os comentários estavam
+corretos.** O defeito é de processo, e tem duas metades.
+
+**Primeira metade: comentário antigo não morre.** Cada rodada de revisão publicava um comentário
+novo, com links `raw.githubusercontent.com` fixados no commit daquele momento. O GitHub serve
+esses arquivos **para sempre**, em `200`, byte a byte — e não existe nada no arquivo que diga
+que ele envelheceu. Um PR com quatro comentários tem quatro evidências igualmente vivas, e a
+única forma de saber qual vale é ler a data do comentário. Medido: `para-mercados-390.png`
+tinha três SHA-256 diferentes simultaneamente acessíveis; `card-v2-comparison-board.png`, três.
+
+**Decisão:** um PR tem **um** comentário canônico, intitulado `FOUNDER VISUAL REVIEW — CURRENT
+EVIDENCE`. Todo comentário anterior recebe, no topo, um bloco `SUPERSEDED — DO NOT USE FOR
+FOUNDER GATE`, e seus links de imagem são **desativados** — a URL vira texto entre crases, e o
+`![]()` deixa de renderizar. As URLs continuam escritas, porque o registro importa; ninguém as
+abre por acidente, porque o link importa mais.
+
+Apagar os arquivos antigos **não é opção**: eles vivem em commits, e commits são o histórico.
+Marcar e desativar é a correção; remover seria reescrever o passado.
+
+**Segunda metade: a captura não era reproduzível.** Recapturar do mesmo commit dava SHA-256
+diferente. A diferença toda cabia em 376 linhas de uma imagem de 19 448 — o card de
+carregamento, cujo esqueleto usa `animate-pulse`. A foto pegava a pulsação numa fase qualquer.
+
+Isso é pior do que parece: sem reprodutibilidade, "a evidência está velha" e "a captura
+simplesmente varia" viram a mesma observação. **Decisão:** `scripts/visual/cdp.ts` congela
+`animation` e `transition` imediatamente antes de fotografar, depois da espera de carregamento.
+Guardado por `laboratorio-card-v2.contract.test.ts` §"a evidência visual é reproduzível".
+
+- **Consequência:** capturas de gate agora batem byte a byte entre execuções, e o comentário
+  canônico registra caminho, commit, SHA-256, URL e head de cada PNG.
+
+---
+
+### DL-034 — R3.2 e B2B-0 aprovadas e mergeadas
+
+- **Data:** 06/08/2026
+- **Decisão do:** Founder/PMO, sobre as evidências canônicas reconciliadas por DL-033
+
+O Founder revisou pessoalmente as capturas fixadas nos heads atuais e aprovou os dois gates
+visuais. Os dois PRs foram mergeados **separadamente, por merge commit**.
+
+| Frente                   | PR                                                      | Head aprovado | Merge SHA     | Gate                                       |
+| ------------------------ | ------------------------------------------------------- | ------------- | ------------- | ------------------------------------------ |
+| R3.2 — Card v2           | [#89](https://github.com/samuel3ssilva/vipreco/pull/89) | `6adcaf7`     | **`4222332`** | `FOUNDER VISUAL GATE — R3.2 APPROVED`      |
+| B2B-0 — `/para-mercados` | [#93](https://github.com/samuel3ssilva/vipreco/pull/93) | `053eab9`     | **`dd350b7`** | `FOUNDER B2B VISUAL GATE — B2B-0 APPROVED` |
+
+**O que R3.2 cobre:** Card v2, anatomia, variantes, estados, procedência, responsividade,
+acessibilidade, laboratório e evidências. **Não cobre** Home, busca, comparação, detalhe
+completo, WhatsApp, dados reais nem ranking patrocinado.
+
+**O que B2B-0 cobre:** `MarketShell`, copy, estrutura, CTA, mobile, desktop, acessibilidade,
+neutralidade e a separação entre B2B e B2C. **Não cobre** painel do lojista, login, ERP, upload,
+analytics B2B completo, pagamento, contrato, patrocínio nem parceria real.
+
+**B2B-0 concluída não é B2B-1 concluída.** A página existe; nenhuma entrevista aconteceu. O
+campo é gate do Founder, e continua fechado.
+
+- **Próxima frente B2C:** R3.3 — Home / Achados.
+- **Próxima frente B2B:** B2B-1, conduzida pelo Founder.

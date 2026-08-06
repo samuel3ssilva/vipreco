@@ -59,21 +59,21 @@ Copiar essas listas para cá criaria duas verdades sobre o mesmo assunto. Elas f
 
 ## 3. Trilha B2C — o produto do consumidor
 
-| Etapa    | Entrega                                           | Estado                                    |
-| -------- | ------------------------------------------------- | ----------------------------------------- |
-| **R0**   | Governança e rebaseline                           | **concluída**                             |
-| **R1**   | Produto exato e equivalência                      | **concluída**                             |
-| **R2**   | Dados e segurança em staging                      | **concluída**                             |
-| **R3.0** | North Star original                               | **concluída**                             |
-| **R3.1** | Fundação visual — tokens, primitivas, laboratório | **concluída** (PR #78, `4362efa`)         |
-| **R3.2** | Card v2 de produto exato                          | **em revisão visual** (PR #89, sem merge) |
-| **R3.3** | Home / Achados                                    | futura                                    |
-| **R4**   | Busca por produto exato                           | futura                                    |
-| **R5**   | Comparação do mesmo produto                       | futura                                    |
-| **R6**   | Detalhe, imagens, promoções e estados             | futura                                    |
-| **R7**   | WhatsApp, analytics, acessibilidade e QA          | futura                                    |
-| **R8**   | Produção, domínio e segurança final               | futura                                    |
-| **R9**   | Piloto Artemis                                    | preparação comercial iniciada             |
+| Etapa    | Entrega                                           | Estado                            |
+| -------- | ------------------------------------------------- | --------------------------------- |
+| **R0**   | Governança e rebaseline                           | **concluída**                     |
+| **R1**   | Produto exato e equivalência                      | **concluída**                     |
+| **R2**   | Dados e segurança em staging                      | **concluída**                     |
+| **R3.0** | North Star original                               | **concluída**                     |
+| **R3.1** | Fundação visual — tokens, primitivas, laboratório | **concluída** (PR #78, `4362efa`) |
+| **R3.2** | Card v2 de produto exato                          | **concluída** (PR #89, `4222332`) |
+| **R3.3** | Home / Achados                                    | **em desenvolvimento**            |
+| **R4**   | Busca por produto exato                           | futura                            |
+| **R5**   | Comparação do mesmo produto                       | futura                            |
+| **R6**   | Detalhe, imagens, promoções e estados             | futura                            |
+| **R7**   | WhatsApp, analytics, acessibilidade e QA          | futura                            |
+| **R8**   | Produção, domínio e segurança final               | futura                            |
+| **R9**   | Piloto Artemis                                    | preparação comercial iniciada     |
 
 ### A mudança de ordem, e o que ela custou registrar
 
@@ -98,7 +98,7 @@ depende de mercados reais que ainda não foram ouvidos.
 
 | Etapa     | Entrega                                | Estado                                    |
 | --------- | -------------------------------------- | ----------------------------------------- |
-| **B2B-0** | página `/para-mercados` para validação | em revisão visual                         |
+| **B2B-0** | página `/para-mercados` para validação | **concluída** (PR #93, `dd350b7`)         |
 | **B2B-1** | roteiro, materiais e entrevistas       | materiais prontos; **campo não iniciado** |
 | **B2B-2** | síntese dos aprendizados               | futura                                    |
 | **B2B-3** | recrutamento e onboarding dos mercados | futura                                    |

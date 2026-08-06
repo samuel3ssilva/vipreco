@@ -406,6 +406,9 @@ de sair da lista 5.
 
 ### MVP-DESIGN-03 — Card v2, anatomia dos 17 itens
 
+- **Estado:** **CONCLUÍDO** em 06/08/2026, lista `Concluído`. `FOUNDER VISUAL GATE — R3.2
+APPROVED` sobre o head `6adcaf7`; PR [#89](https://github.com/samuel3ssilva/vipreco/pull/89)
+  mergeado por merge commit em **`4222332`**. Registro em DL-034.
 - **Objetivo:** evoluir o `AchadoCard`. · **Fonte:** `docs/product/CARD-V2-SPEC.md`
 - **Dependências:** MVP-DESIGN-02 · **Etapa:** R3.2 _(era R6; DL-028)_ · **Etiquetas:** DESIGN, E2
 - **Aceite:** as regras de "o que o card não faz" preservadas e testadas; alvo de toque ≥ 48 px;
@@ -423,6 +426,9 @@ de sair da lista 5.
 
 ### MVP-DESIGN-05 — Nova ordem da Home
 
+- **Estado:** **em desenvolvimento** desde 06/08/2026, lista `Em desenvolvimento`. É a R3.3, aberta
+  logo depois do gate do Card v2. Herda de DL-030 a pendência do histórico de preço, que a Home
+  ainda exibe.
 - **Objetivo:** reordenar com a busca na primeira dobra (D2).
 - **Fonte:** `docs/product/ROADMAP-MVP-v3.md` E2.1
 - **Dependências:** MVP-DESIGN-01 · **Etapa:** R3.3 _(era R4; DL-028)_ · **Etiquetas:** DESIGN, E2
@@ -437,9 +443,15 @@ de sair da lista 5.
 
 ### MVP-BUSINESS-01 — Sprint de entrevistas com mercados de Artemis
 
-- **Status:** materiais prontos; **campo não iniciado**. _(O rótulo "PAUSADO PARA PLANO DE
-  DELEGAÇÃO" foi removido em 06/08/2026: o plano existe. O gate de contato externo **continua
-  fechado** — DL-031.)_
+- **Status:** **PRONTO PARA EXECUÇÃO PELO FOUNDER** (06/08/2026), e o card **permanece em
+  `Bloqueado`**. Não é contradição: o Founder decidiu conduzir as entrevistas pessoalmente, e o
+  CTO está proibido de contatar mercados, enviar mensagens ou agir em nome dele. Para o fluxo do
+  CTO — que é o que este quadro rastreia — o gate segue fechado; mover o card afirmaria que o
+  campo começou. **Nenhuma entrevista foi realizada.**
+- **B2B-0 concluída:** o item "Página para mercados revisada" do checklist foi marcado. PR
+  [#93](https://github.com/samuel3ssilva/vipreco/pull/93) mergeado em **`dd350b7`**, com
+  `FOUNDER B2B VISUAL GATE — B2B-0 APPROVED`. A página existe; isso não é ter ouvido alguém.
+  O card **não** vai para concluído. DL-031, DL-034.
 - **Objetivo:** mapear sobreposição de produtos entre mercados, disponibilidade de GTIN, capacidade
   real de envio de ofertas, formatos de promoção praticados, como correções e esgotamentos são
   comunicados hoje, e aceitação da ideia de comparação pública de preço.

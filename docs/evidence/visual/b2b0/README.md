@@ -1,5 +1,12 @@
 # B2B-0 — evidência visual de `/para-mercados`
 
+> **Gate aprovado pelo Founder em 06/08/2026** sobre o head `053eab9`, e mergeado na `main`
+> por [#93](https://github.com/samuel3ssilva/vipreco/pull/93) → **`dd350b7`**. Comentário canônico:
+> [issuecomment-5205806747](https://github.com/samuel3ssilva/vipreco/pull/93#issuecomment-5205806747).
+>
+> As quatro capturas foram regeradas contra o head atualizado com a `main` do Card v2 e saíram
+> **byte a byte idênticas** — o merge do #89 não toca esta rota.
+
 Capturas geradas em navegador de verdade por `scripts/visual/screenshot-para-mercados.ts`,
 contra o servidor de desenvolvimento local.
 

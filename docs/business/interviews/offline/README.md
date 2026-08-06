@@ -4,8 +4,33 @@ Um arquivo: [`kit-piloto.html`](./kit-piloto.html). Abre em qualquer navegador, 
 sem internet**, imprime em papel A4 sem ajuste.
 
 **Autossuficiente de verdade.** Sem CDN, sem fonte externa, sem imagem externa, sem script.
-CSS embutido e desenhos em SVG inline. Copiar o arquivo para o celular basta — não é preciso
-copiar pasta nenhuma junto.
+CSS embutido, desenhos em SVG inline e o **QR Code embutido como `data:` URI**. Copiar o
+arquivo para o celular basta — não é preciso copiar pasta nenhuma junto. Essa promessa é o
+motivo de o QR não ser um `<img src="arquivo.png">`: bastaria alguém mandar o HTML sozinho por
+WhatsApp para o quadrado virar um ícone quebrado no meio da conversa.
+
+## O QR Code (06/08/2026)
+
+Aponta para **staging**, e a legenda diz isso: "Demonstração — ambiente de teste do ViPreço".
+Autorizado pelo Founder apenas para **entrevistas privadas**. O endereço público definitivo é
+de R8; este QR será trocado lá.
+
+| Arquivo                       | Para quê                                             |
+| ----------------------------- | ---------------------------------------------------- |
+| `qr-demo-staging.png`         | 540 × 540 px, para colar em slide ou imprimir avulso |
+| `qr-demo-staging.svg`         | vetorial, para impressão em qualquer tamanho         |
+| embutido no `kit-piloto.html` | o caderno de campo, que continua sendo um arquivo só |
+
+Destino: `https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev/para-mercados`
+
+Gerado por `scripts/qr/gerar-demo-staging.ts` — código próprio, sem dependência nova, com a URL
+como constante do arquivo e uma guarda que recusa qualquer destino fora de `.workers.dev`.
+**Foi lido por um decodificador independente antes de entrar aqui**, e isso não é formalidade:
+a primeira versão do codificador produziu três símbolos de aparência perfeita e completamente
+ilegíveis. Aparência não é evidência num QR.
+
+**Se não houver internet na conversa, não insista com o QR.** As telas do caderno mostram a
+mesma coisa, e é para isso que ele existe.
 
 ---
 

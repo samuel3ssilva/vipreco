@@ -42,16 +42,52 @@ describe("primeira dobra da proposta", () => {
     // Só o corpo: a promessa também aparece na meta description, antes de tudo no documento.
     const corpo = html.slice(html.indexOf("<body"));
     const eyebrow = corpo.indexOf("Para mercados de Artemis");
-    const titulo = corpo.indexOf("Seu mercado mais perto de quem compra no bairro");
-    const subtexto = corpo.indexOf(
-      "Envie alguns produtos pelo WhatsApp. O ViPreço organiza preço, data e origem para os moradores encontrarem as informações com clareza.",
+    const titulo = corpo.indexOf("Mostre suas ofertas no piloto do ViPreço em Artemis");
+    // Subtítulo decidido pelo Founder/PMO em 06/08/2026, verificado ao pé da letra: ele diz o
+    // que o teste É antes de dizer o que o mercado ganha, e nomeia as quatro dimensões que o
+    // produto se compromete a mostrar.
+    const subtitulo = corpo.indexOf(
+      "Estamos preparando um teste local para ajudar consumidores a encontrar e comparar ofertas com produto exato, fonte, data e validade.",
     );
-    const acao = corpo.indexOf("Quero conhecer o piloto");
+    // Depois do subtítulo vem o tamanho do piloto, e só então o convite.
+    const tamanho = corpo.indexOf("O piloto começa pequeno");
+    const acao = corpo.indexOf("Quero conversar sobre o piloto");
 
     expect(eyebrow).toBeGreaterThan(-1);
     expect(titulo).toBeGreaterThan(eyebrow);
-    expect(subtexto).toBeGreaterThan(titulo);
-    expect(acao).toBeGreaterThan(subtexto);
+    expect(subtitulo).toBeGreaterThan(titulo);
+    expect(tamanho).toBeGreaterThan(subtitulo);
+    expect(acao).toBeGreaterThan(tamanho);
+  });
+
+  it("não repete quatro vezes que o produto não está no ar", () => {
+    // DECISÃO DO FOUNDER/PMO, 06/08/2026. A frase isolada "O ViPreço ainda não está no ar"
+    // saiu da primeira dobra por redundância: o banner de ambiente de teste já diz, o
+    // subtítulo já diz ("estamos preparando"), e a microcopy abaixo do convite já diz ("o
+    // piloto ainda está em preparação"). A quarta repetição não acrescenta honestidade; ela
+    // gasta a atenção de quem tem vinte minutos.
+    //
+    // O teste guarda os DOIS lados: a frase não volta, e as que ficaram não somem.
+    const corpo = html.slice(html.indexOf("<body"));
+    expect(corpo).not.toContain("ainda não está no ar");
+    expect(corpo).toContain("Estamos preparando um teste local");
+    expect(corpo).toContain("O piloto ainda está em preparação.");
+  });
+
+  it("o título não promete resultado ao mercado", () => {
+    // A copy anterior ("Leve mais consumidores de Artemis até suas ofertas") prometia o efeito
+    // de um piloto que ainda não rodou, e contradizia a seção de neutralidade da própria
+    // página. O Founder/PMO decidiu a troca em 06/08/2026; este teste impede a volta.
+    expect(html).not.toContain("Leve mais consumidores");
+    expect(html).toContain("Mostre suas ofertas no piloto do ViPreço em Artemis");
+
+    // O H1 vai SEM ponto final, e o subtítulo COM. O mandato cita os três textos entre aspas e
+    // com ponto, do mesmo jeito que citou "Leve mais consumidores…" e "Quero conversar sobre o
+    // piloto." em B2B-0 — e os dois foram implementados sem ponto, sem objeção. O ponto ali é
+    // pontuação da frase que cita, não do rótulo citado. Título e botão não levam ponto; o
+    // subtítulo leva, porque é prosa corrida. Está no comentário do gate para o Founder
+    // desdizer em uma palavra se a leitura estiver errada.
+    expect(html).not.toContain("em Artemis.</h1>");
   });
 
   it("diz, junto do convite, que é conversa inicial e que o piloto está em preparação", () => {
@@ -70,12 +106,12 @@ describe("primeira dobra da proposta", () => {
     expect(html).toContain("Café torrado e moído, tradicional");
     expect(html).toContain("14,90");
     expect(html).toContain("Mercado de exemplo");
-    expect(html).toContain("31/07/2026 · informado pelo mercado");
+    expect(html).toContain("24/11/2026 · informado pelo mercado");
     expect(html).toContain("Informado pelo mercado");
   });
 
   it("mostra a validade em data absoluta, no formato do card real", () => {
-    expect(html).toContain("válido até 05/08/2026");
+    expect(html).toContain("válido até 05/12/2026");
   });
 
   it("nunca usa dia da semana nem dia relativo no card estático", () => {
@@ -118,7 +154,7 @@ describe("CTA principal e mensagem do WhatsApp", () => {
   });
 
   it("repete o convite no fim da página — dois CTAs, um destino só", () => {
-    expect(html.match(/Quero conhecer o piloto/g) ?? []).toHaveLength(2);
+    expect(html.match(/Quero conversar sobre o piloto/g) ?? []).toHaveLength(2);
     expect(html).toContain("Vamos conversar sobre o piloto em Artemis?");
     expect(html).toContain(
       "Uma conversa inicial para entender seu mercado. Sem cadastro automático.",
@@ -142,19 +178,24 @@ describe("CTA principal e mensagem do WhatsApp", () => {
 
   it("sem destino configurado, nenhum CTA e nenhum link quebrado", () => {
     expect(htmlSemDestino).not.toContain("wa.me");
-    expect(htmlSemDestino).not.toContain("Quero conhecer o piloto");
+    expect(htmlSemDestino).not.toContain("Quero conversar sobre o piloto");
     // A página continua completa: proposta, regras e dúvidas seguem lá.
-    expect(htmlSemDestino).toContain("Seu mercado mais perto de quem compra no bairro");
+    expect(htmlSemDestino).toContain("Mostre suas ofertas no piloto do ViPreço em Artemis");
     expect(htmlSemDestino).toContain("Dúvidas frequentes");
   });
 });
 
 describe("o que a página promete — e o que ela não promete", () => {
-  it("explica os três passos sem afirmar que a operação já roda", () => {
+  it("explica as cinco etapas do piloto sem afirmar que a operação já roda", () => {
+    // B2B-0 trocou três passos por cinco. Os dois novos são os que o mercado mais quer saber e
+    // que a versão anterior não respondia: se alguém mede alguma coisa, e se ele fica sabendo
+    // do resultado — inclusive quando o resultado for ruim.
     const posicoes = [
-      "1. O mercado envia alguns produtos",
-      "2. O ViPreço organiza e confere",
-      "3. O morador encontra e compra na loja",
+      "1. Amostra pequena",
+      "2. Validação dos preços",
+      "3. Publicação com data",
+      "4. Medição do interesse",
+      "5. Devolutiva",
     ].map((trecho) => {
       const posicao = html.indexOf(trecho);
       expect(posicao, `"${trecho}" precisa estar no HTML`).toBeGreaterThan(-1);
@@ -217,7 +258,7 @@ describe("o que a página promete — e o que ela não promete", () => {
 
   it("diz que o mercado pode escolher os produtos que queira destacar", () => {
     expect(html).toContain(
-      "O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou produtos com estoque alto. Não é necessário cadastrar o mercado inteiro.",
+      "O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou produtos com estoque alto.",
     );
   });
 
@@ -329,7 +370,7 @@ describe("pontuação da copy pública", () => {
     ] as const) {
       const publico = interfacePublica(fonte);
       // O recorte não pode ter comido a página: se sobrasse pouco, o teste passaria à toa.
-      expect(publico, nome).toContain("Seu mercado mais perto de quem compra no bairro");
+      expect(publico, nome).toContain("Mostre suas ofertas no piloto do ViPreço em Artemis");
       expect(publico, nome).toContain("Dúvidas frequentes");
       const travessoes = publico.match(/[—–]/g) ?? [];
       expect(travessoes, `${nome}: a interface não pode ter travessão`).toHaveLength(0);

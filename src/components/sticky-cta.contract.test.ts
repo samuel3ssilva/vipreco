@@ -20,7 +20,12 @@ describe("CTA fixo do mobile", () => {
   it("só existe no mobile e fica acima da barra de navegação", () => {
     expect(fixo).toContain("sm:hidden");
     expect(fixo).toContain("env(safe-area-inset-bottom");
-    expect(fixo).toContain("calc(3.5rem +");
+    // A altura da barra virou parâmetro em 06/08/2026, para o shell B2B de `/para-mercados`,
+    // que não tem barra nenhuma. O PADRÃO continua sendo os 56 px do `AppShell`, e o CTA do
+    // morador não passa o parâmetro — então nada mudou para a Home.
+    expect(fixo).toContain('alturaDaBarra = "3.5rem"');
+    expect(fixo).toContain("calc(${alturaDaBarra} +");
+    expect(fixoMorador).not.toContain("alturaDaBarra");
   });
 
   it("reserva espaço no fluxo para não cobrir o último conteúdo", () => {

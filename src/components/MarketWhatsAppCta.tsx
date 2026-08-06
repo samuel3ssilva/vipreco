@@ -19,7 +19,7 @@ import { hiddenCtaAttributes, marketCtaStore } from "@/lib/cta-visibility";
  */
 
 /** Rótulo do convite, o mesmo na primeira dobra, no fechamento da página e na versão fixa. */
-export const MARKET_CTA_LABEL = "Quero conhecer o piloto";
+export const MARKET_CTA_LABEL = "Quero conversar sobre o piloto";
 
 /**
  * Marca todo convite equivalente que vive no fluxo da página. O CTA fixo observa estes elementos

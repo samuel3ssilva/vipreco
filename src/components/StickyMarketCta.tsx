@@ -18,7 +18,14 @@ import { marketCtaStore } from "@/lib/cta-visibility";
  */
 export function StickyMarketCta() {
   return (
-    <StickyCta href={marketWhatsappLink()} marcador={MARKET_CTA_MARKER} loja={marketCtaStore}>
+    <StickyCta
+      href={marketWhatsappLink()}
+      marcador={MARKET_CTA_MARKER}
+      loja={marketCtaStore}
+      // `MarketShell` não tem barra inferior: a rota B2B não é uma aba do app do consumidor.
+      // Sem isto o botão flutuaria 56 px acima de nada.
+      alturaDaBarra="0rem"
+    >
       <WhatsAppGlyph />
       {MARKET_CTA_LABEL}
       <span className="sr-only"> (abre o WhatsApp)</span>

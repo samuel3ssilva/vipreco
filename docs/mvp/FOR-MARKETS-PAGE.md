@@ -11,18 +11,115 @@ precisa explicar o que é o ViPreço, como participar e o que a plataforma faz c
 e precisa fazer isso sem parecer ameaça, sem parecer marketplace e sem afirmar nada que ainda não
 existe.
 
-## Ordem da página
+## Ordem da página — **atualizada em 06/08/2026 (B2B-0)**
 
-| #   | Seção                                    | O que responde                                     |
-| --- | ---------------------------------------- | -------------------------------------------------- |
-| 1   | Primeira dobra                           | para quem é, o que resolve, o que fazer depois     |
-| 2   | Como funciona                            | os três passos                                     |
-| 3   | Não precisa cadastrar o mercado inteiro  | começar com poucos produtos                        |
-| 4   | Você escolhe quais produtos enviar       | o que o mercado envia, corrige e retira            |
-| 5   | As regras valem para todo mundo          | procedência, validade, ordem não vendida, correção |
-| 6   | O piloto está sendo preparado em Artemis | convite para conversa, não inscrição               |
-| 7   | Dúvidas frequentes                       | as seis do mandato mais custo e concorrentes       |
-| 8   | Convite final                            | o mesmo CTA, a mesma mensagem                      |
+| #   | Seção                                         | O que responde                                     |
+| --- | --------------------------------------------- | -------------------------------------------------- |
+| 1   | Primeira dobra                                | para quem é, o que ainda não é, o que fazer depois |
+| 2   | Como o piloto funciona                        | as **cinco** etapas                                |
+| 3   | **Como o consumidor encontra o seu mercado**  | os quatro momentos _(nova)_                        |
+| 4   | **O que pedimos ao seu mercado**              | os seis pedidos _(nova)_                           |
+| 5   | **Benefícios potenciais**                     | cinco, todos condicionais _(nova)_                 |
+| 6   | Não precisa cadastrar o mercado inteiro       | começar com poucos produtos                        |
+| 7   | Você escolhe quais produtos enviar            | o que o mercado envia, corrige e retira            |
+| 8   | Neutralidade: as regras valem para todo mundo | a frase por extenso, mais procedência e validade   |
+| 9   | O piloto está sendo preparado em Artemis      | convite para conversa, não inscrição               |
+| 10  | Dúvidas frequentes                            | as seis do mandato mais custo e concorrentes       |
+| 11  | Convite final                                 | o mesmo CTA, a mesma mensagem                      |
+
+### O que B2B-0 mudou, e por quê
+
+A página explicava bem o que o mercado **envia** e mal o que o morador **vê**. Para quem toca
+uma loja, a segunda pergunta é a que decide — "e daí, quem me encontra?" —, e ela não tinha
+resposta em lugar nenhum.
+
+| Onde           | Antes                                             | Depois                                                                                                 |
+| -------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Primeira dobra | "Seu mercado mais perto de quem compra no bairro" | "Mostre suas ofertas no piloto do ViPreço em Artemis.", e a dobra segue dizendo que **não está no ar** |
+| Como funciona  | três passos, terminando em "o morador encontra"   | cinco etapas; as duas novas são **medir** e **devolutiva**                                             |
+| Neutralidade   | diluída numa lista: "A ordem não é vendida."      | a frase por extenso, em destaque                                                                       |
+| CTA            | "Quero conhecer o piloto"                         | "Quero conversar sobre o piloto"                                                                       |
+
+**O subtítulo da primeira dobra é a mudança que mais importa.** Um lojista que descobre no meio
+da conversa que o produto ainda não está no ar relê tudo o que ouviu antes com desconfiança — e
+com razão. Dizer isso na primeira dobra custa uma linha e compra a conversa inteira.
+
+### A copy da primeira dobra, decidida em 06/08/2026
+
+O H1 anterior — "Leve mais consumidores de Artemis até suas ofertas" — veio literal no mandato de
+B2B-0, e foi implementado assim. Ele tem um problema que o gate visual levantou: **promete um
+resultado** (mais consumidores) que nenhum piloto ainda mediu, e que a seção de neutralidade da
+própria página desmente três seções abaixo. O Founder/PMO decidiu a troca:
+
+| Elemento  | Texto vigente                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| H1        | "Mostre suas ofertas no piloto do ViPreço em Artemis."                                                                                 |
+| Subtítulo | "Estamos preparando um teste local para ajudar consumidores a encontrar e comparar ofertas com produto exato, fonte, data e validade." |
+| CTA       | "Quero conversar sobre o piloto."                                                                                                      |
+
+O novo H1 descreve **o que o mercado faz**, não o que ele ganha: mostrar ofertas é uma ação que
+depende só dele, e é verdadeira no dia em que a página é lida. O subtítulo nomeia as quatro
+dimensões que o produto se compromete a exibir — produto exato, fonte, data e validade —, que são
+exatamente as do card real.
+
+**A frase isolada "o ViPreço ainda não está no ar" saiu**, por decisão do Founder/PMO no mesmo
+dia. Eu a tinha mantido em linha própria por achar que "estamos preparando" apenas sugere,
+enquanto ela afirma. A decisão foi a contrária, e a razão é boa: a mesma informação já aparece
+**três vezes** na primeira dobra, no banner de ambiente de teste, no subtítulo e na microcopy
+abaixo do convite. A quarta repetição não acrescenta honestidade; gasta a atenção de quem tem
+vinte minutos. O que ficou no lugar dela é o que ela não dizia: o tamanho do piloto.
+
+`para-mercados.ssr.test.ts` guarda os dois lados — verifica a ordem eyebrow → H1 → subtítulo →
+tamanho do piloto → CTA, reprova se o H1 antigo voltar, reprova se a frase removida voltar, e
+reprova se as duas que ficaram sumirem.
+
+**O ponto final.** O mandato cita os três textos entre aspas e com ponto. O H1 e o CTA vão para a
+tela **sem** ponto; o subtítulo vai **com**, porque é prosa corrida. A leitura vem do próprio
+B2B-0, que citou "Leve mais consumidores de Artemis até suas ofertas." e "Quero conversar sobre o
+piloto." do mesmo jeito, e os dois foram implementados sem ponto e aprovados assim: o ponto ali é
+pontuação da frase que cita, não do rótulo citado. Se a leitura estiver errada, é uma linha para
+desfazer.
+
+### A casca da página: `MarketShell`, e não `AppShell`
+
+A rota usava o shell do consumidor, e o Gate visual de 06/08/2026 mostrou o preço disso: a
+captura tinha, encostada no polegar, uma barra com **Achados · Buscar · Ajuda · Mercados**, com
+"Mercados" marcada como a página atual. Um dono de mercado lê isso como "entrei no aplicativo do
+consumidor". O contrato aprovado diz o contrário: rota separada, **nunca** aba do app B2C
+([`NORTH-STAR-V2-ASSESSMENT.md`](../product/NORTH-STAR-V2-ASSESSMENT.md) §3, item 5).
+
+`src/components/MarketShell.tsx` tem quatro coisas e nada além delas:
+
+| Tem                                              | Não tem                                          |
+| ------------------------------------------------ | ------------------------------------------------ |
+| logotipo, com rótulo acessível dizendo aonde vai | barra inferior de navegação                      |
+| o conteúdo da página                             | aba "Mercados", aba "Ajuda", aba "Achados"       |
+| link discreto para a experiência do morador      | botão principal "Buscar" no cabeçalho            |
+| rodapé com a localidade do piloto                | qualquer rota que sugira a jornada do consumidor |
+
+**Um shell novo, e não bandeiras no antigo.** A alternativa era passar `semBarraInferior`,
+`semBuscar` e `semAbas` ao `AppShell` até sobrar o logotipo: quatro condicionais novas num
+componente que a Home, a busca e a comparação usam, cada uma um caminho a mais para quebrar sem
+que ninguém perceba. O `AppShell` não foi tocado, e `para-mercados.contract.test.ts` prova isso
+com `git diff` contra `origin/main` em oito arquivos do consumidor — não por inspeção de texto.
+
+**O link para o consumidor é discreto de propósito.** O lojista precisa poder ver o que o morador
+vê; ele não precisa ser levado para lá no meio da leitura. Por isso o link vive no rodapé, em
+peso de texto, e não numa aba encostada no polegar.
+
+**O CTA fixo do mobile desceu junto.** Sem barra para sobrevoar, ele encosta na área segura do
+aparelho. O `StickyCta` ganhou um parâmetro com o padrão de 56 px inalterado, então a Home
+continua exatamente como estava.
+
+**"Conhecer" virou "conversar"** porque conhecer é passivo e não pede nada; conversar nomeia
+exatamente o que está sendo pedido, que são vinte minutos.
+
+**Os cinco benefícios são potenciais, e a palavra aparece no título E no corpo.** Dizê-la uma vez
+só, em letra miúda, seria ressalva; dizê-la duas é o enquadramento.
+
+A página acompanha o kit de entrevistas em
+[`../business/interviews/`](../business/interviews/): o roteiro mostra o protótipo no bloco 6, e
+a página cumpre o mesmo papel quando alguém a abre sozinho.
 
 A volta para os Achados fecha a página. Não existe rodapé próprio — a barra inferior do `AppShell`
 cumpre esse papel no mobile, igual à Home.
@@ -52,7 +149,7 @@ O mecanismo é o mesmo da Home, extraído para `StickyCta`: faixa abaixo de 640 
 do `sm:hidden`), acima da barra inferior de 56 px, respeitando `env(safe-area-inset-bottom)`,
 espaçador no fluxo para não cobrir o último conteúdo, 48 px de alvo, sem animação, só depois da
 hidratação. O que é desta rota são três coisas: o destino (`marketWhatsappLink()`), o rótulo
-("Quero conhecer o piloto") e a loja de visibilidade.
+("Quero conversar sobre o piloto") e a loja de visibilidade.
 
 As duas rotas compartilham a regra, não o estado. `createStickyCtaStore()` dá uma loja a cada
 convite e o marcador do DOM é próprio (`data-market-cta`, contra `data-whatsapp-cta` da Home): o

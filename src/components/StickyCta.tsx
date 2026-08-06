@@ -50,9 +50,25 @@ interface StickyCtaProps {
   loja: StickyCtaStore;
   /** Conteúdo do botão: o mesmo rótulo do CTA do fluxo. */
   children: ReactNode;
+  /**
+   * Altura da barra de navegação que o botão precisa sobrevoar.
+   *
+   * O padrão é a barra inferior do `AppShell`, que mede 56 px e existe em toda rota B2C. O
+   * shell B2B de `/para-mercados` **não tem** barra inferior nenhuma: sem este parâmetro, o
+   * botão flutuaria 56 px acima de um vazio.
+   *
+   * O padrão não muda, então nada muda para a Home.
+   */
+  alturaDaBarra?: string;
 }
 
-export function StickyCta({ href, marcador, loja, children }: StickyCtaProps) {
+export function StickyCta({
+  href,
+  marcador,
+  loja,
+  children,
+  alturaDaBarra = "3.5rem",
+}: StickyCtaProps) {
   // A visibilidade é estado compartilhado, não estado deste componente: o CTA do fluxo precisa
   // saber quando sair da ordem de foco.
   const visivel = useSyncExternalStore(loja.subscribe, loja.get, loja.getOnServer);
@@ -115,9 +131,10 @@ export function StickyCta({ href, marcador, loja, children }: StickyCtaProps) {
 
       <div
         className="fixed inset-x-0 z-40 px-4 sm:hidden"
-        // A barra de navegação do mobile mede 56 px e encosta na borda inferior; o CTA fica
-        // acima dela, ainda respeitando a área segura do aparelho.
-        style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.5rem)" }}
+        // A barra de navegação do mobile encosta na borda inferior; o CTA fica acima dela,
+        // ainda respeitando a área segura do aparelho. Onde não há barra — o shell B2B —,
+        // `alturaDaBarra` é zero e o botão desce até a área segura.
+        style={{ bottom: `calc(${alturaDaBarra} + env(safe-area-inset-bottom, 0px) + 0.5rem)` }}
         hidden={!visivel}
       >
         <a

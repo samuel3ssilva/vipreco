@@ -153,14 +153,14 @@ dado no fim, depois de vinte minutos de contexto, vale muito mais que um dado na
 
 ## Se a pergunta difícil vier
 
-| Pergunta                              | Resposta                                                                                                                         |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| "Quanto custa?"                       | "Nada nesta fase, e o modelo ainda não foi decidido. É uma das coisas que vou definir depois de conversar com vocês."            |
-| "Quantas pessoas usam?"               | "Ainda não está no ar. Não tenho número para te dar, e prefiro não inventar um."                                                 |
-| "Dá para eu aparecer em primeiro?"    | "Não. A ordem é por preço, e participar não muda posição. Isso é regra do produto, não política que eu possa flexibilizar."      |
-| "E se meu concorrente vir meu preço?" | "Ele vai ver — o preço já está na gôndola e no encarte. A comparação é de produto exato, então não é a sua cesta contra a dele." |
-| "Vocês vão publicar meu nome?"        | "Só com sua autorização, e ela pode ser retirada."                                                                               |
-| "Quem está por trás disso?"           | _(nome, e que é um projeto próprio, em fase de teste em Artemis)_                                                                |
+| Pergunta                              | Resposta                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Quanto custa?"                       | "O piloto ainda está em preparação, e as condições são combinadas na conversa. Nada é cobrado sem acordo prévio." **A mesma frase está em `/para-mercados`** — a versão anterior deste roteiro prometia gratuidade nesta fase, e a página não; duas respostas para a mesma pergunta é o começo de um mal-entendido comercial. |
+| "Quantas pessoas usam?"               | "Ainda não está no ar. Não tenho número para te dar, e prefiro não inventar um."                                                                                                                                                                                                                                              |
+| "Dá para eu aparecer em primeiro?"    | "Não. A ordem é por preço, e participar não muda posição. Isso é regra do produto, não política que eu possa flexibilizar."                                                                                                                                                                                                   |
+| "E se meu concorrente vir meu preço?" | "Ele vai ver — o preço já está na gôndola e no encarte. A comparação é de produto exato, então não é a sua cesta contra a dele."                                                                                                                                                                                              |
+| "Vocês vão publicar meu nome?"        | "Só com sua autorização, e ela pode ser retirada."                                                                                                                                                                                                                                                                            |
+| "Quem está por trás disso?"           | _(nome, e que é um projeto próprio, em fase de teste em Artemis)_                                                                                                                                                                                                                                                             |
 
 **A tabela existe para que a resposta seja a mesma em todas as conversas.** Respostas
 improvisadas variam, e variação vira promessa em algum lugar.

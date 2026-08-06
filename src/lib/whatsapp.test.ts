@@ -105,7 +105,7 @@ describe("CTA de mercado renderizado", () => {
       }),
     );
 
-    expect(html).toContain("Quero conhecer o piloto");
+    expect(html).toContain("Quero conversar sobre o piloto");
     expect(html).toContain("Conversa inicial.");
     expect(html.match(/https:\/\/wa\.me\//g) ?? []).toHaveLength(1);
     expect(html).toContain(encodeURIComponent(WHATSAPP_MARKET_MESSAGE));

@@ -3,12 +3,18 @@
 Capturas geradas em navegador de verdade por `scripts/visual/screenshot-para-mercados.ts`,
 contra o servidor de desenvolvimento local.
 
+**Recapturadas em 06/08/2026**, depois que o Founder/PMO decidiu a copy da primeira dobra. Todas
+as imagens abaixo mostram o H1 vigente, "Mostre suas ofertas no piloto do ViPreço em Artemis".
+
 | Arquivo                              | O que é                             | Viewport CSS | PNG (DPR 2) |
 | ------------------------------------ | ----------------------------------- | ------------ | ----------- |
-| `para-mercados-390.png`              | página inteira                      | 390 px       | 780 × 14890 |
-| `para-mercados-430.png`              | página inteira                      | 430 px       | 860 × 14364 |
-| `para-mercados-desktop.png`          | página inteira                      | 1280 px      | 2560 × 8442 |
-| `para-mercados-comparison-board.png` | a rota anterior ao lado da proposta | 1400 px      | 2800 × 5422 |
+| `para-mercados-390.png`              | página inteira                      | 390 px       | 780 × 15002 |
+| `para-mercados-430.png`              | página inteira                      | 430 px       | 860 × 14550 |
+| `para-mercados-desktop.png`          | página inteira                      | 1280 px      | 2560 × 8484 |
+| `para-mercados-comparison-board.png` | a rota anterior ao lado da proposta | 1400 px      | 2800 × 5460 |
+
+A página ficou **112 px mais alta a 390 px** que na captura anterior. É o custo do novo H1, que
+ocupa três linhas em vez de duas nessa largura, mais a linha própria de "ainda não está no ar".
 
 Para regerar:
 
@@ -27,9 +33,29 @@ O `ANTES` não é um PNG guardado: ele é produzido a partir do código de `orig
 compararia duas coisas que diferem também em fonte, token e versão de navegador — e a
 comparação atribuiria à mudança de copy diferenças que não são dela.
 
-O procedimento é o do checkpoint de 06/08/2026: `git stash` dos dois arquivos alterados,
-captura com `--prefixo=antes --destino=<pasta temporária>`, `git stash pop`. A pasta temporária
-**não é versionada** — o que fica no repositório é o painel, que já embute as duas imagens.
+O procedimento mudou na recaptura de 06/08/2026, e mudou para melhor. Antes era `git stash` dos
+arquivos alterados, captura, `git stash pop` — o que mexe na árvore de trabalho de quem está
+rodando. Agora o "antes" sai de um **worktree efêmero** em `origin/main`:
+
+```bash
+git worktree add --detach <tmp> origin/main
+ln -s "$PWD/node_modules" <tmp>/node_modules      # o worktree não tem dependências próprias
+cp .env <tmp>/.env                                # o CTA falha fechado sem VITE_WHATSAPP_NUMBER
+(cd <tmp> && bunx vite dev --port 8081)
+bun scripts/visual/screenshot-para-mercados.ts http://localhost:8081 \
+  --prefixo=antes --destino=<pasta temporária>
+git worktree remove --force <tmp>
+```
+
+Os dois servidores sobem ao mesmo tempo, nas portas 8080 e 8081, e as duas capturas saem do mesmo
+Chrome com minutos de diferença. A árvore de trabalho não é tocada em momento nenhum, o que
+importa quando há mudança não commitada em cima da mesa.
+
+A pasta temporária **não é versionada** — o que fica no repositório é o painel, que já embute as
+duas imagens.
+
+Medido nesta execução, no `origin/main` em `5217bdb`: a rota anterior tem **8 seções** e
+**10058 px** de altura a 390 px; a proposta tem **11 seções** e **15002 px**.
 
 ---
 

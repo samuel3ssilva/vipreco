@@ -246,3 +246,49 @@ describe("R3.2 não toca em nada que já está no ar", () => {
     expect(compararComMain(caminho), `${caminho} mudou nesta branch`).toBe("intacto");
   });
 });
+
+/**
+ * =============================================================================
+ * A CAPTURA PRECISA DAR O MESMO ARQUIVO DUAS VEZES
+ * =============================================================================
+ *
+ * Em 06/08/2026 o Founder baixou a evidência publicada e leu nela algo que o código não
+ * fazia. A causa raiz estava nos comentários do PR — links fixados em commits antigos, que o
+ * GitHub serve para sempre —, mas a investigação encontrou um segundo problema, menor e da
+ * mesma família: recapturar do MESMO commit produzia PNGs com SHA-256 diferente.
+ *
+ * A diferença inteira cabia em 376 linhas de uma captura de 19 448: o card de carregamento,
+ * cujo esqueleto usa `animate-pulse`. A foto pegava a pulsação numa fase qualquer.
+ *
+ * Isso importa porque é o que separa "esta captura é deste head" de uma afirmação de
+ * confiança. Se o Founder — ou qualquer pessoa — rodar o script e obter um arquivo diferente,
+ * não existe mais como distinguir "a evidência está velha" de "a captura simplesmente varia".
+ * Foi exatamente essa ambiguidade que custou uma rodada inteira de revisão.
+ *
+ * Este teste não tira screenshot: ele guarda a linha do `cdp.ts` que congela o movimento
+ * antes do clique. É regressão estática, como o resto deste arquivo.
+ */
+describe("a evidência visual é reproduzível", () => {
+  const CDP = readFileSync(join(process.cwd(), "scripts/visual/cdp.ts"), "utf-8");
+
+  it("congela animação e transição antes de fotografar", () => {
+    expect(CDP).toContain("animation:none !important");
+    expect(CDP).toContain("transition:none !important");
+  });
+
+  it("congela DEPOIS da espera, para a folha sobreviver à hidratação", () => {
+    const captura = CDP.slice(CDP.indexOf("export async function capturarPagina"));
+    const espera = captura.indexOf("await esperar(opcoes.espera");
+    const congela = captura.indexOf("CONGELAR_ANIMACAO");
+    const foto = captura.indexOf("Page.captureScreenshot");
+    expect(espera, "a espera de carregamento sumiu").toBeGreaterThan(-1);
+    expect(congela, "o congelamento não é usado na captura").toBeGreaterThan(espera);
+    expect(foto, "a foto precisa vir depois do congelamento").toBeGreaterThan(congela);
+  });
+
+  it("`animation-play-state` não serve, e o comentário diz por quê", () => {
+    // Pausar congela numa fase qualquer, que é o defeito, não a correção.
+    expect(CDP).not.toContain("animation-play-state: running");
+    expect(CDP).toContain("animation-play-state: paused` para em qualquer fase");
+  });
+});

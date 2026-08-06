@@ -4,13 +4,14 @@ Capturas do laboratório do Card v2 (`/laboratorio-card-v2`), geradas em navegad
 por `scripts/visual/screenshot-card-v2.ts`, contra o servidor de desenvolvimento local.
 
 **Todas regeradas em 06/08/2026 a partir do head da branch**, depois da reconciliação da §"O
-alarme falso" abaixo.
+alarme falso" abaixo e da correção de reprodutibilidade da §"A captura agora dá o mesmo arquivo
+duas vezes".
 
 | Arquivo                        | O que é                                      | Viewport CSS | PNG          | SHA-256 (16) |
 | ------------------------------ | -------------------------------------------- | ------------ | ------------ | ------------ |
-| `card-v2-320.png`              | página inteira                               | 320 px       | 640 × 21150  | `f0dd705b…`  |
-| `card-v2-390.png`              | página inteira                               | 390 px       | 780 × 19448  | `51c83557…`  |
-| `card-v2-desktop.png`          | página inteira                               | 1280 px      | 2560 × 14744 | `6c4ba650…`  |
+| `card-v2-320.png`              | página inteira                               | 320 px       | 640 × 21150  | `de288010…`  |
+| `card-v2-390.png`              | página inteira                               | 390 px       | 780 × 19448  | `4c67c226…`  |
+| `card-v2-desktop.png`          | página inteira                               | 1280 px      | 2560 × 14744 | `c956b469…`  |
 | `card-v2-variants.png`         | recorte da grade "em lista"                  | 900 px       | 3536 × 6364  | `58431b13…`  |
 | `card-v2-list-390.png`         | **quatro cards consecutivos**                | 390 px       | 1528 × 6492  | `c5297eb4…`  |
 | `card-v2-comparison-board.png` | **North Star V2** ao lado das oito variantes | 1400 px      | 2800 × 7200  | `de5700eb…`  |
@@ -20,6 +21,30 @@ Para conferir que os arquivos são estes:
 ```bash
 shasum -a 256 docs/evidence/visual/r32/*.png
 ```
+
+### A captura agora dá o mesmo arquivo duas vezes
+
+Até 06/08/2026, recapturar do **mesmo commit** produzia PNGs com SHA-256 diferente. A
+diferença inteira cabia em 376 linhas de uma imagem de 19 448: o card de **carregamento**, cujo
+esqueleto usa `animate-pulse`. A foto pegava a pulsação numa fase qualquer, e a fase depende de
+quantos milissegundos o navegador levou até ali.
+
+Isso não era cosmético. Sem reprodutibilidade não existe como distinguir _"a evidência está
+velha"_ de _"a captura simplesmente varia"_ — e foi exatamente essa ambiguidade que custou uma
+rodada de revisão, quando o Founder leu na evidência publicada algo que o código não fazia.
+
+`scripts/visual/cdp.ts` passou a injetar `animation: none; transition: none` imediatamente antes
+de fotografar, depois da espera de carregamento — a folha precisa sobreviver à hidratação. Não é
+`animation-play-state: paused`, que congelaria numa fase qualquer, que é o defeito. `none`
+devolve a propriedade ao valor base: opacidade 1, o mesmo que quem tem `prefers-reduced-motion`
+já via. Nenhuma medida de layout muda, porque `animate-pulse` só anima opacidade.
+
+Guardado por `src/routes/laboratorio-card-v2.contract.test.ts`, §"a evidência visual é
+reproduzível". Para conferir na mão: rodar o script duas vezes e comparar os hashes.
+
+As três capturas de página inteira mudaram de hash nesta correção; `variants`, `list-390` e o
+painel comparativo saíram **idênticos** ao que já estava versionado — o recorte deles não
+alcança o card de carregamento.
 
 ### A captura da lista responde outra pergunta
 

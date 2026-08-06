@@ -123,6 +123,33 @@ export function dimensoesDoPng(bytes: Buffer): { largura: number; altura: number
 }
 
 /**
+ * Congela o que se move, imediatamente antes de fotografar.
+ *
+ * POR QUE ISTO EXISTE. Recapturar o laboratório do mesmo commit produzia PNGs com SHA-256
+ * diferente. A diferença inteira cabia numa faixa de 376 linhas: o card de CARREGAMENTO, cujo
+ * esqueleto usa `animate-pulse`. A foto pegava a pulsação numa fase qualquer, e a fase depende
+ * de quantos milissegundos o navegador levou para chegar até ali.
+ *
+ * Isso torna a captura irreproduzível — e evidência de gate que ninguém consegue reproduzir é
+ * exatamente o problema que este arquivo existe para não ter. Quem recebe o PNG precisa poder
+ * rodar o script e obter o MESMO arquivo; sem isso, "esta captura é deste head" vira uma
+ * afirmação de confiança em vez de uma medição.
+ *
+ * `animation-play-state: paused` para em qualquer fase, o que não resolveria nada. `animation:
+ * none` devolve a propriedade ao valor base — no `animate-pulse`, opacidade 1 —, que é o mesmo
+ * resultado que quem tem `prefers-reduced-motion` já vê hoje. Nenhuma medida de layout muda:
+ * `animate-pulse` só anima opacidade.
+ */
+const CONGELAR_ANIMACAO = `
+  (() => {
+    const e = document.createElement("style");
+    e.textContent = "*,*::before,*::after{animation:none !important;transition:none !important;caret-color:transparent !important}";
+    document.head.appendChild(e);
+    return true;
+  })()
+`;
+
+/**
  * Captura a página inteira num viewport de verdade.
  *
  * `Emulation.setDeviceMetricsOverride` dimensiona o viewport de LAYOUT; é o que o
@@ -141,6 +168,9 @@ export async function capturarPagina(
   });
   await s.enviar("Page.navigate", { url: opcoes.url });
   await esperar(opcoes.espera ?? 2500);
+  // Depois da espera, não antes: a folha precisa sobreviver à hidratação, que troca a árvore.
+  await s.enviar("Runtime.evaluate", { expression: CONGELAR_ANIMACAO, returnByValue: true });
+  await esperar(120);
   const { data } = await s.enviar<{ data: string }>("Page.captureScreenshot", {
     format: "png",
     captureBeyondViewport: true,

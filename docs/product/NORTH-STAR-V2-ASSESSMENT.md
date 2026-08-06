@@ -8,6 +8,18 @@ proposta para consolidar o roadmap, **sujeito aos contratos funcionais e de dado
 a mesma subordinação que já valia para o North Star original
 ([`VISUAL-IMPLEMENTATION-CONTRACT.md`](./VISUAL-IMPLEMENTATION-CONTRACT.md) §2).
 
+### O que já saiu da matriz e virou código na `main` (06/08/2026)
+
+| Item da matriz                                                            | Onde foi implementado                   | Merge                                                               |
+| ------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------- |
+| Card v2 — identidade antes do preço, procedência, estados, sem histórico  | R3.2, `src/components/card-v2/`         | [#89](https://github.com/samuel3ssilva/vipreco/pull/89) → `4222332` |
+| `/para-mercados` como **rota separada, nunca aba do app B2C** (§3 item 5) | B2B-0, `src/components/MarketShell.tsx` | [#93](https://github.com/samuel3ssilva/vipreco/pull/93) → `dd350b7` |
+
+Os dois passaram por gate visual do Founder sobre evidência canônica fixada no head —
+`FOUNDER VISUAL GATE — R3.2 APPROVED` e `FOUNDER B2B VISUAL GATE — B2B-0 APPROVED`. O restante
+da matriz continua como decisão registrada, ainda não implementada; **a próxima é a Home/Achados
+(R3.3), que é onde a navegação de duas abas do V2 finalmente substitui as quatro atuais.**
+
 ---
 
 ## 1. Os três níveis, e qual manda

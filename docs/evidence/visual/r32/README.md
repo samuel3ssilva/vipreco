@@ -1,5 +1,9 @@
 # R3.2 — evidência visual do Card v2
 
+> **Gate aprovado pelo Founder em 06/08/2026** sobre o head `6adcaf7`, e mergeado na `main`
+> por [#89](https://github.com/samuel3ssilva/vipreco/pull/89) → **`4222332`**. Comentário canônico:
+> [issuecomment-5205835268](https://github.com/samuel3ssilva/vipreco/pull/89#issuecomment-5205835268).
+
 Capturas do laboratório do Card v2 (`/laboratorio-card-v2`), geradas em navegador de verdade
 por `scripts/visual/screenshot-card-v2.ts`, contra o servidor de desenvolvimento local.
 

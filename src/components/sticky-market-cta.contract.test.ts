@@ -120,7 +120,7 @@ describe("destino e mensagem", () => {
 
   it("é o mesmo rótulo do convite do fluxo, de uma constante só", () => {
     expect(fixo).toContain("MARKET_CTA_LABEL");
-    expect(cta).toContain('export const MARKET_CTA_LABEL = "Quero conhecer o piloto"');
+    expect(cta).toContain('export const MARKET_CTA_LABEL = "Quero conversar sobre o piloto"');
   });
 
   it("falha fechado: sem destino configurado, nada é renderizado", () => {

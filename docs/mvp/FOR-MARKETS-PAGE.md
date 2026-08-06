@@ -11,18 +11,48 @@ precisa explicar o que é o ViPreço, como participar e o que a plataforma faz c
 e precisa fazer isso sem parecer ameaça, sem parecer marketplace e sem afirmar nada que ainda não
 existe.
 
-## Ordem da página
+## Ordem da página — **atualizada em 06/08/2026 (B2B-0)**
 
-| #   | Seção                                    | O que responde                                     |
-| --- | ---------------------------------------- | -------------------------------------------------- |
-| 1   | Primeira dobra                           | para quem é, o que resolve, o que fazer depois     |
-| 2   | Como funciona                            | os três passos                                     |
-| 3   | Não precisa cadastrar o mercado inteiro  | começar com poucos produtos                        |
-| 4   | Você escolhe quais produtos enviar       | o que o mercado envia, corrige e retira            |
-| 5   | As regras valem para todo mundo          | procedência, validade, ordem não vendida, correção |
-| 6   | O piloto está sendo preparado em Artemis | convite para conversa, não inscrição               |
-| 7   | Dúvidas frequentes                       | as seis do mandato mais custo e concorrentes       |
-| 8   | Convite final                            | o mesmo CTA, a mesma mensagem                      |
+| #   | Seção                                         | O que responde                                     |
+| --- | --------------------------------------------- | -------------------------------------------------- |
+| 1   | Primeira dobra                                | para quem é, o que ainda não é, o que fazer depois |
+| 2   | Como o piloto funciona                        | as **cinco** etapas                                |
+| 3   | **Como o consumidor encontra o seu mercado**  | os quatro momentos _(nova)_                        |
+| 4   | **O que pedimos ao seu mercado**              | os seis pedidos _(nova)_                           |
+| 5   | **Benefícios potenciais**                     | cinco, todos condicionais _(nova)_                 |
+| 6   | Não precisa cadastrar o mercado inteiro       | começar com poucos produtos                        |
+| 7   | Você escolhe quais produtos enviar            | o que o mercado envia, corrige e retira            |
+| 8   | Neutralidade: as regras valem para todo mundo | a frase por extenso, mais procedência e validade   |
+| 9   | O piloto está sendo preparado em Artemis      | convite para conversa, não inscrição               |
+| 10  | Dúvidas frequentes                            | as seis do mandato mais custo e concorrentes       |
+| 11  | Convite final                                 | o mesmo CTA, a mesma mensagem                      |
+
+### O que B2B-0 mudou, e por quê
+
+A página explicava bem o que o mercado **envia** e mal o que o morador **vê**. Para quem toca
+uma loja, a segunda pergunta é a que decide — "e daí, quem me encontra?" —, e ela não tinha
+resposta em lugar nenhum.
+
+| Onde           | Antes                                             | Depois                                                                                         |
+| -------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Primeira dobra | "Seu mercado mais perto de quem compra no bairro" | "Leve mais consumidores de Artemis até suas ofertas", e o subtítulo diz que **não está no ar** |
+| Como funciona  | três passos, terminando em "o morador encontra"   | cinco etapas; as duas novas são **medir** e **devolutiva**                                     |
+| Neutralidade   | diluída numa lista: "A ordem não é vendida."      | a frase por extenso, em destaque                                                               |
+| CTA            | "Quero conhecer o piloto"                         | "Quero conversar sobre o piloto"                                                               |
+
+**O subtítulo da primeira dobra é a mudança que mais importa.** Um lojista que descobre no meio
+da conversa que o produto ainda não está no ar relê tudo o que ouviu antes com desconfiança — e
+com razão. Dizer isso na primeira dobra custa uma linha e compra a conversa inteira.
+
+**"Conhecer" virou "conversar"** porque conhecer é passivo e não pede nada; conversar nomeia
+exatamente o que está sendo pedido, que são vinte minutos.
+
+**Os cinco benefícios são potenciais, e a palavra aparece no título E no corpo.** Dizê-la uma vez
+só, em letra miúda, seria ressalva; dizê-la duas é o enquadramento.
+
+A página acompanha o kit de entrevistas em
+[`../business/interviews/`](../business/interviews/): o roteiro mostra o protótipo no bloco 6, e
+a página cumpre o mesmo papel quando alguém a abre sozinho.
 
 A volta para os Achados fecha a página. Não existe rodapé próprio — a barra inferior do `AppShell`
 cumpre esse papel no mobile, igual à Home.
@@ -52,7 +82,7 @@ O mecanismo é o mesmo da Home, extraído para `StickyCta`: faixa abaixo de 640 
 do `sm:hidden`), acima da barra inferior de 56 px, respeitando `env(safe-area-inset-bottom)`,
 espaçador no fluxo para não cobrir o último conteúdo, 48 px de alvo, sem animação, só depois da
 hidratação. O que é desta rota são três coisas: o destino (`marketWhatsappLink()`), o rótulo
-("Quero conhecer o piloto") e a loja de visibilidade.
+("Quero conversar sobre o piloto") e a loja de visibilidade.
 
 As duas rotas compartilham a regra, não o estado. `createStickyCtaStore()` dá uma loja a cada
 convite e o marcador do DOM é próprio (`data-market-cta`, contra `data-whatsapp-cta` da Home): o

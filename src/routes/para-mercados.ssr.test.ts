@@ -42,11 +42,11 @@ describe("primeira dobra da proposta", () => {
     // Só o corpo: a promessa também aparece na meta description, antes de tudo no documento.
     const corpo = html.slice(html.indexOf("<body"));
     const eyebrow = corpo.indexOf("Para mercados de Artemis");
-    const titulo = corpo.indexOf("Seu mercado mais perto de quem compra no bairro");
-    const subtexto = corpo.indexOf(
-      "Envie alguns produtos pelo WhatsApp. O ViPreço organiza preço, data e origem para os moradores encontrarem as informações com clareza.",
-    );
-    const acao = corpo.indexOf("Quero conhecer o piloto");
+    const titulo = corpo.indexOf("Leve mais consumidores de Artemis até suas ofertas");
+    // A primeira dobra diz que o produto não está no ar ANTES de qualquer promessa. Um lojista
+    // que descobre isso no meio da conversa relê tudo o que ouviu antes com desconfiança.
+    const subtexto = corpo.indexOf("ainda não está no ar");
+    const acao = corpo.indexOf("Quero conversar sobre o piloto");
 
     expect(eyebrow).toBeGreaterThan(-1);
     expect(titulo).toBeGreaterThan(eyebrow);
@@ -118,7 +118,7 @@ describe("CTA principal e mensagem do WhatsApp", () => {
   });
 
   it("repete o convite no fim da página — dois CTAs, um destino só", () => {
-    expect(html.match(/Quero conhecer o piloto/g) ?? []).toHaveLength(2);
+    expect(html.match(/Quero conversar sobre o piloto/g) ?? []).toHaveLength(2);
     expect(html).toContain("Vamos conversar sobre o piloto em Artemis?");
     expect(html).toContain(
       "Uma conversa inicial para entender seu mercado. Sem cadastro automático.",
@@ -142,19 +142,24 @@ describe("CTA principal e mensagem do WhatsApp", () => {
 
   it("sem destino configurado, nenhum CTA e nenhum link quebrado", () => {
     expect(htmlSemDestino).not.toContain("wa.me");
-    expect(htmlSemDestino).not.toContain("Quero conhecer o piloto");
+    expect(htmlSemDestino).not.toContain("Quero conversar sobre o piloto");
     // A página continua completa: proposta, regras e dúvidas seguem lá.
-    expect(htmlSemDestino).toContain("Seu mercado mais perto de quem compra no bairro");
+    expect(htmlSemDestino).toContain("Leve mais consumidores de Artemis até suas ofertas");
     expect(htmlSemDestino).toContain("Dúvidas frequentes");
   });
 });
 
 describe("o que a página promete — e o que ela não promete", () => {
-  it("explica os três passos sem afirmar que a operação já roda", () => {
+  it("explica as cinco etapas do piloto sem afirmar que a operação já roda", () => {
+    // B2B-0 trocou três passos por cinco. Os dois novos são os que o mercado mais quer saber e
+    // que a versão anterior não respondia: se alguém mede alguma coisa, e se ele fica sabendo
+    // do resultado — inclusive quando o resultado for ruim.
     const posicoes = [
-      "1. O mercado envia alguns produtos",
-      "2. O ViPreço organiza e confere",
-      "3. O morador encontra e compra na loja",
+      "1. Amostra pequena",
+      "2. Validação dos preços",
+      "3. Publicação com data",
+      "4. Medição do interesse",
+      "5. Devolutiva",
     ].map((trecho) => {
       const posicao = html.indexOf(trecho);
       expect(posicao, `"${trecho}" precisa estar no HTML`).toBeGreaterThan(-1);
@@ -329,7 +334,7 @@ describe("pontuação da copy pública", () => {
     ] as const) {
       const publico = interfacePublica(fonte);
       // O recorte não pode ter comido a página: se sobrasse pouco, o teste passaria à toa.
-      expect(publico, nome).toContain("Seu mercado mais perto de quem compra no bairro");
+      expect(publico, nome).toContain("Leve mais consumidores de Artemis até suas ofertas");
       expect(publico, nome).toContain("Dúvidas frequentes");
       const travessoes = publico.match(/[—–]/g) ?? [];
       expect(travessoes, `${nome}: a interface não pode ter travessão`).toHaveLength(0);

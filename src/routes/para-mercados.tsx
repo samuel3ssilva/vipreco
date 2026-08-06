@@ -1,5 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CalendarClock, ClipboardCheck, MessageCircle, Store, Tag } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  CalendarClock,
+  ClipboardCheck,
+  MapPin,
+  MessageCircle,
+  MessagesSquare,
+  Search,
+  Sparkles,
+  Store,
+  Tag,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
 import { SourceBadge } from "@/components/SourceBadge";
@@ -74,24 +86,126 @@ const EXEMPLO = {
   origem: "informado pelo mercado",
 } as const;
 
-const ETAPAS = [
+/**
+ * Como o consumidor chega até o mercado — os quatro momentos.
+ *
+ * B2B-0 acrescentou esta seção porque a página explicava bem o que o mercado ENVIA e mal o que
+ * o morador VÊ. Para quem toca uma loja, a segunda pergunta é a que decide: "e daí, quem me
+ * encontra?".
+ *
+ * São descrições em texto, e não capturas de tela. O laboratório do Card v2 produziria uma
+ * imagem bonita com "Mercado Exemplo" e "R$ 12,90" — e uma imagem com cara de produto pronto,
+ * numa página que um lojista lê como proposta, promete um produto que ainda não está no ar. O
+ * único exemplo visual da página continua sendo o card estático, rotulado "Exemplo fictício".
+ */
+const MOMENTOS = [
   {
-    Icon: MessageCircle,
-    titulo: "1. O mercado envia alguns produtos",
+    Icon: Sparkles,
+    titulo: "1. Achados",
     texto:
-      "Produto, embalagem, preço, validade quando houver e uma evidência simples. A foto da etiqueta já serve. Pelo WhatsApp, do jeito que for mais fácil.",
+      "As ofertas do bairro, com preço, mercado e a data em que o preço foi visto. É a primeira tela de quem abre o ViPreço.",
   },
   {
-    Icon: ClipboardCheck,
-    titulo: "2. O ViPreço organiza e confere",
+    Icon: Search,
+    titulo: "2. Busca por produto exato",
     texto:
-      "Cada preço é publicado com mercado, data e origem. A validade entra quando o mercado informa. Nesta fase, uma pessoa confere cada informação antes de publicar.",
+      "Não é “café”: é aquele café, daquela marca, de 500 g. Quem busca assim já decidiu o que quer, e só não sabe onde está mais barato.",
   },
   {
     Icon: Store,
-    titulo: "3. O morador encontra e compra na loja",
+    titulo: "3. Comparação entre mercados",
     texto:
-      "O ViPreço informa. A compra, o pagamento, o estoque e a operação continuam sendo do mercado.",
+      "O mesmo produto, nos mercados que informaram preço, do mais barato para o mais caro. Cada linha traz de onde veio o preço e quando.",
+  },
+  {
+    Icon: MapPin,
+    titulo: "4. Como chegar",
+    texto:
+      "Nome do mercado, bairro e caminho no mapa. O ViPreço termina aqui: quem vende é a loja.",
+  },
+] as const;
+
+/**
+ * As cinco etapas do piloto, do ponto de vista de quem vai participar dele.
+ *
+ * A versão anterior tinha três passos e parava em "o morador encontra". Faltavam os dois que o
+ * mercado mais quer saber: se alguém mede alguma coisa, e se ele vai ficar sabendo do resultado.
+ * O quinto passo diz "inclusive se não funcionar" de propósito — uma devolutiva que só existe
+ * quando dá certo não é devolutiva, é divulgação.
+ */
+const ETAPAS = [
+  {
+    Icon: Tag,
+    titulo: "1. Amostra pequena",
+    texto:
+      "De 10 a 20 produtos que o seu mercado considere importantes. Não é o catálogo inteiro, e não existe quantidade mínima.",
+  },
+  {
+    Icon: MessageCircle,
+    titulo: "2. Validação dos preços",
+    texto:
+      "Do jeito que for mais fácil: mensagem, foto do encarte ou planilha. Produto, embalagem, preço e validade quando houver.",
+  },
+  {
+    Icon: ClipboardCheck,
+    titulo: "3. Publicação com data",
+    texto:
+      "Cada preço é publicado com mercado, data e origem. Nesta fase, uma pessoa confere cada informação antes de publicar.",
+  },
+  {
+    Icon: BarChart3,
+    titulo: "4. Medição do interesse",
+    texto:
+      "Duas ou três semanas para entender se as pessoas do bairro usam. Nenhum número é prometido antes de existir.",
+  },
+  {
+    Icon: MessagesSquare,
+    titulo: "5. Devolutiva",
+    texto: "Volto e conto o que aconteceu, inclusive se não funcionar.",
+  },
+] as const;
+
+/**
+ * O que se pede ao mercado, e nada além disso.
+ *
+ * A lista é curta porque o pedido é curto. Cada item aqui é uma coisa que uma pessoa pode fazer
+ * numa tarde; nenhum deles é "instalar", "integrar" ou "assinar".
+ */
+const PEDIDOS = [
+  "Uma conversa de vinte minutos",
+  "Entender como o preço e a promoção funcionam hoje no seu mercado",
+  "Uma validação pequena, dos preços daquela amostra",
+  "Autorização para usar o nome e o endereço do mercado",
+  "Sua opinião honesta depois",
+  "Uma pessoa de contato",
+] as const;
+
+/**
+ * Benefícios — todos escritos como **potenciais**, porque é o que são.
+ *
+ * Nenhum deles foi medido, e nenhum pode ser medido antes do piloto. O verbo de cada linha é
+ * condicional ou de possibilidade; a página inteira cai se um deles virar promessa.
+ */
+const BENEFICIOS = [
+  {
+    titulo: "Visibilidade local",
+    texto: "Aparecer para quem está procurando aquele produto, no bairro, naquele momento.",
+  },
+  {
+    titulo: "Divulgação além dos canais atuais",
+    texto: "As ofertas alcançam quem não está no grupo de WhatsApp nem passa em frente à loja.",
+  },
+  {
+    titulo: "Público com intenção",
+    texto: "Quem busca um produto exato já decidiu o que quer comprar.",
+  },
+  {
+    titulo: "Aprendizado sobre a região",
+    texto: "O que as pessoas de Artemis procuram: informação que hoje ninguém tem.",
+  },
+  {
+    titulo: "Métricas simples, no futuro",
+    texto: "Quando existirem. Hoje não existem, e nenhum número é prometido.",
   },
 ] as const;
 
@@ -241,11 +355,15 @@ function ForMarketsPage() {
               id="proposta-titulo"
               className="font-display mt-1.5 text-3xl leading-tight sm:text-4xl"
             >
-              Seu mercado mais perto de quem compra no bairro
+              Leve mais consumidores de Artemis até suas ofertas
             </h1>
+            {/* O subtítulo diz a coisa desconfortável na primeira dobra, e não no rodapé: o
+                produto não está no ar. Um lojista que descobre isso no meio da conversa passa a
+                reler tudo o que ouviu antes com desconfiança — e com razão. */}
             <p className="mt-2 max-w-prose text-base text-muted-foreground">
-              Envie alguns produtos pelo WhatsApp. O ViPreço organiza preço, data e origem para os
-              moradores encontrarem as informações com clareza.
+              O ViPreço é um comparador de preços de bairro em preparação, e{" "}
+              <strong className="text-foreground">ainda não está no ar</strong>. O piloto começa
+              pequeno: alguns produtos, algumas semanas, e a devolutiva do que aconteceu.
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -284,16 +402,16 @@ function ForMarketsPage() {
         >
           <div>
             <h2 id="como-funciona-titulo" className="font-display text-xl sm:text-2xl">
-              Como funciona
+              Como o piloto funciona
             </h2>
             <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              Três passos, sem sistema para instalar e sem integração com o caixa.
+              Cinco etapas, sem sistema para instalar e sem integração com o caixa.
             </p>
           </div>
 
-          {/* Três colunas só a partir de `md`. Em 640 px cada passo virava uma coluna de 189 px:
-              texto de cinco palavras por linha, card de 246 px de altura. Medido no navegador. */}
-          <ol className="grid gap-3 md:grid-cols-3">
+          {/* Duas colunas a partir de `sm`, três a partir de `lg`. Cinco cards numa linha só
+              produziriam colunas de 180 px no desktop e texto de quatro palavras por linha. */}
+          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {ETAPAS.map(({ Icon, titulo, texto }) => (
               <li key={titulo} className="card-base">
                 <Icon aria-hidden="true" className="size-5 text-primary" />
@@ -303,12 +421,81 @@ function ForMarketsPage() {
             ))}
           </ol>
 
-          {/* Os três passos descrevem como o piloto vai funcionar. Sem esta linha, o presente do
+          {/* As cinco etapas descrevem como o piloto VAI funcionar. Sem esta linha, o presente do
               indicativo dos cards poderia ser lido como operação em curso — e não está. */}
           <p className="max-w-prose text-sm text-muted-foreground">
             Nada disso está em operação hoje: o piloto ainda está sendo preparado, e o primeiro
             passo é a conversa.
           </p>
+        </section>
+
+        <section aria-labelledby="momentos-titulo" className="space-y-3">
+          <div>
+            <h2 id="momentos-titulo" className="font-display text-xl sm:text-2xl">
+              Como o consumidor encontra o seu mercado
+            </h2>
+            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+              Quatro momentos, do primeiro toque até a porta da loja.
+            </p>
+          </div>
+
+          <ol className="grid gap-3 sm:grid-cols-2">
+            {MOMENTOS.map(({ Icon, titulo, texto }) => (
+              <li key={titulo} className="card-base">
+                <Icon aria-hidden="true" className="size-5 text-primary" />
+                <p className="mt-1.5 text-base font-bold">{titulo}</p>
+                <p className="meta-text mt-0.5">{texto}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section aria-labelledby="pedidos-titulo" className="space-y-3">
+          <div>
+            <h2 id="pedidos-titulo" className="font-display text-xl sm:text-2xl">
+              O que pedimos ao seu mercado
+            </h2>
+            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+              Seis coisas, e nenhuma delas é instalar, integrar ou assinar.
+            </p>
+          </div>
+
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {PEDIDOS.map((item) => (
+              <li key={item} className="card-compact bg-surface flex items-start gap-2 text-sm">
+                <ClipboardCheck
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 text-primary"
+                />
+                <span className="min-w-0">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="beneficios-titulo" className="space-y-3">
+          <div>
+            <h2 id="beneficios-titulo" className="font-display text-xl sm:text-2xl">
+              Benefícios potenciais
+            </h2>
+            {/* "Potenciais" está no título e é repetido aqui, porque é a palavra que separa esta
+                seção de uma promessa. Nada abaixo foi medido, e nada pode ser medido antes do
+                piloto — dizer "potencial" uma vez só, em letra miúda, seria ressalva; dizer duas,
+                no título e no corpo, é o enquadramento. */}
+            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+              Potenciais mesmo: nada aqui foi medido, e nada disso é promessa. O ViPreço não promete
+              venda, movimento nem resultado.
+            </p>
+          </div>
+
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {BENEFICIOS.map(({ titulo, texto }) => (
+              <li key={titulo} className="card-compact bg-surface text-sm">
+                <p className="font-semibold">{titulo}</p>
+                <p className="meta-text mt-0.5">{texto}</p>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section aria-labelledby="poucos-produtos-titulo" className="card-base space-y-2">
@@ -381,11 +568,18 @@ function ForMarketsPage() {
         <section aria-labelledby="confianca-titulo" className="card-base space-y-4">
           <div>
             <h2 id="confianca-titulo" className="font-display text-xl sm:text-2xl">
-              As regras valem para todo mundo
+              Neutralidade: as regras valem para todo mundo
             </h2>
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              São as mesmas regras que o morador lê na página inicial. Não existe uma versão para o
-              consumidor e outra para o mercado.
+            {/* A frase aparece por extenso, em destaque, e não diluída numa lista de bullets.
+                É a única afirmação da página que um lojista pode querer testar depois, e é a
+                única que não é negociável em nenhum cenário de nenhum resultado de entrevista. */}
+            <p className="border-primary mt-2 max-w-prose border-l-4 pl-3 text-base font-semibold">
+              Participar do ViPreço não compra posição no ranking.
+            </p>
+            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+              A ordem é sempre pelo preço, do mais barato para o mais caro. São as mesmas regras que
+              o morador lê na página inicial: não existe uma versão para o consumidor e outra para o
+              mercado.
             </p>
           </div>
 
@@ -452,6 +646,10 @@ function ForMarketsPage() {
           <h2 id="convite-titulo" className="font-display text-xl sm:text-2xl">
             Vamos conversar sobre o piloto em Artemis?
           </h2>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Vinte minutos, sem compromisso e sem nada para assinar. Nada é publicado com o nome do
+            seu mercado sem sua autorização.
+          </p>
           <MarketWhatsAppCta microcopy={CTA_FINAL_MICROCOPY} />
         </section>
 

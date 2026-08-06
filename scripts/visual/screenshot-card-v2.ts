@@ -1,12 +1,13 @@
 /**
  * R3.2 §14 — screenshots do laboratório do Card v2.
  *
- * Quatro imagens, e a quarta é a que exige explicação:
+ * Cinco imagens, e as duas últimas são as que exigem explicação:
  *
  *   card-v2-320.png       página inteira a 320 px — o menor aparelho do contrato
  *   card-v2-390.png       página inteira a 390 px
  *   card-v2-desktop.png   página inteira a 1280 px
  *   card-v2-variants.png  RECORTE da grade "em lista", a 900 px — as oito de uma vez
+ *   card-v2-list-390.png  RECORTE dos quatro primeiros cards a 390 px — o ritmo da lista
  *
  * O recorte não é decorativo, e a primeira versão dele estava errada: recortava a região
  * das variantes empilhadas, que a 900 px produzia um PNG de 18 mil pixels de altura — a
@@ -162,6 +163,63 @@ async function principal() {
     }
     writeFileSync(join(DESTINO, "card-v2-variants.png"), bytes);
     console.log(`\n==> card-v2-variants.png — ${vw}x${vh} px (recorte de #em-lista)`);
+
+    // ---------------------------------------------------------------------------
+    // 4. Quatro cards consecutivos a 390 px — o ritmo real de uma lista de celular
+    //
+    // A captura anterior mostra as oito variantes a 900 px, em duas colunas: ela serve
+    // para conferir que cada estado é reconhecível. Esta responde outra pergunta, e é a
+    // pergunta que o consumidor faz com o polegar — **quantos cards cabem, e o que se
+    // repete demais quando eles vêm um atrás do outro.** Selo, CTA e bloco de procedência
+    // parecem discretos num card isolado e viram textura numa lista.
+    //
+    // Quatro é o mínimo do mandato §8, e é também o suficiente: o quarto card já mostra o
+    // padrão de repetição sem produzir um PNG de altura impraticável para revisão.
+    // ---------------------------------------------------------------------------
+    await capturarPagina(s, { url: `${BASE}${ROTA}`, largura: 390, movel: true, espera: 1500 });
+    const quatro = await medir<{ x: number; y: number; width: number; height: number } | null>(
+      s,
+      `(() => {
+        const el = document.getElementById('em-lista');
+        if (!el) return null;
+        const cards = [...el.children].slice(0, 4);
+        if (cards.length < 4) return null;
+        const caixas = cards.map(c => c.getBoundingClientRect());
+        const topo = Math.min(...caixas.map(r => r.top)) + scrollY;
+        const base = Math.max(...caixas.map(r => r.bottom)) + scrollY;
+        const esq = Math.min(...caixas.map(r => r.left)) + scrollX;
+        const dir = Math.max(...caixas.map(r => r.right)) + scrollX;
+        return { x: esq, y: topo, width: dir - esq, height: base - topo };
+      })()`,
+    );
+    if (quatro === null) {
+      throw new Error("não achei quatro cards consecutivos em #em-lista — nada a recortar.");
+    }
+
+    const lista = await capturarPagina(s, {
+      url: `${BASE}${ROTA}`,
+      largura: 390,
+      movel: true,
+      espera: 1500,
+      clip: {
+        x: Math.max(0, quatro.x - 12),
+        y: Math.max(0, quatro.y - 12),
+        width: quatro.width + 24,
+        height: quatro.height + 24,
+        scale: 2,
+      },
+    });
+    const { largura: lw, altura: lh } = dimensoesDoPng(lista);
+    if (lh < 1200) {
+      // Quatro cards com identidade, preço, mercado, procedência e CTA não cabem em menos
+      // de 600 px de CSS — 1200 px de PNG a DPR 2. Abaixo disso o recorte pegou outra coisa.
+      throw new Error(`card-v2-list-390.png saiu com ${lh}px de altura — recortou pouco demais.`);
+    }
+    writeFileSync(join(DESTINO, "card-v2-list-390.png"), lista);
+    console.log(
+      `==> card-v2-list-390.png — ${lw}x${lh} px (4 cards consecutivos, ` +
+        `${Math.round(quatro.height / 4)} px de CSS por card)`,
+    );
 
     s.fechar();
   } finally {

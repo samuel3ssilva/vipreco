@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import { TEMPORAL_STYLE } from "@/lib/temporal";
 import { ProductIdentity, ProductImage } from "./identity";
 import { MarketBadge, NeighborhoodLabel } from "./market";
-import { PriceDisplay, PreviousPrice, PromotionCondition, UnitPrice } from "./price";
+import { PriceDisplay, PromotionCondition, UnitPrice } from "./price";
 import { OfferStatus, ProvenanceBlock } from "./provenance";
 
 /**
@@ -105,7 +105,12 @@ export function ProductCardV2({
       {/* Tarja temporal — decorativa. Tudo o que ela sugere está em texto abaixo. */}
       <div aria-hidden="true" style={{ height, backgroundColor: color }} />
 
-      <div className="flex flex-1 flex-col gap-3 p-3">
+      {/* TRÊS ZONAS, E NÃO OITO LINHAS EQUIDISTANTES.
+          O `gap-3` uniforme de antes punha identidade, preço, mercado, condição,
+          procedência e CTA todos à mesma distância entre si — e um card assim é lido como
+          uma lista de linhas, não como uma composição com hierarquia. Agora o espaço é
+          hierárquico: apertado dentro de cada grupo, folgado entre grupos. */}
+      <div className={`flex flex-1 flex-col p-3 ${destaque ? "gap-3" : "gap-2"}`}>
         <div className="flex items-start gap-3">
           <ProductImage
             imagem={visao.imagem}
@@ -118,6 +123,9 @@ export function ProductCardV2({
 
         <OfferStatus estado={visao.estado} />
 
+        {/* Preço, unitário, mercado e bairro são UM grupo: "quanto custa, e onde". Separá-los
+            em dois blocos com o mesmo respiro dos demais fazia o bairro parecer tão distante
+            do preço quanto a procedência. */}
         <div className="flex flex-col gap-0.5">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <PriceDisplay
@@ -126,13 +134,11 @@ export function ProductCardV2({
               atenuado={!visao.naListaOrganica}
             />
           </div>
-          <PreviousPrice anterior={visao.precoAnterior} />
           <UnitPrice unitario={visao.unitario} />
-        </div>
-
-        <div className="flex flex-col gap-0.5">
-          <MarketBadge nome={visao.mercado.nome} destaque={destaque} />
-          <NeighborhoodLabel bairro={visao.mercado.bairro} />
+          <div className="mt-1 flex flex-col gap-0.5">
+            <MarketBadge nome={visao.mercado.nome} destaque={destaque} />
+            <NeighborhoodLabel bairro={visao.mercado.bairro} />
+          </div>
         </div>
 
         <PromotionCondition condicao={visao.condicao} />
@@ -146,12 +152,20 @@ export function ProductCardV2({
           </p>
         ) : null}
 
+        {/* O CTA CONTINUA SENDO UM BOTÃO — a recomendação de transformá-lo em link discreto
+            na variante de lista foi rejeitada. Ele é a única ação do card e leva à
+            comparação, que é o núcleo do produto; economizar oito pixels de altura
+            enfraquecendo a ação que o card existe para oferecer é trocar propósito por
+            densidade. O que muda é o peso: em lista, superfície discreta em vez de caixa
+            contornada — mesma forma, mesmo alvo de 48 px, menos linha desenhada por card. */}
         <div className="mt-auto pt-1">
           <Link
             to="/produto/$productId"
             params={{ productId: oferta.product.id }}
             aria-describedby={avisoParcial !== null ? avisoId : undefined}
-            className="btn-base btn-secondary btn-touch-48 w-full"
+            className={`btn-base btn-touch-48 w-full ${
+              destaque ? "btn-secondary" : "bg-surface text-primary"
+            }`}
           >
             {visao.cta.rotulo}
             <ArrowRight aria-hidden="true" className="size-4" />

@@ -168,8 +168,6 @@ export const VARIANTES: readonly VarianteDoLaboratorio[] = [
       source_type: "receipt",
       observed_at: dias(-1),
       valid_until: dias(9),
-      previous_price: 14.9,
-      previous_observed_at: dias(-12),
       quantity_provenance: "confirmed",
       markets_with_valid_price: 4,
       image: {
@@ -375,7 +373,7 @@ export const VARIANTES: readonly VarianteDoLaboratorio[] = [
       valid_until: dias(4),
       quantity_provenance: "confirmed",
     }),
-    avisoParcial: "A contagem de mercados com preço válido não pôde ser carregada agora.",
+    avisoParcial: "Contagem de mercados indisponível agora.",
   },
 ] as const;
 

@@ -153,11 +153,22 @@ describe("quantidade exibida", () => {
     expect(v.identidade.quantidade).toBe("1 L");
   });
 
-  it("pack declara quantos itens tem dentro", () => {
+  it("pack declara quantos itens tem dentro, em campo separado da gramatura", () => {
+    // Separados de propósito: só a gramatura recebe peso tipográfico. Numa string única,
+    // "2.100 ml · 6 unidades" herdava o peso inteiro, quebrava em duas linhas a 320 px e
+    // pesava mais que o título do produto.
     const v = visao({
       product: produto({ quantity_value: 2100, quantity_unit: "ml", units_per_package: 6 }),
     });
-    expect(v.identidade.quantidade).toBe("2.100 ml · 6 unidades");
+    expect(v.identidade.quantidade).toBe("2.100 ml");
+    expect(v.identidade.complemento).toBe("6 unidades");
+  });
+
+  it("pack de um item não inventa complemento", () => {
+    const v = visao({
+      product: produto({ quantity_value: 500, quantity_unit: "g", units_per_package: 1 }),
+    });
+    expect(v.identidade.complemento).toBeNull();
   });
 
   it("sem estrutura, o `size_text` é preservado COMO ESTÁ ESCRITO", () => {
@@ -170,6 +181,26 @@ describe("quantidade exibida", () => {
 
   it("sem nada, é ausência — e não string vazia nem traço", () => {
     expect(visao().identidade.quantidade).toBeNull();
+  });
+
+  it("a embalagem some quando ela só repete a variante", () => {
+    // "Marca Exemplo · Sachê" seguido de "250 g · sache" não acrescenta nada e ainda
+    // parece defeito de dado, porque `package_type` chega cru do banco. A comparação
+    // ignora caixa e acento; ignorar acento é o que faz `Sachê` casar com `sache`.
+    const v = visao({ product: produto({ variant: "Sachê", package_type: "sache" }) });
+    expect(v.identidade.embalagem).toBeNull();
+  });
+
+  it("a embalagem fica quando ela diz outra coisa, e vem com inicial maiúscula", () => {
+    const v = visao({ product: produto({ variant: "Tradicional", package_type: "vidro" }) });
+    expect(v.identidade.embalagem).toBe("Vidro");
+  });
+
+  it("embalagem vazia é ausência, e não uma string em branco", () => {
+    for (const cru of [null, "", "   "]) {
+      const v = visao({ product: produto({ package_type: cru }) });
+      expect(v.identidade.embalagem).toBeNull();
+    }
   });
 
   it("quantidade zero ou negativa não vira quantidade estruturada", () => {
@@ -189,40 +220,35 @@ describe("quantidade exibida", () => {
 });
 
 // ---------------------------------------------------------------------------------
-// Preço anterior e percentual
+// Histórico de preço — removido em 06/08/2026 (DL-030)
 // ---------------------------------------------------------------------------------
 
-describe("preço anterior e variação", () => {
-  it("aparece com valor e data, em frase", () => {
-    const v = visao({ price: 12.9, previous_price: 14.9, previous_observed_at: dia(-12) });
-    expect(v.precoAnterior?.variacaoPercentual).toBe(-13);
-    expect(v.precoAnterior?.rotulo).toBe("13% mais barato que em 2026-07-25");
-  });
-
-  it("NÃO aparece sem a data — percentual sem procedência é número solto", () => {
-    expect(visao({ price: 12.9, previous_price: 14.9 }).precoAnterior).toBeNull();
-  });
-
-  it("NÃO aparece sem o valor", () => {
-    expect(visao({ previous_observed_at: dia(-12) }).precoAnterior).toBeNull();
-  });
-
-  it("NÃO aparece com variação de módulo abaixo de 1% — ruído não é notícia", () => {
-    const v = visao({ price: 10.05, previous_price: 10, previous_observed_at: dia(-5) });
-    expect(v.precoAnterior).toBeNull();
-  });
-
-  it("aparece a partir de 1%", () => {
-    const v = visao({ price: 10.1, previous_price: 10, previous_observed_at: dia(-5) });
-    expect(v.precoAnterior?.variacaoPercentual).toBe(1);
-    expect(v.precoAnterior?.rotulo).toContain("mais caro");
-  });
-
-  it("preço anterior inválido é ignorado, não vira zero", () => {
-    for (const anterior of [0, -5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      const v = visao({ previous_price: anterior, previous_observed_at: dia(-5) });
-      expect(v.precoAnterior).toBeNull();
+describe("o card não conhece histórico de preço", () => {
+  /**
+   * A regra que existia aqui estava certa: frase em vez de "−12%" colorido, data ao lado
+   * do percentual, corte de 1% aplicado sobre o valor estabilizado. O que faltava era o
+   * contrato — **P-01**, qual observação anterior conta, nunca foi decidida —, e sem ele
+   * dois cards com o mesmo dado exibem percentuais diferentes e os dois estão "certos".
+   *
+   * Estes dois testes não são cerimônia de despedida. Eles são o que impede a volta
+   * silenciosa: um campo `previous_price` reintroduzido no fixture, ou um bloco de
+   * histórico ressuscitado no componente, reprova aqui em vez de aparecer numa captura que
+   * ninguém leu com atenção.
+   */
+  it("a visão não tem nenhum campo de preço anterior", () => {
+    const chaves = Object.keys(visao());
+    for (const proibida of ["precoAnterior", "previousPrice", "variacao"]) {
+      expect(chaves, `a visão voltou a expor ${proibida}`).not.toContain(proibida);
     }
+  });
+
+  it("campo de histórico na entrada não produz saída nenhuma", () => {
+    // O tipo já não os aceita; um objeto vindo de JSON, sim. A garantia precisa valer no
+    // dado, e não só no compilador.
+    const comHistorico = { price: 12.9, previous_price: 14.9, previous_observed_at: dia(-12) };
+    const v = visao(comHistorico as Partial<OfertaCardV2>);
+    expect(JSON.stringify(v)).not.toContain("14.9");
+    expect(JSON.stringify(v)).not.toMatch(/mais (barato|caro) que em/);
   });
 });
 
@@ -296,8 +322,11 @@ describe("estado da oferta", () => {
     expect(v.naListaOrganica).toBe(false);
   });
 
-  it("todo estado exibido tem rótulo E explicação em texto", () => {
-    // Cor nunca é o único canal (WCAG 2.2 SC 1.4.1). Um estado sem palavra seria cor sozinha.
+  it("todo estado exibido vem escrito — cor nunca é o único canal", () => {
+    // WCAG 2.2 SC 1.4.1. Um estado sem palavra seria cor sozinha, e cor sozinha não
+    // comunica. A frase explicativa que acompanhava o rótulo saiu em 06/08/2026 — ela
+    // repetia, dentro do card, o que a linha de procedência já provava três linhas abaixo.
+    // O rótulo, esse, é obrigatório e continua sendo.
     for (const campos of [
       { valid_until: dia(-1) },
       { valid_until: null, observed_at: dia(-30) },
@@ -306,7 +335,7 @@ describe("estado da oferta", () => {
     ]) {
       const v = visao(campos);
       expect(v.estado?.rotulo.length).toBeGreaterThan(0);
-      expect(v.estado?.explicacao.length).toBeGreaterThan(0);
+      expect(Object.keys(v.estado ?? {})).not.toContain("explicacao");
     }
   });
 });
@@ -413,8 +442,8 @@ describe("determinismo — o card não pode desenhar diferente a cada render", (
   it("mesma entrada, mesma saída", () => {
     const entrada = oferta({
       valid_until: dia(2),
-      previous_price: 12,
-      previous_observed_at: dia(-8),
+      markets_with_valid_price: 3,
+      quantity_provenance: "confirmed",
     });
     expect(montarVisaoDoCard(entrada, AGORA, formatarData)).toEqual(
       montarVisaoDoCard(entrada, AGORA, formatarData),

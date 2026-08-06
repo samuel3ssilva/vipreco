@@ -3,13 +3,40 @@
 Capturas do laboratório do Card v2 (`/laboratorio-card-v2`), geradas em navegador de verdade
 por `scripts/visual/screenshot-card-v2.ts`, contra o servidor de desenvolvimento local.
 
-| Arquivo                        | O que é                               | Viewport CSS | PNG (DPR 2)  |
+| Arquivo                        | O que é                               | Viewport CSS | PNG          |
 | ------------------------------ | ------------------------------------- | ------------ | ------------ |
-| `card-v2-320.png`              | página inteira                        | 320 px       | 640 × 22184  |
-| `card-v2-390.png`              | página inteira                        | 390 px       | 780 × 20158  |
-| `card-v2-desktop.png`          | página inteira                        | 1280 px      | 2560 × 15404 |
-| `card-v2-variants.png`         | recorte da grade "em lista"           | 900 px       | 3536 × 6880  |
-| `card-v2-comparison-board.png` | North Star ao lado das oito variantes | 1400 px      | 2800 × 4654  |
+| `card-v2-320.png`              | página inteira                        | 320 px       | 640 × 21240  |
+| `card-v2-390.png`              | página inteira                        | 390 px       | 780 × 19494  |
+| `card-v2-desktop.png`          | página inteira                        | 1280 px      | 2560 × 14790 |
+| `card-v2-variants.png`         | recorte da grade "em lista"           | 900 px       | 3536 × 6364  |
+| `card-v2-list-390.png`         | **quatro cards consecutivos**         | 390 px       | 1528 × 6492  |
+| `card-v2-comparison-board.png` | North Star ao lado das oito variantes | 1400 px      | 2800 × 4860  |
+
+### A captura da lista responde outra pergunta
+
+`card-v2-variants.png` mostra as oito variantes a 900 px, em duas colunas: ela serve para
+conferir que **cada estado é reconhecível**. `card-v2-list-390.png` mostra quatro cards
+consecutivos numa coluna só, na largura de um celular comum — e essa é a pergunta que o
+usuário faz com o polegar: **quantos cards cabem, e o que se repete demais quando eles vêm um
+atrás do outro.** Selo, CTA e bloco de procedência parecem discretos num card isolado e viram
+textura numa lista.
+
+Medido nesta execução: **400 px de CSS por card** a 390 px de largura.
+
+### O que encolheu no refinamento de 06/08/2026
+
+Mesma página, mesmas oito variantes, mesmo instante de referência:
+
+| Captura   | Antes  | Depois | Diferença      |
+| --------- | ------ | ------ | -------------- |
+| 320 px    | 22 184 | 21 240 | −944 px de PNG |
+| 390 px    | 20 158 | 19 494 | −664           |
+| desktop   | 15 404 | 14 790 | −614           |
+| variantes | 6 880  | 6 364  | −516           |
+
+Nenhum dos 17 itens da anatomia saiu por causa de altura. O que saiu foi **repetição**: a
+frase que explicava o selo de estado dizia o que a linha de procedência já provava três
+linhas abaixo, e o histórico de preço saiu por falta de contrato (DL-030), não por espaço.
 
 Para regerar:
 
@@ -32,8 +59,12 @@ produz.
   campo faltante nomeado.
 - **Campo condicional some — não vira traço.** Na variante E não há linha de preço unitário:
   não há "—", não há zero, não há "indisponível".
-- **A cor nunca é o único canal.** Todo estado traz rótulo e explicação escritos; a tarja
-  temporal do topo é decorativa e `aria-hidden`.
+- **A cor nunca é o único canal.** Todo estado traz **rótulo escrito**; a tarja temporal do
+  topo é decorativa e `aria-hidden`. A oferta fora da lista orgânica é distinguível por três
+  canais independentes: o rótulo, o preço atenuado e a tarja.
+- **Nenhum histórico de preço.** "antes R$ 14,90 · 13% mais barato que em 25/07/2026" saiu do
+  card e do fixture em 06/08/2026 (DL-030). Falta o contrato — P-01, qual observação anterior
+  conta —, não a implementação.
 - **Mercado é identificado por texto.** Nenhum logotipo, em nenhuma variante.
 - **Nenhum dado real.** "Mercado Exemplo", "Bairro Exemplo", "Produto Demonstrativo",
   instante de referência fixo, e nenhuma chamada de rede: a página não faz nenhuma.

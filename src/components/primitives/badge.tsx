@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
  * agora seria criar o uso decorativo que o princípio 4 proíbe.
  */
 
-export type TomDeSelo = "neutro" | "positivo" | "atencao" | "critico" | "informativo";
+export type TomDeSelo =
+  "neutro" | "positivo" | "atencao" | "critico" | "critico-suave" | "informativo";
 
 const TOM: Record<TomDeSelo, string> = {
   neutro: "bg-muted text-muted-foreground border-border",
@@ -28,6 +29,11 @@ const TOM: Record<TomDeSelo, string> = {
   // `caution` é a família âmbar de `--vp-warning` — e não o amarelo de marca.
   atencao: "bg-caution text-caution-foreground border-transparent",
   critico: "bg-destructive text-destructive-foreground border-transparent",
+  // O par suave da mesma família — 5.34:1, medido. Existe para o caso em que a mensagem é
+  // "isto não vale mais", e não "isto é um alarme": um selo vermelho cheio dentro de um
+  // card de produto vira o elemento de maior peso da composição, mais chamativo que o nome
+  // e que o preço, e passa a competir com a identidade que ele deveria qualificar.
+  "critico-suave": "bg-destructive-surface text-destructive-surface-foreground border-transparent",
   informativo: "bg-info text-info-foreground border-transparent",
 };
 

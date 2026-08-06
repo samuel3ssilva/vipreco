@@ -54,10 +54,24 @@ export function ProductIdentity({
       {identidade.quantidade !== null ? (
         // Sem `truncate` e sem `line-clamp`, de propósito: a gramatura é o que separa dois
         // produtos que de resto são o mesmo. Cortá-la para caber é apagar a comparação.
-        <p className="font-data mt-1 text-sm font-semibold break-words">
-          {identidade.quantidade}
+        //
+        // O PESO É SÓ DA GRAMATURA, e não da linha inteira. Antes, "2.100 ml · 6 unidades ·
+        // pack" saía todo em mono semibold, quebrava em duas linhas a 320 px e ficava mais
+        // pesado que o próprio título do produto — o que inverte a hierarquia que o card
+        // existe para defender. O que precisa saltar é "2.100 ml"; o resto é contexto.
+        //
+        // Quando a quantidade não é estruturada — `size_text` livre, como "aprox. 1,2 kg —
+        // peso variável" — o peso também não vem: ela continua legível e continua sem
+        // truncar, mas não recebe a ênfase reservada a um dado conferido.
+        <p className="font-data mt-1 text-sm break-words">
+          <span className={identidade.quantidadeEstruturada ? "font-semibold" : undefined}>
+            {identidade.quantidade}
+          </span>
+          {identidade.complemento !== null ? (
+            <span className="text-muted-foreground"> · {identidade.complemento}</span>
+          ) : null}
           {identidade.embalagem !== null ? (
-            <span className="text-muted-foreground font-normal"> · {identidade.embalagem}</span>
+            <span className="text-muted-foreground"> · {identidade.embalagem}</span>
           ) : null}
         </p>
       ) : null}

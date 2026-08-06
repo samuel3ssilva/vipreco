@@ -22,5 +22,5 @@
 export { ProductCardV2, ProductCardV2Skeleton } from "./product-card-v2";
 export { ProductIdentity, ProductImage } from "./identity";
 export { MarketBadge, NeighborhoodLabel } from "./market";
-export { PriceDisplay, PreviousPrice, PromotionCondition, UnitPrice } from "./price";
+export { PriceDisplay, PromotionCondition, UnitPrice } from "./price";
 export { OfferStatus, ProvenanceBlock, ValidityLabel } from "./provenance";

@@ -37,6 +37,7 @@ const DIVERGENCIAS = [
   "R$/kg EM TODO CARD: no mockup o preço unitário aparece sempre. Aqui ele é CONDICIONAL e só aparece com quantidade estruturada e aprovada (`confirmed`). Como o backfill de quantidade continua proibido, num banco real ele estaria ausente na maioria dos cards — e ausente significa sumir, não virar traço.",
   "PROMOÇÃO SEM CONDIÇÃO: o mockup exibe o selo de promoção sem o requisito. Aqui a condição é exibida por extenso, sempre junto do preço. Uma promoção cujo limite só aparece na gôndola é uma promessa que o produto não pode cumprir.",
   "BAIRRO E CIDADE: o mockup usa São Luís-MA. O piloto é Artemis, Piracicaba-SP. As ofertas deste laboratório são fictícias — 'Mercado Exemplo', 'Bairro Exemplo', 'Produto Demonstrativo' — e nenhuma delas vem de staging ou de produção.",
+  "PREÇO ANTERIOR E QUEDA PERCENTUAL: o mockup mostra 'Preço anterior: R$ 20,49'. O card exibia o equivalente e DEIXOU DE EXIBIR em 06/08/2026 (DL-030). A regra estava certa — frase em vez de percentual colorido, data ao lado —, mas 'preço anterior' só significa alguma coisa depois que alguém disser QUAL observação anterior conta, e essa decisão (P-01, card MVP-DOCS-02) nunca foi tomada. Sem ela, dois cards com o mesmo dado exibem percentuais diferentes e os dois estão 'certos'. Volta em R6/R8, contra o contrato que P-01 produzir.",
 ];
 
 /** Decisões funcionais que ganharam do desenho, com o motivo. */
@@ -45,6 +46,8 @@ const DECISOES = [
   "A VALIDADE SOBE PARA DENTRO DO BLOCO DE PROCEDÊNCIA, junto de fonte e data, em vez de ficar isolada na posição 7 da ordem. Fonte, data e validade são um bloco inseparável por contrato; separá-los para respeitar a numeração cumpriria a ordem e quebraria a regra que a ordem serve.",
   "'DESATUALIZADO' E 'EXPIRADA' SÃO ESTADOS DIFERENTES. Validade vencida é expiração; observação antiga sem validade nenhuma é desatualização. Usar a mesma palavra nos dois casos inventaria uma validade só para poder anunciar que ela venceu.",
   "NENHUMA VARIANTE PATROCINADA foi desenhada. Não há contrato normativo aprovado na main para conteúdo pago no card, e desenhá-lo agora decidiria o assunto pelo desenho. Conteúdo pago, quando existir, vive em seção separada e rotulada e jamais reordena a lista orgânica.",
+  "O SELO DE ESTADO É SUAVE, E NÃO SÓLIDO. Um selo vermelho cheio dentro de um card de produto é o elemento de maior peso da composição — mais chamativo que o nome e que o preço —, e com a tarja temporal no topo o vermelho aparecia duas vezes antes de o leitor saber que produto é aquele. O par suave mede 5.34:1, e a oferta fora da lista orgânica continua distinguível por três canais independentes: rótulo escrito, preço atenuado e tarja.",
+  "O CTA CONTINUA SENDO UM BOTÃO. A revisão especializada recomendou transformá-lo em link discreto na variante de lista, para economizar altura. Rejeitado: ele é a única ação do card e leva à comparação, que é o núcleo do produto. O que mudou foi o peso — superfície discreta em vez de caixa contornada, mesmo alvo de 48 px.",
 ];
 
 const base64 = (caminho: string) => readFileSync(caminho).toString("base64");

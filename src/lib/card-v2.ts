@@ -30,7 +30,12 @@
  *   UM `product_id`; a separação entre exato, outro tamanho e similar é de `equivalence.ts`
  *   e da tela de busca, não do card;
  * - **não ordena nada.** A ordem da lista orgânica é de `comparison.ts`, por preço →
- *   observação → id, e nada aqui influencia posição.
+ *   observação → id, e nada aqui influencia posição;
+ * - **não exibe histórico de preço.** Preço anterior e variação percentual saíram em
+ *   06/08/2026 (DL-030). A regra existia, estava testada e batia com `OFFER-STATES.md` §5;
+ *   o que faltava era contrato: **P-01** — qual observação anterior conta — nunca foi
+ *   decidida, e sem ela dois cards com o mesmo dado exibem percentuais diferentes e os
+ *   dois estão "certos". Volta em R6/R8, contra o contrato que P-01 produzir.
  */
 import { computeUnitPrice } from "@/lib/unit-price";
 import type { UnitPriceBasis } from "@/lib/unit-price";
@@ -85,10 +90,6 @@ export interface ImagemDeProduto {
  * que ainda não existe.
  */
 export interface OfertaCardV2 extends Opportunity {
-  /** Observação anterior real do MESMO produto no MESMO mercado. Nunca média, nunca tabela. */
-  previous_price?: number | null;
-  /** A data daquela observação. Sem ela o percentual não é exibido — número sem procedência. */
-  previous_observed_at?: string | null;
   offer_state?: OfferState;
   /**
    * De onde veio a quantidade estruturada.
@@ -111,11 +112,20 @@ export interface IdentidadeExibida {
   nome: string;
   marca: string | null;
   variante: string | null;
-  /** Quantidade estruturada quando existe; senão o `size_text` como está escrito. */
+  /**
+   * O núcleo da gramatura — "500 g", "2,1 L". É o que distingue dois SKUs que de resto são
+   * o mesmo produto, e é o único pedaço da linha que recebe peso tipográfico.
+   *
+   * Quando não há quantidade estruturada, aqui vem o `size_text` **como está escrito** —
+   * e aí `quantidadeEstruturada` é `false`, que é o sinal para o componente não dar a esse
+   * texto o peso de um dado conferido.
+   */
   quantidade: string | null;
+  /** "6 unidades" e afins: acompanha a gramatura sem competir com ela. */
+  complemento: string | null;
   /** `true` quando a quantidade veio de campo estruturado, e não de texto livre. */
   quantidadeEstruturada: boolean;
-  /** Embalagem, quando faz parte da identidade. */
+  /** Embalagem, quando ela acrescenta alguma coisa que a variante já não disse. */
   embalagem: string | null;
 }
 
@@ -128,15 +138,6 @@ export interface PrecoExibido {
   falado: string;
 }
 
-export interface PrecoAnteriorExibido {
-  valor: number;
-  observadoEm: string;
-  /** Inteiro com sinal. Negativo é queda. */
-  variacaoPercentual: number;
-  /** "12% mais barato que em 28/07" — rótulo textual, nunca só a cor e a seta. */
-  rotulo: string;
-}
-
 export interface UnitarioExibido {
   display: number;
   basis: UnitPriceBasis;
@@ -144,12 +145,17 @@ export interface UnitarioExibido {
   rotulo: string;
 }
 
-/** O estado quando ele **não** é o normal. `active` não produz rótulo nenhum. */
+/**
+ * O estado quando ele **não** é o normal. `active` não produz rótulo nenhum.
+ *
+ * Só o rótulo. A frase explicativa que existia aqui — "A validade informada pelo mercado já
+ * passou." — foi removida em 06/08/2026: ela convivia, três linhas abaixo, com a data que
+ * a provava ("válido até 03/08/2026"), e dizer duas vezes a mesma coisa dentro de um card
+ * que precisa caber numa lista é gastar altura para repetir.
+ */
 export interface EstadoExibido {
   chave: OfferState | "desatualizada";
   rotulo: string;
-  /** Frase curta que explica o rótulo sem criar urgência. */
-  explicacao: string;
 }
 
 export interface ProcedenciaExibida {
@@ -172,7 +178,6 @@ export interface VisaoDoCard {
   identidade: IdentidadeExibida;
   mercado: { nome: string; bairro: string | null };
   preco: PrecoExibido;
-  precoAnterior: PrecoAnteriorExibido | null;
   unitario: UnitarioExibido | null;
   procedencia: ProcedenciaExibida;
   /** Condição da promoção, como o mercado a informou. Nunca separada do preço. */
@@ -206,29 +211,13 @@ const ROTULO_DA_BASE: Record<UnitPriceBasis, string> = {
   per_un: "por unidade",
 };
 
-const ESTADO_ESCRITO: Record<OfferState | "desatualizada", { rotulo: string; explicacao: string }> =
-  {
-    active: { rotulo: "", explicacao: "" },
-    expired: {
-      rotulo: "Oferta expirada",
-      explicacao: "A validade informada pelo mercado já passou.",
-    },
-    ended: {
-      rotulo: "Oferta encerrada",
-      explicacao: "O mercado avisou que a oferta terminou.",
-    },
-    sold_out: {
-      rotulo: "Produto esgotado",
-      explicacao: "O produto foi dado como esgotado neste mercado.",
-    },
-    desatualizada: {
-      rotulo: "Preço desatualizado",
-      explicacao: "A última observação tem mais de uma semana e não há validade informada.",
-    },
-  };
-
-/** Abaixo disto o percentual não é exibido: ruído de arredondamento não é notícia. */
-const VARIACAO_MINIMA = 1;
+const ESTADO_ESCRITO: Record<OfferState | "desatualizada", string> = {
+  active: "",
+  expired: "Oferta expirada",
+  ended: "Oferta encerrada",
+  sold_out: "Produto esgotado",
+  desatualizada: "Preço desatualizado",
+};
 
 /**
  * Quantidade em texto.
@@ -240,6 +229,7 @@ const VARIACAO_MINIMA = 1;
  */
 function escreverQuantidade(oferta: OfertaCardV2): {
   texto: string | null;
+  complemento: string | null;
   estruturada: boolean;
 } {
   const { quantity_value, quantity_unit, units_per_package, size_text } = oferta.product;
@@ -253,19 +243,56 @@ function escreverQuantidade(oferta: OfertaCardV2): {
     const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 }).format(
       quantity_value,
     );
-    const base = `${numero} ${UNIDADE_ESCRITA[quantity_unit]}`;
     const itens =
       typeof units_per_package === "number" && Number.isInteger(units_per_package)
         ? units_per_package
         : null;
     return {
-      texto: itens !== null && itens > 1 ? `${base} · ${itens} unidades` : base,
+      // A GRAMATURA E O QUE A ACOMPANHA SÃO CAMPOS SEPARADOS, e não uma string só.
+      //
+      // Quando eram uma só, "2.100 ml · 6 unidades" herdava inteiro o peso reservado à
+      // gramatura, quebrava em duas linhas a 320 px e pesava mais que o próprio título do
+      // produto. O que precisa saltar é "2.100 ml"; "6 unidades" é contexto.
+      texto: `${numero} ${UNIDADE_ESCRITA[quantity_unit]}`,
+      complemento: itens !== null && itens > 1 ? `${itens} unidades` : null,
       estruturada: true,
     };
   }
 
   const livre = size_text?.trim();
-  return { texto: livre !== undefined && livre.length > 0 ? livre : null, estruturada: false };
+  return {
+    texto: livre !== undefined && livre.length > 0 ? livre : null,
+    complemento: null,
+    estruturada: false,
+  };
+}
+
+/**
+ * Embalagem — quando ela acrescenta alguma coisa.
+ *
+ * `package_type` chega cru do banco (`sache`, `vidro`, `pack`). Duas coisas o tornavam
+ * ruído em vez de identidade: ele aparecia sem acento nem maiúscula, ao lado da gramatura,
+ * parecendo defeito de dado; e repetia a variante quando as duas dizem o mesmo — "Marca
+ * Exemplo · Sachê" seguido de "250 g · sache".
+ *
+ * A comparação ignora caixa e acento, e **não** usa `normalize.ts`: aquele módulo é o
+ * contrato único de BUSCA, casado com `pa_normalize_text()` no banco. Reaproveitá-lo aqui
+ * amarraria uma decisão de apresentação a um contrato de consulta, e qualquer ajuste de um
+ * viraria mudança silenciosa no outro.
+ */
+function escreverEmbalagem(embalagem: string | null, variante: string | null): string | null {
+  const bruta = embalagem?.trim();
+  if (bruta === undefined || bruta.length === 0) return null;
+
+  const achatar = (v: string) =>
+    v
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim();
+
+  if (variante !== null && achatar(variante) === achatar(bruta)) return null;
+  return bruta.charAt(0).toUpperCase() + bruta.slice(1);
 }
 
 /**
@@ -301,52 +328,6 @@ function calcularUnitario(oferta: OfertaCardV2): UnitarioExibido | null {
 }
 
 /**
- * Preço anterior e variação — ou nada.
- *
- * Três guardas, e cada uma nasceu de uma regra escrita: o valor precisa existir, a DATA
- * precisa existir (`OFFER-STATES.md` §5 — percentual sem data é número sem procedência), e
- * a variação precisa ter módulo de pelo menos 1%.
- *
- * O rótulo é textual de propósito. "−12%" em vermelho é a mesma informação para quem
- * enxerga a cor e informação nenhuma para quem não enxerga (WCAG 2.2 SC 1.4.1).
- */
-function calcularAnterior(
-  oferta: OfertaCardV2,
-  formatarData: (v: string) => string,
-): PrecoAnteriorExibido | null {
-  const anterior = oferta.previous_price;
-  const quando = oferta.previous_observed_at;
-
-  if (typeof anterior !== "number" || !Number.isFinite(anterior) || anterior <= 0) return null;
-  if (typeof quando !== "string" || quando.length === 0) return null;
-
-  const variacao = ((oferta.price - anterior) / anterior) * 100;
-
-  // A COMPARAÇÃO É FEITA SOBRE O VALOR ESTABILIZADO, e não sobre o resultado cru.
-  //
-  // `(10,10 − 10,00) ÷ 10,00 × 100` é exatamente 1 em aritmética decimal e
-  // `0.9999999999999787` em binário. Comparando o número cru, uma queda de 1% redonda —
-  // o próprio limiar que a regra descreve — desaparecia da tela. O teste pegou; a conta
-  // não estava errada, o limiar é que estava sendo aplicado a um valor que carrega o
-  // resíduo da representação.
-  //
-  // Seis casas são muito além de qualquer variação que alguém observe e muito aquém do
-  // resíduo binário, então o corte volta a significar o que está escrito: **abaixo de 1%
-  // não é notícia; 1% é.**
-  const estavel = Number(variacao.toFixed(6));
-  if (Math.abs(estavel) < VARIACAO_MINIMA) return null;
-
-  const inteiro = Math.round(estavel);
-  const data = formatarData(quando);
-  const rotulo =
-    inteiro < 0
-      ? `${Math.abs(inteiro)}% mais barato que em ${data}`
-      : `${inteiro}% mais caro que em ${data}`;
-
-  return { valor: anterior, observadoEm: data, variacaoPercentual: inteiro, rotulo };
-}
-
-/**
  * A imagem só passa por duas portas ao mesmo tempo.
  *
  * `IMAGE-POLICY.md` e o princípio 11: imagem errada é pior que ausência de imagem. Revisão
@@ -376,13 +357,13 @@ function resolverEstado(oferta: OfertaCardV2, temporal: TemporalState): EstadoEx
   const declarado = oferta.offer_state ?? "active";
 
   if (declarado !== "active") {
-    return { chave: declarado, ...ESTADO_ESCRITO[declarado] };
+    return { chave: declarado, rotulo: ESTADO_ESCRITO[declarado] };
   }
   if (temporal === "expirado") {
-    return { chave: "expired", ...ESTADO_ESCRITO.expired };
+    return { chave: "expired", rotulo: ESTADO_ESCRITO.expired };
   }
   if (temporal === "sem-validade-antigo") {
-    return { chave: "desatualizada", ...ESTADO_ESCRITO.desatualizada };
+    return { chave: "desatualizada", rotulo: ESTADO_ESCRITO.desatualizada };
   }
   return null;
 }
@@ -434,8 +415,9 @@ export function montarVisaoDoCard(
       marca: oferta.product.brand,
       variante: oferta.product.variant,
       quantidade: quantidade.texto,
+      complemento: quantidade.complemento,
       quantidadeEstruturada: quantidade.estruturada,
-      embalagem: oferta.product.package_type ?? null,
+      embalagem: escreverEmbalagem(oferta.product.package_type ?? null, oferta.product.variant),
     },
     mercado: { nome: oferta.market.name, bairro: oferta.market.neighborhood },
     preco: {
@@ -444,7 +426,6 @@ export function montarVisaoDoCard(
       numero: amount,
       falado: spokenPrice(oferta.price),
     },
-    precoAnterior: calcularAnterior(oferta, formatarData),
     unitario: calcularUnitario(oferta),
     procedencia: {
       origem: sourceLabel(oferta.source_type),

@@ -1,14 +1,14 @@
 import { VisuallyHidden } from "@/components/primitives";
-import type { PrecoAnteriorExibido, PrecoExibido, UnitarioExibido } from "@/lib/card-v2";
+import type { PrecoExibido, UnitarioExibido } from "@/lib/card-v2";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
- * R3.2 — preço, preço anterior, preço unitário e condição de promoção.
+ * R3.2 — preço, preço unitário e condição de promoção.
  *
- * Os quatro moram no mesmo arquivo porque são a mesma pergunta vista de ângulos
- * diferentes: **quanto custa, e o que é preciso saber para que esse número não engane.**
- * Separá-los em quatro arquivos daria a impressão de que um pode ser usado sem os outros.
+ * Os três moram no mesmo arquivo porque são a mesma pergunta vista de ângulos diferentes:
+ * **quanto custa, e o que é preciso saber para que esse número não engane.** Separá-los em
+ * três arquivos daria a impressão de que um pode ser usado sem os outros.
  */
 
 /**
@@ -53,24 +53,25 @@ export function PriceDisplay({
   );
 }
 
-/**
- * Preço anterior e variação.
+/*
+ * ONDE FICAVA `PreviousPrice`.
  *
- * O rótulo é uma FRASE — "12% mais barato que em 28/07" —, e não um "−12%" colorido. Cor e
- * sinal sozinhos são informação para quem enxerga a cor e informação nenhuma para o resto
- * (WCAG 2.2 SC 1.4.1), e a data junto é o que separa um percentual de um boato.
+ * O componente exibia "antes R$ 14,90 · 13% mais barato que em 25/07/2026", e fazia isso
+ * direito: frase em vez de "−12%" colorido, data ao lado do percentual, nada calculado
+ * dentro do JSX. Ele saiu em 06/08/2026 (DL-030) por um motivo que não é de código.
  *
- * O componente não calcula nada. Quando a regra não permite exibir — sem data, variação
- * abaixo de 1% —, `montarVisaoDoCard` já devolveu `null` e aqui não há o que desenhar.
+ * "Preço anterior" só significa alguma coisa depois que alguém disser **qual** observação
+ * anterior conta — a última? a de sete dias atrás? a mais alta da janela? Essa decisão é a
+ * pendência **P-01** (card MVP-DOCS-02) e nunca foi tomada. Sem ela, dois cards com o mesmo
+ * dado exibem percentuais diferentes e os dois estão "certos", e um percentual que ninguém
+ * consegue defender corrói exatamente a confiança que o produto existe para construir.
+ *
+ * Não sobrou caminho desligado nem campo atrás de flag: quem reintroduzir isto em R6/R8 vai
+ * escrever contra o contrato que P-01 produzir, e não contra uma implementação adivinhada.
+ *
+ * `OFFER-STATES.md` §5 continua íntegro e continua sendo a spec de quando o preço anterior
+ * aparece.
  */
-export function PreviousPrice({ anterior }: { anterior: PrecoAnteriorExibido | null }) {
-  if (anterior === null) return null;
-  return (
-    <p className="text-muted-foreground text-sm">
-      antes <s>{formatPrice(anterior.valor)}</s> · {anterior.rotulo}
-    </p>
-  );
-}
 
 /**
  * Preço unitário — presente ou **ausente**, nunca em dúvida.

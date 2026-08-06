@@ -15,16 +15,16 @@
 
 ## 1. O que foi construído
 
-| Onde                                         | O quê                                                              |
-| -------------------------------------------- | ------------------------------------------------------------------ |
-| `src/lib/card-v2.ts`                         | **as regras** — função pura que decide o que pode ser exibido      |
-| `src/components/card-v2/product-card-v2.tsx` | o card e o seu esqueleto                                           |
-| `src/components/card-v2/identity.tsx`        | `ProductIdentity`, `ProductImage`                                  |
-| `src/components/card-v2/market.tsx`          | `MarketBadge`, `NeighborhoodLabel`                                 |
-| `src/components/card-v2/price.tsx`           | `PriceDisplay`, `PreviousPrice`, `UnitPrice`, `PromotionCondition` |
-| `src/components/card-v2/provenance.tsx`      | `ProvenanceBlock`, `ValidityLabel`, `OfferStatus`                  |
-| `src/components/card-v2/fixtures.ts`         | as ofertas fictícias das oito variantes                            |
-| `src/routes/laboratorio-card-v2.tsx`         | o laboratório, com portão e `noindex`                              |
+| Onde                                         | O quê                                                         |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| `src/lib/card-v2.ts`                         | **as regras** — função pura que decide o que pode ser exibido |
+| `src/components/card-v2/product-card-v2.tsx` | o card e o seu esqueleto                                      |
+| `src/components/card-v2/identity.tsx`        | `ProductIdentity`, `ProductImage`                             |
+| `src/components/card-v2/market.tsx`          | `MarketBadge`, `NeighborhoodLabel`                            |
+| `src/components/card-v2/price.tsx`           | `PriceDisplay`, `UnitPrice`, `PromotionCondition`             |
+| `src/components/card-v2/provenance.tsx`      | `ProvenanceBlock`, `ValidityLabel`, `OfferStatus`             |
+| `src/components/card-v2/fixtures.ts`         | as ofertas fictícias das oito variantes                       |
+| `src/routes/laboratorio-card-v2.tsx`         | o laboratório, com portão e `noindex`                         |
 
 ### A separação que sustenta o resto
 
@@ -42,7 +42,7 @@ frase se interroga com uma chamada de função, e é o que 49 testes fazem.
 
 | Chave  | Variante                          | O que ela prova                                                         |
 | ------ | --------------------------------- | ----------------------------------------------------------------------- |
-| **A**  | Oferta padrão                     | imagem aprovada e exata, preço unitário presente, percentual com data   |
+| **A**  | Oferta padrão                     | imagem aprovada e exata, preço unitário presente, validade informada    |
 | **B**  | Promoção com condição             | o requisito por extenso, junto do preço, com validade ao lado           |
 | **C**  | Sem imagem confiável              | imagem **aprovada porém aproximada** cai em placeholder                 |
 | **D1** | Desatualizada — validade vencida  | `expired` pelo relógio; preço atenuado; CTA muda; sai da lista orgânica |
@@ -64,9 +64,9 @@ inventar uma validade só para poder anunciar que ela venceu.
 ## 3. Hierarquia, e as duas decisões que se afastam da ordem recomendada
 
 Ordem entregue, de cima para baixo: imagem ou placeholder · identidade exata · marca,
-variante e quantidade · **estado, quando não ativo** · preço observado · preço anterior ·
-preço unitário condicionado · mercado e bairro · promoção · procedência (fonte, data,
-validade) · aviso parcial · CTA.
+variante e quantidade · **estado, quando não ativo** · preço observado · preço unitário
+condicionado · mercado e bairro · promoção · procedência (fonte, data, validade) · aviso
+parcial · CTA.
 
 **Produto exato aparece antes do preço.** Um preço que o leitor não sabe de qual item é não
 serve para comparar nada.
@@ -94,7 +94,7 @@ Todo campo acrescentado é **opcional**, e isso não é conveniência:
 | -------------------------- | ---------------------------------------------------------- |
 | `quantity_provenance`      | o backfill de quantidade (MVP-E1-08) continua **proibido** |
 | `offer_state`              | a coluna é R8, com gate de segurança próprio               |
-| `previous_*`               | depende de `price_events`, também R8                       |
+| ~~`previous_*`~~           | **removido em 06/08/2026** — §9.1 e DL-030                 |
 | `image`                    | a política de imagem revisada é R6                         |
 | `markets_with_valid_price` | depende da contagem de `COMPARISON-SPEC.md` §6             |
 
@@ -125,8 +125,9 @@ promessa do cabeçalho.
   confere que o `id` referenciado **existe**;
 - preço composto em dois tamanhos fora da árvore de acessibilidade, com `spokenPrice()` no
   lugar ("12 reais e 90 centavos");
-- todo estado tem rótulo **e** explicação em texto; a tarja temporal é `aria-hidden`;
-- variação percentual em frase — "13% mais barato que em 25/07/2026" —, nunca só cor e sinal;
+- todo estado tem **rótulo escrito**; a tarja temporal é `aria-hidden`, e a oferta fora da
+  lista orgânica é distinguível por três canais independentes — rótulo, preço atenuado e
+  tarja;
 - imagem com `alt` curto e factual; placeholder decorativo, sem `alt` enganoso;
 - CTA com nome acessível e 48 px de altura, medido em cinco larguras;
 - foco visível conferido com `Tab` de verdade (`:focus-visible`), anel de 2 px;
@@ -211,7 +212,9 @@ Nada aqui foi decidido por esta entrega, e cada item tem gate próprio:
 
 - **Home, busca, comparação, detalhe, navegação e ranking** — inalterados, provado por `git diff` dentro de teste;
 - **promoções tipificadas** (`unit_limit`, `buy_x_pay_y`, …) — MVP-E2-07, sem coluna no banco;
-- **preço anterior derivado de `price_events`** — R8;
+- **preço anterior e variação percentual** — removidos em 06/08/2026 (§9.1, DL-030); voltam em
+  R6/R8, depois de **P-01** ser decidida. **A Home ainda os exibe**, por `AchadoCard.tsx`, e é
+  caminho protegido desta branch: pendência de R3.3;
 - **política de imagem aplicada a imagem real** — R6; a única imagem do laboratório é um
   desenho geométrico embutido, rotulado como demonstração;
 - **backfill de quantidade** — MVP-E1-08, proibido;
@@ -220,19 +223,114 @@ Nada aqui foi decidido por esta entrega, e cada item tem gate próprio:
 
 ---
 
-## 8. Divergência de mapeamento, não resolvida aqui
+## 8. Divergência de mapeamento — **RESOLVIDA EM 06/08/2026**
 
 O card oficial do Card v2 é **MVP-DESIGN-03**, e o
-[`TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md) o registra em **Etapa R6**, dependendo de
-MVP-DESIGN-02. O roadmap visual do `R3-COMPONENT-INVENTORY.md` §2 o coloca em **R3.2**, e a
-§3 daquele documento já registrava o conflito como pendente de decisão.
+[`TRELLO-MAPPING.md`](../pmo/TRELLO-MAPPING.md) o registrava em **Etapa R6**, dependendo de
+MVP-DESIGN-02. O roadmap visual do `R3-COMPONENT-INVENTORY.md` §2 o colocava em **R3.2**, e a
+§3 daquele documento registrava o conflito como pendente de decisão.
 
-O mandato de R3.2 autoriza construir o Card v2 agora **e** determina mover o card apenas
-"quando o mapping oficial permitir". O mapping não permite. Então o card permanece onde
-está, com o estado registrado, e a reconciliação continua sendo decisão do Founder/PMO —
-opção A (o roadmap visual passa a valer e as etapas dos quatro cards são atualizadas em PR
-próprio, com registro no decision log) ou opção B (o `MVP-EXECUTION-PLAN.md` prevalece e a §2
-do inventário é corrigida).
+O mandato de R3.2 autorizava construir o Card v2 **e** determinava mover o card apenas
+"quando o mapping oficial permitir". O mapping não permitia, e reescrever o plano de execução
+por conta própria trocaria a fonte normativa por uma leitura minha.
 
-Reescrever o plano de execução por conta própria trocaria a fonte normativa por uma leitura
-minha.
+**O Founder/PMO decidiu pela opção A** no mandato de 06/08/2026: o Card v2 é R3.2, a Home é
+R3.3, a busca é R4 e a comparação é R5. Registro em
+[`../pmo/MVP-DECISION-LOG.md`](../pmo/MVP-DECISION-LOG.md) DL-028 e em
+[`../product/ROADMAP-MVP-V2.md`](../product/ROADMAP-MVP-V2.md) §3. As quatro etapas foram
+atualizadas no mapping e no quadro real — **só o campo `Etapa`**; objetivo, aceite, gate e
+evidência de cada card continuam intactos.
+
+---
+
+## 9. Refinamento visual de 06/08/2026
+
+Segunda passada sobre o mesmo card, com o PR ainda sem merge. **Nenhuma anatomia mudou:** os
+17 itens continuam os mesmos, as oito variantes continuam as mesmas, nenhum componente foi
+redesenhado. O que mudou foi **ritmo e peso**.
+
+### 9.1 O histórico de preço saiu
+
+O card exibia "antes R$ 14,90 · 13% mais barato que em 25/07/2026", e exibia direito: frase em
+vez de percentual colorido, data ao lado, nada calculado dentro do JSX, corte de 1% aplicado
+sobre o valor estabilizado. **A regra estava certa. O que faltava era o contrato.**
+
+"Preço anterior" só significa alguma coisa depois que alguém disser **qual** observação
+anterior conta — a última? a de sete dias atrás? a mais alta da janela? Essa decisão é a
+pendência **P-01** (card MVP-DOCS-02) e nunca foi tomada. Sem ela, dois cards com o mesmo dado
+exibem percentuais diferentes e os dois estão "certos" — e um percentual que ninguém consegue
+defender corrói a confiança que o produto existe para construir.
+
+Saiu do domínio, do componente, do fixture e da demonstração. Não sobrou caminho desligado por
+configuração nem campo atrás de flag: quem reintroduzir isso em R6/R8 vai escrever contra o
+contrato que P-01 produzir. Dois testes novos impedem a volta silenciosa — um verifica que a
+visão não expõe campo de histórico, outro que um `previous_price` vindo de JSON não produz
+saída nenhuma.
+
+**O mesmo histórico continua vivo na Home, e isso é um achado, não um esquecimento.**
+`AchadoCard.tsx` renderiza `previous_price` desde a Parte 2, alimentado por
+`demo-opportunities.ts`. Não toquei: `src/components/AchadoCard.tsx` é caminho protegido desta
+branch e o mandato proíbe alterar pixels fora do Card v2. **Fica registrado como pendência de
+R3.3**, quando a Home for reescrita — e sob a mesma regra: com P-01 decidida, ou sem histórico.
+
+### 9.2 Revisão especializada — Fable 5
+
+Executada em 06/08/2026 sobre as quatro capturas anteriores e os cinco arquivos do componente.
+Nove recomendações, classificadas uma a uma:
+
+| #   | Recomendação                                          | Severidade | Decisão     |
+| --- | ----------------------------------------------------- | ---------- | ----------- |
+| 1   | Separação entre zonas uniforme demais                 | alta       | **adotar**  |
+| 2   | Altura em lista (~450 px de CSS por card a 320 px)    | alta       | **adotar**  |
+| 3   | CTA em caixa repetida vira "mural de botões"          | média      | **adaptar** |
+| 4   | Selo de estado sólido domina a identidade             | média      | **adotar**  |
+| 5   | Frases explicativas duplicam a procedência            | média      | **adotar**  |
+| 6   | A 320 px o bloco de procedência muda de forma         | baixa      | **adotar**  |
+| 7   | `package_type` cru repete a variante e vem sem acento | baixa      | **adotar**  |
+| 8   | Quantidade longa em mono bold pesa sobre a identidade | baixa      | **adotar**  |
+| 9   | Barriga vazia entre procedência e CTA no desktop      | baixa      | **anotar**  |
+
+**#3 é a única adaptada, e o motivo importa.** A recomendação era transformar o CTA em link
+discreto na variante de lista, para economizar altura. Rejeitei a forma e aceitei o
+diagnóstico: o CTA é a única ação do card e leva à comparação, que é o **núcleo do produto** —
+economizar oito pixels enfraquecendo a ação que o card existe para oferecer troca propósito
+por densidade. O que mudou foi o peso: superfície discreta em vez de caixa contornada, com o
+mesmo alvo de 48 px e o mesmo texto.
+
+**#9 não virou mudança de código.** A barriga vazia é artefato da grade de duas colunas do
+laboratório, onde `mt-auto` empurra o CTA para o fundo de cards de alturas diferentes. Fica
+anotado para R3.3: uma tela do consumidor em duas colunas precisa alinhar `items-start` ou
+aceitar alturas diferentes.
+
+**O que a revisão olhou e não achou problema** — registrado porque importa tanto quanto o
+resto: contraste medido por amostragem de pixel (texto secundário 5,63:1); ausência de rolagem
+horizontal a 320 px com preço de quatro dígitos e nome de mercado longo; o bloco fonte + data
+
+- validade inseparável por construção; neutralidade (nada no card influencia ordem); ausência
+  de urgência fabricada; placeholder sem espaço quebrado; alvos de toque.
+
+### 9.3 O que encolheu, e o que não
+
+| Captura   | Antes  | Depois | Diferença |
+| --------- | ------ | ------ | --------- |
+| 320 px    | 22 184 | 21 240 | −944 px   |
+| 390 px    | 20 158 | 19 494 | −664      |
+| desktop   | 15 404 | 14 790 | −614      |
+| variantes | 6 880  | 6 364  | −516      |
+
+**Nenhum dos 17 itens saiu por causa de altura.** O que saiu foi repetição: a frase que
+explicava o selo dizia o que a linha de procedência já provava três linhas abaixo. O histórico
+saiu por falta de contrato, e teria saído mesmo que o card estivesse curto.
+
+### 9.4 Um token novo, e por que ele é token
+
+O selo de estado passou de vermelho sólido a par suave. Em vez de escrever a cor no
+componente, entraram dois tokens em `styles.css` — `--destructive-surface` e
+`--destructive-surface-foreground` — e um tom novo no `Badge` da R3.1: `critico-suave`.
+
+É a fundação visual fazendo o trabalho dela. Uma cor escrita à mão dentro de um card é uma
+decisão de design que nenhum outro componente enxerga; um token é a mesma decisão disponível
+para a próxima tela que precisar dizer "isto não vale mais" sem gritar. Contraste medido:
+**5,34:1** — AA para texto normal, e portanto para o `text-xs font-semibold` do selo.
+
+O par sólido continua existindo e continua certo quando a mensagem **é** um alarme.

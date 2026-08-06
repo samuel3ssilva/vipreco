@@ -81,7 +81,7 @@ describe("as variantes obrigatórias renderizam", () => {
     const h = COM_OFERTA.find((v) => v.chave === "H");
     expect(h).toBeDefined();
     const html = await cardDe(h!.oferta, { avisoParcial: h!.avisoParcial });
-    expect(html).toContain("não pôde ser carregada");
+    expect(html).toContain("Contagem de mercados indisponível");
     // O resto do card sobrevive: identidade, preço e procedência continuam lá.
     expect(html).toContain(h!.oferta.product.name);
     expect(html).toContain("observado em");

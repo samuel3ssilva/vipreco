@@ -85,6 +85,23 @@ describe("nada real entra no laboratório do Card v2", () => {
     expect(FIXTURES).toContain("data:image/svg+xml");
   });
 
+  it("nenhum histórico de preço — não há contrato que o sustente", () => {
+    // DL-030. O card exibia "antes R$ 14,90 · 13% mais barato que em 25/07/2026" com a
+    // regra certa; o que faltava era **P-01**, a janela da observação anterior, que nunca
+    // foi decidida. Sem ela, dois cards com o mesmo dado exibem percentuais diferentes e
+    // os dois estão "certos".
+    //
+    // Este teste olha a ROTA e o FIXTURE, e não a função de domínio: o risco real não é
+    // alguém reescrever a regra, é alguém devolver um `previous_price` ao fixture e a
+    // demonstração voltar a mostrar o que não pode mostrar.
+    for (const fonte of [ROTA_EXECUTAVEL, FIXTURES_EXECUTAVEL]) {
+      for (const sinal of ["previous_price", "previous_observed_at", "precoAnterior"]) {
+        expect(fonte, `há sinal de histórico: ${sinal}`).not.toContain(sinal);
+      }
+      expect(fonte.toLowerCase()).not.toMatch(/mais (barato|caro) que em/);
+    }
+  });
+
   it("nenhuma promessa absoluta de menor preço", () => {
     for (const promessa of ["menor preço", "o mais barato", "melhor preço", "imperdível"]) {
       expect(ROTA.toLowerCase(), `a rota promete "${promessa}"`).not.toContain(promessa);

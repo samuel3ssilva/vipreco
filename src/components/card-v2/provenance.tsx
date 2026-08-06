@@ -54,8 +54,17 @@ export function ProvenanceBlock({
   sourceType: SourceType;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+    // O FIO É O ÚNICO DO CARD, e ele separa duas coisas que respondem perguntas
+    // diferentes: acima, o que se está comprando e quanto custa; abaixo, de onde veio esse
+    // número e até quando ele vale. Sem ele, todos os blocos ficavam à mesma distância uns
+    // dos outros e o card lia como oito linhas equidistantes em vez de três zonas.
+    <div className="border-border flex flex-col gap-1 border-t pt-2">
+      {/* Empilhado por padrão, lado a lado a partir de `sm`.
+          O `flex-wrap` anterior produzia as duas composições sem que ninguém escolhesse
+          nenhuma: a 320 px o selo tomava a linha inteira e a validade caía sozinha embaixo,
+          desalinhada; a 390 px ficavam lado a lado. Assumir a pilha nas larguras estreitas
+          é escolher a que se lê melhor lá, em vez de herdar a que sobrou. */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
         <SourceBadge source={sourceType} />
         <ValidityLabel validoAte={procedencia.validoAte} />
       </div>
@@ -71,8 +80,24 @@ export function ProvenanceBlock({
  *
  * `active` não chega aqui — `montarVisaoDoCard` devolve `null`, e o estado normal não
  * precisa de rótulo. O que chega é sempre uma exceção, e toda exceção vem escrita:
- * `Badge` é cor **mais** texto, e a explicação logo abaixo diz o que o rótulo significa
- * sem inventar pressa.
+ * `Badge` é cor **mais** texto.
+ *
+ * =============================================================================
+ * DUAS COISAS SAÍRAM DAQUI EM 06/08/2026, E AS DUAS ERAM PESO
+ * =============================================================================
+ *
+ * **A frase explicativa.** "A validade informada pelo mercado já passou." convivia, três
+ * linhas abaixo, com "válido até 03/08/2026" — a própria prova do que a frase dizia.
+ * Repetir custa duas linhas em cada card de uma lista, e não acrescenta nada que o rótulo
+ * mais a linha de procedência já não digam.
+ *
+ * **O vermelho cheio.** O selo sólido era o elemento de maior croma do card, colado na
+ * identidade, mais chamativo que o nome e que o preço — e com a tarja temporal no topo, o
+ * vermelho aparecia duas vezes antes de o leitor saber que produto é aquele. O par suave
+ * diz exatamente a mesma coisa, com 5.34:1 de contraste, sem dominar a composição.
+ *
+ * A oferta fora da lista orgânica continua distinguível por três canais independentes: o
+ * rótulo escrito, o preço atenuado e a tarja no topo do card.
  *
  * `role="status"` não é usado de propósito. O estado é uma característica estática do card
  * na lista, não um evento que acabou de acontecer — anunciá-lo como atualização faria o
@@ -83,12 +108,13 @@ export function OfferStatus({ estado }: { estado: EstadoExibido | null }) {
   return (
     // `items-start`, e não o `stretch` que um `flex-col` dá por padrão. Sem isto o selo
     // esticava para a largura inteira do card e deixava de ser selo: virava uma tarja
-    // vermelha sangrada, com o peso visual de um banner de alerta. O mandato §10 pede o
-    // contrário — nada de cinco cores competindo, nada de badge dominando a composição.
-    // O defeito só apareceu ao OLHAR o PNG; nenhum teste de texto o pegaria.
-    <div className="flex flex-col items-start gap-0.5">
-      <Badge tom={estado.chave === "desatualizada" ? "atencao" : "critico"}>{estado.rotulo}</Badge>
-      <p className="text-muted-foreground text-xs leading-snug">{estado.explicacao}</p>
+    // sangrada, com o peso visual de um banner de alerta. O mandato §10 pede o contrário —
+    // nada de cinco cores competindo, nada de badge dominando a composição. O defeito só
+    // apareceu ao OLHAR o PNG; nenhum teste de texto o pegaria.
+    <div className="flex flex-col items-start">
+      <Badge tom={estado.chave === "desatualizada" ? "atencao" : "critico-suave"}>
+        {estado.rotulo}
+      </Badge>
     </div>
   );
 }

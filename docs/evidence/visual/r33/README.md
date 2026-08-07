@@ -35,6 +35,13 @@ servidor. Qualquer número em formato E.164 serve: ele vive **só no `href`** e 
 tela, então não muda um pixel do PNG. Não use, nem peça, o número real do piloto — ele não é
 necessário aqui, e a evidência não é lugar de dado de contato.
 
+**E tire a variável depois.** Oito testes afirmam o comportamento de "sem número configurado" —
+`whatsapp.test.ts`, `index.ssr.test.ts`, `para-mercados.ssr.test.ts` e o contrato do CTA fixo de
+mercado — e todos falham com ela presente. Não é fragilidade do teste: o ambiente de captura e o
+ambiente de teste pedem valores opostos da mesma variável, e o teste está afirmando a garantia
+que importa (falhar fechado). O CI nunca tem a variável, então o conflito só existe na máquina de
+quem captura. Capture, apague a linha do `.env`, rode `bun run test`.
+
 ## Como o "antes" do painel comparativo é produzido
 
 A coluna 1 **não é uma captura antiga guardada em disco**: é a Home de `origin/main` servida por

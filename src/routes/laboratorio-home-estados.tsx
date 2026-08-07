@@ -1,9 +1,10 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ProductCardV2, ProductCardV2Skeleton } from "@/components/card-v2";
 import { VARIANTES } from "@/components/card-v2/fixtures";
 import { HomeAchados } from "@/components/HomeAchados";
 import { StateMessage } from "@/components/StateMessage";
 import { buildDemoOpportunities } from "@/lib/demo-opportunities";
+import { SEM_OFERTAS_VIGENTES, VAZIO_REAL } from "@/lib/home-states";
 import { isVisualLabEnabled } from "@/lib/visual-lab";
 import type { AchadoEntry } from "@/components/AchadoCard";
 
@@ -53,17 +54,21 @@ export const Route = createFileRoute("/laboratorio-home-estados")({
  */
 const AGORA = new Date("2026-08-06T15:00:00.000Z");
 
+/**
+ * O painel tinha uma faixa de "Divergência" — o lugar onde uma diferença conhecida entre o que a
+ * tela mostra e o que o produto deveria mostrar ficava escrita, em vez de ser omitida. Ela foi
+ * usada uma vez, no painel 4, e R3.3A resolveu aquela divergência. Sem nenhuma para declarar, a
+ * faixa saiu: um mecanismo que nunca dispara não avisa ninguém de nada.
+ */
 function Painel({
   numero,
   titulo,
   proposito,
-  divergencia,
   children,
 }: {
   numero: string;
   titulo: string;
   proposito: string;
-  divergencia?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -73,18 +78,6 @@ function Painel({
           {numero}. {titulo}
         </h2>
         <p className="meta-text mt-1 leading-relaxed">{proposito}</p>
-        {divergencia ? (
-          <p
-            className="mt-2 rounded-md border-l-4 px-2 py-1 text-xs leading-relaxed"
-            style={{
-              borderLeftColor: "var(--vp-staging-border)",
-              background: "var(--vp-staging-bg)",
-              color: "var(--vp-staging-fg)",
-            }}
-          >
-            <strong>Divergência:</strong> {divergencia}
-          </p>
-        ) : null}
       </header>
       <div className="rounded-lg border border-dashed border-border p-3">{children}</div>
     </section>
@@ -113,11 +106,30 @@ const SELO = (
   </p>
 );
 
+/**
+ * As duas telas sem Achados vêm de `@/lib/home-states`, as MESMAS que a Home renderiza. Copy
+ * duplicada aqui produziria uma evidência que mostra um produto que não existe — que é o defeito
+ * mais caro que uma tela de Gate pode ter.
+ */
 const VAZIO = (
   <StateMessage
     variant="empty"
-    title="Estamos começando a mapear preços na sua região."
-    description="Os primeiros Achados aparecem aqui assim que forem conferidos. Por enquanto, use a busca para comparar um produto específico."
+    title={VAZIO_REAL.title}
+    description={VAZIO_REAL.description}
+    action={null}
+  />
+);
+
+const VENCIDAS = (
+  <StateMessage
+    variant="empty"
+    title={SEM_OFERTAS_VIGENTES.title}
+    description={SEM_OFERTAS_VIGENTES.description}
+    action={
+      <Link to="/buscar" className="btn-base btn-secondary btn-sm btn-touch-48">
+        {SEM_OFERTAS_VIGENTES.acao}
+      </Link>
+    }
   />
 );
 
@@ -194,10 +206,9 @@ function LaboratorioHomeEstados() {
         <Painel
           numero="4"
           titulo="Sem ofertas vigentes"
-          proposito="Achados existem no fixture, mas todos venceram: `isValidPrice` filtra os três e a seção cai no mesmo caminho do estado vazio."
-          divergencia="hoje a Home mostra a MESMA mensagem de “estamos começando a mapear” — que é falsa aqui, porque houve mapeamento e o que aconteceu foi o preço envelhecer. Copy própria para este caso é item futuro, não entregue em R3.3."
+          proposito="Achados existem na fonte, mas todos venceram: `isValidPrice` filtra os três e a seção fica sem nada para mostrar. R3.3A deu copy própria a este caso — antes ele caía na mensagem do painel 2, que afirma um começo que já aconteceu. Aqui existe uma saída concreta, e ela é oferecida."
         >
-          <HomeAchados opportunities={[]} now={AGORA} fallback={VAZIO} seal={SELO} />
+          <HomeAchados opportunities={[]} now={AGORA} fallback={VENCIDAS} seal={SELO} />
         </Painel>
 
         <Painel

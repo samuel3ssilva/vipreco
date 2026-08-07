@@ -10,7 +10,34 @@ Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 > ele é, e continua vinculante: hero, CTA fixo, estados da busca, alvo de toque, cascata das
 > utilities e as regras do que o card **não** faz.
 
+> **SUPERSEDED PARA A HOME POR R3.3A** (06/08/2026), em quatro pontos e só neles, todos
+> registrados em `docs/pmo/MVP-DECISION-LOG.md` DL-036:
+>
+> 1. **Não existe mais CTA fixo de WhatsApp na Home.** A seção "CTA fixo do mobile" abaixo
+>    continua descrevendo o mecanismo com precisão — mas hoje ele roda **apenas** em
+>    `/para-mercados` (`StickyMarketCta`). `StickyWhatsAppCta` foi removido do repositório, e a
+>    loja `consumerCtaStore` junto com ele.
+> 2. **Não existe mais seletor de mercado habitual na Home.** O `UsualMarketPicker` continua
+>    existindo em `/produto/$productId`; personalização na Home é POST-MVP.
+> 3. **`TrustSection` e `LocalStory` viraram blocos compactos**, com outros títulos. As três
+>    regras de confiança foram para `/como-funciona`.
+> 4. **O estado "sem ofertas vigentes" tem copy própria**, separada do vazio real
+>    (`src/lib/home-states.ts`).
+
 ## Ordem da página
+
+**Vigente desde R3.3A** (o que o código renderiza hoje):
+
+| #   | Seção                               | Componente                      |
+| --- | ----------------------------------- | ------------------------------- |
+| 1   | Contexto do bairro                  | `HomeContexto`                  |
+| 2   | Busca de produto (primeira dobra)   | `ProductSearch`                 |
+| 3   | Achados                             | `HomeAchados` + `ProductCardV2` |
+| 4   | Convite de WhatsApp (inline, um só) | `WhatsAppCta`                   |
+| 5   | Preço com procedência               | `TrustSection`                  |
+| 6   | Feito para começar por Artemis      | `LocalStory`                    |
+
+Histórica, da Parte 2, preservada para leitura do que mudou:
 
 | #   | Seção                          | Componente                |
 | --- | ------------------------------ | ------------------------- |
@@ -20,12 +47,12 @@ Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 | 4   | Pertencimento local            | `LocalStory`              |
 | 5   | Entrada resumida para mercados | dentro de `LocalStory`    |
 
-O seletor de mercado habitual (`UsualMarketPicker`) fica entre 2 e 3: é ferramenta de
-comparação, e o lugar dele é junto da busca, não no meio das seções de contexto.
+O seletor de mercado habitual (`UsualMarketPicker`) ficava entre 2 e 3. Ele saiu da Home em
+R3.3A; a entrada B2B saiu de `LocalStory` na mesma rodada e vive no cabeçalho e no rodapé do
+`AppShell`, que passaram a existir em R3.3.
 
-**Não existe rodapé próprio.** A barra inferior de navegação do `AppShell` cumpre esse papel no
-mobile e a ordem termina na entrada para mercados. Criar um rodapé novo não estava no escopo da
-Parte 2.
+**Não existe rodapé próprio** — isto deixou de valer em R3.3: o `AppShell` ganhou rodapé com
+"Como funciona" e "Tenho um mercado", que são as duas páginas que perderam a aba.
 
 ## Hero: duas coreografias, uma árvore de DOM
 

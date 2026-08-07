@@ -5,6 +5,12 @@ interface StateMessageProps {
   variant: "loading" | "error" | "empty";
   title: string;
   description?: ReactNode;
+  /**
+   * Saída oferecida junto com a mensagem — um link, normalmente. Slot próprio, e não um link
+   * embutido na descrição: a descrição é uma frase, e um botão de 48 px dentro de um parágrafo
+   * de texto corrido não é nem parágrafo nem botão.
+   */
+  action?: ReactNode;
   onRetry?: () => void;
   className?: string;
 }
@@ -13,6 +19,7 @@ export function StateMessage({
   variant,
   title,
   description,
+  action,
   onRetry,
   className = "",
 }: StateMessageProps) {
@@ -32,6 +39,7 @@ export function StateMessage({
       />
       <p className="font-semibold">{title}</p>
       {description ? <p className="meta-text max-w-md">{description}</p> : null}
+      {action ? <div className="mt-2">{action}</div> : null}
       {onRetry ? (
         <button type="button" onClick={onRetry} className="btn-base btn-secondary btn-sm mt-2">
           Tentar novamente

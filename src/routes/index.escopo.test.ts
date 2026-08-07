@@ -72,6 +72,45 @@ const PERMITIDOS = [
   "docs/evidence/visual/r33/",
   "docs/product/",
   "docs/pmo/",
+
+  // ===========================================================================
+  // R3.3A — a remediação visual menor pedida pelo Founder depois de rever as capturas.
+  // ===========================================================================
+  // O guarda pegou cada um destes antes de eles entrarem aqui, e é essa a ordem certa: a
+  // entrada existe porque a mudança foi feita e justificada, não para autorizar mudança futura.
+  //
+  // 1. WhatsApp — o CTA fixo saiu da Home, e o convite do fluxo ficou sozinho.
+  "src/components/WhatsAppCta.tsx",
+  "src/components/StickyWhatsAppCta.tsx", // removido nesta rodada; o diff registra a exclusão
+  "src/components/home-whatsapp-cta.contract.test.ts", // era `sticky-cta.contract.test.ts`
+  "src/components/sticky-cta.contract.test.ts", // o nome antigo, que o diff registra saindo
+  "src/components/sticky-market-cta.contract.test.ts", // um comentário que ficou falso
+  "src/lib/whatsapp.test.ts", // renderiza o CTA e afirmava o rótulo e a microcopy antigos
+  // Com um só CTA fixo no produto, a loja do morador virou estado sem escritor.
+  "src/lib/cta-visibility.ts",
+  "src/lib/cta-visibility.test.ts",
+  //
+  // 2. Mercado habitual — o seletor saiu da Home (e SÓ da Home: continua em `/produto`).
+  "src/services/home-markets.ts",
+  //
+  // 3 e 4. Procedência e piloto — os dois blocos longos do rodapé viraram blocos compactos, e as
+  // três regras de confiança foram para `/como-funciona`, que é a rota da explicação. A rota de
+  // destino entra no allowlist porque a redução da Home dependia de o texto existir lá.
+  "src/components/TrustSection.tsx",
+  "src/components/LocalStory.tsx",
+  "src/routes/como-funciona.tsx",
+  //
+  // 5. Vazio real ≠ sem ofertas vigentes. A copy virou dado, num módulo que a Home e o
+  // laboratório de estados compartilham, e `StateMessage` ganhou um slot de ação.
+  "src/lib/home-states.ts",
+  "src/lib/home-states.test.ts",
+  "src/components/StateMessage.tsx",
+  //
+  // Os dois documentos da Parte 2 que descreviam a Home como ela era: o CTA fixo e o seletor
+  // deixaram de existir nela, e um documento marcado "continua vinculante" que descreve código
+  // apagado é pior do que documento nenhum.
+  "docs/mvp/HOME-NORTH-STAR.md",
+  "docs/mvp/WHATSAPP-ENTRY.md",
 ] as const;
 
 /**

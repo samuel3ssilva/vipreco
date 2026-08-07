@@ -1,6 +1,21 @@
 /**
  * Mercados do seletor "Seu mercado habitual" da Home, resolvidos no servidor (loader da rota).
  *
+ * =============================================================================
+ * ESTACIONADO EM R3.3A — NÃO É CHAMADO POR NENHUMA ROTA HOJE
+ * =============================================================================
+ *
+ * O seletor saiu da Home: personalização não é escopo do MVP, e um seletor na primeira tela
+ * declarava o contrário. Ele continua vivo em `/produto/$productId`, na variante compacta — mas
+ * lá ele resolve a lista no cliente, e não passa por este serviço.
+ *
+ * O arquivo fica, e a razão é que a ideia foi **adiada, não rejeitada**: "preferência de mercado
+ * / mercado habitual / personalização futura" está registrada como POST-MVP em
+ * `docs/product/ROADMAP-MVP-v3.md` §4. Quando o seletor voltar à Home, ele volta com o
+ * pré-carregamento de servidor que este módulo já resolve — inclusive o tratamento de falha
+ * abaixo, que é a parte que custou a escrever. Apagá-lo agora seria jogar fora o trabalho para
+ * reescrevê-lo igual depois.
+ *
  * Por que existe: o `UsualMarketPicker` buscava a lista no cliente, então o HTML inicial da Home
  * saía com "Carregando mercados…" — o último carregamento visível da primeira dobra depois do
  * PR #31. Resolvendo no loader, a lista já chega renderizada.

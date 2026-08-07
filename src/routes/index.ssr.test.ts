@@ -7,7 +7,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
 import { beforeAll, describe, expect, it } from "vitest";
 import { routeTree } from "@/routeTree.gen";
-import { DEMO_MARKETS, buildDemoOpportunities } from "@/lib/demo-opportunities";
+import { buildDemoOpportunities } from "@/lib/demo-opportunities";
 
 async function renderRoute(path: string): Promise<string> {
   const router = createRouter({
@@ -47,14 +47,7 @@ describe("HTML inicial da Home (SSR)", () => {
     }
   });
 
-  it("traz o seletor de mercado habitual já preenchido", () => {
-    for (const market of DEMO_MARKETS) {
-      expect(html).toContain(market.name);
-    }
-    expect(html).toContain("Seu mercado habitual");
-  });
-
-  it("não tem nenhum carregamento visível — nem dos Achados, nem dos mercados", () => {
+  it("não tem nenhum carregamento visível", () => {
     expect(html).not.toContain("Carregando");
     expect(html).not.toContain("Estamos começando a mapear preços");
     expect(html).not.toContain("Não conseguimos carregar as oportunidades");
@@ -143,14 +136,13 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     expect(html.match(/text-\[1\.625rem\]/g) ?? []).toHaveLength(2);
   });
 
-  it("segue a ordem completa: contexto, busca, Achados, confiança, pertencimento, mercados", () => {
+  it("segue a ordem completa: contexto, busca, Achados, procedência, piloto", () => {
     const posicoes = [
       "Você está vendo ofertas de Artemis",
       "Procurando um produto específico?",
       "Outros Achados",
-      "Nenhum preço aparece sozinho",
-      "Começou em Artemis",
-      "Tem um mercado no bairro?",
+      "Preço com procedência",
+      "Feito para começar por Artemis",
     ].map((trecho) => {
       const posicao = html.indexOf(trecho);
       expect(posicao, `"${trecho}" precisa estar no HTML inicial`).toBeGreaterThan(-1);
@@ -159,25 +151,16 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     expect(posicoes).toEqual([...posicoes].sort((a, b) => a - b));
   });
 
-  it("traz as três regras de confiança, cada uma com o seu porquê", () => {
-    expect(html).toContain("Você compra na loja.");
-    expect(html).toContain("O ViPreço não altera o preço no caixa.");
-    expect(html).toContain("O estoque é do mercado.");
-    expect(html).toContain("O produto pode acabar antes da validade informada.");
-    expect(html).toContain("A ordem não é vendida.");
-    expect(html).toContain("Pagamento nunca muda a comparação orgânica.");
-  });
-
   it("em DEMO, diz que os preços são fictícios e o que muda no piloto", () => {
     expect(html).toContain(
       "Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com origem identificada.",
     );
   });
 
-  it("conta a história local sem expor nenhuma pessoa", () => {
-    expect(html).toContain("Antes de ser um site, era conversa de corredor de mercado.");
+  it("fala do piloto sem expor nenhuma pessoa", () => {
+    expect(html).toContain("Estamos testando com poucos mercados e produtos antes de ampliar.");
     for (const termo of ["Samuel", "fundador", "minha mãe", "moradores", "mercados participando"]) {
-      expect(html, `história local não deve conter "${termo}"`).not.toContain(termo);
+      expect(html, `o bloco do piloto não deve conter "${termo}"`).not.toContain(termo);
     }
   });
 
@@ -185,6 +168,74 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     for (const termo of ["Achados de hoje", "atualizado às", "publicado agora", "em tempo real"]) {
       expect(html, `HTML inicial não deve conter "${termo}"`).not.toContain(termo);
     }
+  });
+});
+
+/**
+ * R3.3A — a remediação visual menor, verificada no HTML de verdade.
+ *
+ * Cada item aqui corresponde a um dos cinco pedidos do Founder, e todos são medidos no mesmo
+ * `html` que a Home renderiza no servidor — não no código-fonte. O que o teste estático de
+ * `index.demo-source.test.ts` prova é que o componente não está importado; o que estes provam é
+ * que o **texto não chega ao usuário**, que é a garantia que interessa.
+ */
+describe("R3.3A — o que a Home deixou de mostrar", () => {
+  it("nenhum seletor de mercado habitual", () => {
+    expect(html).not.toContain("Seu mercado habitual");
+    expect(html).not.toContain("Remover mercado habitual");
+    expect(html).not.toContain("mercado habitual");
+  });
+
+  it("nenhum CTA fixo de WhatsApp — e no ambiente de teste, nenhum CTA de WhatsApp", () => {
+    // Sem `VITE_WHATSAPP_NUMBER`, o convite inline falha fechado e não é renderizado. Isso não
+    // enfraquece a prova de "um só": a contagem estática está em `index.demo-source.test.ts`.
+    // O que este teste garante é que nada FIXO sobrou no HTML inicial.
+    expect(html).not.toContain("wa.me");
+    expect(html).not.toContain("safe-area-inset-bottom");
+    expect(html.match(/class="[^"]*\bfixed\b[^"]*"/g) ?? []).toHaveLength(1); // só a barra de abas
+  });
+
+  it("o bloco de procedência é compacto: título, uma frase e uma porta", () => {
+    expect(html).toContain("Preço com procedência");
+    expect(html).toContain("Cada preço mostra mercado, fonte, atualização e validade.");
+    expect(html).toContain("Entender como funciona");
+    // Os quatro cartões de atributo e as três regras saíram para `/como-funciona`.
+    expect(html).not.toContain("Nenhum preço aparece sozinho");
+    expect(html).not.toContain("Onde o preço foi visto.");
+    expect(html).not.toContain("De onde veio a informação.");
+    expect(html).not.toContain("Você compra na loja");
+    expect(html).not.toContain("A ordem não é vendida");
+  });
+
+  it("o bloco do piloto é compacto e não duplica a entrada B2B da Home", () => {
+    expect(html).toContain("Feito para começar por Artemis");
+    expect(html).toContain("Como funciona o piloto");
+    expect(html).not.toContain("Começou em Artemis");
+    expect(html).not.toContain("Tem um mercado no bairro?");
+    expect(html).not.toContain("Conhecer a proposta");
+  });
+
+  it("exatamente duas abas de consumidor, e as mesmas nas duas barras", () => {
+    // "Achados" e "Buscar". `Ajuda` e `Mercados` vivem no rodapé desde R3.3 — aba declara
+    // "esta é uma das coisas principais que você faz aqui", e há duas.
+    const barraInferior = html.slice(html.indexOf("data-barra-inferior"));
+    expect(barraInferior.match(/<a\b/g) ?? []).toHaveLength(2);
+    const cabecalho = html.slice(
+      html.indexOf('aria-label="Navegação principal do cabeçalho"'),
+      html.indexOf("</nav>"),
+    );
+    expect(cabecalho.match(/<a\b/g) ?? []).toHaveLength(2);
+  });
+
+  it("as três regras de confiança continuam públicas — em /como-funciona", async () => {
+    // A neutralidade do ranking é princípio inviolável, não copy de apoio. Encolher a Home só
+    // foi possível porque o texto passou a existir do outro lado; este teste amarra as duas
+    // pontas para que a redução não vire remoção silenciosa numa próxima rodada.
+    const comoFunciona = await renderRoute("/como-funciona");
+    expect(comoFunciona).toContain("O que o ViPreço não faz");
+    expect(comoFunciona).toContain("Você compra na loja");
+    expect(comoFunciona).toContain("O estoque é do mercado");
+    expect(comoFunciona).toContain("A ordem não é vendida");
   });
 });
 

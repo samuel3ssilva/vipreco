@@ -1,5 +1,5 @@
 /**
- * R3.3 — painel comparativo da Home para o Gate visual do Founder.
+ * R3.3 / R3.3A — painel comparativo da Home para o Gate visual do Founder.
  *
  * =============================================================================
  * O "ANTES" É RENDERIZADO, NÃO LEMBRADO
@@ -43,7 +43,7 @@ const ALINHAMENTOS = [
   "CONTEXTO ANTES DE CONTEÚDO. O título diz onde você está — 'Você está vendo ofertas de Artemis' — em vez de prometer resultado. O V2 pede a mesma disciplina: nada de 'melhor preço', nada de 'mais barato perto de você'.",
   "O CARD V2 NO DESTAQUE. A primeira oferta usa a peça aprovada em R3.2: identidade do produto antes do preço, procedência completa, estado em texto.",
   "PROCEDÊNCIA EM TODO PREÇO. Nenhum card mostra valor sem fonte e data — na Home entregue e no V2.",
-  "WHATSAPP DEPOIS DO PRODUTO. O CTA vem abaixo do que a Home entrega, não antes. Pedir contato de quem ainda não viu nada é pedir cedo demais.",
+  "UM CONVITE DE WHATSAPP, DEPOIS DO PRODUTO. R3.3A removeu o CTA fixo que acompanhava a rolagem desde a primeira dobra: ele pedia o contato de quem ainda não tinha visto um Achado. Ficou um só, inline, abaixo do que a Home entrega.",
 ];
 
 /** Onde a entrega SE AFASTA da referência, e por quê. */
@@ -51,7 +51,7 @@ const DIVERGENCIAS = [
   "OS SECUNDÁRIOS NÃO SÃO CARD V2. Só o destaque é. Foi medido em R3.2: o Card v2 ocupa ~400 px de CSS, e quatro deles passam de uma tela e meia num celular comum — o que se repete deixa de ser informação e vira textura. Os secundários seguem no `AchadoCard` compacto. A unificação é assunto de R6, quando o detalhe da oferta existir e a lista tiver mais do que três itens fictícios para provar densidade.",
   "A DIFERENÇA ENTRE MERCADOS NÃO APARECE. O V2 mostra 'R$ 0,50 abaixo da próxima oferta observada'. A Home entrega Achados de produtos DIFERENTES, não um conjunto comparável do mesmo SKU — não há segundo preço de onde tirar a distância. Ela entra com a tela de comparação, em R5/R6.",
   "NENHUM SINO DE NOTIFICAÇÃO. O North Star original desenhava um. Notificação exige canal, consentimento e uma decisão sobre o que é digno de interromper alguém — nada disso existe. Um sino que não notifica ensina o usuário a não confiar na interface.",
-  "'SEM OFERTAS VIGENTES' CAI NO MESMO ESTADO DE 'VAZIO'. Quando todos os Achados vencem, a Home mostra 'estamos começando a mapear preços' — que é falso: houve mapeamento, e o que aconteceu foi o preço envelhecer. Copy própria é item futuro. Ver painel 4 de `home-achados-states.png`.",
+  "NENHUMA PERSONALIZAÇÃO NA HOME. O seletor 'Seu mercado habitual' saiu em R3.3A: um seletor na primeira tela declara um produto personalizado, e o MVP não é um. Ele continua em `/produto/$productId`, onde a preferência tem consequência imediata na linha de quanto você economiza. 'Preferência de mercado / mercado habitual / personalização futura' está registrado como POST-MVP em ROADMAP-MVP-v3 §4.",
   "ARTEMIS É FIXA NO TÍTULO. Não há seleção de bairro nem geolocalização — geolocalização está fora do MVP por escopo. O piloto é de um bairro só, e o título diz isso em vez de fingir cobertura.",
 ];
 
@@ -62,6 +62,9 @@ const DECISOES = [
   "O TÍTULO É 'ACHADOS', NÃO 'ACHADOS DE HOJE'. O fixture tem preços de ontem, de dois e de três dias atrás, e o piloto vai ter dados mais velhos. 'De hoje' prometeria uma frescura que a linha de procedência de cada card desmente três linhas abaixo. Foi um teste de regressão que pegou isto, não uma revisão.",
   "NENHUM CRITÉRIO EDITORIAL ESCOLHE O DESTAQUE. Ele é o primeiro da lista que o serviço já entregou ordenada. 'Destaque do dia' com curadoria seria ranking editorial — o oposto da neutralidade — e não existe critério objetivo escrito para elegê-lo.",
   "HISTÓRICO DE PREÇO SAIU DO DADO, NÃO SÓ DA TELA. O campo `previous_price` foi removido do fixture e da interface do card. Sem P-01 decidida, não existe critério escrito de QUAL observação anterior conta — e um fixture que carrega o número mantém vivo o componente que o mostra. Tirar da tela e deixar no dado é adiar, não decidir.",
+  "R3.3A — O CONSERTO SAIU JUNTO COM O PROBLEMA. Com o CTA fixo fora da Home, saiu também a máquina de anti-duplicação que existia por causa dele: loja de visibilidade compartilhada, marcador no DOM, `IntersectionObserver` e o `inert` condicional no convite do fluxo. Um mecanismo que nunca dispara é o que ninguém percebe estar quebrado. Ele continua inteiro em `/para-mercados`, onde a duplicação é real.",
+  "R3.3A — OS DOIS BLOCOS LONGOS DO RODAPÉ VIRARAM COMPACTOS, e o conteúdo mudou de lugar, não de existência. 'Nenhum preço aparece sozinho' (quatro cartões de atributo e três regras) virou 'Preço com procedência': uma frase e uma porta. As três regras — você compra na loja, o estoque é do mercado, A ORDEM NÃO É VENDIDA — foram para `/como-funciona`. A terceira é o princípio de neutralidade declarado em público; a redução da Home só pôde acontecer depois de o texto existir do outro lado, e um teste amarra as duas pontas.",
+  "R3.3A — 'SEM OFERTAS VIGENTES' GANHOU COPY PRÓPRIA. Era divergência registrada no painel de estados: os dois estados caíam em 'estamos começando a mapear preços' — verdadeiro quando nada foi conferido, falso quando houve mapeamento e o preço envelheceu. A distinção é dado, não heurística: lista de origem vazia é vazio real; lista com itens e nenhum válido é oferta vencida. Só a segunda oferece 'Buscar produto' — no vazio real não há o que buscar.",
   "OS DOIS `nav` TÊM NOMES DISTINTOS. 'Navegação principal' na barra inferior, 'Navegação principal do cabeçalho' no topo. Com o mesmo nome, os dois marcos ficam indistinguíveis na lista de regiões do leitor de tela — e só um está visível por vez, mas a árvore acessível não sabe disso. Foi a medição que pegou; a inspeção visual não pegaria.",
 ];
 
@@ -70,7 +73,8 @@ const FUTUROS = [
   "Tela de comparação do mesmo SKU entre mercados (R5/R6) — o núcleo do produto, e a razão de a busca ter subido.",
   "Detalhe completo da oferta, com a lista de preços por mercado (R5/R6).",
   "Card v2 na lista inteira, com densidade medida em dado real (R6).",
-  "Copy própria para 'sem ofertas vigentes' (item registrado acima).",
+  "Personalização por mercado habitual na Home — POST-MVP, registrado em ROADMAP-MVP-v3 §4. Nada dela pode ser preparado por antecipação: nenhuma segmentação e nenhum recorte da lista orgânica.",
+  "Mecânica completa do WhatsApp — o convite continua sendo um link, e a resposta continua manual. R3.3A mudou a posição e o texto do CTA, não o que acontece depois dele.",
   "Preço unitário na Home — depende de quantidade estruturada aprovada, e o backfill continua proibido.",
   "Histórico de preço e alerta de queda — fora do escopo atual no roadmap do V2, e bloqueado por P-01.",
   "Qualquer camada de parceiro ou conteúdo pago: quando existir, vive em seção separada e rotulada, e jamais reordena a lista orgânica.",
@@ -164,8 +168,8 @@ function montarHtml(campos: {
     .futuro h2 { color: #5b6b63; }
     .rodape { margin-top: 18px; font-size: 12px; color: #5b6b63; line-height: 1.6; max-width: 96ch; }
   </style></head><body>
-    <h1>R3.3 — painel comparativo da Home para o Gate visual</h1>
-    <p class="sub">Três colunas, mesma largura de celular (390&nbsp;px). À esquerda a Home <strong>anterior</strong>, renderizada agora a partir de <code>origin/main</code> num servidor paralelo — não é uma captura antiga guardada em disco. No meio a <strong>referência atual</strong>, a tela 1 do North&nbsp;Star&nbsp;V2. À direita a Home <strong>entregue por R3.3</strong>. As colunas 1 e 3 são páginas inteiras <strong>recortadas pelo topo na mesma escala</strong> — as versões completas estão nos quatro PNGs de largura ao lado deste arquivo. Os três saíram do mesmo navegador, no mesmo instante, com animação congelada.</p>
+    <h1>R3.3A — painel comparativo da Home para o Gate visual</h1>
+    <p class="sub">Três colunas, mesma largura de celular (390&nbsp;px). À esquerda a Home <strong>anterior</strong>, renderizada agora a partir de <code>origin/main</code> num servidor paralelo — não é uma captura antiga guardada em disco. No meio a <strong>referência atual</strong>, a tela 1 do North&nbsp;Star&nbsp;V2. À direita a Home <strong>entregue por R3.3 + R3.3A</strong>. As colunas 1 e 3 são páginas inteiras <strong>recortadas pelo topo na mesma escala</strong> — as versões completas estão nos quatro PNGs de largura ao lado deste arquivo. Os três saíram do mesmo navegador, no mesmo instante, com animação congelada.</p>
     <div class="tres">
       <div class="col">
         <p class="rot velho">1 · Home anterior (origin/main)</p>
@@ -178,16 +182,16 @@ function montarHtml(campos: {
         <img src="data:image/png;base64,${campos.v2}" alt="North Star V2, tela 1">
       </div>
       <div class="col entrega">
-        <p class="rot">3 · Home entregue — R3.3</p>
+        <p class="rot">3 · Home entregue — R3.3 + R3.3A</p>
         <p class="meta">${campos.shaDepois}</p>
-        <img class="app" src="data:image/png;base64,${campos.depois}" alt="Home entregue por R3.3">
+        <img class="app" src="data:image/png;base64,${campos.depois}" alt="Home entregue por R3.3 e R3.3A">
       </div>
     </div>
 
     <div class="abas">
       <h2>Navegação: de quatro abas para duas</h2>
       <div class="linha"><b>Antes (${campos.abasAntes.abas} abas)</b>${chips(campos.abasAntes, "#c9b98a")}</div>
-      <div class="linha"><b>R3.3 (${campos.abasDepois.abas} abas)</b>${chips(campos.abasDepois, "#0e5c3c")}</div>
+      <div class="linha"><b>R3.3A (${campos.abasDepois.abas} abas)</b>${chips(campos.abasDepois, "#0e5c3c")}</div>
       <p class="rodape"><strong>Medido no DOM, não lido no código:</strong> a Home anterior tinha ${campos.abasAntes.navsComMesmoNome > 0 ? `<strong>${campos.abasAntes.navsComMesmoNome} par de landmarks de navegação com o MESMO nome acessível</strong> — “Navegação principal” duas vezes, indistinguíveis na lista de regiões do leitor de tela. A entregue tem ${campos.abasDepois.navsComMesmoNome}` : `${campos.abasAntes.navsComMesmoNome} nome de navegação repetido, e a entregue também ${campos.abasDepois.navsComMesmoNome}`}.</p>
       <p class="rodape">“Como funciona” e “Tenho um mercado” continuam alcançáveis, pelo rodapé. Aba não é o único jeito de chegar a uma página; é o jeito que declara “esta é uma das coisas principais que você faz aqui”. Achar e comparar preço são duas. Não há uma terceira.</p>
     </div>
@@ -195,7 +199,7 @@ function montarHtml(campos: {
     <div class="bloco"><h2>Onde a entrega segue o North Star V2</h2><ul>${lista(ALINHAMENTOS)}</ul></div>
     <div class="bloco"><h2>Decisões funcionais que prevaleceram sobre o desenho</h2><ul>${lista(DECISOES)}</ul></div>
     <div class="bloco alerta"><h2>Divergências em relação à referência</h2><ul>${lista(DIVERGENCIAS)}</ul></div>
-    <div class="bloco futuro"><h2>Itens futuros — não entregues em R3.3, e dito para não ser lido como esquecimento</h2><ul>${lista(FUTUROS)}</ul></div>
+    <div class="bloco futuro"><h2>Itens futuros — não entregues em R3.3/R3.3A, e dito para não ser lido como esquecimento</h2><ul>${lista(FUTUROS)}</ul></div>
 
     <p class="rodape">Todo dado exibido é <strong>fictício e versionado</strong> (<code>src/lib/demo-opportunities.ts</code>): nenhum mercado real aparece como participante, nenhum preço vem de staging ou de produção, e a faixa “AMBIENTE DE TESTE” está no topo das três colunas de aplicação. Os estados da seção de Achados estão em <code>home-achados-states.png</code>.</p>
   </body></html>`;

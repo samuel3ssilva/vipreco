@@ -6,34 +6,22 @@ import { TrustSection } from "@/components/TrustSection";
 import { LocalStory } from "@/components/LocalStory";
 import { ProductSearch } from "@/components/ProductSearch";
 import { ShareAchadoButton } from "@/components/ShareAchadoButton";
-import { StickyWhatsAppCta } from "@/components/StickyWhatsAppCta";
-import { UsualMarketPicker } from "@/components/UsualMarketPicker";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
 import { SectionHeader } from "@/components/PageContainer";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
-import { loadHomeMarkets } from "@/services/home-markets";
 import { appMode } from "@/lib/app-mode";
+import { estadoSemAchados } from "@/lib/home-states";
 import { absoluteAssetUrl, ogImageMeta } from "@/lib/og";
 import { formatProductName } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
 
-// Tudo o que a Home mostra de primeira — os Achados e a lista de mercados do seletor — chega pelo
-// loader da rota (mesmo padrão de `/produto/$productId`), não por `useQuery` no cliente: o HTML
-// inicial já vem completo, sem nenhum estado de carregamento e sem depender de JavaScript no
-// navegador para aparecer.
+// Tudo o que a Home mostra de primeira — os Achados — chega pelo loader da rota (mesmo padrão de
+// `/produto/$productId`), não por `useQuery` no cliente: o HTML inicial já vem completo, sem
+// nenhum estado de carregamento e sem depender de JavaScript no navegador para aparecer.
 export const Route = createFileRoute("/")({
-  loader: async () => {
-    // Uma única resolução de modo para as duas fontes: Achados e mercados nunca podem divergir
-    // entre demonstração e piloto.
-    const source = appMode();
-    const [opportunities, markets] = await Promise.all([
-      loadHomeOpportunities(source),
-      loadHomeMarkets(source),
-    ]);
-    return { ...opportunities, markets };
-  },
+  loader: async () => loadHomeOpportunities(appMode()),
   head: () => ({
     meta: [
       { title: "ViPreço — onde está mais barato hoje" },
@@ -74,16 +62,29 @@ const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
  * ficava depois de tudo o que o produto tinha para mostrar, e o usuário que chegava sabendo o
  * que queria precisava rolar por uma vitrine antes de poder perguntar.
  *
- * Agora: contexto → **busca** → Achados → seletor → confiança → história. É a decisão D2 do
+ * Agora: contexto → **busca** → Achados → WhatsApp → procedência → piloto. É a decisão D2 do
  * roadmap (MVP-E2-02, MVP-DESIGN-05), e ela reconhece o que o produto é: a comparação é o
  * núcleo, e a busca é a porta dela. Achados são descoberta — importam, e vêm logo abaixo, mas
  * não na frente de quem já sabe o que procura.
  *
- * O que NÃO mudou: os Achados continuam vindo do loader, o HTML inicial continua sem estado de
- * carregamento, e o CTA fixo do mobile continua com a anti-duplicação.
+ * =============================================================================
+ * O QUE R3.3A TIROU DAQUI, E POR QUE
+ * =============================================================================
+ *
+ * **O CTA fixo de WhatsApp.** Ele acompanhava a rolagem desde a primeira dobra, o que significa
+ * que a Home pedia o contato da pessoa antes de ela ter consumido um único Achado. O convite
+ * continua — uma vez só, inline, depois dos Achados —, e é isso que o torna secundário de
+ * verdade: a descoberta e a comparação vêm primeiro, e o opt-in só é oferecido a quem já viu o
+ * que o produto entrega.
+ *
+ * **O seletor de mercado habitual.** Personalização não é escopo do MVP, e um seletor na Home
+ * declara o contrário. Ele NÃO foi apagado do produto: continua em `/produto/$productId`, na
+ * variante compacta, onde a preferência tem consequência imediata — a linha de "quanto você
+ * economiza" na comparação. Na Home ele era uma pergunta sem resposta visível. A ideia de
+ * personalização por mercado está registrada em `ROADMAP-MVP-v3.md` §4 como POST-MVP.
  */
 function HomePage() {
-  const { source, opportunities, generatedAt, markets } = Route.useLoaderData();
+  const { source, opportunities, generatedAt } = Route.useLoaderData();
   // Referência única de tempo, vinda do servidor: mantém "ontem"/"há 2 dias" idêntico no HTML
   // inicial e depois da hidratação, mesmo se o relógio do aparelho estiver adiantado.
   const renderedAt = new Date(generatedAt);
@@ -93,6 +94,9 @@ function HomePage() {
   const isDemo =
     source === "demo" || validOpportunities.some((entry) => entry.is_demo || entry.market?.is_demo);
   const [destaque] = validOpportunities;
+  // Quantos a FONTE entregou, antes do filtro de validade: é essa contagem que distingue
+  // "nada foi conferido ainda" de "o que tinha venceu". Ver `@/lib/home-states`.
+  const semAchados = estadoSemAchados(opportunities.length);
 
   return (
     <AppShell>
@@ -155,8 +159,15 @@ function HomePage() {
           fallback={
             <StateMessage
               variant="empty"
-              title="Estamos começando a mapear preços na sua região."
-              description="Os primeiros Achados aparecem aqui assim que forem conferidos. Por enquanto, use a busca para comparar um produto específico."
+              title={semAchados.title}
+              description={semAchados.description}
+              action={
+                semAchados.acao ? (
+                  <Link to="/buscar" className="btn-base btn-secondary btn-sm btn-touch-48">
+                    {semAchados.acao}
+                  </Link>
+                ) : null
+              }
             />
           }
         />
@@ -166,14 +177,10 @@ function HomePage() {
             demais. Nenhuma promessa de frequência — o texto do CTA não diz "todo dia". */}
         <WhatsAppCta />
 
-        <UsualMarketPicker initialMarkets={markets} />
-
         <TrustSection isDemo={isDemo} />
 
         <LocalStory />
       </div>
-
-      <StickyWhatsAppCta />
     </AppShell>
   );
 }

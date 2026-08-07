@@ -78,7 +78,9 @@ describe("alvo de toque de 48 px", () => {
       "TrustSection.tsx",
       "LocalStory.tsx",
       "ShareAchadoButton.tsx",
-      "StickyWhatsAppCta.tsx",
+      // `StickyWhatsAppCta.tsx` saiu da lista em R3.3A porque saiu do repositório: a Home não
+      // tem mais CTA fixo de WhatsApp. O `StickyCta` abaixo é o mecanismo, e continua em uso em
+      // `/para-mercados`.
       "MarketWhatsAppCta.tsx",
       "StickyCta.tsx",
       "StickyMarketCta.tsx",

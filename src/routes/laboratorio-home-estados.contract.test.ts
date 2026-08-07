@@ -78,4 +78,25 @@ describe("o que a rota não pode fazer", () => {
   it("não reintroduz histórico de preço (DL-030)", () => {
     expect(ROTA).not.toMatch(/previous_price|antes R\$|preço anterior/i);
   });
+
+  it("não escreve copy própria: as telas sem Achados vêm de `@/lib/home-states`", () => {
+    // A evidência do Gate mostra o que o produto mostra. Copy escrita à mão aqui produziria um
+    // painel que envelhece em silêncio — e o Founder julgaria uma tela que não existe.
+    expect(ROTA).toMatch(/from "@\/lib\/home-states"/);
+    expect(ROTA).toContain("VAZIO_REAL.title");
+    expect(ROTA).toContain("SEM_OFERTAS_VIGENTES.title");
+    expect(ROTA).not.toContain("Estamos começando a mapear preços");
+    expect(ROTA).not.toContain("Nenhuma oferta vigente no momento");
+  });
+
+  it("os painéis 2 e 4 não mostram mais a mesma mensagem (R3.3A, item 5)", () => {
+    const vazio = ROTA.indexOf("Vazio — nenhum Achado existe");
+    const vencidas = ROTA.indexOf("Sem ofertas vigentes");
+    expect(vazio).toBeGreaterThan(-1);
+    expect(vencidas).toBeGreaterThan(vazio);
+    // Cada painel recebe o SEU fallback. Se voltarem a apontar para o mesmo, isto reprova.
+    expect(ROTA).toContain("fallback={VAZIO}");
+    expect(ROTA).toContain("fallback={VENCIDAS}");
+    expect(ROTA.match(/fallback=\{VAZIO\}/g) ?? []).toHaveLength(1);
+  });
 });

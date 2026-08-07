@@ -1,25 +1,35 @@
-import { useSyncExternalStore } from "react";
 import { consumerWhatsappLink } from "@/lib/whatsapp";
-import { consumerCtaStore, hiddenCtaAttributes } from "@/lib/cta-visibility";
 
 /**
- * CTA único de entrada no WhatsApp (North Star v1.2.2, Assets §4 e §6).
+ * CTA único de entrada no WhatsApp, na Home (North Star v1.2.2, Assets §4 e §6).
  *
  * Verde oficial da ação — a variante "verde WhatsApp" segue exploratória e não aprovada.
+ *
+ * =============================================================================
+ * UM SÓ, INLINE, DEPOIS DOS ACHADOS (R3.3A, item 1 da remediação)
+ * =============================================================================
+ *
+ * Este componente já era o convite do fluxo da página. O que existia ao lado dele era um CTA
+ * fixo que acompanhava a rolagem desde a primeira dobra — e com ele veio, na Parte 2, toda uma
+ * máquina de anti-duplicação: uma loja de visibilidade compartilhada, um marcador no DOM, um
+ * `IntersectionObserver` medindo a tela e este bloco se apagando de `inert` enquanto o fixo
+ * estivesse no ar. Era a resposta correta para dois CTAs idênticos.
+ *
+ * R3.3A removeu o fixo da Home, e com ele o problema. **O conserto de uma duplicação some junto
+ * com a duplicação** — manter a loja e o marcador aqui deixaria um mecanismo que nunca dispara,
+ * e mecanismo que nunca dispara é o que ninguém percebe estar quebrado. O mecanismo continua
+ * inteiro em `/para-mercados`, onde o CTA fixo continua existindo e a duplicação é real.
  *
  * Sem destino configurado, nada é renderizado: um botão que abre um link quebrado, ou pior, uma
  * conversa com um número errado, é pior do que a ausência do botão. A Home continua completa sem
  * ele. Ver `docs/mvp/WHATSAPP-ENTRY.md`.
  */
 
-/** Rótulo do CTA, compartilhado com a versão fixa do mobile — as duas dizem a mesma coisa. */
-export const WHATSAPP_CTA_LABEL = "Receber os Achados no WhatsApp";
-
 /**
- * Marca todo CTA equivalente que vive no fluxo da página. O CTA fixo observa estes elementos
- * para nunca aparecer ao lado de um igual.
+ * Rótulo do CTA. R3.3A nomeou o bairro: "Receber os Achados no WhatsApp" não dizia de onde, e o
+ * escopo do piloto é a única coisa que o produto pode prometer com honestidade hoje.
  */
-export const WHATSAPP_CTA_MARKER = "data-whatsapp-cta";
+export const WHATSAPP_CTA_LABEL = "Receber Achados de Artemis no WhatsApp";
 
 export function WhatsAppGlyph({ className = "size-5" }: { className?: string }) {
   return (
@@ -31,32 +41,20 @@ export function WhatsAppGlyph({ className = "size-5" }: { className?: string }) 
 
 export function WhatsAppCta() {
   const href = consumerWhatsappLink();
-  // Enquanto o CTA fixo estiver no ar, este aqui está fora da tela e não pode continuar sendo
-  // uma segunda ação idêntica para o teclado e para o leitor de tela. O bloco inteiro sai —
-  // botão e microcopy —, porque anunciar a explicação de um botão que não existe é pior.
-  const duplicado = useSyncExternalStore(
-    consumerCtaStore.subscribe,
-    consumerCtaStore.get,
-    consumerCtaStore.getOnServer,
-  );
   if (!href) return null;
 
-  const { container, link } = hiddenCtaAttributes(duplicado);
-
   return (
-    <div className="space-y-1.5" {...container}>
+    <div className="space-y-1.5">
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        {...{ [WHATSAPP_CTA_MARKER]: "" }}
-        {...link}
         className="btn-base btn-primary btn-touch-48 w-full rounded-full sm:w-auto"
       >
         <WhatsAppGlyph />
         {WHATSAPP_CTA_LABEL}
       </a>
-      <p className="meta-text">Só achados de Artemis, com preço e mercado. Sair quando quiser.</p>
+      <p className="meta-text">Só achados de Artemis. Você pode sair quando quiser.</p>
     </div>
   );
 }

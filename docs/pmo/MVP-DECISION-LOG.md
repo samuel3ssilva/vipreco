@@ -1317,3 +1317,60 @@ produção foi executado**.
 recebem `X-Robots-Tag`, porque `_headers` é estático e não pode variar por ambiente sem também
 bloquear a produção futura. Mitigado pelo `Disallow: /`. Ver
 `docs/security/EDGE-SECURITY-POLICY.md` § "Riscos residuais conhecidos", item 3.
+
+---
+
+### DL-036 — R3.3A: a Home entrega antes de pedir
+
+- **Data:** 06/08/2026
+- **Decisão do:** Founder/PMO, após revisar `home-achados-390.png`,
+  `home-achados-states.png` e `home-achados-comparison-board.png`
+- **Veredito do Gate:** `R3.3 VISUAL REMEDIATION REQUIRED — MINOR`
+- **PR:** #97 (`feat/r3.3-home-achados`), **sem merge**
+
+**O que foi aprovado e não muda:** direção visual, navegação de duas abas, busca na primeira
+dobra, Card v2, procedência e os sete estados. A Home **não** foi redesenhada.
+
+**Cinco ajustes, e o fio que os liga: a Home pedia antes de entregar.**
+
+**1. O CTA fixo de WhatsApp saiu.** Ele acompanhava a rolagem desde a primeira dobra — opt-in
+oferecido a quem ainda não tinha visto um Achado. Ficou **um** convite, inline, depois dos
+Achados: "Receber Achados de Artemis no WhatsApp", com "Só achados de Artemis. Você pode sair
+quando quiser.". `StickyWhatsAppCta` foi removido do repositório, e com ele a máquina de
+anti-duplicação da Home (`consumerCtaStore`, `WHATSAPP_CTA_MARKER`, o `inert` condicional). **O
+conserto de uma duplicação some junto com a duplicação** — o mecanismo continua inteiro em
+`/para-mercados`, onde o CTA fixo continua existindo e o problema é real.
+
+**2. O seletor de mercado habitual saiu da Home.** Personalização não é escopo do MVP. Ele
+**não** foi apagado do produto: continua em `/produto/$productId`, na variante compacta, onde a
+preferência tem consequência imediata. A ideia está registrada como POST-MVP em
+`ROADMAP-MVP-v3.md` §4. `home-markets.ts` ficou estacionado, com nota no cabeçalho — adiado não
+é rejeitado, e reescrever o tratamento de falha depois seria jogar trabalho fora.
+
+**3 e 4. Os dois blocos longos do rodapé viraram compactos.** "Nenhum preço aparece sozinho"
+(quatro cartões + três regras) virou "Preço com procedência" — uma frase e uma porta. "Começou em
+Artemis" virou "Feito para começar por Artemis", com a expectativa dita: poucos mercados, poucos
+produtos, ampliação depois.
+
+**A redução só foi possível porque o conteúdo mudou de lugar, não de existência.** As três regras
+— você compra na loja, o estoque é do mercado, **a ordem não é vendida** — foram para
+`/como-funciona`. A terceira é o princípio 4 de neutralidade declarado em público; ela não pode
+sumir do site, e um teste em `index.ssr.test.ts` amarra as duas pontas para que a redução não
+vire remoção silenciosa numa próxima rodada.
+
+**5. "Sem ofertas vigentes" ganhou copy própria.** Era a divergência que o próprio painel de
+estados de R3.3 registrou: os dois estados caíam em _"Estamos começando a mapear preços na sua
+região."_ — verdadeiro quando nada foi conferido, **falso** quando houve mapeamento e o preço
+envelheceu. Agora são duas telas, e a distinção é **dado, não heurística**: lista de origem vazia
+é vazio real; lista com itens e nenhum válido é oferta vencida (`src/lib/home-states.ts`). Só a
+segunda oferece "Buscar produto" — no vazio real não há o que buscar, e o botão levaria a uma
+segunda tela vazia.
+
+**As copies moram num módulo só** porque a Home e o laboratório de estados mostram a mesma
+mensagem por definição: uma evidência de Gate que exibe copy que o produto não tem é pior do que
+evidência nenhuma. O teste exigido pelo mandato verifica a **propriedade** — nenhum campo visível
+coincide entre as duas telas —, não as frases de hoje.
+
+**Escopo:** o guarda de `index.escopo.test.ts` reprovou cada arquivo novo antes de ele entrar no
+allowlist, que é a ordem certa. Banco, migrations, ranking, comparação, detalhe, `/para-mercados`,
+Worker e produção não foram tocados.

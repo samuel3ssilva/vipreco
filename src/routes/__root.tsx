@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { buildEhPublico, DIRETIVA_NAO_INDEXAR } from "@/lib/indexing";
 import { ogImageMeta } from "@/lib/og";
 
 function NotFoundComponent() {
@@ -80,6 +81,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Compare preços recentes e verificados de supermercados da sua região.",
       },
       { name: "author", content: "ViPreço" },
+      // A segunda camada do bloqueio, no próprio documento. O `X-Robots-Tag` já cobre toda
+      // resposta do Worker; a `<meta>` cobre o caso de o HTML ser lido sem os headers —
+      // salvo em disco, servido por outro proxy, aberto de um `file://` de uma captura.
+      //
+      // A condição é de BUILD, não de host: esta marcação é renderizada no servidor e
+      // reavaliada na hidratação, e as duas precisam chegar ao mesmo valor. Ver a seção
+      // "dois tempos" em `src/lib/indexing.ts`.
+      ...(buildEhPublico() ? [] : [{ name: "robots", content: DIRETIVA_NAO_INDEXAR }]),
       { property: "og:title", content: "ViPreço" },
       {
         property: "og:description",

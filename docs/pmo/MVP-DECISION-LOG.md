@@ -1273,3 +1273,47 @@ campo é gate do Founder, e continua fechado.
 
 - **Próxima frente B2C:** R3.3 — Home / Achados.
 - **Próxima frente B2B:** B2B-1, conduzida pelo Founder.
+
+---
+
+### DL-035 — Indexabilidade fechada por omissão
+
+- **Data:** 06/08/2026
+- **Decisão do:** CTO, sob mandato do Founder/PMO ("impedir que ambientes fora de production
+  sejam indexados", "não aplicar bloqueio automaticamente em production")
+- **PR:** `fix/staging-noindex`
+
+**A regra virou de lado.** A pergunta era _"este host é técnico?"_ — `*.workers.dev` levava
+`noindex`, e qualquer outro host era tratado como público. Aberto por omissão: um domínio novo
+viraria indexável sem que ninguém tivesse decidido nada. A pergunta agora é _"este host foi
+**declarado** como o host público?"_, e a resposta padrão é não.
+
+Staging **declara** `VITE_PUBLIC_SITE_URL` — precisa declarar, é de onde saem as URLs absolutas
+de `og:image` — e mesmo assim continua bloqueado, porque a origem declarada dele termina em
+`.workers.dev`. A configuração não consegue errar para o lado perigoso.
+
+**Quatro camadas, quatro falhas diferentes:**
+
+| Camada                       | Cobre                                                                |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `X-Robots-Tag`               | toda resposta do Worker, decidida pelo host da requisição            |
+| `<meta name="robots">`       | o HTML lido sem os headers — salvo em disco, servido por outro proxy |
+| `robots.txt` → `Disallow: /` | a **chegada** do rastreador, inclusive aos assets estáticos          |
+| `sitemap.xml` → `404`        | o convite explícito para rastrear                                    |
+
+**`robots.txt` saiu de `public/` e virou rota.** Como arquivo estático ele era servido pelo
+binding `ASSETS`, que não passa pelo Worker: mesmo conteúdo em todo ambiente e, medido em staging,
+a **única** rota que voltava sem `X-Robots-Tag`.
+
+**A tensão entre camadas é deliberada.** Quem obedece ao `Disallow` não busca a página e portanto
+não lê o `noindex` do header. Para uma demonstração privada de entrevista, impedir a chegada vale
+mais do que impedir a listagem — e o header continua lá para o rastreador que ignore o `Disallow`.
+
+**O que produção vai exigir:** `VITE_PUBLIC_SITE_URL=https://<domínio>` no Environment de
+produção. Sem isso, produção nasce bloqueada. O comportamento está testado; **nenhum deploy de
+produção foi executado**.
+
+**Residual registrado:** assets estáticos (`/og/*`, `/logo/*`, `/favicon.ico`, `/assets/*`) não
+recebem `X-Robots-Tag`, porque `_headers` é estático e não pode variar por ambiente sem também
+bloquear a produção futura. Mitigado pelo `Disallow: /`. Ver
+`docs/security/EDGE-SECURITY-POLICY.md` § "Riscos residuais conhecidos", item 3.

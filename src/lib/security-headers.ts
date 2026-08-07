@@ -1,3 +1,5 @@
+import { DIRETIVA_NAO_INDEXAR, podeIndexarUrl } from "./indexing";
+
 // Cabecalhos de seguranca aplicados a toda resposta do Worker (src/server.ts).
 // CSP nasce do inventario real de origens do app (Onda 3):
 // - script/style precisam de 'unsafe-inline' porque o bootstrap de hidratacao
@@ -27,16 +29,14 @@ const CSP_DIRECTIVES = [
 
 export const CONTENT_SECURITY_POLICY = CSP_DIRECTIVES.join("; ");
 
-const TECHNICAL_HOST_SUFFIXES = [".workers.dev"];
-
-function isTechnicalHost(hostname: string): boolean {
-  return TECHNICAL_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
-}
-
 /**
  * Retorna os headers de seguranca a aplicar a uma resposta, derivados da URL
- * da requisicao (hoje, apenas para decidir X-Robots-Tag em hosts tecnicos
- * ainda nao lancados publicamente, ex.: *.workers.dev).
+ * da requisicao (hoje, apenas para decidir X-Robots-Tag).
+ *
+ * A decisao de indexabilidade mora em `src/lib/indexing.ts` e e FECHADA POR OMISSAO: so o host
+ * publico declarado pelo build escapa do `noindex`. Antes a regra era o contrario -- bloqueava
+ * `*.workers.dev` e liberava todo o resto --, e um dominio novo virava indexavel sem decisao
+ * de ninguem.
  */
 export function buildSecurityHeaders(requestUrl: string): Headers {
   const headers = new Headers({
@@ -48,15 +48,8 @@ export function buildSecurityHeaders(requestUrl: string): Headers {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   });
 
-  let hostname = "";
-  try {
-    hostname = new URL(requestUrl).hostname;
-  } catch {
-    hostname = "";
-  }
-
-  if (isTechnicalHost(hostname)) {
-    headers.set("X-Robots-Tag", "noindex, nofollow");
+  if (!podeIndexarUrl(requestUrl)) {
+    headers.set("X-Robots-Tag", DIRETIVA_NAO_INDEXAR);
   }
 
   return headers;

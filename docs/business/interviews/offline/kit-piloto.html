@@ -139,6 +139,20 @@
         color: var(--cinza);
         font-size: 0.9rem;
       }
+      .qr img {
+        display: block;
+        margin: 0.8rem auto 0.4rem;
+        image-rendering: pixelated;
+      }
+      /* O endereço em texto existe porque nem toda câmera lê, e porque quem anota no papel
+         precisa conseguir copiar. Fonte monoespaçada e quebra por caractere: um endereço longo
+         que estoura a folha é um endereço que ninguém digita certo. */
+      .qr .url {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.78rem;
+        word-break: break-all;
+        color: var(--texto);
+      }
       .roteiro li {
         margin-bottom: 0.45rem;
       }
@@ -390,11 +404,27 @@
       <h2>Para acessar</h2>
 
       <div class="qr">
-        <p><strong>Espaço reservado para o QR Code.</strong></p>
+        <p><strong>Demonstração — ambiente de teste do ViPreço</strong></p>
+        <img
+          src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAhwAAAIcCAAAAACYlSigAAAHQklEQVR42u3dQY4bMQxFQd7/0swJAsRpfkp211sOBobdLq8IUdXSXyqPQHAIDsEhOASH4BAcgkNwCA4JDsEhOASH4BAcgkNwCA7BIcEhOASH4BAcgkNwCA7BITgkOASH4BAcgkNwCA7BITgEh+CQ4BAcgkNwCA59OY4K9C+v/+n7SfzPk9ecej9TzxkOOOCAAw444IADDjjggAMOOOCAAw444IADDjjg2MfxaKgz9DqfPtDbPu+nf998/3DAAQcccMABBxxwwAEHHHDAAQcccMABBxxwwAFHDseTAdvmh6/FpgZ7p54zHHDAAQcccMABBxxwwAEHHHDAAQcccMABBxxwwHE/jqmH+OR/auiA09RrwgEHHHDAAQcccMABBxxwwAEHHHDAAQcccMABBxxwVHhxWwJZH1oYBwcccMABBxxwwAEHHHDAAQcccMABBxxwwAEHHHD8Ho70ArX0a24exLJNEA444IADDjjggAMOOOCAAw444IADDjjggAMOON6Jo8KL1fw995zhgAMOOOCAAw5/hwMCOOCAAw444IADDjjggAMOOHZwpJu65Gbz/xPDwiu+CzjggAMOOOCAAw444IADDjjggAMOOOCAAw444IBj/VDTqcVnif9PDBT70KU+cMABBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAAcedh5oSl9NMfQFPlsclDialLwGCAw444IADDjjggAMOOOCAAw444IADDjjggAMOOPZxJIZtiUtr0gO/qR/JE4g1dLAKDjjggAMOOOCAAw444IADDjjggAMOOOCAAw444LhnYdzVHz7w3qZ+GImBHBxwwAEHHHDAAQcccMABBxxwwAEHHHDAAQcccMBx9lDT1MGkCh/sSQ/VEp8ljRUOOOCAAw444IADDjjggAMOOOCAAw444IADDjjg2MGxOaibeqDxhxhYQvezC+PggAMOOOCAAw444IADDjjggAMOOOCAAw444IDjxThq8XKdGxbDdWDQmOiKhXFwwAEHHHDAAQcccMABBxxwwAEHHHDAAQcccMABx+hlOVNDrF5cNpd4b4nhIhxwwAEHHHDAAQcccMABBxxwwAEHHHDAAQcccMBxP470MKyGLrDZvHTnBkB128I4OOCAAw444IADDjjggAMOOOCAAw444IADDjjggCP2xXTgEFSHLwfqoaVv/UvbBOGAAw444IADDjjggAMOOOCAAw444IADDjjggAOOx5fH1KGFcemlct94mRAccMABBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAkcORGFBNPdw0ygTixLDt2OANDjjggAMOOOCAAw444IADDjjggAMOOOCAAw444IgN2KYeVgeWwaWHXonLhL7mpiY44IADDjjggAMOOOCAAw444IADDjjggAMOOOB4GY7El9qBi3NODcYSsNKHl+CAAw444IADDjjggAMOOOCAAw444IADDjjggAOOs4eaKnxxzubwL/2a6aV7cMABBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAAcf9l/E8ucxm6pBP+nKgNPT+pYVxcMABBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAAUdsedyxBxF+z1PvIf3jgQMOOOCAAw444IADDjjggAMOOOCAAw444IADDjjuOdR0w8Dp5tdMXCYEBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAAQcccNy5E2zzUpnNhzv1A6jAorruyy7jgQMOOOCAAw444IADDjjggAMOOOCAAw444IADDjhiA7m+YSFaAEr6R5V+JnDAAQcccMABBxxwwAEHHHDAAQcccMABBxxwwAHHzqGmxOAqgWkTcXpR3RRQOOCAAw444IADDjjggAMOOOCAAw444IADDjjggOPsZTy9eClOGmLiBzOF6WsONcEBBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAAceLcVSgzcHebYeLNg9QwQEHHHDAAQcccMABBxxwwAEHHHDAAQcccMABBxxncaQv7+lDS+WmoCe+7Fo87AQHHHDAAQcccMABBxxwwAEHHHDAAQcccMABBxxw5HDU4sU2n/5PGk0fWhiX+IxwwAEHHHDAAQcccMABBxxwwAEHHHDAAQcccMABx3fh6KEDPxVYxDYFPfEMXzF4gwMOOOCAAw444IADDjjggAMOOOCAAw444IADDjj+a3h2atiWWCSXHkC+YvAGBxxwwAEHHHDAAQcccMABBxxwwAEHHHDAAQccX4gj/dArcKnPFPSxL+PQhUBwwAEHHHDAAQcccMABBxxwwAEHHHDAAQcccMABxw6OCiw1mzqMVOHFc4kvuAPDzmOHmuCAAw444IADDjjggAMOOOCAAw444IADDjjggAMOvSw4BIfgEByCQ3AIDsEhOASH4JDgEByCQ3AIDsEhOASH4BAcEhyCQ3AIDsEhOASH4BAcgkOCQ3AIDsEhOASH4BAcgkNwCA4JDsEhOASH4NBl/QFBqDVe7srN1QAAAABJRU5ErkJggg=="
+          alt="QR Code que abre a demonstração do ViPreço em ambiente de teste"
+          width="220"
+          height="220"
+        />
+        <p class="url">
+          https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev/para-mercados
+        </p>
         <p>
-          Ainda não existe endereço público estável. Um QR que aponta para um endereço provisório
-          quebra na semana seguinte, e um QR quebrado na mão de alguém custa mais confiança do que a
-          ausência dele. Entra aqui quando o endereço definitivo existir.
+          <strong>Isto não é o endereço definitivo.</strong> É um ambiente de teste, com dados
+          fictícios, e a própria página diz isso numa faixa no topo. O endereço público final é de
+          uma fase posterior, e este QR será trocado quando ela chegar — dizer isso na hora da
+          conversa vale mais do que a pessoa descobrir sozinha depois.
+        </p>
+        <p>
+          <strong>Se não houver internet</strong>, não insista com o QR: as telas deste caderno
+          mostram a mesma coisa, e foi para isso que ele existe. O QR é conveniência, não o
+          material. Anotar o endereço num papel para a pessoa ver depois, com calma, costuma
+          funcionar melhor do que uma tela que não carrega na frente dela.
         </p>
       </div>
 

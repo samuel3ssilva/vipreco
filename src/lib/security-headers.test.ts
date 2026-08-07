@@ -30,23 +30,52 @@ describe("buildSecurityHeaders", () => {
     expect(headers.get("Permissions-Policy")).toContain("geolocation=()");
   });
 
-  it("marca noindex apenas em hosts tecnicos *.workers.dev", () => {
+  // A REGRA MUDOU DE SENTIDO. Antes: bloqueia `*.workers.dev`, libera o resto. Agora: bloqueia
+  // tudo, e so o host publico declarado pelo build escapa. Como nenhum build de teste declara
+  // `VITE_PUBLIC_SITE_URL`, TODO host aqui e bloqueado -- inclusive o dominio oficial, que na
+  // regra antiga passava sem que ninguem tivesse decidido nada. Ver `src/lib/indexing.test.ts`
+  // para os casos com origem declarada.
+  it("marca noindex, nofollow, noarchive em staging e no Worker de producao", () => {
     const staging = buildSecurityHeaders(
       "https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev/buscar",
     );
-    const production = buildSecurityHeaders(
+    const workerProducao = buildSecurityHeaders(
       "https://vipreco-production.samuel-bortoletto.workers.dev/",
     );
-    const officialDomain = buildSecurityHeaders("https://vipreco.com.br/");
 
-    expect(staging.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    expect(production.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    expect(officialDomain.get("X-Robots-Tag")).toBeNull();
+    expect(staging.get("X-Robots-Tag")).toBe("noindex, nofollow, noarchive");
+    expect(workerProducao.get("X-Robots-Tag")).toBe("noindex, nofollow, noarchive");
+  });
+
+  it("marca noindex tambem no host local", () => {
+    expect(buildSecurityHeaders("http://localhost:8080/").get("X-Robots-Tag")).toBe(
+      "noindex, nofollow, noarchive",
+    );
+  });
+
+  it("marca noindex num dominio publico que este build NAO declarou", () => {
+    expect(buildSecurityHeaders("https://vipreco.com.br/").get("X-Robots-Tag")).toBe(
+      "noindex, nofollow, noarchive",
+    );
+  });
+
+  it("nao enfraquece nenhum dos demais headers ao bloquear indexacao", () => {
+    const headers = buildSecurityHeaders(
+      "https://samuel3ssilva-vipreco.samuel-bortoletto.workers.dev/",
+    );
+
+    expect(headers.get("Content-Security-Policy")).toBe(CONTENT_SECURITY_POLICY);
+    expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(headers.get("X-Frame-Options")).toBe("DENY");
+    expect(headers.get("Strict-Transport-Security")).toContain("max-age=");
   });
 
   it("nao quebra com uma URL invalida", () => {
     expect(() => buildSecurityHeaders("not-a-url")).not.toThrow();
-    expect(buildSecurityHeaders("not-a-url").get("X-Robots-Tag")).toBeNull();
+    // E FALHA FECHADO: uma URL que nao da para analisar nao pode virar permissao de indexar.
+    expect(buildSecurityHeaders("not-a-url").get("X-Robots-Tag")).toBe(
+      "noindex, nofollow, noarchive",
+    );
   });
 });
 

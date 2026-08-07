@@ -83,8 +83,17 @@ comunica preço; ela não recolhe preço. Cadastrar dado real continua bloqueado
 
 ## O que o kit deliberadamente não tem
 
-- **QR Code.** Depende de uma URL estável e aprovada, que não existe antes de R8. O material
-  reserva o lugar e diz o que falta — ver [`offline/README.md`](./offline/README.md).
+- **QR Code.** **Existe desde 06/08/2026**, e aponta para a demonstração em **staging**, não
+  para produção: `qr-demo-staging.png` e `.svg`, em [`offline/`](./offline/). Autorizado pelo
+  Founder para **entrevistas privadas**, com a legenda "Demonstração — ambiente de teste do
+  ViPreço". O endereço público definitivo continua sendo de R8, e o QR será trocado lá —
+  dizer isso na conversa é parte do roteiro, não uma ressalva.
+
+  O símbolo é gerado por `scripts/qr/`, código próprio e testado, e foi **lido por um
+  decodificador independente** antes de entrar aqui. Não é detalhe: a primeira versão do
+  codificador produziu três símbolos de aparência impecável e ilegíveis. Para regerar:
+  `bun scripts/qr/gerar-demo-staging.ts`.
+
 - **Contrato, proposta comercial ou tabela de preço.** B2B-3 e adiante.
 - **Número de usuários, tráfego ou métrica de resultado.** Não existem, e material que os
   cita passa a ser ficção.

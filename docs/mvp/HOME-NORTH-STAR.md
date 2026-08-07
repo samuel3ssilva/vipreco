@@ -24,18 +24,36 @@ Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 > 4. **O estado "sem ofertas vigentes" tem copy própria**, separada do vazio real
 >    (`src/lib/home-states.ts`).
 
+> **SUPERSEDED PARA A HOME POR R3.3B** (07/08/2026), em mais quatro pontos, registrados em
+> `docs/pmo/MVP-DECISION-LOG.md` DL-037. O Founder aprovou os contratos de R3.3A e **reprovou a
+> direção visual**; esta rodada é design, sem backend nenhum.
+>
+> 1. **O `AchadoCard` não existe mais.** A lista de "Outros Achados" passou a ser
+>    `card-v2/compact.tsx`, uma composição da mesma `montarVisaoDoCard` do destaque. Toda
+>    descrição de anatomia de card abaixo que se refira ao `AchadoCard` descreve um arquivo
+>    apagado — o que vale hoje é `docs/product/CARD-V2-SPEC.md` mais as duas composições.
+> 2. **Todo Achado tem imagem.** São ilustrações genéricas de categoria, criadas para a
+>    demonstração (`public/img/demo/`), com a bandeira `ilustrativa` no contrato e um teste que
+>    as prende a dado `is_demo`. Fotografia real continua dependendo da política de revisão (R6).
+> 3. **O título da Home é "Achados em Artemis"**, e a busca perdeu o cabeçalho de seção — o
+>    rótulo e a instrução do campo passaram a `sr-only`. O aviso de preço da Home é uma linha
+>    discreta; `PriceDisclaimer` segue intacto em `/buscar` e em `/produto/$productId`.
+> 4. **O CTA sólido da Home é o de comparação.** O convite de WhatsApp passou a ser contornado —
+>    secundário à descoberta e à comparação, como o mandato pede.
+
 ## Ordem da página
 
-**Vigente desde R3.3A** (o que o código renderiza hoje):
+**Vigente desde R3.3B** (o que o código renderiza hoje — a ordem não mudou em R3.3B, só o peso
+visual de cada bloco):
 
-| #   | Seção                               | Componente                      |
-| --- | ----------------------------------- | ------------------------------- |
-| 1   | Contexto do bairro                  | `HomeContexto`                  |
-| 2   | Busca de produto (primeira dobra)   | `ProductSearch`                 |
-| 3   | Achados                             | `HomeAchados` + `ProductCardV2` |
-| 4   | Convite de WhatsApp (inline, um só) | `WhatsAppCta`                   |
-| 5   | Preço com procedência               | `TrustSection`                  |
-| 6   | Feito para começar por Artemis      | `LocalStory`                    |
+| #   | Seção                               | Componente                                         |
+| --- | ----------------------------------- | -------------------------------------------------- |
+| 1   | Contexto do bairro                  | `HomeContexto`                                     |
+| 2   | Busca de produto (primeira dobra)   | `ProductSearch`                                    |
+| 3   | Achados                             | `HomeAchados` + `ProductCardV2` + `AchadoCompacto` |
+| 4   | Convite de WhatsApp (inline, um só) | `WhatsAppCta`                                      |
+| 5   | Preço com procedência               | `TrustSection`                                     |
+| 6   | Feito para começar por Artemis      | `LocalStory`                                       |
 
 Histórica, da Parte 2, preservada para leitura do que mudou:
 

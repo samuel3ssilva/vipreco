@@ -1,17 +1,45 @@
-# Evidência visual de R3.3 / R3.3A — Home e Achados
+# Evidência visual de R3.3B — Home e Achados
 
 Sete arquivos, todos gerados do head da branch `feat/r33-home-achados`, no mesmo navegador e com
 animação congelada. Os scripts que os produzem estão em `scripts/visual/`.
 
-| Arquivo                             | O que é                                                        | Script                       |
-| ----------------------------------- | -------------------------------------------------------------- | ---------------------------- |
-| `home-achados-320.png`              | página inteira a 320 px                                        | `screenshot-home.ts`         |
-| `home-achados-390.png`              | página inteira a 390 px — o celular comum                      | `screenshot-home.ts`         |
-| `home-achados-430.png`              | página inteira a 430 px — celular grande                       | `screenshot-home.ts`         |
-| `home-achados-desktop.png`          | página inteira a 1280 px                                       | `screenshot-home.ts`         |
-| `home-achados-list-390.png`         | recorte da seção de Achados a 390 px                           | `screenshot-home.ts`         |
-| `home-achados-states.png`           | os sete estados da seção de Achados, lado a lado               | `screenshot-home-estados.ts` |
-| `home-achados-comparison-board.png` | Home anterior · North Star V2 · Home entregue, com as decisões | `comparison-board-home.ts`   |
+| Arquivo                           | O que é                                                      | Script                       |
+| --------------------------------- | ------------------------------------------------------------ | ---------------------------- |
+| `home-final-320.png`              | página inteira a 320 px                                      | `screenshot-home.ts`         |
+| `home-final-390.png`              | página inteira a 390 px — o celular comum                    | `screenshot-home.ts`         |
+| `home-final-430.png`              | página inteira a 430 px — celular grande                     | `screenshot-home.ts`         |
+| `home-final-desktop.png`          | página inteira a 1280 px                                     | `screenshot-home.ts`         |
+| `home-final-list-390.png`         | recorte da seção de Achados a 390 px                         | `screenshot-home.ts`         |
+| `home-final-states.png`           | os sete estados da seção de Achados, lado a lado             | `screenshot-home-estados.ts` |
+| `home-final-comparison-board.png` | quatro áreas: anterior · referência aprovada · R3.3A · R3.3B | `comparison-board-home.ts`   |
+
+**O conjunto `home-achados-*.png` saiu.** Ele fotografava a Home de R3.3A, que o Founder reprovou
+na direção visual — e evidência de um desenho superado guardada ao lado da evidência correta é
+exatamente o defeito que esta pasta já cometeu uma vez. O registro daquela rodada continua
+alcançável pelo histórico do Git, no commit `46f7079`, e o comentário canônico que a publicava
+está marcado `SUPERSEDED` com os links desativados.
+
+## As imagens de produto são ilustrações, e o arquivo diz isso
+
+R3.3B §5 autorizou criar assets para que a Home volte a ter produto reconhecível, e delimitou o
+que eles não podem ser: cópia de embalagem, marca, logotipo ou trade dress de terceiro. Os três
+SVGs de `public/img/demo/` são desenhos planos de **categoria** — um pacote, um saco, uma caixa —,
+não têm nenhum texto dentro e trazem, no próprio arquivo, o comentário que declara o que são.
+
+O `alt` de cada uma diz a mesma coisa para quem usa leitor de tela: _"Ilustração genérica de café
+— não é a embalagem do produto"_. E o vínculo com a demonstração é medido, não prometido:
+`demo-opportunities.ilustrativas.test.ts` reprova qualquer oferta que carregue uma ilustração sem
+`is_demo` nas três entidades.
+
+**As marcas do fixture passaram a ser fictícias** pelo mesmo motivo. Um desenho genérico ao lado
+do nome de uma marca existente representa a embalagem daquela marca, por mais genérico que seja o
+traço — o nome faz o trabalho que o desenho se absteve de fazer. As substitutas vêm da North Star
+V2, que já foi aprovada.
+
+> **Divergência registrada:** `supabase/seed.sql` continua com as marcas antigas. Em staging,
+> portanto, a Home mostra "Serra Alta" e a página do produto — que lê do banco — mostra a marca
+> anterior. Alinhar exige reseed, que é banco, e banco está fora do escopo desta missão (§10:
+> "Se encontrar melhoria de backend: documentar; não implementar").
 
 ## Reprodutibilidade — o que é garantido, e o que não é
 
@@ -42,28 +70,34 @@ ambiente de teste pedem valores opostos da mesma variável, e o teste está afir
 que importa (falhar fechado). O CI nunca tem a variável, então o conflito só existe na máquina de
 quem captura. Capture, apague a linha do `.env`, rode `bun run test`.
 
-## Como o "antes" do painel comparativo é produzido
+## Como as três colunas de aplicação do painel são produzidas
 
-A coluna 1 **não é uma captura antiga guardada em disco**: é a Home de `origin/main` servida por
-um segundo `vite dev`, num worktree efêmero, fotografada no mesmo navegador e no mesmo instante
-que a Home entregue. Sem isso, metade do que o painel mostrasse como mudança de R3.3 seria
-diferença de fonte, de versão de navegador ou de data de fixture.
+Nenhuma delas é captura antiga guardada em disco. As três são servidas **agora**, por servidores
+paralelos em worktrees efêmeros, e fotografadas no mesmo navegador e no mesmo instante. Sem isso,
+metade do que o painel mostrasse como mudança de desenho seria diferença de fonte, de versão de
+navegador ou de data de fixture.
 
 ```bash
-git worktree add --detach /tmp/antes origin/main
-ln -s "$PWD/node_modules" /tmp/antes/node_modules
-cp .env /tmp/antes/.env
-(cd /tmp/antes && bunx vite dev --port 8081 --strictPort) &
+git worktree add --detach /tmp/vp-antes origin/main
+git worktree add --detach /tmp/vp-r33a  46f7079
+for d in /tmp/vp-antes /tmp/vp-r33a; do ln -sfn "$PWD/node_modules" $d/node_modules; cp .env $d/.env; done
+(cd /tmp/vp-antes && bunx vite dev --port 8081 --strictPort) &
+(cd /tmp/vp-r33a  && bunx vite dev --port 8082 --strictPort) &
 bun run dev &
 bun scripts/visual/comparison-board-home.ts
 ```
 
-O script **reprova** se o "antes" não tiver 4 abas ou o "depois" não tiver 2 — servidor errado, ou
-worktree fora de `origin/main`, faria o painel afirmar uma mudança que não aconteceu.
+O script **reprova** se a coluna A não tiver 4 abas, se C ou D não tiverem 2, ou se C e D saírem
+byte a byte idênticas — servidor errado, ou worktree no head errado, faria o painel afirmar uma
+mudança que não aconteceu.
+
+A coluna B é a referência aprovada, lida do arquivo versionado
+`docs/product/visual-north-star-v2/telas/tela-1-home.png`. Ela nunca é recortada nem esticada
+(`object-fit: contain`): um mockup de direção visual cortado mentiria sobre a própria direção.
 
 ## Uma nota sobre a barra de navegação nas capturas de página inteira
 
 A barra inferior é `position: fixed`. Numa captura de página inteira ela aparece **uma vez, na
 altura do viewport**, sobreposta ao conteúdo daquele ponto — é artefato da captura, não da
-página. Ele existe igualmente nas capturas anteriores a R3.3A, e o comportamento real está nas
-medições de `screenshot-home.ts`, que contam as abas no DOM em cinco larguras.
+página. Ele existe igualmente nas capturas anteriores, e o comportamento real está nas medições
+de `screenshot-home.ts`, que contam as abas no DOM em cinco larguras.

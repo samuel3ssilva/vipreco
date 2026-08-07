@@ -1,12 +1,12 @@
 /**
  * R3.3 §17 — capturas da Home/Achados.
  *
- *   home-achados-320.png       página inteira a 320 px
- *   home-achados-390.png       página inteira a 390 px — celular comum
- *   home-achados-430.png       página inteira a 430 px — celular grande
- *   home-achados-desktop.png   página inteira a 1280 px
- *   home-achados-list-390.png  recorte da lista de Achados a 390 px
- *   home-achados-states.png    os estados, do laboratório de estados
+ *   home-final-320.png       página inteira a 320 px
+ *   home-final-390.png       página inteira a 390 px — celular comum
+ *   home-final-430.png       página inteira a 430 px — celular grande
+ *   home-final-desktop.png   página inteira a 1280 px
+ *   home-final-list-390.png  recorte da lista de Achados a 390 px
+ *   home-final-states.png    os estados, do laboratório de estados
  *
  * O prefixo e o destino são parametrizáveis porque o painel comparativo precisa da MESMA
  * página renderizada em duas versões do código — o "antes" sai de `origin/main`, no mesmo
@@ -28,7 +28,7 @@ const arg = (nome: string, padrao: string) => {
   return encontrado === undefined ? padrao : encontrado.slice(nome.length + 3);
 };
 
-const PREFIXO = arg("prefixo", "home-achados");
+const PREFIXO = arg("prefixo", "home-final");
 const DESTINO = arg("destino", join(process.cwd(), "docs/evidence/visual/r33"));
 
 const TAMANHOS = [

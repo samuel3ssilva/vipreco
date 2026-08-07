@@ -1374,3 +1374,73 @@ coincide entre as duas telas —, não as frases de hoje.
 **Escopo:** o guarda de `index.escopo.test.ts` reprovou cada arquivo novo antes de ele entrar no
 allowlist, que é a ordem certa. Banco, migrations, ranking, comparação, detalhe, `/para-mercados`,
 Worker e produção não foram tocados.
+
+### DL-037 — R3.3B: a Home volta a ter produto
+
+- **Data:** 07/08/2026
+- **Decisão do:** Founder/PMO, após revisar o checkpoint de R3.3A
+- **Veredito do Gate:** aprovado nos contratos, **reprovado na direção visual**
+- **PR:** #97 (`feat/r33-home-achados`), **sem merge**
+
+O Founder foi explícito sobre o diagnóstico e sobre a prioridade: _"Tecnicamente, a R3.3A está
+boa… PORÉM O FOUNDER NÃO APROVA A DIREÇÃO VISUAL ATUAL."_ e _"NÃO FAZER MAIS BACKEND NESTA
+MISSÃO. CONCENTRAR O ESFORÇO EM DESIGN, UX E POLIMENTO VISUAL."_ O MVP vai ser mostrado a
+consumidores de Artemis e a donos de supermercado, e para essas conversas parecer produto vale
+mais do que somar capacidade.
+
+**O fio de tudo: a Home não tinha produto.** Todo Achado era um retângulo cinza com uma silhueta
+de ícone, e o resto da tela era texto — datas em monoespaçada, um selo tracejado de fixture, dois
+parágrafos explicando o campo de busca. Nada disso estava errado; tudo somado dava um painel
+administrativo.
+
+**1. Ilustrações genéricas de categoria (§5).** Três SVGs planos em `public/img/demo/`, sem
+texto, sem embalagem, marca, logotipo ou trade dress de terceiro. O contrato do Card v2 ganhou a
+bandeira `ilustrativa`, e o teste `demo-opportunities.ilustrativas.test.ts` reprova qualquer
+oferta que a carregue sem `is_demo` — a proibição do mandato ("não tratar imagem ilustrativa como
+correspondência real de SKU") virou portão, não prosa.
+
+**As marcas do fixture passaram a ser fictícias**, e isso não é escopo extra: um desenho genérico
+ao lado do nome de uma marca existente representa a embalagem daquela marca, por mais genérico
+que seja o traço. O assessment da North Star V2 já tinha rejeitado marcas reais nas telas; esta
+rodada fechou a ponta do dado. As substitutas vêm da própria North Star V2.
+
+**Divergência registrada e não corrigida:** `supabase/seed.sql` segue com as marcas antigas, e em
+staging a Home mostrará "Serra Alta" enquanto a página do produto — que lê do banco — mostra a
+anterior. Alinhar exige reseed, que é banco, e §10 manda documentar em vez de implementar.
+
+**2. Uma anatomia, duas composições (§6).** A lista deixou de ser o `AchadoCard` e passou a ser
+`card-v2/compact.tsx`, que chama a **mesma** `montarVisaoDoCard` do destaque. Duas anatomias eram
+duas chances de uma regra ser cumprida de um lado e esquecida do outro — foi assim que o histórico
+de preço sobreviveu na Home por uma onda inteira depois de sair do Card v2 (DL-030). O
+`AchadoCard` deixou de existir; a densidade que R3.3 mediu foi preservada pela composição, não
+por um segundo componente.
+
+**3. A ênfase entre os dois CTAs se inverteu (§6).** O botão sólido da Home passou a ser o de
+comparação, que é o núcleo do produto; o convite de WhatsApp ficou contornado. A página pedia
+contato com mais força do que oferecia comparação.
+
+**4. A primeira dobra encolheu (§6, §7).** Título de sete palavras para três — "Achados em
+Artemis", que diz **menos**, não mais —, campo de busca de 56 px, atalhos em pílula, e o aviso de
+confiança discreto em vez de caixa de alerta. O cabeçalho de seção da busca saiu: duas frases
+explicando um campo com lupa, `placeholder` e quatro atalhos com nome de produto. Rótulo e
+instrução continuam no HTML, em `sr-only` — escondido visualmente não é ausente.
+
+**5. Saiu o que parecia laboratório (§7).** A moldura tracejada em monoespaçada do selo de dados
+fictícios — **a frase ficou** —, e o `font-data` das linhas de procedência. A regra é do próprio
+design system: mono só em dado tabular de fato, e "observado em 06/08/2026 · ontem" é texto
+corrido.
+
+**6. Hierarquia (§8).** Preço do destaque de 2 rem para 2,625 rem, imagem de 96 px para 112, e a
+condição de promoção como nota em vez de caixa contornada. A ordem pedida — produto, preço,
+mercado, confiança, ação — passou a ter pesos distintos em vez de seis linhas equidistantes.
+
+**7. Os sete estados (§9)** continuam sendo contrato, um a um. O que mudou foi a apresentação:
+ícone em círculo, título na tipografia de display, espaço para respirar.
+
+**Medido, não afirmado:** cinco larguras sem rolagem horizontal, duas abas em todas, zero
+controles abaixo de 48 px, zero histórico de preço, exatamente um CTA de WhatsApp, e a página
+~19% mais curta a 390 px. O guarda de escopo reprovou os treze caminhos novos antes de cada um
+entrar no allowlist com o seu motivo escrito.
+
+**Não tocado:** banco, migrations, backfill, dados reais, produção, DNS, Worker, RLS, ranking,
+comparação, detalhe da oferta, busca e `/para-mercados`.

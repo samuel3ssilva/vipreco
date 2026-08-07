@@ -1,21 +1,23 @@
 /**
- * R3.3 / R3.3A — painel comparativo da Home para o Gate visual do Founder.
+ * R3.3B — painel comparativo da Home para o Gate visual do Founder.
  *
  * =============================================================================
- * O "ANTES" É RENDERIZADO, NÃO LEMBRADO
+ * NENHUM "ANTES" É LEMBRADO. TODOS SÃO RENDERIZADOS AGORA
  * =============================================================================
  *
- * A coluna da esquerda não é uma captura antiga guardada em disco: é a Home de `origin/main`
- * servida por um SEGUNDO servidor de desenvolvimento, num worktree efêmero, e fotografada no
- * mesmo navegador e no mesmo instante que a Home de R3.3. Sem isso, o "antes" e o "depois"
- * teriam fontes, versões de navegador e datas de fixture diferentes, e metade do que o painel
- * mostrasse como mudança de R3.3 seria mudança de ambiente.
+ * O mandato §14 pede quatro áreas: a Home técnica anterior, a referência visual aprovada, a
+ * R3.3A e a R3.3B. Três delas são aplicação — e as três são servidas por servidores paralelos,
+ * de worktrees efêmeros, fotografadas no MESMO navegador e no MESMO instante. Sem isso, metade
+ * do que o painel mostrasse como mudança de desenho seria diferença de fonte, de versão de
+ * navegador ou de data de fixture.
  *
- * Como rodar (dois servidores, um por versão):
+ * Como rodar (três servidores, um por versão):
  *
- *     git worktree add --detach /tmp/antes origin/main
- *     ln -s "$PWD/node_modules" /tmp/antes/node_modules
- *     (cd /tmp/antes && bunx vite dev --port 8081) &
+ *     git worktree add --detach /tmp/vp-antes origin/main
+ *     git worktree add --detach /tmp/vp-r33a  <head de R3.3A>
+ *     for d in /tmp/vp-antes /tmp/vp-r33a; do ln -s "$PWD/node_modules" $d/node_modules; cp .env $d/.env; done
+ *     (cd /tmp/vp-antes && bunx vite dev --port 8081 --strictPort) &
+ *     (cd /tmp/vp-r33a  && bunx vite dev --port 8082 --strictPort) &
  *     bun run dev &
  *     bun scripts/visual/comparison-board-home.ts
  *
@@ -31,61 +33,91 @@ import { join } from "node:path";
 import { abrirChrome, capturarPagina, conectar, dimensoesDoPng, medir } from "./cdp";
 
 const ANTES = process.env.BASE_ANTES ?? "http://localhost:8081";
+const R33A = process.env.BASE_R33A ?? "http://localhost:8082";
 const DEPOIS = process.env.BASE_DEPOIS ?? "http://localhost:8080";
 const DESTINO = join(process.cwd(), "docs/evidence/visual/r33");
 const PORTA = 9342;
-const LARGURA = 1600;
+const LARGURA = 2080;
+
+/** Worktrees efêmeros que servem as colunas A e C. Só para ler o commit que cada um serve. */
+const WORKTREE_ANTES = process.env.WORKTREE_ANTES ?? "/tmp/vp-antes";
+const WORKTREE_R33A = process.env.WORKTREE_R33A ?? "/tmp/vp-r33a";
+
+/**
+ * A leitura que o mandato §14 pede explicitamente: o que ficou mais bonito, o que ficou mais
+ * simples, o que foi preservado, o que foi removido e o que permanece futuro — entre a coluna C
+ * (R3.3A) e a coluna D (R3.3B).
+ */
+const DE_C_PARA_D = [
+  "MAIS BONITO — produto visível. Três placeholders viraram três ilustrações de categoria, e o card de destaque passou a ter uma imagem de 112 px em vez de um ícone de 96. É a mudança que responde ao diagnóstico do Founder: a Home parecia painel administrativo porque não mostrava produto nenhum.",
+  "MAIS BONITO — hierarquia de preço. O preço do destaque foi de 2 rem para 2,625 rem, e a lista ganhou um preço próprio à direita, alinhado. Antes o preço empatava com o nome do produto e com o nome do mercado: três linhas com o mesmo peso não são hierarquia.",
+  "MAIS SIMPLES — a primeira dobra perdeu duas frases. O cabeçalho de seção da busca ('Procurando um produto específico?' mais uma linha de apoio) explicava um campo com lupa, placeholder e quatro atalhos com nome de produto. O título encolheu de 'Você está vendo ofertas de Artemis' para 'Achados em Artemis', que diz menos, não mais.",
+  "MAIS SIMPLES — a página encurtou ~25% a 390 px, sem perder um único campo de procedência.",
+  "REMOVIDO — o que parecia laboratório. A moldura tracejada em monoespaçada do selo de dados fictícios (a FRASE ficou), o `font-data` das datas de observação e validade, e o botão repetido no rodapé de cada item da lista.",
+  "REMOVIDO — as marcas reais do fixture, e com elas o risco de uma ilustração genérica ser lida como a embalagem de uma marca existente.",
+  "PRESERVADO — tudo o que o §4 lista. Duas abas; Artemis · Piracicaba-SP; produto exato antes do preço; fonte, atualização e validade em todo card; validade ausente dita; sem promessa absoluta; sem histórico de preço; sem mercado habitual; sem personalização; sem prova social; sem parceiro; sem ranking pago; sem distância; expirada ≠ desatualizada; vazio ≠ sem ofertas vigentes.",
+  "PRESERVADO — os sete estados da seção de Achados, um a um, com a apresentação melhorada e o contrato intacto.",
+  "FUTURO — comparação do mesmo SKU, detalhe da oferta, contagem de mercados no CTA, fotografia real de produto e preço unitário. Cada um com o seu bloqueio nomeado abaixo.",
+];
 
 /** Onde a entrega SEGUE a referência atual, o North Star V2. */
 const ALINHAMENTOS = [
   "DUAS ABAS, E SÓ DUAS. O V2 desenha a barra inferior com Achados e Buscar. A Home entregue tem exatamente essas duas, no cabeçalho e na barra — e há teste que reprova a volta de Comparar, Favoritos, Mais, Mercados e WhatsApp como aba.",
   "A BUSCA NA PRIMEIRA DOBRA. O V2 põe o campo acima dos Achados, e é a decisão D2 do roadmap. Antes ele vinha DEPOIS da vitrine inteira: quem chegava sabendo o que queria precisava rolar por tudo antes de poder perguntar.",
-  "CONTEXTO ANTES DE CONTEÚDO. O título diz onde você está — 'Você está vendo ofertas de Artemis' — em vez de prometer resultado. O V2 pede a mesma disciplina: nada de 'melhor preço', nada de 'mais barato perto de você'.",
-  "O CARD V2 NO DESTAQUE. A primeira oferta usa a peça aprovada em R3.2: identidade do produto antes do preço, procedência completa, estado em texto.",
-  "PROCEDÊNCIA EM TODO PREÇO. Nenhum card mostra valor sem fonte e data — na Home entregue e no V2.",
-  "UM CONVITE DE WHATSAPP, DEPOIS DO PRODUTO. R3.3A removeu o CTA fixo que acompanhava a rolagem desde a primeira dobra: ele pedia o contato de quem ainda não tinha visto um Achado. Ficou um só, inline, abaixo do que a Home entrega.",
+  "R3.3B — PRODUTO RECONHECÍVEL EM TODO ACHADO. Era esta a lacuna que o Founder viu: a Home mostrava placeholders e parecia painel técnico. Agora cada Achado tem uma ilustração de categoria, versionada, feita para a demonstração — sem embalagem, marca, logotipo ou trade dress de terceiro. O `alt` de cada uma diz o que ela é: ilustração genérica, não a embalagem do produto.",
+  "R3.3B — CARTÃO PROTAGONISTA E LINHA COMPACTA, como no V2. O destaque domina — imagem de 112 px, preço em 2,625 rem — e os demais são linhas de leitura rápida com imagem, identidade, mercado, procedência e preço à direita.",
+  "CONTEXTO ANTES DE CONTEÚDO. O título diz onde você está — 'Achados em Artemis' — em vez de prometer resultado. O V2 pede a mesma disciplina: nada de 'melhor preço', nada de 'mais barato perto de você'.",
+  "PROCEDÊNCIA EM TODO PREÇO. Nenhum card mostra valor sem fonte, atualização e validade — na Home entregue e no V2. Quando o mercado não informou validade, a ausência é DITA.",
+  "UM CONVITE DE WHATSAPP, DEPOIS DO PRODUTO. R3.3A removeu o CTA fixo que acompanhava a rolagem desde a primeira dobra. R3.3B rebaixou o peso dele: o botão sólido da Home passou a ser o de comparação, que é o núcleo do produto.",
 ];
 
 /** Onde a entrega SE AFASTA da referência, e por quê. */
 const DIVERGENCIAS = [
-  "OS SECUNDÁRIOS NÃO SÃO CARD V2. Só o destaque é. Foi medido em R3.2: o Card v2 ocupa ~400 px de CSS, e quatro deles passam de uma tela e meia num celular comum — o que se repete deixa de ser informação e vira textura. Os secundários seguem no `AchadoCard` compacto. A unificação é assunto de R6, quando o detalhe da oferta existir e a lista tiver mais do que três itens fictícios para provar densidade.",
   "A DIFERENÇA ENTRE MERCADOS NÃO APARECE. O V2 mostra 'R$ 0,50 abaixo da próxima oferta observada'. A Home entrega Achados de produtos DIFERENTES, não um conjunto comparável do mesmo SKU — não há segundo preço de onde tirar a distância. Ela entra com a tela de comparação, em R5/R6.",
+  "O CTA NÃO DIZ 'COMPARAR EM 3 MERCADOS'. O V2 diz, e o Card v2 sabe dizer — `markets_with_valid_price` existe e é lido. O que não existe é a contagem: o fixture tem um preço por produto, e escrever um número maior seria inventar. O rótulo passa a citar mercados quando o dado citar.",
   "NENHUM SINO DE NOTIFICAÇÃO. O North Star original desenhava um. Notificação exige canal, consentimento e uma decisão sobre o que é digno de interromper alguém — nada disso existe. Um sino que não notifica ensina o usuário a não confiar na interface.",
-  "NENHUMA PERSONALIZAÇÃO NA HOME. O seletor 'Seu mercado habitual' saiu em R3.3A: um seletor na primeira tela declara um produto personalizado, e o MVP não é um. Ele continua em `/produto/$productId`, onde a preferência tem consequência imediata na linha de quanto você economiza. 'Preferência de mercado / mercado habitual / personalização futura' está registrado como POST-MVP em ROADMAP-MVP-v3 §4.",
+  "NENHUMA PERSONALIZAÇÃO NA HOME. O seletor 'Seu mercado habitual' saiu em R3.3A: um seletor na primeira tela declara um produto personalizado, e o MVP não é um. Ele continua em `/produto/$productId`, onde a preferência tem consequência imediata. 'Preferência de mercado / mercado habitual / personalização futura' está registrado como POST-MVP em ROADMAP-MVP-v3 §4.",
+  "NENHUMA TARJA 'DESTAQUE DE HOJE'. O V2 desenha uma faixa âmbar sobre o card principal. O destaque do ViPreço não é escolhido por ninguém — é o primeiro da lista que o serviço já entregou ordenada —, e uma tarja editorial afirmaria uma curadoria que não existe. A referência é autoridade de qualidade, não de função.",
   "ARTEMIS É FIXA NO TÍTULO. Não há seleção de bairro nem geolocalização — geolocalização está fora do MVP por escopo. O piloto é de um bairro só, e o título diz isso em vez de fingir cobertura.",
+  "O SEED DE STAGING AINDA TEM AS MARCAS ANTIGAS. O fixture da Home passou a usar marcas fictícias; `supabase/seed.sql` não, porque banco está fora do escopo desta missão (§10). Em staging, portanto, a Home mostra 'Serra Alta' e a página do produto mostra a marca antiga. Alinhar exige reseed, que é decisão do Founder.",
 ];
 
 /** Decisões funcionais que ganharam do desenho, com o motivo. */
 const DECISOES = [
-  "O BOTÃO 'BUSCAR' DO CABEÇALHO SAIU. Com a busca na primeira dobra e 'Buscar' como aba, ele era a TERCEIRA forma de fazer a mesma coisa no mesmo viewport de 390 px, e as três brigavam pela mesma decisão nos primeiros cinco segundos. A aba fica porque está no polegar em todas as rotas; o campo fica porque é onde a busca acontece.",
-  "'AJUDA' E 'MERCADOS' VIRARAM LINKS DE RODAPÉ, e por motivos diferentes. 'Mercados' era a `/para-mercados` — uma landing B2B — vestida de seção do app do consumidor; o contrato aprovado diz rota separada, nunca aba do B2C. 'Ajuda' é consulta pontual, não jornada, e numa barra de quatro cada aba levava um quarto da largura e um quarto da atenção.",
-  "O TÍTULO É 'ACHADOS', NÃO 'ACHADOS DE HOJE'. O fixture tem preços de ontem, de dois e de três dias atrás, e o piloto vai ter dados mais velhos. 'De hoje' prometeria uma frescura que a linha de procedência de cada card desmente três linhas abaixo. Foi um teste de regressão que pegou isto, não uma revisão.",
-  "NENHUM CRITÉRIO EDITORIAL ESCOLHE O DESTAQUE. Ele é o primeiro da lista que o serviço já entregou ordenada. 'Destaque do dia' com curadoria seria ranking editorial — o oposto da neutralidade — e não existe critério objetivo escrito para elegê-lo.",
-  "HISTÓRICO DE PREÇO SAIU DO DADO, NÃO SÓ DA TELA. O campo `previous_price` foi removido do fixture e da interface do card. Sem P-01 decidida, não existe critério escrito de QUAL observação anterior conta — e um fixture que carrega o número mantém vivo o componente que o mostra. Tirar da tela e deixar no dado é adiar, não decidir.",
-  "R3.3A — O CONSERTO SAIU JUNTO COM O PROBLEMA. Com o CTA fixo fora da Home, saiu também a máquina de anti-duplicação que existia por causa dele: loja de visibilidade compartilhada, marcador no DOM, `IntersectionObserver` e o `inert` condicional no convite do fluxo. Um mecanismo que nunca dispara é o que ninguém percebe estar quebrado. Ele continua inteiro em `/para-mercados`, onde a duplicação é real.",
-  "R3.3A — OS DOIS BLOCOS LONGOS DO RODAPÉ VIRARAM COMPACTOS, e o conteúdo mudou de lugar, não de existência. 'Nenhum preço aparece sozinho' (quatro cartões de atributo e três regras) virou 'Preço com procedência': uma frase e uma porta. As três regras — você compra na loja, o estoque é do mercado, A ORDEM NÃO É VENDIDA — foram para `/como-funciona`. A terceira é o princípio de neutralidade declarado em público; a redução da Home só pôde acontecer depois de o texto existir do outro lado, e um teste amarra as duas pontas.",
-  "R3.3A — 'SEM OFERTAS VIGENTES' GANHOU COPY PRÓPRIA. Era divergência registrada no painel de estados: os dois estados caíam em 'estamos começando a mapear preços' — verdadeiro quando nada foi conferido, falso quando houve mapeamento e o preço envelheceu. A distinção é dado, não heurística: lista de origem vazia é vazio real; lista com itens e nenhum válido é oferta vencida. Só a segunda oferece 'Buscar produto' — no vazio real não há o que buscar.",
-  "OS DOIS `nav` TÊM NOMES DISTINTOS. 'Navegação principal' na barra inferior, 'Navegação principal do cabeçalho' no topo. Com o mesmo nome, os dois marcos ficam indistinguíveis na lista de regiões do leitor de tela — e só um está visível por vez, mas a árvore acessível não sabe disso. Foi a medição que pegou; a inspeção visual não pegaria.",
+  "R3.3B — UMA ANATOMIA, DUAS COMPOSIÇÕES. Até aqui a lista usava o `AchadoCard`, um componente com título, preço e procedência próprios. Duas anatomias são duas chances de uma regra ser cumprida de um lado e esquecida do outro: foi assim que o histórico de preço sobreviveu na Home por uma onda inteira depois de sair do Card v2 (DL-030). A linha de lista agora chama a MESMA `montarVisaoDoCard` do destaque, e o `AchadoCard` deixou de existir.",
+  "R3.3B — A LINHA INTEIRA VIROU O LINK. O botão 'Ver preços por mercado' repetido a cada 130 px deixava de ser ação e virava textura. O alvo não encolheu: cresceu para a linha toda, que passa de 88 px de altura.",
+  "R3.3B — NADA TRUNCA NA LINHA DE PROCEDÊNCIA. A primeira versão truncava, e o resultado era 'válido até 10/0…' e 'validade…'. Truncar serve para texto que se repete; não serve para o dado que o card existe para carregar. A linha ocupa a largura inteira e quebra.",
+  "R3.3B — A MONOESPAÇADA SAIU DO TEXTO CORRIDO. 'observado em 06/08/2026 · ontem' em mono não alinhava coluna nenhuma e emprestava ao card o ar de log de sistema. A regra é do próprio design system: mono só em dado tabular de fato.",
+  "R3.3B — AS MARCAS DO FIXTURE VIRARAM FICTÍCIAS. Uma ilustração genérica ao lado do nome de uma marca existente representa a embalagem daquela marca, por mais genérico que seja o traço. O assessment da North Star V2 já tinha rejeitado marcas reais nas telas; esta rodada fechou a ponta do dado.",
+  "O BOTÃO 'BUSCAR' DO CABEÇALHO SAIU. Com a busca na primeira dobra e 'Buscar' como aba, ele era a TERCEIRA forma de fazer a mesma coisa no mesmo viewport de 390 px. A aba fica porque está no polegar em todas as rotas; o campo fica porque é onde a busca acontece.",
+  "'AJUDA' E 'MERCADOS' VIRARAM LINKS DE RODAPÉ, e por motivos diferentes. 'Mercados' era a `/para-mercados` — uma landing B2B — vestida de seção do app do consumidor. 'Ajuda' é consulta pontual, não jornada, e numa barra de quatro cada aba levava um quarto da largura e um quarto da atenção.",
+  "O TÍTULO É 'ACHADOS', NÃO 'ACHADOS DE HOJE'. O fixture tem preços de ontem e de dois dias atrás, e o piloto vai ter dados mais velhos. 'De hoje' prometeria uma frescura que a linha de procedência de cada card desmente três linhas abaixo.",
+  "HISTÓRICO DE PREÇO SAIU DO DADO, NÃO SÓ DA TELA. Sem P-01 decidida, não existe critério escrito de QUAL observação anterior conta — e um fixture que carrega o número mantém vivo o componente que o mostra.",
+  "R3.3A — O CONSERTO SAIU JUNTO COM O PROBLEMA. Com o CTA fixo fora da Home, saiu também a máquina de anti-duplicação que existia por causa dele. Um mecanismo que nunca dispara é o que ninguém percebe estar quebrado. Ele continua inteiro em `/para-mercados`, onde a duplicação é real.",
+  "R3.3A — AS TRÊS REGRAS DE CONFIANÇA FORAM PARA `/como-funciona`, inclusive A ORDEM NÃO É VENDIDA, que é o princípio de neutralidade declarado em público. A redução da Home só pôde acontecer depois de o texto existir do outro lado, e um teste amarra as duas pontas.",
+  "OS DOIS `nav` TÊM NOMES DISTINTOS. Com o mesmo nome, os dois marcos ficam indistinguíveis na lista de regiões do leitor de tela. Foi a medição que pegou; a inspeção visual não pegaria.",
 ];
 
-/** O que R3.3 NÃO entrega, dito para não ser lido como esquecimento. */
+/** O que R3.3B NÃO entrega, dito para não ser lido como esquecimento. */
 const FUTUROS = [
   "Tela de comparação do mesmo SKU entre mercados (R5/R6) — o núcleo do produto, e a razão de a busca ter subido.",
   "Detalhe completo da oferta, com a lista de preços por mercado (R5/R6).",
-  "Card v2 na lista inteira, com densidade medida em dado real (R6).",
-  "Personalização por mercado habitual na Home — POST-MVP, registrado em ROADMAP-MVP-v3 §4. Nada dela pode ser preparado por antecipação: nenhuma segmentação e nenhum recorte da lista orgânica.",
-  "Mecânica completa do WhatsApp — o convite continua sendo um link, e a resposta continua manual. R3.3A mudou a posição e o texto do CTA, não o que acontece depois dele.",
+  "Contagem de mercados no rótulo do CTA — o card já sabe exibi-la; falta o dado.",
+  "Fotografia real de produto — depende da política de revisão de imagem (R6). As ilustrações desta rodada são de categoria e existem só na demonstração.",
+  "Personalização por mercado habitual na Home — POST-MVP, registrado em ROADMAP-MVP-v3 §4.",
+  "Mecânica completa do WhatsApp — o convite continua sendo um link, e a resposta continua manual.",
   "Preço unitário na Home — depende de quantidade estruturada aprovada, e o backfill continua proibido.",
-  "Histórico de preço e alerta de queda — fora do escopo atual no roadmap do V2, e bloqueado por P-01.",
+  "Histórico de preço e alerta de queda — bloqueado por P-01.",
   "Qualquer camada de parceiro ou conteúdo pago: quando existir, vive em seção separada e rotulada, e jamais reordena a lista orgânica.",
 ];
 
 const base64 = (caminho: string) => readFileSync(caminho).toString("base64");
 const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 
+/** O commit que cada servidor está servindo, lido do worktree correspondente. */
 function commitDe(url: string): string {
-  if (url === DEPOIS) return execFileSync("git", ["rev-parse", "HEAD"]).toString().trim();
-  return execFileSync("git", ["rev-parse", "origin/main"]).toString().trim();
+  const dir = url === DEPOIS ? process.cwd() : url === ANTES ? WORKTREE_ANTES : WORKTREE_R33A;
+  return execFileSync("git", ["-C", dir, "rev-parse", "HEAD"]).toString().trim();
 }
 
 interface MedidaAbas {
@@ -120,11 +152,13 @@ const MEDIR_ABAS = `(() => {
 
 function montarHtml(campos: {
   antes: string;
-  depois: string;
   v2: string;
+  r33a: string;
+  depois: string;
   abasAntes: MedidaAbas;
   abasDepois: MedidaAbas;
   shaAntes: string;
+  shaR33a: string;
   shaDepois: string;
 }): string {
   const lista = (itens: readonly string[]) => itens.map((d) => `<li>${d}</li>`).join("");
@@ -136,9 +170,10 @@ function montarHtml(campos: {
     body { background: #fbf7ec; color: #10231c; font-family: -apple-system, system-ui, sans-serif; padding: 32px; width: ${LARGURA}px; }
     h1 { font-size: 26px; letter-spacing: -0.01em; }
     .sub { color: #5b6b63; margin: 6px 0 24px; font-size: 14px; line-height: 1.55; max-width: 96ch; }
-    .tres { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+    .quatro { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 18px; align-items: start; }
     .col { background: #fff; border: 1px solid #e2ded2; border-radius: 12px; padding: 14px; }
     .col.entrega { border-color: #0e5c3c; border-width: 2px; }
+    .col.ref { border-color: #c89a25; border-width: 2px; background: #fffdf6; }
     .rot { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #0e5c3c; }
     .rot.velho { color: #8a7a55; }
     .meta { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 10px; color: #8a9490; margin: 4px 0 10px; word-break: break-all; }
@@ -168,45 +203,51 @@ function montarHtml(campos: {
     .futuro h2 { color: #5b6b63; }
     .rodape { margin-top: 18px; font-size: 12px; color: #5b6b63; line-height: 1.6; max-width: 96ch; }
   </style></head><body>
-    <h1>R3.3A — painel comparativo da Home para o Gate visual</h1>
-    <p class="sub">Três colunas, mesma largura de celular (390&nbsp;px). À esquerda a Home <strong>anterior</strong>, renderizada agora a partir de <code>origin/main</code> num servidor paralelo — não é uma captura antiga guardada em disco. No meio a <strong>referência atual</strong>, a tela 1 do North&nbsp;Star&nbsp;V2. À direita a Home <strong>entregue por R3.3 + R3.3A</strong>. As colunas 1 e 3 são páginas inteiras <strong>recortadas pelo topo na mesma escala</strong> — as versões completas estão nos quatro PNGs de largura ao lado deste arquivo. Os três saíram do mesmo navegador, no mesmo instante, com animação congelada.</p>
-    <div class="tres">
+    <h1>R3.3B — painel comparativo da Home para o Gate visual</h1>
+    <p class="sub">Quatro áreas, mesma largura de celular (390&nbsp;px). <strong>A</strong> é a Home técnica anterior, renderizada agora a partir de <code>origin/main</code> num servidor paralelo — não é captura antiga guardada em disco. <strong>B</strong> é a referência visual aprovada, a tela 1 do North&nbsp;Star&nbsp;V2, em tamanho suficiente para comparação. <strong>C</strong> é a R3.3A, funcionalmente correta e reprovada na direção visual. <strong>D</strong> é a R3.3B. As três colunas de aplicação são páginas inteiras <strong>recortadas pelo topo na mesma escala</strong> — as versões completas estão nos PNGs de largura ao lado deste arquivo — e saíram do mesmo navegador, no mesmo instante, com animação congelada.</p>
+    <div class="quatro">
       <div class="col">
-        <p class="rot velho">1 · Home anterior (origin/main)</p>
+        <p class="rot velho">A · Home técnica anterior (origin/main)</p>
         <p class="meta">${campos.shaAntes}</p>
-        <img class="app" src="data:image/png;base64,${campos.antes}" alt="Home anterior">
+        <img class="app" src="data:image/png;base64,${campos.antes}" alt="Home técnica anterior">
       </div>
-      <div class="col">
-        <p class="rot">2 · North Star V2 — tela 1</p>
+      <div class="col ref">
+        <p class="rot">B · Referência aprovada — North Star V2, tela 1</p>
         <p class="meta">docs/product/visual-north-star-v2/telas/tela-1-home.png</p>
         <img src="data:image/png;base64,${campos.v2}" alt="North Star V2, tela 1">
       </div>
+      <div class="col">
+        <p class="rot velho">C · R3.3A — contratos certos, direção visual reprovada</p>
+        <p class="meta">${campos.shaR33a}</p>
+        <img class="app" src="data:image/png;base64,${campos.r33a}" alt="Home de R3.3A">
+      </div>
       <div class="col entrega">
-        <p class="rot">3 · Home entregue — R3.3 + R3.3A</p>
+        <p class="rot">D · R3.3B — final visual polish</p>
         <p class="meta">${campos.shaDepois}</p>
-        <img class="app" src="data:image/png;base64,${campos.depois}" alt="Home entregue por R3.3 e R3.3A">
+        <img class="app" src="data:image/png;base64,${campos.depois}" alt="Home entregue por R3.3B">
       </div>
     </div>
 
     <div class="abas">
       <h2>Navegação: de quatro abas para duas</h2>
-      <div class="linha"><b>Antes (${campos.abasAntes.abas} abas)</b>${chips(campos.abasAntes, "#c9b98a")}</div>
-      <div class="linha"><b>R3.3A (${campos.abasDepois.abas} abas)</b>${chips(campos.abasDepois, "#0e5c3c")}</div>
+      <div class="linha"><b>A · anterior (${campos.abasAntes.abas} abas)</b>${chips(campos.abasAntes, "#c9b98a")}</div>
+      <div class="linha"><b>D · R3.3B (${campos.abasDepois.abas} abas)</b>${chips(campos.abasDepois, "#0e5c3c")}</div>
       <p class="rodape"><strong>Medido no DOM, não lido no código:</strong> a Home anterior tinha ${campos.abasAntes.navsComMesmoNome > 0 ? `<strong>${campos.abasAntes.navsComMesmoNome} par de landmarks de navegação com o MESMO nome acessível</strong> — “Navegação principal” duas vezes, indistinguíveis na lista de regiões do leitor de tela. A entregue tem ${campos.abasDepois.navsComMesmoNome}` : `${campos.abasAntes.navsComMesmoNome} nome de navegação repetido, e a entregue também ${campos.abasDepois.navsComMesmoNome}`}.</p>
       <p class="rodape">“Como funciona” e “Tenho um mercado” continuam alcançáveis, pelo rodapé. Aba não é o único jeito de chegar a uma página; é o jeito que declara “esta é uma das coisas principais que você faz aqui”. Achar e comparar preço são duas. Não há uma terceira.</p>
     </div>
 
+    <div class="bloco"><h2>O que ficou mais bonito, mais simples e o que foi removido — de C para D</h2><ul>${lista(DE_C_PARA_D)}</ul></div>
     <div class="bloco"><h2>Onde a entrega segue o North Star V2</h2><ul>${lista(ALINHAMENTOS)}</ul></div>
     <div class="bloco"><h2>Decisões funcionais que prevaleceram sobre o desenho</h2><ul>${lista(DECISOES)}</ul></div>
     <div class="bloco alerta"><h2>Divergências em relação à referência</h2><ul>${lista(DIVERGENCIAS)}</ul></div>
-    <div class="bloco futuro"><h2>Itens futuros — não entregues em R3.3/R3.3A, e dito para não ser lido como esquecimento</h2><ul>${lista(FUTUROS)}</ul></div>
+    <div class="bloco futuro"><h2>Itens futuros — não entregues em R3.3B, e dito para não ser lido como esquecimento</h2><ul>${lista(FUTUROS)}</ul></div>
 
-    <p class="rodape">Todo dado exibido é <strong>fictício e versionado</strong> (<code>src/lib/demo-opportunities.ts</code>): nenhum mercado real aparece como participante, nenhum preço vem de staging ou de produção, e a faixa “AMBIENTE DE TESTE” está no topo das três colunas de aplicação. Os estados da seção de Achados estão em <code>home-achados-states.png</code>.</p>
+    <p class="rodape">Todo dado exibido é <strong>fictício e versionado</strong> (<code>src/lib/demo-opportunities.ts</code>): nenhum mercado real aparece como participante, nenhum preço vem de staging ou de produção, e a faixa “AMBIENTE DE TESTE” está no topo das três colunas de aplicação. Os estados da seção de Achados estão em <code>home-final-states.png</code>. As imagens de produto são <strong>ilustrações genéricas de categoria</strong>, criadas para a demonstração: não reproduzem embalagem, marca, logotipo ou trade dress de terceiro, e o texto alternativo de cada uma diz isso.</p>
   </body></html>`;
 }
 
 async function principal() {
-  for (const base of [ANTES, DEPOIS]) {
+  for (const base of [ANTES, R33A, DEPOIS]) {
     const r = await fetch(base).catch(() => null);
     if (r === null || !r.ok) {
       console.error(
@@ -225,11 +266,16 @@ async function principal() {
 
     const pngAntes = await capturarPagina(s, { url: `${ANTES}/`, ...opcoes });
     const abasAntes = await medir<MedidaAbas>(s, MEDIR_ABAS);
+    const pngR33a = await capturarPagina(s, { url: `${R33A}/`, ...opcoes });
+    const abasR33a = await medir<MedidaAbas>(s, MEDIR_ABAS);
     const pngDepois = await capturarPagina(s, { url: `${DEPOIS}/`, ...opcoes });
     const abasDepois = await medir<MedidaAbas>(s, MEDIR_ABAS);
 
     console.log(
       `antes:  ${abasAntes.abas} abas — ${abasAntes.rotulos.join(", ")} · nav com nome repetido: ${abasAntes.navsComMesmoNome}`,
+    );
+    console.log(
+      `r3.3a:  ${abasR33a.abas} abas — ${abasR33a.rotulos.join(", ")} · nav com nome repetido: ${abasR33a.navsComMesmoNome}`,
     );
     console.log(
       `depois: ${abasDepois.abas} abas — ${abasDepois.rotulos.join(", ")} · nav com nome repetido: ${abasDepois.navsComMesmoNome}`,
@@ -244,17 +290,29 @@ async function principal() {
     if (abasAntes.abas !== 4) {
       throw new Error(`o "antes" tem ${abasAntes.abas} abas; origin/main tem 4. Servidor errado?`);
     }
+    if (abasR33a.abas !== 2) {
+      throw new Error(`a coluna C tem ${abasR33a.abas} abas; R3.3A tem 2. Servidor errado?`);
+    }
     if (abasDepois.abas !== 2) {
-      throw new Error(`o "depois" tem ${abasDepois.abas} abas; R3.3 tem 2. Servidor errado?`);
+      throw new Error(`o "depois" tem ${abasDepois.abas} abas; R3.3B tem 2. Servidor errado?`);
+    }
+    // A coluna C precisa ser R3.3A, e não uma cópia da D. Se os dois servidores servirem o mesmo
+    // head, o painel afirmaria "antes e depois" sobre duas fotos idênticas.
+    if (pngR33a.equals(pngDepois)) {
+      throw new Error(
+        "as colunas C e D saíram idênticas — os dois servidores servem o mesmo head?",
+      );
     }
 
     const html = montarHtml({
       antes: pngAntes.toString("base64"),
-      depois: pngDepois.toString("base64"),
       v2: base64(join(process.cwd(), "docs/product/visual-north-star-v2/telas/tela-1-home.png")),
+      r33a: pngR33a.toString("base64"),
+      depois: pngDepois.toString("base64"),
       abasAntes,
       abasDepois,
       shaAntes: commitDe(ANTES),
+      shaR33a: commitDe(R33A),
       shaDepois: commitDe(DEPOIS),
     });
 
@@ -269,7 +327,9 @@ async function principal() {
       url: `file://${arquivoHtml}`,
       largura: LARGURA,
       movel: false,
-      espera: 6000,
+      // Quatro PNGs de página inteira como `data:` URI, e não três. O painel de R3.3A já morria
+      // com 1,5 s; com uma coluna a mais, 6 s continua sendo o piso seguro.
+      espera: 8000,
     };
     const primeira = await capturarPagina(s, opcoesBoard);
     const segunda = await capturarPagina(s, opcoesBoard);
@@ -281,8 +341,8 @@ async function principal() {
     }
 
     const { largura, altura } = dimensoesDoPng(primeira);
-    writeFileSync(join(DESTINO, "home-achados-comparison-board.png"), primeira);
-    console.log(`\n==> home-achados-comparison-board.png — ${largura}x${altura} px · reprodutível`);
+    writeFileSync(join(DESTINO, "home-final-comparison-board.png"), primeira);
+    console.log(`\n==> home-final-comparison-board.png — ${largura}x${altura} px · reprodutível`);
   } finally {
     chrome.kill();
   }

@@ -1,5 +1,5 @@
 /**
- * R3.3 — `home-achados-states.png`: os sete estados da seção de Achados, numa imagem.
+ * R3.3 — `home-final-states.png`: os sete estados da seção de Achados, numa imagem.
  *
  * Os painéis vêm de `/laboratorio-home-estados`, cada um a 390 px — a largura do celular comum.
  * A página inteira é fotografada de uma vez, para que os sete apareçam na mesma escala e possam
@@ -25,7 +25,7 @@ const ROTA = "/laboratorio-home-estados";
 const PORTA = 9341;
 const LARGURA = 1400;
 const DESTINO = join(process.cwd(), "docs/evidence/visual/r33");
-const ARQUIVO = "home-achados-states.png";
+const ARQUIVO = "home-final-states.png";
 
 /** Os sete estados que o mandato exige, na ordem em que os painéis aparecem. */
 const ESTADOS_EXIGIDOS = [

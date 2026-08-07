@@ -148,6 +148,15 @@ const PERMITIDOS = [
   // 5. A busca como protagonista da primeira dobra (§6): variante de destaque do campo, com
   //    rótulo e instrução apenas para leitor de tela. `/buscar` não muda — a prop é opt-in.
   "src/components/ProductSearch.tsx",
+  //
+  // 6. A política de imagem, porque R3.3B acrescentou uma distinção a ela. O adendo diz o que
+  //    NÃO foi afrouxado — as duas portas continuam sendo revisão aprovada e correspondência
+  //    exata — e o que passou a existir: `ilustrativa`, para que "exata" e "ilustrativa" não se
+  //    confundam quando houver fotografia de verdade. Este foi o único caminho que o guarda
+  //    reprovou depois do primeiro commit, e no CI, não aqui: o `bun run test` local rodou
+  //    antes do commit de documentação. A ordem certa continua sendo a mesma — o guarda pega,
+  //    e a entrada entra depois, com o motivo escrito.
+  "docs/data/IMAGE-POLICY.md",
 ] as const;
 
 /**

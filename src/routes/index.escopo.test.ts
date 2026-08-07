@@ -111,6 +111,43 @@ const PERMITIDOS = [
   // apagado é pior do que documento nenhum.
   "docs/mvp/HOME-NORTH-STAR.md",
   "docs/mvp/WHATSAPP-ENTRY.md",
+
+  // ===========================================================================
+  // R3.3B — o polimento visual final, pedido depois de o Founder reprovar a DIREÇÃO VISUAL.
+  // ===========================================================================
+  // O guarda reprovou os treze caminhos abaixo antes de eles entrarem aqui, numa lista só, e é
+  // essa a ordem certa. O que os une é uma frase do mandato: "NÃO FAZER MAIS BACKEND NESTA
+  // MISSÃO. CONCENTRAR O ESFORÇO EM DESIGN, UX E POLIMENTO VISUAL." Nenhum deles toca dado real,
+  // schema, Worker, ranking ou comparação.
+  //
+  // 1. Os assets genéricos (§5) — a mudança de maior efeito visual da rodada. Desenhos planos
+  //    de categoria, versionados, sem embalagem, marca, logotipo ou trade dress de terceiro.
+  "public/img/demo/",
+  //
+  // 2. O contrato de imagem e o fixture que passou a carregá-la. `card-v2.ts` ganhou a bandeira
+  //    `ilustrativa`, que é a proibição do §5 ("não tratar imagem ilustrativa como
+  //    correspondência real de SKU") virando dado verificável em vez de prosa.
+  "src/lib/card-v2.ts",
+  "src/lib/demo-opportunities.ilustrativas.test.ts",
+  //
+  // 3. O loader passou a declarar `OfertaCardV2`. Os dois tipos compilariam — todo campo do
+  //    Card v2 é opcional —, e era justamente isso o perigoso: a imagem atravessaria a Home
+  //    invisível para o compilador.
+  "src/services/home-opportunities.ts",
+  //
+  // 4. A composição de lista, derivada da MESMA visão do destaque (§6). Com ela, o
+  //    `AchadoCard` deixou de existir e o produto passou a ter uma anatomia só.
+  "src/components/card-v2/compact.tsx",
+  "src/components/card-v2/index.ts",
+  "src/components/card-v2/identity.tsx",
+  "src/components/card-v2/price.tsx",
+  "src/components/card-v2/provenance.tsx",
+  "src/components/card-v2/product-card-v2.tsx",
+  "src/components/card-v2/product-card-v2.test.tsx",
+  //
+  // 5. A busca como protagonista da primeira dobra (§6): variante de destaque do campo, com
+  //    rótulo e instrução apenas para leitor de tela. `/buscar` não muda — a prop é opt-in.
+  "src/components/ProductSearch.tsx",
 ] as const;
 
 /**

@@ -44,12 +44,21 @@ export function WhatsAppCta() {
   if (!href) return null;
 
   return (
-    <div className="space-y-1.5">
+    // R3.3B §6 REBAIXOU O PESO VISUAL, sem mexer no texto nem no destino.
+    //
+    // Ele era um botão verde sólido de largura inteira — o mesmo peso do CTA de comparação, e
+    // por um tempo mais peso, porque o do destaque era contornado. Numa página cuja função é
+    // descoberta, dois sólidos iguais fazem o olho escolher no par ou ímpar, e o que o produto
+    // precisa que a pessoa faça primeiro é comparar. Agora o sólido é um só, e é o da comparação.
+    //
+    // O que NÃO mudou: contraste (verde da ação sobre superfície clara), alvo de 48 px e o
+    // "falha fechado" sem número configurado. Secundário é hierarquia, não é escondido.
+    <div className="bg-secondary/60 border-secondary-foreground/15 space-y-2 rounded-xl border p-4 text-center">
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="btn-base btn-primary btn-touch-48 w-full rounded-full sm:w-auto"
+        className="btn-base btn-touch-48 border-primary/45 text-primary bg-card hover:bg-secondary w-full rounded-full border-[1.5px]"
       >
         <WhatsAppGlyph />
         {WHATSAPP_CTA_LABEL}

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { ArrowRight, Sprout } from "lucide-react";
 
 /**
  * "Feito para começar por Artemis" — o fechamento compacto da Home (R3.3A, item 4).
@@ -22,19 +23,29 @@ import { Link } from "@tanstack/react-router";
  */
 export function LocalStory() {
   return (
-    <section aria-labelledby="pertencimento-titulo" className="card-base space-y-3">
-      <div>
-        <h2 id="pertencimento-titulo" className="font-display text-xl sm:text-2xl">
-          Feito para começar por Artemis
-        </h2>
-        <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-          Estamos testando com poucos mercados e produtos antes de ampliar.
-        </p>
+    // Os dois blocos de fechamento levam para a MESMA rota — é a copy do mandato, e a instrução
+    // era não criar rota nova quando a existente já responde. R3.3B pelo menos os diferenciou em
+    // peso: o de procedência tem o botão, este tem um link. Dois botões idênticos, colados, com
+    // o mesmo destino, são a definição de redundância que o §7 mandou reduzir.
+    <section aria-labelledby="pertencimento-titulo" className="space-y-1.5 px-1">
+      <div className="flex items-start gap-3">
+        <Sprout aria-hidden="true" className="text-primary mt-0.5 size-5 shrink-0" />
+        <div>
+          <h2 id="pertencimento-titulo" className="font-display text-lg leading-tight">
+            Feito para começar por Artemis
+          </h2>
+          <p className="text-muted-foreground mt-1 max-w-prose text-sm">
+            Estamos testando com poucos mercados e produtos antes de ampliar.
+          </p>
+          <Link
+            to="/como-funciona"
+            className="text-primary mt-1 inline-flex min-h-12 items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline"
+          >
+            Como funciona o piloto
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+        </div>
       </div>
-
-      <Link to="/como-funciona" className="btn-base btn-secondary btn-sm btn-touch-48">
-        Como funciona o piloto
-      </Link>
     </section>
   );
 }

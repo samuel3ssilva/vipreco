@@ -4,12 +4,11 @@ import { HomeAchados } from "@/components/HomeAchados";
 import { HomeContexto } from "@/components/HomeContexto";
 import { TrustSection } from "@/components/TrustSection";
 import { LocalStory } from "@/components/LocalStory";
+import { Info } from "lucide-react";
 import { ProductSearch } from "@/components/ProductSearch";
 import { ShareAchadoButton } from "@/components/ShareAchadoButton";
 import { WhatsAppCta } from "@/components/WhatsAppCta";
-import { PriceDisclaimer } from "@/components/PriceDisclaimer";
 import { StateMessage } from "@/components/StateMessage";
-import { SectionHeader } from "@/components/PageContainer";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { appMode } from "@/lib/app-mode";
 import { estadoSemAchados } from "@/lib/home-states";
@@ -54,6 +53,30 @@ export const Route = createFileRoute("/")({
 });
 
 const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
+
+/**
+ * O aviso de confiança da primeira dobra.
+ *
+ * A frase é a mesma da North Star v1.2.2 e continua inteira. O que R3.3B mudou foi a moldura:
+ * era um `AlertBanner` com fundo, borda e ícone de informação — o peso de um alerta, para uma
+ * observação que não é alerta nenhum. Numa tela que abre com título, campo de busca e atalhos,
+ * uma caixa colorida logo abaixo do campo rouba a atenção do que vem em seguida, que são os
+ * Achados. Discreto foi o pedido do §6, e discreto é o que a frase merece.
+ *
+ * `PriceDisclaimer` continua exatamente como está em `/buscar` e em `/produto/$productId`: lá a
+ * pessoa já está diante de preços para decidir, e a caixa é proporcional ao momento.
+ */
+function AvisoDePreco() {
+  return (
+    <p className="text-muted-foreground flex items-start gap-1.5 text-xs">
+      <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+      <span>
+        <strong className="font-semibold">Os preços podem mudar.</strong> Confira a data e a fonte
+        antes de comprar.
+      </span>
+    </p>
+  );
+}
 
 /**
  * A ORDEM DA HOME MUDOU EM R3.3, E A MUDANÇA É A BUSCA SUBINDO.
@@ -104,28 +127,29 @@ function HomePage() {
         <HomeContexto />
 
         {/* A BUSCA NA PRIMEIRA DOBRA. Sem `autoFocus`: abrir o teclado do celular por conta
-            própria cobre metade da tela antes de a pessoa decidir o que quer fazer. */}
-        <section aria-labelledby="busca-titulo" className="space-y-3">
-          <SectionHeader
-            id="busca-titulo"
-            title="Procurando um produto específico?"
-            description="Compare o mesmo produto entre os mercados, com data e fonte de cada preço."
-          />
-          <ProductSearch label="Qual produto você quer comparar?" />
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="meta-text">Buscas comuns:</span>
+            própria cobre metade da tela antes de a pessoa decidir o que quer fazer.
+
+            R3.3B TIROU O CABEÇALHO DE SEÇÃO. Ele dizia "Procurando um produto específico?" com
+            uma linha de apoio abaixo — duas frases explicando um campo de busca que já tem
+            lupa, `placeholder` e quatro atalhos com nomes de produto. A seção continua nomeada
+            para quem navega por regiões, via `aria-label`; o que saiu foi o desenho de duas
+            frases que ninguém precisa ler para saber o que fazer ali. */}
+        <section aria-label="Busca de produto" className="space-y-3">
+          <ProductSearch destaque label="Busque um produto exato" />
+          <ul className="flex flex-wrap gap-2">
             {SHORTCUTS.map((shortcut) => (
-              <Link
-                key={shortcut}
-                to="/buscar"
-                search={{ q: shortcut }}
-                className="btn-base btn-secondary btn-sm btn-touch-48"
-              >
-                {shortcut}
-              </Link>
+              <li key={shortcut}>
+                <Link
+                  to="/buscar"
+                  search={{ q: shortcut }}
+                  className="btn-base btn-secondary btn-sm btn-touch-48 rounded-full px-4"
+                >
+                  {shortcut}
+                </Link>
+              </li>
             ))}
-          </div>
-          <PriceDisclaimer />
+          </ul>
+          <AvisoDePreco />
         </section>
 
         <HomeAchados
@@ -147,11 +171,12 @@ function HomePage() {
           }
           seal={
             isDemo ? (
-              <p
-                className="font-data inline-flex items-center gap-2 rounded-md border border-dashed bg-surface px-3 py-1.5 text-xs text-muted-foreground"
-                style={{ borderColor: "var(--vp-border-strong)" }}
-              >
-                <span aria-hidden="true">◌</span>
+              // R3.3B §7 tirou a moldura, não a frase. Era um retângulo tracejado, em
+              // monoespaçada, com um glifo "◌" — o desenho exato de um rótulo de fixture, e o
+              // elemento que mais fazia a tela parecer laboratório. A honestidade sobre o dado
+              // ser fictício não depende de o aviso ser feio: ela depende de ele estar escrito,
+              // e continua — aqui, na faixa de ambiente no topo e no bloco de procedência.
+              <p className="text-muted-foreground pt-1 text-xs">
                 dados fictícios · exemplos para demonstrar o formato
               </p>
             ) : null

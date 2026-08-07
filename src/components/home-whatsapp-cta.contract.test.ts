@@ -37,7 +37,10 @@ function semComentarios(fonte: string): string {
 const cta = ler("src", "components", "WhatsAppCta.tsx");
 const ctaCodigo = semComentarios(cta);
 const compartilhar = ler("src", "components", "ShareAchadoButton.tsx");
-const card = ler("src", "components", "AchadoCard.tsx");
+// R3.3B: o `AchadoCard` deixou de existir e a seção passou a decidir onde o compartilhamento
+// aparece. É o lugar certo — "só no destaque" sempre foi uma regra de composição da lista, não
+// de anatomia do card.
+const secao = ler("src", "components", "HomeAchados.tsx");
 const home = ler("src", "routes", "index.tsx");
 
 describe("um convite de WhatsApp na Home, e um só", () => {
@@ -85,8 +88,13 @@ describe("um convite de WhatsApp na Home, e um só", () => {
   });
 
   it("tem 48 px de alvo de toque e usa o verde oficial da ação", () => {
-    expect(cta).toContain("btn-touch-48");
-    expect(cta).toContain("btn-primary");
+    // R3.3B baixou o peso: contornado em vez de sólido, porque o sólido da Home passou a ser o
+    // CTA de comparação. O verde continua sendo o **da ação** — a variante "verde WhatsApp"
+    // (#25d366) segue exploratória e não aprovada —, e o alvo de 48 px não se negocia.
+    expect(ctaCodigo).toContain("btn-touch-48");
+    expect(ctaCodigo).toContain("border-primary/45");
+    expect(ctaCodigo).toContain("text-primary");
+    expect(ctaCodigo).not.toContain("btn-primary");
     expect(cta).not.toMatch(/#25d366/i);
   });
 
@@ -104,8 +112,12 @@ describe("um convite de WhatsApp na Home, e um só", () => {
 });
 
 describe("compartilhamento do Achado", () => {
-  it("só aparece no card de destaque", () => {
-    expect(card).toContain("{destaque ? shareSlot : null}");
+  it("só aparece uma vez, logo depois do destaque", () => {
+    // Repetir o compartilhamento em cada item transforma a lista num mural de botões.
+    expect(secao.match(/\{shareSlot\}/g) ?? []).toHaveLength(1);
+    expect(secao.indexOf("{shareSlot}")).toBeGreaterThan(secao.indexOf('variant="destaque"'));
+    // E ele NÃO entra na composição de lista: o card compacto não conhece `shareSlot`.
+    expect(ler("src", "components", "card-v2", "compact.tsx")).not.toContain("shareSlot");
   });
 
   it("a Home passa a ação de compartilhar apenas para o primeiro Achado", () => {

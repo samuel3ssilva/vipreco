@@ -110,12 +110,12 @@ export function ProductCardV2({
           procedência e CTA todos à mesma distância entre si — e um card assim é lido como
           uma lista de linhas, não como uma composição com hierarquia. Agora o espaço é
           hierárquico: apertado dentro de cada grupo, folgado entre grupos. */}
-      <div className={`flex flex-1 flex-col p-3 ${destaque ? "gap-3" : "gap-2"}`}>
-        <div className="flex items-start gap-3">
+      <div className={`flex flex-1 flex-col ${destaque ? "gap-3 p-4 sm:p-5" : "gap-2 p-3"}`}>
+        <div className={`flex items-start ${destaque ? "gap-4" : "gap-3"}`}>
           <ProductImage
             imagem={visao.imagem}
             categoria={oferta.product.category}
-            destaque={destaque}
+            tamanho={destaque ? "destaque" : "lista"}
             prioridade={destaque}
           />
           <ProductIdentity identidade={visao.identidade} tituloId={tituloId} destaque={destaque} />
@@ -163,8 +163,11 @@ export function ProductCardV2({
             to="/produto/$productId"
             params={{ productId: oferta.product.id }}
             aria-describedby={avisoParcial !== null ? avisoId : undefined}
+            // R3.3B §6 INVERTEU A ÊNFASE ENTRE OS DOIS CTAs DA HOME. O do destaque era
+            // contornado e o do WhatsApp era sólido — a página pedia o contato com mais força
+            // do que oferecia a comparação, que é o núcleo do produto. Agora o sólido é este.
             className={`btn-base btn-touch-48 w-full ${
-              destaque ? "btn-secondary" : "bg-surface text-primary"
+              destaque ? "btn-primary" : "bg-surface text-primary"
             }`}
           >
             {visao.cta.rotulo}

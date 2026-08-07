@@ -42,7 +42,10 @@ export function PriceDisplay({
         className={cn(
           "font-display leading-none tabular-nums",
           atenuado ? "text-muted-foreground font-bold" : "text-primary font-extrabold",
-          destaque ? "text-[2rem]" : "text-[1.625rem]",
+          // R3.3B §8: no destaque o preço passou de 2rem para 2.625rem. A hierarquia pedida é
+          // PRODUTO → PREÇO → MERCADO, e a 2rem o preço empatava com o nome do produto e com o
+          // nome do mercado logo abaixo — três linhas com o mesmo peso não são hierarquia.
+          destaque ? "text-[2.625rem]" : "text-[1.625rem]",
         )}
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>
@@ -108,7 +111,11 @@ export function UnitPrice({ unitario }: { unitario: UnitarioExibido | null }) {
 export function PromotionCondition({ condicao }: { condicao: string | null }) {
   if (condicao === null || condicao.trim().length === 0) return null;
   return (
-    <p className="border-caution bg-caution/15 rounded-md border-l-2 px-2 py-1 text-sm">
+    // R3.3B §8 aliviou o peso, sem tirar a informação: era uma caixa com filete lateral e texto
+    // de 14 px, e num card cuja hierarquia é produto → preço → mercado ela competia com o preço.
+    // Continua sempre visível e sempre junto do preço — promoção sem condição é promessa que o
+    // produto não pode cumprir —, agora como nota, que é o que ela é.
+    <p className="bg-caution/25 text-caution-foreground rounded-md px-2 py-1 text-xs">
       <span className="font-semibold">Condição:</span> {condicao}
     </p>
   );

@@ -75,6 +75,25 @@ export interface ImagemDeProduto {
   alt: string;
   review_status: ImageReviewStatus;
   variant_match: ImageVariantMatch;
+  /**
+   * Ilustração genérica de categoria, desenhada para a demonstração — **nunca** a embalagem
+   * real de ninguém.
+   *
+   * R3.3B §5 autorizou criar estes assets para que a Home pareça um produto de consumo em vez
+   * de um painel técnico, e no mesmo parágrafo proibiu o que os tornaria perigosos: "não tratar
+   * imagem ilustrativa como correspondência real de SKU". Esta bandeira é essa proibição virando
+   * dado, e não prosa: o teste de fixtures ilustrativas reprova qualquer oferta que a carregue
+   * sem `is_demo`, o que fecha o caminho pelo qual uma ilustração chegaria a um preço de piloto.
+   * (O nome do arquivo de teste não é citado de propósito — este módulo é varrido por uma
+   * regressão que proíbe qualquer menção ao fixture de demonstração dentro do domínio.)
+   *
+   * Ela **não** afrouxa o portão de `resolverImagem`: revisão aprovada e correspondência exata
+   * continuam sendo as duas condições, e para um produto fictício quem as satisfaz é a
+   * ilustração feita para ele. O que a bandeira acrescenta é a distinção que o `IMAGE-POLICY.md`
+   * vai precisar quando existir foto de verdade: exata é diferente de ilustrativa, mesmo quando
+   * as duas passam pelo mesmo portão.
+   */
+  ilustrativa?: boolean;
 }
 
 /**

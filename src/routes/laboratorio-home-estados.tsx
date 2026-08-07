@@ -6,7 +6,7 @@ import { StateMessage } from "@/components/StateMessage";
 import { buildDemoOpportunities } from "@/lib/demo-opportunities";
 import { SEM_OFERTAS_VIGENTES, VAZIO_REAL } from "@/lib/home-states";
 import { isVisualLabEnabled } from "@/lib/visual-lab";
-import type { AchadoEntry } from "@/components/AchadoCard";
+import type { OfertaCardV2 } from "@/lib/card-v2";
 
 /**
  * R3.3 — os estados da seção de Achados da Home.
@@ -96,12 +96,13 @@ function SecaoManual({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * A MESMA nota que a Home renderiza — inclusive no desenho. R3.3B tirou dela a moldura tracejada
+ * e a monoespaçada, e se ela continuasse com a moldura aqui a evidência do Gate mostraria um
+ * produto que não existe, que é o defeito mais caro que uma tela de Gate pode ter.
+ */
 const SELO = (
-  <p
-    className="font-data inline-flex items-center gap-2 rounded-md border border-dashed bg-surface px-3 py-1.5 text-xs text-muted-foreground"
-    style={{ borderColor: "var(--vp-border-strong)" }}
-  >
-    <span aria-hidden="true">◌</span>
+  <p className="text-muted-foreground pt-1 text-xs">
     dados fictícios · exemplos para demonstrar o formato
   </p>
 );
@@ -139,7 +140,7 @@ function LaboratorioHomeEstados() {
 
   // Um Achado cuja validade já passou. `isValidPrice` o excluiria na Home; aqui ele é mostrado
   // de propósito, porque o estado a julgar é "como o card se apresenta quando o dado envelheceu".
-  const desatualizado: AchadoEntry = {
+  const desatualizado: OfertaCardV2 = {
     ...primeiro,
     id: "estado-desatualizado",
     observed_at: new Date(AGORA.getTime() - 9 * 86_400_000).toISOString(),
@@ -157,7 +158,7 @@ function LaboratorioHomeEstados() {
   return (
     <main className="min-h-dvh bg-background p-6" data-laboratorio-estados="">
       <header className="mb-8 max-w-prose">
-        <p className="eyebrow">R3.3 · evidência do Gate</p>
+        <p className="eyebrow">R3.3B · evidência do Gate</p>
         <h1 className="font-display text-2xl leading-tight">Estados da seção de Achados</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Sete estados, cada um a 390 px — a largura do celular comum. Instante de referência

@@ -39,7 +39,7 @@ export function ValidityLabel({ validoAte }: { validoAte: string | null }) {
     );
   }
   return (
-    <span className="text-muted-foreground font-data inline-flex items-center gap-1 text-xs">
+    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs tabular-nums">
       <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
       válido até {validoAte}
     </span>
@@ -68,7 +68,12 @@ export function ProvenanceBlock({
         <SourceBadge source={sourceType} />
         <ValidityLabel validoAte={procedencia.validoAte} />
       </div>
-      <p className="font-data text-muted-foreground text-xs leading-snug">
+      {/* R3.3B tirou o `font-data` desta linha e da validade. "observado em 05/08/2026 · ontem"
+          é texto corrido, e a própria regra do design system reserva a monoespaçada a dado
+          tabular de fato. Em mono, ela era o elemento que mais fazia o card parecer log de
+          sistema — o defeito exato que o mandato §7 mandou reduzir. `tabular-nums` preserva a
+          largura fixa do dígito, que é a única coisa que a mono acrescentava. */}
+      <p className="text-muted-foreground text-xs leading-snug tabular-nums">
         {`observado em ${procedencia.observadoEm} · ${procedencia.relativo}`}
       </p>
     </div>

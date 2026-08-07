@@ -41,7 +41,7 @@ export function ProductIdentity({
         id={tituloId}
         className={cn(
           "font-display line-clamp-2 leading-tight",
-          destaque ? "text-lg" : "text-base",
+          destaque ? "text-xl sm:text-2xl" : "text-base",
         )}
       >
         {identidade.nome}
@@ -63,7 +63,12 @@ export function ProductIdentity({
         // Quando a quantidade não é estruturada — `size_text` livre, como "aprox. 1,2 kg —
         // peso variável" — o peso também não vem: ela continua legível e continua sem
         // truncar, mas não recebe a ênfase reservada a um dado conferido.
-        <p className="font-data mt-1 text-sm break-words">
+        // R3.3B tirou o `font-data` daqui. A regra do design system é "mono só em dado tabular
+        // de fato — nunca em texto corrido", e "500 g · 6 unidades · Sachê" é texto corrido: a
+        // monoespaçada não alinhava coluna nenhuma e só emprestava ao card o ar de terminal que
+        // o mandato §7 mandou reduzir. `tabular-nums` mantém o dígito de largura fixa, que era
+        // a única propriedade da mono que servia para alguma coisa aqui.
+        <p className="mt-1 text-sm break-words tabular-nums">
           <span className={identidade.quantidadeEstruturada ? "font-semibold" : undefined}>
             {identidade.quantidade}
           </span>
@@ -90,23 +95,38 @@ export function ProductIdentity({
  * foto, uma imagem que se dimensiona pelo próprio arquivo faz cada linha começar num lugar
  * diferente, e a lista inteira parece quebrada.
  */
+/**
+ * Três tamanhos, nomeados pelo papel e não pelo número de pixels.
+ *
+ * R3.3B aumentou o destaque: 96 px eram o tamanho de um ícone grande, e o mandato §6 pede que a
+ * imagem seja o **primeiro** item da hierarquia do card protagonista. `compacto` é o da linha
+ * de "Outros Achados", onde a imagem serve para reconhecer, não para dominar.
+ */
+const TAMANHO_DA_IMAGEM = {
+  compacto: "size-16",
+  lista: "size-20",
+  destaque: "size-28 sm:size-32",
+} as const;
+
+export type TamanhoDaImagem = keyof typeof TAMANHO_DA_IMAGEM;
+
 export function ProductImage({
   imagem,
   categoria,
-  destaque,
+  tamanho = "lista",
   prioridade = false,
 }: {
   imagem: ImagemDeProduto | null;
   categoria: string | null;
-  destaque: boolean;
+  tamanho?: TamanhoDaImagem;
   /** Só o destaque carrega o LCP: `high` nele, `lazy` nos demais (`CARD-V2-SPEC.md` §6). */
   prioridade?: boolean;
 }) {
-  const tamanho = destaque ? "h-24 w-24 sm:h-28 sm:w-28" : "h-20 w-20";
+  const classe = TAMANHO_DA_IMAGEM[tamanho];
 
   if (imagem === null) {
     return (
-      <ImagePlaceholder categoria={categoria ?? undefined} className={cn(tamanho, "shrink-0")} />
+      <ImagePlaceholder categoria={categoria ?? undefined} className={cn(classe, "shrink-0")} />
     );
   }
 
@@ -116,11 +136,11 @@ export function ProductImage({
       // Curto e factual. Repetir o card inteiro no `alt` faz o leitor de tela ouvir o
       // produto duas vezes — uma na imagem, outra no título logo abaixo.
       alt={imagem.alt}
-      width={112}
-      height={112}
+      width={128}
+      height={128}
       loading={prioridade ? "eager" : "lazy"}
       fetchPriority={prioridade ? "high" : "auto"}
-      className={cn(tamanho, "border-border shrink-0 rounded-md border object-cover")}
+      className={cn(classe, "border-border shrink-0 rounded-lg border object-cover")}
     />
   );
 }

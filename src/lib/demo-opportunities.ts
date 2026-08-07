@@ -15,12 +15,19 @@
  * - Os `id` de produto e de mercado são os mesmos do seed fictício aplicado em staging,
  *   para que "Ver preços por mercado" continue abrindo a página do produto — este PR não
  *   pode quebrar a navegação existente.
+ *
+ * DIVERGÊNCIA CONHECIDA, REGISTRADA E NÃO CORRIGIDA AQUI: as marcas fictícias abaixo ainda
+ * não existem em `supabase/seed.sql`, que segue com as reais. Em staging, portanto, a Home
+ * mostra "Serra Alta" e a página do produto — que lê do banco — mostra a marca antiga.
+ * Alinhar as duas exige reseed de staging, que é banco, e banco está explicitamente fora do
+ * escopo de R3.3B (§10: "Se encontrar melhoria de backend: documentar; não implementar").
  * - Datas são **relativas** ao momento em que o loader roda (múltiplos exatos de 24 h), para
  *   que "ontem"/"há 2 dias" e a data exibida continuem coerentes entre si em qualquer dia.
  *
  * Este arquivo não cria migration, não altera schema e não é inserido no Supabase.
  */
-import type { Market, Opportunity, Product } from "@/types/domain";
+import type { ImagemDeProduto, OfertaCardV2 } from "@/lib/card-v2";
+import type { Market, Product } from "@/types/domain";
 
 /** Quantidade de Achados que a Home entrega no modo DEMO. */
 export const HOME_OPPORTUNITY_COUNT = 3;
@@ -29,14 +36,51 @@ export const HOME_OPPORTUNITY_COUNT = 3;
 export const DEMO_FIXTURE_REFERENCE = "Dado fictício de demonstração (fixture versionado)";
 
 /**
- * Achado de demonstração — o tipo de domínio, sem extensão.
+ * Achado de demonstração.
  *
  * Ele teve um `previous_price?` opcional, para alimentar o "antes R$ X" do North Star. O campo
  * saiu em R3.3 junto com o que o exibia: sem P-01 decidida (MVP-DOCS-02), não existe critério
  * escrito para QUAL observação anterior conta, e um fixture que carrega o número mantém vivo o
  * componente que o mostra. Tirar do card e deixar no dado é adiar, não decidir.
+ *
+ * Em R3.3B ele passou a ser `OfertaCardV2` — o mesmo tipo que o Card v2 lê — porque o fixture
+ * ganhou imagem. `Opportunity` continuaria compilando (todo campo extra é opcional), e é
+ * exatamente esse o problema: o dado atravessaria a Home invisível para o compilador, e a
+ * imagem apareceria na tela sem existir para o tipo.
  */
-export type DemoOpportunity = Opportunity;
+export type DemoOpportunity = OfertaCardV2;
+
+/**
+ * =============================================================================
+ * AS ILUSTRAÇÕES, E POR QUE ELAS SÃO GENÉRICAS
+ * =============================================================================
+ *
+ * R3.3B §5 autorizou criar assets visuais para que a Home volte a ter produto reconhecível, e
+ * delimitou o que eles não podem ser: "sem copiar embalagem real, marca real, logotipo real ou
+ * trade dress de terceiros". São desenhos planos de **categoria** — um pacote, um saco, uma
+ * caixa —, versionados em `public/img/demo/`, e nenhum deles reproduz produto de ninguém.
+ *
+ * Foi por essa mesma razão que as marcas do fixture deixaram de ser reais nesta rodada. Um
+ * desenho genérico ao lado do nome de uma marca existente **é** a representação da embalagem
+ * daquela marca, por mais genérico que o traço seja — o nome faz o trabalho que o desenho se
+ * absteve de fazer. As substitutas vêm da North Star V2, que o Founder já aprovou, e seguem a
+ * mesma convenção dos mercados fictícios: nada aqui aponta para uma empresa real.
+ *
+ * É o mesmo raciocínio que já tinha tirado o GTIN do café: um código válido pertence a algum
+ * produto real, e ausência é o estado honesto.
+ */
+function ilustracao(arquivo: string, categoria: string): ImagemDeProduto {
+  return {
+    src: `/img/demo/${arquivo}`,
+    // O `alt` diz o que a imagem É. Chamá-la de "foto do produto" seria a afirmação que o
+    // princípio 11 proíbe — e quem usa leitor de tela é justamente quem não pode conferir
+    // olhando que aquilo é um desenho.
+    alt: `Ilustração genérica de ${categoria} — não é a embalagem do produto`,
+    review_status: "approved",
+    variant_match: "exact",
+    ilustrativa: true,
+  };
+}
 
 const MARKET_PRINCIPAL: Market = {
   id: "11111111-1111-1111-1111-000000000001",
@@ -95,7 +139,7 @@ export const DEMO_MARKETS: readonly Market[] = [
 const PRODUCT_ARROZ: Product = {
   id: "22222222-2222-2222-2222-000000000001",
   name: "Arroz",
-  brand: "Camil",
+  brand: "Ouro do Campo",
   variant: "Tipo 1",
   size_text: "5 kg",
   gtin: "7896006711117",
@@ -107,7 +151,7 @@ const PRODUCT_ARROZ: Product = {
 const PRODUCT_CAFE: Product = {
   id: "22222222-2222-2222-2222-000000000002",
   name: "Café",
-  brand: "Pilão",
+  brand: "Serra Alta",
   variant: "Tradicional",
   size_text: "500 g",
   // Sem GTIN de propósito. O produto é fictício, e o valor que estava aqui reprovava no
@@ -123,7 +167,7 @@ const PRODUCT_CAFE: Product = {
 const PRODUCT_LEITE: Product = {
   id: "22222222-2222-2222-2222-000000000003",
   name: "Leite",
-  brand: "Italac",
+  brand: "Boa Serra",
   variant: "Integral",
   size_text: "1 L",
   gtin: "7898080640611",
@@ -168,6 +212,7 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedYesterday,
       market: MARKET_LOCAL_3,
       product: PRODUCT_ARROZ,
+      image: ilustracao("arroz.svg", "arroz"),
     },
     {
       id: "demo-fixture-price-cafe-mercado-local-2",
@@ -185,6 +230,7 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedTwoDaysAgo,
       market: MARKET_LOCAL_2,
       product: PRODUCT_CAFE,
+      image: ilustracao("cafe.svg", "café"),
     },
     {
       id: "demo-fixture-price-leite-mercado-principal",
@@ -202,6 +248,7 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedTwoDaysAgo,
       market: MARKET_PRINCIPAL,
       product: PRODUCT_LEITE,
+      image: ilustracao("leite.svg", "leite"),
     },
   ];
 }

@@ -26,22 +26,41 @@ export function StateMessage({
   const Icon = variant === "loading" ? Loader2 : variant === "error" ? AlertCircle : Inbox;
 
   return (
+    // R3.3B §9 — o estado também precisa parecer produto final.
+    //
+    // A composição era um ícone de 24 px, um título em negrito e uma linha de metadado, dentro
+    // de um card apertado: a aparência de uma mensagem de sistema, não de uma tela. O que mudou
+    // é peso e ar — ícone dentro de um círculo suave, título na tipografia de display, descrição
+    // em texto de leitura, e espaço para respirar. Nada do contrato mudou: `role`, `aria-live`,
+    // a copy e a saída oferecida continuam vindo de fora, decididos por dado.
     <div
-      className={`card-base flex flex-col items-center gap-1.5 py-6 text-center ${className}`}
+      className={`card-base flex flex-col items-center gap-2 px-5 py-10 text-center ${className}`}
       role={variant === "error" ? "alert" : "status"}
       aria-live="polite"
     >
-      <Icon
+      <span
         aria-hidden="true"
-        className={`size-6 ${variant === "error" ? "text-destructive" : "text-muted-foreground"} ${
-          variant === "loading" ? "animate-spin" : ""
+        className={`mb-1 flex size-12 items-center justify-center rounded-full ${
+          variant === "error" ? "bg-destructive-surface" : "bg-surface"
         }`}
-      />
-      <p className="font-semibold">{title}</p>
-      {description ? <p className="meta-text max-w-md">{description}</p> : null}
-      {action ? <div className="mt-2">{action}</div> : null}
+      >
+        <Icon
+          className={`size-6 ${
+            variant === "error" ? "text-destructive" : "text-muted-foreground"
+          } ${variant === "loading" ? "animate-spin" : ""}`}
+        />
+      </span>
+      <p className="font-display max-w-sm text-lg leading-tight font-bold text-balance">{title}</p>
+      {description ? (
+        <p className="text-muted-foreground max-w-sm text-sm leading-relaxed">{description}</p>
+      ) : null}
+      {action ? <div className="mt-3">{action}</div> : null}
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="btn-base btn-secondary btn-sm mt-2">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="btn-base btn-secondary btn-sm btn-touch-48 mt-3"
+        >
           Tentar novamente
         </button>
       ) : null}

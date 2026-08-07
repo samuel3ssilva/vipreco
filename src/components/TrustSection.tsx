@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { ShieldCheck } from "lucide-react";
 
 /**
  * "Preço com procedência" — o bloco compacto da Home (R3.3A, item 3 da remediação).
@@ -23,24 +24,36 @@ import { Link } from "@tanstack/react-router";
  */
 export function TrustSection({ isDemo }: { isDemo: boolean }) {
   return (
-    <section aria-labelledby="confianca-titulo" className="card-base space-y-3">
-      <div>
-        <h2 id="confianca-titulo" className="font-display text-xl sm:text-2xl">
-          Preço com procedência
-        </h2>
-        <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-          Cada preço mostra mercado, fonte, atualização e validade.
-        </p>
+    // R3.3B trocou o `card-base` por uma superfície calma. O bloco estava desenhado como card —
+    // borda, sombra, fundo branco —, e um card no rodapé compete pela mesma leitura que os cards
+    // de Achado logo acima, que são a coisa que a tela existe para mostrar. Aqui a informação é
+    // de apoio, e o desenho passou a dizer isso.
+    <section
+      aria-labelledby="confianca-titulo"
+      className="bg-surface/70 border-border space-y-3 rounded-xl border p-5"
+    >
+      <div className="flex items-start gap-3">
+        <ShieldCheck aria-hidden="true" className="text-primary mt-0.5 size-6 shrink-0" />
+        <div>
+          <h2 id="confianca-titulo" className="font-display text-lg leading-tight sm:text-xl">
+            Preço com procedência
+          </h2>
+          <p className="text-muted-foreground mt-1 max-w-prose text-sm">
+            Cada preço mostra mercado, fonte, atualização e validade.
+          </p>
+          {isDemo ? (
+            <p className="meta-text mt-1.5 max-w-prose">
+              Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com
+              origem identificada.
+            </p>
+          ) : null}
+        </div>
       </div>
 
-      {isDemo ? (
-        <p className="meta-text max-w-prose">
-          Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com
-          origem identificada.
-        </p>
-      ) : null}
-
-      <Link to="/como-funciona" className="btn-base btn-secondary btn-sm btn-touch-48">
+      <Link
+        to="/como-funciona"
+        className="btn-base btn-secondary btn-sm btn-touch-48 w-full sm:w-auto"
+      >
         Entender como funciona
       </Link>
     </section>

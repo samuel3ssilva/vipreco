@@ -72,7 +72,9 @@ describe("alvo de toque de 48 px", () => {
 
   it("nenhum controle das telas da Parte 2 usa btn-sm sem o alvo de 48 px", () => {
     const arquivos = [
-      "AchadoCard.tsx",
+      // `AchadoCard.tsx` saiu da lista em R3.3B porque saiu do repositório: a lista da Home
+      // passou a ser uma composição do Card v2 (`card-v2/compact.tsx`), cuja linha inteira é o
+      // alvo e passa dos 88 px de altura — não há `btn-sm` nela para varrer.
       "HomeAchados.tsx",
       "HomeContexto.tsx",
       "TrustSection.tsx",

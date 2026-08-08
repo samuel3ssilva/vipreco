@@ -1,12 +1,12 @@
 /**
- * R3.3B — painel comparativo da Home para o Gate visual do Founder.
+ * R3.3C — painel comparativo da Home para o Gate visual do Founder.
  *
  * =============================================================================
  * NENHUM "ANTES" É LEMBRADO. TODOS SÃO RENDERIZADOS AGORA
  * =============================================================================
  *
- * O mandato §14 pede quatro áreas: a Home técnica anterior, a referência visual aprovada, a
- * R3.3A e a R3.3B. Três delas são aplicação — e as três são servidas por servidores paralelos,
+ * O mandato §20 pede quatro áreas: a Home técnica anterior, a referência visual aprovada, a
+ * R3.3A e a entrega final (R3.3B mais R3.3C). Três delas são aplicação — e as três são servidas por servidores paralelos,
  * de worktrees efêmeros, fotografadas no MESMO navegador e no MESMO instante. Sem isso, metade
  * do que o painel mostrasse como mudança de desenho seria diferença de fonte, de versão de
  * navegador ou de data de fixture.
@@ -44,19 +44,23 @@ const WORKTREE_ANTES = process.env.WORKTREE_ANTES ?? "/tmp/vp-antes";
 const WORKTREE_R33A = process.env.WORKTREE_R33A ?? "/tmp/vp-r33a";
 
 /**
- * A leitura que o mandato §14 pede explicitamente: o que ficou mais bonito, o que ficou mais
- * simples, o que foi preservado, o que foi removido e o que permanece futuro — entre a coluna C
- * (R3.3A) e a coluna D (R3.3B).
+ * A leitura que o mandato §20 pede explicitamente: contratos preservados, produto de volta ao
+ * centro, imagem de volta quando confiável, menos densidade, só duas abas, WhatsApp no momento
+ * correto e nenhuma promessa nova — entre a coluna C (R3.3A) e a coluna D (a entrega final).
  */
 const DE_C_PARA_D = [
-  "MAIS BONITO — produto visível. Três placeholders viraram três ilustrações de categoria, e o card de destaque passou a ter uma imagem de 112 px em vez de um ícone de 96. É a mudança que responde ao diagnóstico do Founder: a Home parecia painel administrativo porque não mostrava produto nenhum.",
-  "MAIS BONITO — hierarquia de preço. O preço do destaque foi de 2 rem para 2,625 rem, e a lista ganhou um preço próprio à direita, alinhado. Antes o preço empatava com o nome do produto e com o nome do mercado: três linhas com o mesmo peso não são hierarquia.",
-  "MAIS SIMPLES — a primeira dobra perdeu duas frases. O cabeçalho de seção da busca ('Procurando um produto específico?' mais uma linha de apoio) explicava um campo com lupa, placeholder e quatro atalhos com nome de produto. O título encolheu de 'Você está vendo ofertas de Artemis' para 'Achados em Artemis', que diz menos, não mais.",
-  "MAIS SIMPLES — a página encurtou ~25% a 390 px, sem perder um único campo de procedência.",
-  "REMOVIDO — o que parecia laboratório. A moldura tracejada em monoespaçada do selo de dados fictícios (a FRASE ficou), o `font-data` das datas de observação e validade, e o botão repetido no rodapé de cada item da lista.",
+  "O PRODUTO VOLTOU AO CENTRO. Três placeholders viraram três ilustrações de categoria, e em R3.3C elas foram REDESENHADAS para serem reconhecíveis a 64 px, que é o tamanho em que aparecem na lista: o arroz ganhou a janela transparente com os grãos, o café ganhou a solda superior larga e os grãos soltos, e o leite virou a caixa longa com tampa de rosca. É a mudança que responde ao diagnóstico do Founder — a Home parecia painel administrativo porque não mostrava produto nenhum.",
+  "A IMAGEM VOLTA QUANDO É CONFIÁVEL, E SÓ ENTÃO. O portão de `resolverImagem` não foi afrouxado: as duas portas continuam sendo revisão aprovada e correspondência exata de variante. As ilustrações entram por uma bandeira própria — `ilustrativa` — presa por teste a dado `is_demo` nas três entidades. Sem imagem confiável, placeholder, como antes.",
+  "MAIS BONITO — a composição do card convergiu com a da referência. Em R3.3C nome, marca, variante, quantidade e PREÇO passaram para a mesma coluna, ao lado da imagem, como na tela 1 do North Star V2. O que sobrava antes era um retângulo vazio à direita da imagem e outro à direita do preço — e é esse vazio, mais do que qualquer cor, o que fazia a composição parecer registro em vez de produto.",
+  "MAIS BONITO — hierarquia de preço. O preço do destaque saiu de 2 rem (R3.3A) para até 3 rem, escalonado por faixa de largura, e a lista ganhou um preço próprio alinhado à direita. Antes os três empatavam com o nome do produto e o do mercado: linhas de mesmo peso não são hierarquia.",
+  "MENOS DENSIDADE — a primeira dobra perdeu duas frases. O cabeçalho de seção da busca ('Procurando um produto específico?' mais uma linha de apoio) explicava um campo com lupa, placeholder e quatro atalhos com nome de produto. O título encolheu para 'Achados em Artemis', que diz menos, não mais, e o subtexto passou a delimitar o universo: 'nos mercados monitorados', e não 'do bairro', que afirmava cobertura.",
+  "MENOS DENSIDADE — a página encurtou de 5568 px (R3.3A) para 4356 px a 390 px, cerca de 22%, sem perder um único campo de procedência — e com três imagens de produto a mais.",
+  "REMOVIDO — o que parecia laboratório e o que parecia formulário. Saíram a moldura tracejada em monoespaçada do selo de dados fictícios (a FRASE ficou), o `font-data` das datas, o botão repetido no rodapé de cada item da lista, o botão de compartilhar em largura inteira colado sob o CTA, e o selo de fonte esticado de ponta a ponta do card.",
   "REMOVIDO — as marcas reais do fixture, e com elas o risco de uma ilustração genérica ser lida como a embalagem de uma marca existente.",
-  "PRESERVADO — tudo o que o §4 lista. Duas abas; Artemis · Piracicaba-SP; produto exato antes do preço; fonte, atualização e validade em todo card; validade ausente dita; sem promessa absoluta; sem histórico de preço; sem mercado habitual; sem personalização; sem prova social; sem parceiro; sem ranking pago; sem distância; expirada ≠ desatualizada; vazio ≠ sem ofertas vigentes.",
-  "PRESERVADO — os sete estados da seção de Achados, um a um, com a apresentação melhorada e o contrato intacto.",
+  "SÓ DUAS ABAS, e as mesmas duas: Achados e Buscar. Nenhuma captura desta rodada mostra Comparar, Favoritos, Mais, Mercados ou WhatsApp como aba, e há teste que reprova a volta de cada uma.",
+  "O WHATSAPP NO MOMENTO CERTO. Um convite só, inline, DEPOIS dos Achados — nunca o CTA fixo que acompanhava a rolagem desde a primeira dobra. E secundário de verdade: o botão sólido da Home é o da comparação, que é o núcleo do produto; o do WhatsApp é contornado.",
+  "NENHUMA PROMESSA NOVA. Nada de 'melhor preço', 'mais barato', 'mais perto de você', contagem de moradores, prova social, parceiro, ranking pago, distância ou histórico. O que a página afirma hoje é o que ela afirmava em R3.3A — o que mudou foi só como isso aparece.",
+  "PRESERVADO — tudo o que o §4 lista, e os sete estados da seção de Achados um a um, com a apresentação melhorada e o contrato intacto: expirada ≠ desatualizada, vazio ≠ sem ofertas vigentes, validade ausente DITA, produto exato antes do preço.",
   "FUTURO — comparação do mesmo SKU, detalhe da oferta, contagem de mercados no CTA, fotografia real de produto e preço unitário. Cada um com o seu bloqueio nomeado abaixo.",
 ];
 
@@ -65,7 +69,7 @@ const ALINHAMENTOS = [
   "DUAS ABAS, E SÓ DUAS. O V2 desenha a barra inferior com Achados e Buscar. A Home entregue tem exatamente essas duas, no cabeçalho e na barra — e há teste que reprova a volta de Comparar, Favoritos, Mais, Mercados e WhatsApp como aba.",
   "A BUSCA NA PRIMEIRA DOBRA. O V2 põe o campo acima dos Achados, e é a decisão D2 do roadmap. Antes ele vinha DEPOIS da vitrine inteira: quem chegava sabendo o que queria precisava rolar por tudo antes de poder perguntar.",
   "R3.3B — PRODUTO RECONHECÍVEL EM TODO ACHADO. Era esta a lacuna que o Founder viu: a Home mostrava placeholders e parecia painel técnico. Agora cada Achado tem uma ilustração de categoria, versionada, feita para a demonstração — sem embalagem, marca, logotipo ou trade dress de terceiro. O `alt` de cada uma diz o que ela é: ilustração genérica, não a embalagem do produto.",
-  "R3.3B — CARTÃO PROTAGONISTA E LINHA COMPACTA, como no V2. O destaque domina — imagem de 112 px, preço em 2,625 rem — e os demais são linhas de leitura rápida com imagem, identidade, mercado, procedência e preço à direita.",
+  "CARTÃO PROTAGONISTA E LINHA COMPACTA, como no V2. O destaque domina — imagem, identidade e preço numa coluna só, exatamente como a tela 1 compõe — e os demais são linhas de leitura rápida com imagem, identidade, mercado, procedência e preço à direita.",
   "CONTEXTO ANTES DE CONTEÚDO. O título diz onde você está — 'Achados em Artemis' — em vez de prometer resultado. O V2 pede a mesma disciplina: nada de 'melhor preço', nada de 'mais barato perto de você'.",
   "PROCEDÊNCIA EM TODO PREÇO. Nenhum card mostra valor sem fonte, atualização e validade — na Home entregue e no V2. Quando o mercado não informou validade, a ausência é DITA.",
   "UM CONVITE DE WHATSAPP, DEPOIS DO PRODUTO. R3.3A removeu o CTA fixo que acompanhava a rolagem desde a primeira dobra. R3.3B rebaixou o peso dele: o botão sólido da Home passou a ser o de comparação, que é o núcleo do produto.",
@@ -203,8 +207,8 @@ function montarHtml(campos: {
     .futuro h2 { color: #5b6b63; }
     .rodape { margin-top: 18px; font-size: 12px; color: #5b6b63; line-height: 1.6; max-width: 96ch; }
   </style></head><body>
-    <h1>R3.3B — painel comparativo da Home para o Gate visual</h1>
-    <p class="sub">Quatro áreas, mesma largura de celular (390&nbsp;px). <strong>A</strong> é a Home técnica anterior, renderizada agora a partir de <code>origin/main</code> num servidor paralelo — não é captura antiga guardada em disco. <strong>B</strong> é a referência visual aprovada, a tela 1 do North&nbsp;Star&nbsp;V2, em tamanho suficiente para comparação. <strong>C</strong> é a R3.3A, funcionalmente correta e reprovada na direção visual. <strong>D</strong> é a R3.3B. As três colunas de aplicação são páginas inteiras <strong>recortadas pelo topo na mesma escala</strong> — as versões completas estão nos PNGs de largura ao lado deste arquivo — e saíram do mesmo navegador, no mesmo instante, com animação congelada.</p>
+    <h1>R3.3C — painel comparativo da Home para o Gate visual</h1>
+    <p class="sub">Quatro áreas, mesma largura de celular (390&nbsp;px). <strong>A</strong> é a Home técnica anterior, renderizada agora a partir de <code>origin/main</code> num servidor paralelo — não é captura antiga guardada em disco. <strong>B</strong> é a referência visual aprovada, a tela 1 do North&nbsp;Star&nbsp;V2, em tamanho suficiente para comparação. <strong>C</strong> é a R3.3A, funcionalmente correta e reprovada na direção visual. <strong>D</strong> é a entrega final, R3.3B mais R3.3C. As três colunas de aplicação são páginas inteiras <strong>recortadas pelo topo na mesma escala</strong> — as versões completas estão nos PNGs de largura ao lado deste arquivo — e saíram do mesmo navegador, no mesmo instante, com animação congelada.</p>
     <div class="quatro">
       <div class="col">
         <p class="rot velho">A · Home técnica anterior (origin/main)</p>
@@ -222,16 +226,16 @@ function montarHtml(campos: {
         <img class="app" src="data:image/png;base64,${campos.r33a}" alt="Home de R3.3A">
       </div>
       <div class="col entrega">
-        <p class="rot">D · R3.3B — final visual polish</p>
+        <p class="rot">D · R3.3B + R3.3C — final visual convergence</p>
         <p class="meta">${campos.shaDepois}</p>
-        <img class="app" src="data:image/png;base64,${campos.depois}" alt="Home entregue por R3.3B">
+        <img class="app" src="data:image/png;base64,${campos.depois}" alt="Home entregue por R3.3B e R3.3C">
       </div>
     </div>
 
     <div class="abas">
       <h2>Navegação: de quatro abas para duas</h2>
       <div class="linha"><b>A · anterior (${campos.abasAntes.abas} abas)</b>${chips(campos.abasAntes, "#c9b98a")}</div>
-      <div class="linha"><b>D · R3.3B (${campos.abasDepois.abas} abas)</b>${chips(campos.abasDepois, "#0e5c3c")}</div>
+      <div class="linha"><b>D · entrega final (${campos.abasDepois.abas} abas)</b>${chips(campos.abasDepois, "#0e5c3c")}</div>
       <p class="rodape"><strong>Medido no DOM, não lido no código:</strong> a Home anterior tinha ${campos.abasAntes.navsComMesmoNome > 0 ? `<strong>${campos.abasAntes.navsComMesmoNome} par de landmarks de navegação com o MESMO nome acessível</strong> — “Navegação principal” duas vezes, indistinguíveis na lista de regiões do leitor de tela. A entregue tem ${campos.abasDepois.navsComMesmoNome}` : `${campos.abasAntes.navsComMesmoNome} nome de navegação repetido, e a entregue também ${campos.abasDepois.navsComMesmoNome}`}.</p>
       <p class="rodape">“Como funciona” e “Tenho um mercado” continuam alcançáveis, pelo rodapé. Aba não é o único jeito de chegar a uma página; é o jeito que declara “esta é uma das coisas principais que você faz aqui”. Achar e comparar preço são duas. Não há uma terceira.</p>
     </div>
@@ -240,7 +244,7 @@ function montarHtml(campos: {
     <div class="bloco"><h2>Onde a entrega segue o North Star V2</h2><ul>${lista(ALINHAMENTOS)}</ul></div>
     <div class="bloco"><h2>Decisões funcionais que prevaleceram sobre o desenho</h2><ul>${lista(DECISOES)}</ul></div>
     <div class="bloco alerta"><h2>Divergências em relação à referência</h2><ul>${lista(DIVERGENCIAS)}</ul></div>
-    <div class="bloco futuro"><h2>Itens futuros — não entregues em R3.3B, e dito para não ser lido como esquecimento</h2><ul>${lista(FUTUROS)}</ul></div>
+    <div class="bloco futuro"><h2>Itens futuros — não entregues em R3.3, e dito para não ser lido como esquecimento</h2><ul>${lista(FUTUROS)}</ul></div>
 
     <p class="rodape">Todo dado exibido é <strong>fictício e versionado</strong> (<code>src/lib/demo-opportunities.ts</code>): nenhum mercado real aparece como participante, nenhum preço vem de staging ou de produção, e a faixa “AMBIENTE DE TESTE” está no topo das três colunas de aplicação. Os estados da seção de Achados estão em <code>home-final-states.png</code>. As imagens de produto são <strong>ilustrações genéricas de categoria</strong>, criadas para a demonstração: não reproduzem embalagem, marca, logotipo ou trade dress de terceiro, e o texto alternativo de cada uma diz isso.</p>
   </body></html>`;
@@ -294,7 +298,9 @@ async function principal() {
       throw new Error(`a coluna C tem ${abasR33a.abas} abas; R3.3A tem 2. Servidor errado?`);
     }
     if (abasDepois.abas !== 2) {
-      throw new Error(`o "depois" tem ${abasDepois.abas} abas; R3.3B tem 2. Servidor errado?`);
+      throw new Error(
+        `o "depois" tem ${abasDepois.abas} abas; a entrega final tem 2. Servidor errado?`,
+      );
     }
     // A coluna C precisa ser R3.3A, e não uma cópia da D. Se os dois servidores servirem o mesmo
     // head, o painel afirmaria "antes e depois" sobre duas fotos idênticas.

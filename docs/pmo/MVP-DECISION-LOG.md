@@ -1444,3 +1444,77 @@ entrar no allowlist com o seu motivo escrito.
 
 **Não tocado:** banco, migrations, backfill, dados reais, produção, DNS, Worker, RLS, ranking,
 comparação, detalhe da oferta, busca e `/para-mercados`.
+
+---
+
+## DL-038 — R3.3C: a convergência visual final da Home (07/08/2026)
+
+**Contexto.** O Founder aprovou o diagnóstico de R3.3B ("a Home não tinha produto") e ainda assim
+segurou o merge do PR #97 por uma última rodada: _"A R3.3B melhorou significativamente… PORÉM o
+Founder quer uma última convergência visual antes do merge."_ A pergunta da missão foi escrita
+assim: _"Conseguimos fazer a Home real parecer tão desejável quanto a referência visual, sem
+mentir, inventar cobertura ou aumentar o escopo?"_ Nenhuma linha de backend foi tocada.
+
+**1. As três ilustrações foram REDESENHADAS (§1, §11).** As de R3.3B eram corretas na política e
+fracas no reconhecimento: a 64 px — o tamanho em que aparecem na lista — o arroz lia como um pote
+com uma faixa escura. Agora o arroz é o fardo com **janela transparente e grãos à vista**, que é o
+que nomeia a categoria; o café ganhou a solda superior mais larga que o corpo (sem ela lia como
+tampa de pote) e os **grãos soltos fora do contorno**; o leite virou a caixa longa com tampa de
+rosca, que é a silhueta do leite que se vende em Artemis. A política não mudou em nada: sem
+embalagem, marca, logotipo ou trade dress de terceiro, sem `<text>` no arquivo, sem recurso
+externo, e presas por teste a dado `is_demo` nas três entidades.
+
+**2. O preço subiu para a coluna da identidade (§14).** É a mudança estrutural da rodada, e ela
+vem da própria referência aprovada: a tela 1 da North Star V2 empilha nome, marca, variante,
+quantidade e preço numa coluna só, ao lado da imagem. O card entregue em R3.3B era duas faixas
+— `[imagem | identidade]` em cima, tudo o mais em largura inteira embaixo — e sobrava um retângulo
+vazio à direita da imagem e outro à direita do preço. **Esse vazio, mais do que qualquer cor ou
+tipografia, era o que fazia a composição parecer registro em vez de produto.** A ordem do §5 e a
+ordem do DOM não mudaram; há teste novo que reprova o preço subir acima do nome.
+
+**Consequência medida:** imagem e preço passaram a dividir a mesma largura, então os dois
+escalonam **por faixa** — 96 px/2,25 rem a 320, até 128 px/3 rem a partir de `sm`. O teto de cada
+faixa é o que a coluna comporta, não o gosto.
+
+**3. Copy do §4 e do §7.** O subtexto passou de "nos mercados do bairro" para **"nos mercados
+monitorados, com data e fonte"**: "do bairro" afirma COBERTURA, e o piloto não pode sustentar
+"todos os mercados daqui". O bloco de procedência perdeu a segunda frase — o que ela dizia é o
+assunto de `/como-funciona`, para onde o botão logo abaixo leva.
+
+**4. Saiu o que parecia formulário (§14).** O botão de compartilhar deixou de ocupar a largura
+inteira colada sob o CTA verde, e o selo de fonte deixou de esticar de ponta a ponta do card (um
+`items-start` que faltava, o mesmo defeito que `OfferStatus` já tinha corrigido). **A borda do
+botão de compartilhar ficou:** ela é a correção de contraste de elemento não textual (SC 1.4.11)
+feita na Parte 2, e trocar acessibilidade por estética é a única troca que esta missão não podia
+fazer.
+
+**5. Dois testes de literal viraram testes de relação (§19: "não criar testes frágeis de pixel").**
+As asserções de hierarquia de preço fixavam `text-[2.625rem]` e `text-[1.375rem]`. Elas pegavam a
+regressão que importa — os três preços empatarem —, mas reprovavam também quando alguém só mudava
+o tamanho do destaque, que é decisão de desenho. Passaram a medir o que o produto garante: **um
+preço de destaque, maior que os dois da lista, e os dois da lista iguais entre si.**
+
+**6. §13 — a direção B2B foi registrada, e `/para-mercados` não foi tocada.**
+`docs/product/B2B-VISUAL-DIRECTION.md` guarda a referência como _future polish reference_, com a
+lista de promessas que precisam sair antes de qualquer implementação: "milhares de moradores",
+"mais clientes", "mais visibilidade" garantida, "destaque nas buscas" — esta última não é feature
+adiada, é feature **vetada** pelo princípio 4 de neutralidade —, "seguro" como promessa ampla,
+"parceiro oficial" e o cadastro de oferta pelo lojista, que não existe.
+
+**NOT VERIFIED — as duas referências visuais anexadas não chegaram.** O mandato citou dois anexos
+("A. ViPreço MVP — visão final do cliente" e "B. /para-mercados — versão final"); **a mensagem
+recebida continha apenas texto.** A convergência foi feita contra a descrição escrita do mandato e
+contra a referência **versionada** que já existe no repositório
+(`docs/product/visual-north-star-v2/telas/tela-1-home.png`), que é a coluna B do painel. Se as
+duas imagens forem versionadas depois, esta decisão deve ser reconfrontada com elas.
+
+**Medido, não afirmado:** cinco larguras sem rolagem horizontal, duas abas em todas, zero
+controles abaixo de 48 px, zero histórico de preço, exatamente um CTA de WhatsApp, e a página a
+390 px em **4356 px** — 5568 px em R3.3A, cerca de **22% mais curta**. O guarda de escopo reprovou
+`ShareAchadoButton.tsx` **antes** de a entrada existir no allowlist, que é a ordem certa.
+
+**Divergência que continua aberta:** `supabase/seed.sql` segue com as marcas antigas (DL-037).
+Alinhar exige reseed, que é banco, e banco continua fora do escopo (§18).
+
+**Não tocado:** banco, migrations, backfill, dados reais, produção, DNS, Worker, RLS, ranking,
+comparação, detalhe da oferta, busca, analytics e `/para-mercados`.

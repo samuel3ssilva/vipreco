@@ -1,17 +1,23 @@
-# Evidência visual de R3.3B — Home e Achados
+# Evidência visual de R3.3 — Home e Achados
 
 Sete arquivos, todos gerados do head da branch `feat/r33-home-achados`, no mesmo navegador e com
 animação congelada. Os scripts que os produzem estão em `scripts/visual/`.
 
-| Arquivo                           | O que é                                                      | Script                       |
-| --------------------------------- | ------------------------------------------------------------ | ---------------------------- |
-| `home-final-320.png`              | página inteira a 320 px                                      | `screenshot-home.ts`         |
-| `home-final-390.png`              | página inteira a 390 px — o celular comum                    | `screenshot-home.ts`         |
-| `home-final-430.png`              | página inteira a 430 px — celular grande                     | `screenshot-home.ts`         |
-| `home-final-desktop.png`          | página inteira a 1280 px                                     | `screenshot-home.ts`         |
-| `home-final-list-390.png`         | recorte da seção de Achados a 390 px                         | `screenshot-home.ts`         |
-| `home-final-states.png`           | os sete estados da seção de Achados, lado a lado             | `screenshot-home-estados.ts` |
-| `home-final-comparison-board.png` | quatro áreas: anterior · referência aprovada · R3.3A · R3.3B | `comparison-board-home.ts`   |
+| Arquivo                           | O que é                                                              | Script                       |
+| --------------------------------- | -------------------------------------------------------------------- | ---------------------------- |
+| `home-final-320.png`              | página inteira a 320 px                                              | `screenshot-home.ts`         |
+| `home-final-390.png`              | página inteira a 390 px — o celular comum                            | `screenshot-home.ts`         |
+| `home-final-430.png`              | página inteira a 430 px — celular grande                             | `screenshot-home.ts`         |
+| `home-final-desktop.png`          | página inteira a 1280 px                                             | `screenshot-home.ts`         |
+| `home-final-list-390.png`         | recorte da seção de Achados a 390 px                                 | `screenshot-home.ts`         |
+| `home-final-states.png`           | os sete estados da seção de Achados, lado a lado                     | `screenshot-home-estados.ts` |
+| `home-final-comparison-board.png` | quatro áreas: anterior · referência aprovada · R3.3A · entrega final | `comparison-board-home.ts`   |
+
+**A coluna D do painel é a entrega final: R3.3B mais R3.3C.** R3.3C foi a convergência estética
+pedida depois de o Founder aprovar o diagnóstico de R3.3B e ainda assim segurar o merge. O que ela
+mudou está em `DL-038`; o resumo em duas linhas é que as três ilustrações foram **redesenhadas
+para serem reconhecíveis a 64 px** e que **o preço subiu para a coluna da identidade**, ao lado da
+imagem, como a tela 1 do North Star V2 compõe.
 
 **O conjunto `home-achados-*.png` saiu.** Ele fotografava a Home de R3.3A, que o Founder reprovou
 na direção visual — e evidência de um desenho superado guardada ao lado da evidência correta é
@@ -25,6 +31,14 @@ R3.3B §5 autorizou criar assets para que a Home volte a ter produto reconhecív
 que eles não podem ser: cópia de embalagem, marca, logotipo ou trade dress de terceiro. Os três
 SVGs de `public/img/demo/` são desenhos planos de **categoria** — um pacote, um saco, uma caixa —,
 não têm nenhum texto dentro e trazem, no próprio arquivo, o comentário que declara o que são.
+
+**R3.3C redesenhou os três**, sem mexer numa vírgula da política. O critério passou a ser explícito
+e medível a olho: **ser reconhecível a 64 px**, que é o tamanho em que eles aparecem na lista de
+Achados — e não a 160, que é o tamanho em que se desenha. A folha de contato nos quatro tamanhos
+reais mostrou o problema: o arroz lia como um pote com uma faixa escura, e a solda do pacote de
+café lia como tampa de vidro de solúvel. O conserto foi de silhueta, não de cor: janela
+transparente com os grãos à vista no arroz, solda superior mais larga que o corpo e grãos soltos
+fora do contorno no café, e caixa longa com tampa de rosca no leite.
 
 O `alt` de cada uma diz a mesma coisa para quem usa leitor de tela: _"Ilustração genérica de café
 — não é a embalagem do produto"_. E o vínculo com a demonstração é medido, não prometido:
@@ -90,6 +104,10 @@ bun scripts/visual/comparison-board-home.ts
 O script **reprova** se a coluna A não tiver 4 abas, se C ou D não tiverem 2, ou se C e D saírem
 byte a byte idênticas — servidor errado, ou worktree no head errado, faria o painel afirmar uma
 mudança que não aconteceu.
+
+Na geração de R3.3C isso foi medido e ficou no log: **A com 4 abas** (Achados, Buscar, Ajuda,
+Mercados) e **1 par de `nav` com o mesmo nome acessível**; **C e D com 2 abas** (Achados, Buscar)
+e nenhum nome repetido.
 
 A coluna B é a referência aprovada, lida do arquivo versionado
 `docs/product/visual-north-star-v2/telas/tela-1-home.png`. Ela nunca é recortada nem esticada

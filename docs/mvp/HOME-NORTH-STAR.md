@@ -41,6 +41,19 @@ Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 > 4. **O CTA sólido da Home é o de comparação.** O convite de WhatsApp passou a ser contornado —
 >    secundário à descoberta e à comparação, como o mandato pede.
 
+> **SUPERSEDED PARA A HOME POR R3.3C** (07/08/2026), em mais três pontos, registrados em
+> `docs/pmo/MVP-DECISION-LOG.md` DL-038. É a convergência estética final, também sem backend.
+>
+> 1. **O preço do destaque vive na coluna da identidade**, ao lado da imagem — nome, marca,
+>    variante, quantidade e preço empilhados, como a tela 1 do North Star V2 compõe. Qualquer
+>    descrição abaixo que ponha o preço numa faixa própria de largura inteira descreve o card de
+>    R3.3B. A ORDEM não mudou: produto exato continua antes do preço, no desenho e no DOM, e há
+>    teste que reprova a inversão.
+> 2. **O subtexto da primeira dobra é "Preços observados nos mercados monitorados, com data e
+>    fonte."** "Do bairro" saiu porque afirmava cobertura — lê-se como "todos os mercados daqui".
+> 3. **As três ilustrações foram redesenhadas** para serem reconhecíveis a 64 px, que é o tamanho
+>    em que aparecem na lista. A política de imagem não mudou em nada.
+
 ## Ordem da página
 
 **Vigente desde R3.3B** (o que o código renderiza hoje — a ordem não mudou em R3.3B, só o peso

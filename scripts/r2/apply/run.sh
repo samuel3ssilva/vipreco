@@ -467,6 +467,16 @@ case "$OPERACAO" in
     supabase_cli db push --workdir "$WORKDIR" --db-url "$DB_URL" --yes
     ;;
 
+  align-demo-brands)
+    titulo "ALINHAMENTO DE QUATRO MARCAS DEMO — transacao unica"
+    # Mesmo `ON_ERROR_STOP` de `remediate-demo-gtins`, e pela mesma razao: sem ele o psql
+    # seguiria para o `COMMIT` depois de um `RAISE EXCEPTION`, e a transacao abortada
+    # terminaria em commit de nada com exit 0.
+    psql --no-psqlrc --no-password --quiet \
+      --variable=ON_ERROR_STOP=1 \
+      --file="$APPLY_DIR/sql/align-demo-brands.sql"
+    ;;
+
   remediate-demo-gtins)
     titulo "REMEDIACAO DOS DOIS GTINs DEMO — transacao unica"
     # `ON_ERROR_STOP` e obrigatorio: sem ele o psql seguiria para o `COMMIT` depois de um

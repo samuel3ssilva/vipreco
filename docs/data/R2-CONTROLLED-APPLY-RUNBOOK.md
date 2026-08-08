@@ -41,6 +41,7 @@ funcional sobre `pa_normalize_text()`: aplicá-lo antes assaria a normalização
 | 5   | `remediate-demo-gtins`         |       10        |        10        | `NULL TWO DEMO GTINS IN VIPRECO STAGING`          |
 | 6   | `apply-r2a`                    |       10        |        11        | `APPLY R2A TO VIPRECO STAGING`                    |
 | 7   | `apply-r2b`                    |       11        |        12        | `APPLY R2B TO VIPRECO STAGING`                    |
+| 8   | `align-demo-brands`            |       12        |        12        | `ALIGN FOUR DEMO BRANDS IN VIPRECO STAGING`       |
 | —   | `validate`                     |    qualquer     |    inalterado    | _(vazio)_                                         |
 
 As frases são **exatas**: caixa, espaços e pontuação contam, e nada é aparado. Aparar em
@@ -176,14 +177,15 @@ O rollback de cada migration está documentado **no próprio arquivo**, entre ma
 `scripts/db-drill/95-rollback-reapply.sh` contra um Postgres vivo — extraído do arquivo, nunca
 copiado. Um bloco de rollback que nunca rodou é uma alegação.
 
-| Operação                       | Como reverter                                                                                                                                                                                                                                                                       |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `adopt-seven-baseline`         | `supabase migration repair --status reverted <versões>`                                                                                                                                                                                                                             |
-| `apply-normalization`          | bloco de rollback de `20260803000000`                                                                                                                                                                                                                                               |
-| `apply-core-hardening`         | bloco de rollback de `20260803005000`                                                                                                                                                                                                                                               |
-| `apply-contribution-hardening` | bloco de rollback de `20260803007500`                                                                                                                                                                                                                                               |
-| `remediate-demo-gtins`         | **não reversível pelo repositório.** Os dois GTINs eram fictícios e inválidos; restaurá-los exigiria os valores originais, que ninguém deveria querer de volta. Se a intenção for reconstruir staging do zero, o caminho é o `seed.sql`, cuja idempotência o drill prova a cada CI. |
-| `apply-r2a` / `apply-r2b`      | blocos de rollback dos respectivos arquivos                                                                                                                                                                                                                                         |
+| Operação                       | Como reverter                                                                                                                                                                                                                                                                                         |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `adopt-seven-baseline`         | `supabase migration repair --status reverted <versões>`                                                                                                                                                                                                                                               |
+| `apply-normalization`          | bloco de rollback de `20260803000000`                                                                                                                                                                                                                                                                 |
+| `apply-core-hardening`         | bloco de rollback de `20260803005000`                                                                                                                                                                                                                                                                 |
+| `apply-contribution-hardening` | bloco de rollback de `20260803007500`                                                                                                                                                                                                                                                                 |
+| `remediate-demo-gtins`         | **não reversível pelo repositório.** Os dois GTINs eram fictícios e inválidos; restaurá-los exigiria os valores originais, que ninguém deveria querer de volta. Se a intenção for reconstruir staging do zero, o caminho é o `seed.sql`, cuja idempotência o drill prova a cada CI.                   |
+| `apply-r2a` / `apply-r2b`      | blocos de rollback dos respectivos arquivos                                                                                                                                                                                                                                                           |
+| `align-demo-brands`            | **reversível, e a reversão é trivial:** as quatro marcas antigas estão escritas no próprio arquivo, na coluna "antes" do array de alvos. Rodar o `UPDATE` invertido restaura o estado exato. O caminho preferido continua sendo reconstruir staging pelo `seed.sql`, que já traz as marcas fictícias. |
 
 ## 10. O que este workflow nunca faz
 
@@ -192,12 +194,22 @@ Backfill. Preenchimento de `quantity_value`, `quantity_unit`, `package_type` ou
 remoção de policy. Alteração de RLS. Ampliação de grant. Deploy. Inserção de dado real.
 Qualquer contato com o banco de produção.
 
-A única escrita de **dado** em todo o repositório é
+As **duas** escritas de dado em todo o repositório são
 [`scripts/r2/apply/sql/remediate-demo-gtins.sql`](../../scripts/r2/apply/sql/remediate-demo-gtins.sql):
 uma coluna, dois registros fictícios, para `NULL`, dentro de uma transação que mede as
 pré-condições **dentro** dela mesma, exige `ROW_COUNT = 2`, e reavalia a validade de forma
 independente antes do `COMMIT` — porque `ROW_COUNT = 2` prova que duas linhas mudaram, e não
 que eram as duas certas.
+
+E [`scripts/r2/apply/sql/align-demo-brands.sql`](../../scripts/r2/apply/sql/align-demo-brands.sql):
+uma coluna, quatro registros fictícios, para os quatro valores literais que o fixture da Home já
+usa, no mesmo desenho de transação. Ela existe por uma razão de **produto** e não de schema — a
+Home mostra "Serra Alta" e a página do produto, que lê do banco, mostrava a marca antiga, então
+quem navegava de uma para a outra via dois nomes para o mesmo item.
+
+A pré-condição inclui a marca **de antes** de cada um dos quatro: se o banco já estiver com outro
+valor, esta transação não é a que deve rodar, e recusar é melhor do que sobrescrever um estado que
+ninguém descreveu.
 
 Isso **não é backfill**: backfill preenche campo a partir de inferência; isto esvazia um campo
 cujo conteúdo é comprovadamente inválido. Nenhum valor é calculado, adivinhado ou derivado.

@@ -3,13 +3,13 @@
 Cinco arquivos, todos gerados do head da branch `feat/b2b-visual-demo-polish`, no mesmo navegador
 e com animação congelada. Os scripts que os produzem estão em `scripts/visual/`.
 
-| Arquivo                                      | O que é                                                       | Script                                          |
-| -------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------- |
-| `para-mercados-final-320.png`                | página inteira a 320 px — a largura mais estreita atendida     | `screenshot-para-mercados.ts`                   |
-| `para-mercados-final-390.png`                | página inteira a 390 px — o celular comum                     | `screenshot-para-mercados.ts`                   |
-| `para-mercados-final-430.png`                | página inteira a 430 px — celular grande                      | `screenshot-para-mercados.ts`                   |
-| `para-mercados-final-desktop.png`            | página inteira a 1280 px                                      | `screenshot-para-mercados.ts`                   |
-| `para-mercados-final-comparison-board.png`   | três colunas: main · referência do Founder · candidata        | `comparison-board-para-mercados-demo-freeze.ts` |
+| Arquivo                                    | O que é                                                    | Script                                          |
+| ------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------- |
+| `para-mercados-final-320.png`              | página inteira a 320 px — a largura mais estreita atendida | `screenshot-para-mercados.ts`                   |
+| `para-mercados-final-390.png`              | página inteira a 390 px — o celular comum                  | `screenshot-para-mercados.ts`                   |
+| `para-mercados-final-430.png`              | página inteira a 430 px — celular grande                   | `screenshot-para-mercados.ts`                   |
+| `para-mercados-final-desktop.png`          | página inteira a 1280 px                                   | `screenshot-para-mercados.ts`                   |
+| `para-mercados-final-comparison-board.png` | três colunas: main · referência do Founder · candidata     | `comparison-board-para-mercados-demo-freeze.ts` |
 
 **A captura de 320 px é nova nesta rodada.** O conjunto de B2B-0 fotografava 390, 430 e desktop, e
 320 é justamente onde R3.3B descobriu um estouro que passava despercebido nas outras larguras.
@@ -21,12 +21,12 @@ Esta é a medição que mais importa desta rodada, porque é a que contraria a e
 versões foram capturadas pelo **mesmo script, no mesmo navegador, no mesmo instante**, com
 `origin/main` servida por um worktree paralelo:
 
-| largura | `origin/main` | candidata | delta            |
-| ------- | ------------- | --------- | ---------------- |
-| 320 px  | 16582         | 16734     | +152 (+0,9%)     |
-| 390 px  | 15342         | 15406     | +64 (+0,4%)      |
-| 430 px  | 14602         | 14716     | +114 (+0,8%)     |
-| 1280 px | 8642          | 8766      | +124 (+1,4%)     |
+| largura | `origin/main` | candidata | delta        |
+| ------- | ------------- | --------- | ------------ |
+| 320 px  | 16582         | 16734     | +152 (+0,9%) |
+| 390 px  | 15342         | 15406     | +64 (+0,4%)  |
+| 430 px  | 14602         | 14716     | +114 (+0,8%) |
+| 1280 px | 8642          | 8766      | +124 (+1,4%) |
 
 São **pixels de dispositivo**, que é o que o PNG mede: o script captura com `deviceScaleFactor: 2`,
 então divida por dois para ler em pixels de CSS. Confundir os dois foi o erro da primeira medição
@@ -49,7 +49,7 @@ mercado inteiro" e "O piloto está sendo preparado em Artemis" em seções vizin
 perguntas do FAQ por versões reescritas da lista do §17.
 
 **O guarda de copy reprovou dezoito testes, e reprovou certo.** Aquelas frases são copy decidida
-pelo Founder e fixadas por asserção; o §17 manda *priorizar* as perguntas de entrevista, não
+pelo Founder e fixadas por asserção; o §17 manda _priorizar_ as perguntas de entrevista, não
 substituir as que já foram decididas. As duas seções voltaram inteiras, as oito perguntas antigas
 voltaram com o texto intacto, e as cinco do §17 entraram **somadas** a elas — treze no total.
 
@@ -123,3 +123,10 @@ não roda aqui, porque não está na `main` — e é por isso que esta branch pa
 são: mergear este PR antes do #97, ou aposentar o guarda junto com a onda que ele existe para
 proteger, que é o destino natural dele. A decisão é do Founder/PMO; o registro fica aqui para que a
 escolha seja feita antes de o CI reclamar, e não depois.
+
+**O que de fato aconteceu (08/08/2026):** o Founder escolheu a primeira saída, e este PR mergeou
+antes do #97 — o conflito de intocáveis nunca chegou a existir. **A segunda saída acabou sendo
+necessária mesmo assim**, por um motivo diferente e que este parágrafo não tinha previsto: o guarda
+também afirmava que a Home **tinha mudado**, e essa afirmação é falsa na `main` por construção. A
+`main` ficou vermelha no commit seguinte ao merge do #97, e o guarda foi aposentado com os controles
+positivos preservados. O registro completo está em `docs/pmo/MVP-DECISION-LOG.md`, DL-039.

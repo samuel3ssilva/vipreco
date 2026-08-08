@@ -1,8 +1,15 @@
 import { execFileSync } from "node:child_process";
-import { rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MainIndisponivelError, compararComMain, mainDisponivel } from "./git-guard";
+import {
+  MainIndisponivelError,
+  caminhosAlterados,
+  compararComMain,
+  foraDoEscopo,
+  mainDisponivel,
+} from "./git-guard";
 
 /**
  * O teste do próprio guarda.
@@ -73,5 +80,71 @@ describe("o guarda enxerga de verdade", () => {
     );
     if (alterado.trim().length > 0) return; // a branch de fato mexeu nele; nada a provar aqui
     expect(compararComMain(".gitignore")).toBe("intacto");
+  });
+});
+
+/**
+ * O detector por ALLOWLIST — `caminhosAlterados` e `foraDoEscopo`.
+ *
+ * =============================================================================
+ * POR QUE ESTES CONTROLES VIERAM PARAR AQUI
+ * =============================================================================
+ *
+ * Os dois nasceram para R3.3 e viviam em `src/routes/index.escopo.test.ts`, o guarda de escopo
+ * daquela onda. Aquele arquivo foi aposentado quando a onda mergeou, porque ele afirmava algo
+ * que só é verdade DENTRO da branch: "a Home mudou de verdade". Na `main` a Home não mudou em
+ * relação à `main`, e o guarda ficava vermelho por construção — foi o que aconteceu.
+ *
+ * A lista de permitidos era da onda e foi embora com ela. **O detector não.** Ele é a peça que
+ * a próxima onda vai reusar, e um detector sem controle positivo é o defeito que este arquivo
+ * inteiro existe para impedir. Os dois controles abaixo não dependem de onda nenhuma: eles
+ * criam o arquivo, medem, e apagam.
+ */
+describe("o detector por allowlist enxerga de verdade", () => {
+  const NOME = `__controle-do-allowlist-${process.pid}.ts`;
+  const ABSOLUTO = join(process.cwd(), "src", "test-support", NOME);
+  const RELATIVO = `src/test-support/${NOME}`;
+
+  it("um caminho fora do allowlist é reportado, e some quando o arquivo some", () => {
+    writeFileSync(ABSOLUTO, "export const naoAutorizado = true;\n");
+    try {
+      expect(caminhosAlterados()).toContain(RELATIVO);
+      expect(foraDoEscopo(["src/routes/"])).toContain(RELATIVO);
+    } finally {
+      rmSync(ABSOLUTO, { force: true });
+    }
+    // O detector mede o presente e não um cache — sem isto, um detector que responde "fora do
+    // escopo" para qualquer coisa passaria na asserção acima.
+    expect(foraDoEscopo(["src/routes/"])).not.toContain(RELATIVO);
+  });
+
+  it("o MESMO caminho, quando permitido, deixa de ser reportado", () => {
+    // A contraprova do teste anterior. Sem ela, um `foraDoEscopo` que ignorasse o allowlist e
+    // devolvesse tudo o que mudou passaria nos dois — e um allowlist que não permite nada não
+    // é um allowlist, é um bloqueio.
+    writeFileSync(ABSOLUTO, "export const autorizado = true;\n");
+    try {
+      expect(foraDoEscopo([RELATIVO])).not.toContain(RELATIVO);
+      expect(foraDoEscopo(["src/test-support/"])).not.toContain(RELATIVO);
+    } finally {
+      rmSync(ABSOLUTO, { force: true });
+    }
+  });
+
+  it("impossibilidade de medir REPROVA, em vez de responder 'nada fora do escopo'", () => {
+    // Um repositório de verdade, recém-criado, sem `origin/main` nenhuma. É o cenário do CI com
+    // clone raso, onde a versão antiga do guarda passava por vacuidade.
+    const vazio = mkdtempSync(join(tmpdir(), "vipreco-allowlist-"));
+    const anterior = process.cwd();
+    try {
+      execFileSync("git", ["init", "--quiet"], { cwd: vazio, stdio: "ignore" });
+      process.chdir(vazio);
+      expect(mainDisponivel()).toBe(false);
+      expect(() => caminhosAlterados()).toThrow(/origin\/main/);
+      expect(() => foraDoEscopo(["src/"])).toThrow(/origin\/main/);
+    } finally {
+      process.chdir(anterior);
+      rmSync(vazio, { recursive: true, force: true });
+    }
   });
 });

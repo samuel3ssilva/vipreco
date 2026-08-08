@@ -42,6 +42,10 @@ const PREFIXO = arg("prefixo", "para-mercados");
 const DESTINO = arg("destino", join(process.cwd(), "docs/evidence/visual/b2b0"));
 
 const TAMANHOS = [
+  // DEMO FREEZE §27 acrescentou 320: é a largura mais estreita que o produto atende, e foi nela
+  // que R3.3B descobriu um estouro que passava despercebido em 390. Evidência de responsividade
+  // que não fotografa o caso difícil não é evidência de responsividade.
+  { sufixo: "320", largura: 320, movel: true },
   { sufixo: "390", largura: 390, movel: true },
   { sufixo: "430", largura: 430, movel: true },
   { sufixo: "desktop", largura: 1280, movel: false },

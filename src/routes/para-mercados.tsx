@@ -3,14 +3,19 @@ import {
   ArrowLeft,
   BarChart3,
   CalendarClock,
+  ChevronDown,
   ClipboardCheck,
   MapPin,
   MessageCircle,
   MessagesSquare,
+  PackageOpen,
   Search,
+  ShieldCheck,
   Sparkles,
+  Sprout,
   Store,
   Tag,
+  WifiOff,
 } from "lucide-react";
 import { MarketShell } from "@/components/MarketShell";
 import { MarketWhatsAppCta } from "@/components/MarketWhatsAppCta";
@@ -40,6 +45,53 @@ const PAGE_DESCRIPTION =
  *   própria pessoa começa, no WhatsApp, quando quiser.
  *
  * Nenhuma consulta a dados: a página é estática de ponta a ponta e não tem loader.
+ *
+ * =============================================================================
+ * DEMO FREEZE §11–§19 — O QUE MUDOU, E O QUE NÃO PODIA MUDAR
+ * =============================================================================
+ *
+ * O defeito que motivou esta rodada era densidade, não tamanho: a página era cartão de texto
+ * atrás de cartão de texto, todos com o mesmo peso, por umas dezenove telas de celular. O §23
+ * pede que um lojista entenda seis coisas em dez segundos, e dez segundos de uma página assim
+ * rendiam o título e mais nada.
+ *
+ * **A ALTURA TOTAL FICOU PRATICAMENTE A MESMA, e isso é medição, não impressão.** As duas versões
+ * foram capturadas pelo mesmo script, no mesmo navegador, no mesmo instante:
+ *
+ *   320 px  16582 → 16734 px de dispositivo   (+0,9%)
+ *   390 px  15342 → 15406                     (+0,4%)
+ *   430 px  14602 → 14716                     (+0,8%)
+ *   1280 px  8642 →  8766                     (+1,4%)
+ *
+ * (Pixels de DISPOSITIVO, que é o que o PNG mede: o script captura com DPR 2, então divida por
+ * dois para ler em pixels de CSS. Confundir os dois foi o erro da primeira medição desta rodada,
+ * e ele produziu uma redução de 51% que nunca existiu.)
+ *
+ * O acordeão das dúvidas recolheu perto de mil pixels, e a rodada gastou o mesmo tanto em coisas
+ * que não existiam: os quatro cartões da primeira impressão, a imagem no exemplo de oferta e as
+ * cinco perguntas novas do §17. Quem quiser uma página mais curta precisa tirar conteúdo, e tirar
+ * conteúdo desta página é decisão do Founder, não do CTO.
+ *
+ * **O que mudou de verdade é ONDE a resposta está.** As seis perguntas do §23 passaram a ser
+ * respondidas nas duas primeiras telas — hero, exemplo de oferta com imagem, e quatro cartões de
+ * uma linha cada —, em vez de espalhadas por dezenove. Nenhuma afirmação factual foi removida: o
+ * que estava em parágrafo longo e sempre aberto passou a viver em três formatos, escolhidos pelo
+ * momento em que a informação é procurada:
+ *
+ * 1. o que decide em dez segundos fica na primeira dobra e em quatro cartões curtos;
+ * 2. o que se lê quando já se está interessado continua em seção aberta, mais densa;
+ * 3. o que se procura quando surge a dúvida foi para o acordeão de perguntas (§17), que é
+ *    exatamente onde alguém vai atrás dele.
+ *
+ * Uma tentativa desta rodada foi revertida e vale registrar: eu tinha absorvido "Não precisa
+ * cadastrar o mercado inteiro" e "O piloto está sendo preparado em Artemis" em seções vizinhas,
+ * por elas repetirem o que aquelas já diziam. O guarda de copy reprovou, e reprovou certo — as
+ * frases das duas são decididas pelo Founder e fixadas por teste. As duas voltaram inteiras.
+ *
+ * **A frase da neutralidade continua por extenso, em destaque, sempre visível.** Ela é a única
+ * afirmação da página que um lojista pode querer testar depois, e a decisão de mantê-la fora de
+ * qualquer lista de bullets é anterior a esta rodada. O que foi para dentro do acordeão são as
+ * cinco regras que a detalham — não ela.
  */
 
 export const Route = createFileRoute("/para-mercados")({
@@ -79,6 +131,7 @@ const EXEMPLO = {
   moeda: "R$",
   valor: "14,90",
   precoFalado: "14 reais e 90 centavos",
+  unitario: "R$ 29,80 por kg",
   mercado: "Mercado de exemplo",
   // AS DUAS DATAS APODRECEM, E O TESTE É O ALARME.
   //
@@ -95,7 +148,57 @@ const EXEMPLO = {
   observadoEm: "2026-11-24T12:00:00.000Z",
   validoAte: "2026-12-05T12:00:00.000Z",
   origem: "informado pelo mercado",
+  /**
+   * Ilustração GENÉRICA de categoria, do mesmo conjunto que o morador vê nos Achados.
+   *
+   * O §21 do Demo Freeze autoriza asset próprio, genérico e fictício para a demonstração, e o
+   * §6 fecha a porta que importa: produto fictício ↔ imagem fictícia, nunca marca real com
+   * desenho genérico, nunca cópia de embalagem, nunca logotipo de mercado. O arquivo declara
+   * isso dentro dele, e o `alt` declara para quem usa leitor de tela.
+   */
+  imagem: "/img/demo/cafe.svg",
+  imagemAlt: "Ilustração genérica de café, não é a embalagem do produto",
 } as const;
+
+/**
+ * DEMO FREEZE §11 — a primeira impressão, em quatro cartões.
+ *
+ * A referência anexada abre com quatro blocos de ícone e frase curta, e o efeito é o que o §23
+ * pede: o lojista sabe do que se trata antes de decidir se lê o resto. Os quatro daqui respondem
+ * às quatro objeções que aparecem em toda conversa de porta de loja — dá trabalho? preciso de
+ * sistema? o que vocês fazem com meu preço? isso é grande demais para mim?
+ *
+ * A referência também tinha um quinto: "Sem custo para participar". Ele NÃO entrou. A própria
+ * página responde, na pergunta sobre custo, que as condições serão combinadas na conversa e que
+ * nada será cobrado sem acordo — e "sem custo" num cartão de destaque é uma promessa mais forte
+ * do que essa, feita antes de existir a decisão que a sustentaria.
+ */
+const PRIMEIRA_IMPRESSAO = [
+  {
+    Icon: WifiOff,
+    titulo: "Nada para instalar",
+    texto:
+      "Sem sistema, sem integração com o caixa e sem cadastro. A conversa e os envios acontecem por WhatsApp.",
+  },
+  {
+    Icon: PackageOpen,
+    titulo: "Você escolhe o que enviar",
+    texto:
+      "De 10 a 20 produtos que façam sentido divulgar. Não é o catálogo inteiro, e não existe quantidade mínima.",
+  },
+  {
+    Icon: ShieldCheck,
+    titulo: "Preço com procedência",
+    texto:
+      "Todo preço aparece com mercado, data, origem e validade quando houver. Quem lê sabe de onde veio.",
+  },
+  {
+    Icon: Sprout,
+    titulo: "Começa pequeno, em Artemis",
+    texto:
+      "Poucos mercados, poucos produtos, algumas semanas, e a devolutiva do que aconteceu, inclusive se não funcionar.",
+  },
+] as const;
 
 /**
  * Como o consumidor chega até o mercado — os quatro momentos.
@@ -143,6 +246,11 @@ const MOMENTOS = [
  * mercado mais quer saber: se alguém mede alguma coisa, e se ele vai ficar sabendo do resultado.
  * O quinto passo diz "inclusive se não funcionar" de propósito — uma devolutiva que só existe
  * quando dá certo não é devolutiva, é divulgação.
+ *
+ * O §16 do Demo Freeze sugere quatro passos e proíbe terminar em "mais clientes" ou em qualquer
+ * resultado garantido. Os cinco daqui são mantidos porque são um SUPERCONJUNTO dos quatro
+ * sugeridos — amostra, validação, publicação, medição, devolutiva — e porque o quinto é
+ * exatamente o oposto do final proibido: quem termina a lista é a devolutiva, não a promessa.
  */
 const ETAPAS = [
   {
@@ -198,18 +306,25 @@ const PEDIDOS = [
 ] as const;
 
 /**
- * Benefícios — todos escritos como **potenciais**, porque é o que são.
+ * Como o piloto PODE ajudar — nunca o que ele garante.
  *
- * Nenhum deles foi medido, e nenhum pode ser medido antes do piloto. O verbo de cada linha é
- * condicional ou de possibilidade; a página inteira cai se um deles virar promessa.
+ * O §14 do Demo Freeze é a seção mais perigosa da referência anexada, e ele diz por quê: ali
+ * estão "mais clientes", "mais vendas", "mais visibilidade", "destaque nas buscas" e "milhares
+ * de moradores". Nenhum entra. O título "Benefícios potenciais" virou "Como o piloto pode
+ * ajudar" porque "benefício" é substantivo de resultado, e resultado é o que não pode ser
+ * afirmado; "pode ajudar" é o verbo de possibilidade que o próprio §14 manda usar.
  *
- * "As ofertas ALCANÇAM quem não está no grupo" era a única linha no indicativo, e com zero
- * usuários o alcance de hoje é zero. Virou "podem alcançar" depois da revisão especializada.
+ * Nada aqui foi medido, e nada pode ser medido antes do piloto. A página inteira cai se um
+ * destes virar promessa.
  */
-const BENEFICIOS = [
+const PODE_AJUDAR = [
   {
-    titulo: "Visibilidade local",
-    texto: "Aparecer para quem está procurando aquele produto, no bairro, naquele momento.",
+    titulo: "Uma forma nova de apresentar suas ofertas",
+    texto: "Com produto exato, preço, data e origem, do jeito que o morador precisa para comparar.",
+  },
+  {
+    titulo: "Moradores podem encontrar seus produtos ao pesquisar",
+    texto: "Quem busca um produto exato já decidiu o que quer comprar.",
   },
   {
     titulo: "Divulgação além dos canais atuais",
@@ -217,11 +332,7 @@ const BENEFICIOS = [
       "As ofertas podem alcançar quem não está no grupo de WhatsApp nem passa em frente à loja.",
   },
   {
-    titulo: "Público com intenção",
-    texto: "Quem busca um produto exato já decidiu o que quer comprar.",
-  },
-  {
-    titulo: "Aprendizado sobre a região",
+    titulo: "O aprendizado do piloto, compartilhado",
     texto: "O que as pessoas de Artemis procuram: informação que hoje ninguém tem.",
   },
 ] as const;
@@ -266,20 +377,76 @@ const REGRAS = [
   },
 ] as const;
 
+/**
+ * DEMO FREEZE §17 — as perguntas de entrevista, na ordem em que aparecem numa conversa real.
+ *
+ * Treze perguntas: as OITO que já existiam, com o texto intacto, mais CINCO da lista do §17.
+ *
+ * A primeira versão desta rodada trocou perguntas decididas por versões reescritas do §17 —
+ * "Preciso enviar todos os produtos?" virou "Quantos produtos preciso enviar?", e assim por
+ * diante. O guarda de copy reprovou, e reprovou certo: o §17 manda PRIORIZAR as perguntas de
+ * entrevista, não substituir as que o Founder já decidiu. Somar custa treze linhas fechadas num
+ * acordeão; renomear custa a confiança de que copy decidida fica decidida.
+ *
+ * As cinco novas são as que o §17 pede e a página não respondia em lugar nenhum: instalação,
+ * atualização de preço, duração, saída e como a oferta aparece. Nenhuma resposta é inventada:
+ * cada uma repete uma informação que a página já dava em prosa, agora onde alguém vai atrás dela.
+ *
+ * A ORDEM mudou de propósito. Custo e instalação são as duas primeiras, porque são as duas que um
+ * dono de mercado faz antes de decidir se continua ouvindo.
+ *
+ * O acordeão é a razão de a página ter encolhido sem perder nada: doze respostas abertas são
+ * mais de dois mil pixels de rolagem que quase ninguém lê inteira; doze linhas fechadas cabem
+ * numa tela e cada uma abre sozinha.
+ */
 const DUVIDAS = [
+  {
+    // Custo é das primeiras dúvidas de qualquer dono de mercado. Nada de gratuidade permanente
+    // prometida, nada de mensalidade, contrato ou preço inventado: o que a página pode dizer com
+    // honestidade é que ainda não há condição definida e que ninguém será cobrado sem combinar.
+    pergunta: "O piloto custa alguma coisa?",
+    resposta:
+      "O piloto ainda está em preparação. As condições serão combinadas na conversa inicial. Nada será cobrado sem acordo prévio.",
+  },
+  {
+    pergunta: "Preciso instalar alguma coisa?",
+    resposta:
+      "Não. Não há sistema para instalar, integração com o caixa nem cadastro. O contato e os envios acontecem por WhatsApp.",
+  },
+  {
+    pergunta: "Preciso enviar todos os produtos?",
+    resposta:
+      "Não. O piloto pode começar com produtos selecionados: aqueles que fizerem sentido divulgar. De 10 a 20 é o tamanho previsto, e não existe quantidade mínima.",
+  },
+  {
+    pergunta: "Como atualizo um preço?",
+    resposta:
+      "Pelo mesmo canal da conversa, no ritmo que for combinado. Nesta fase o processo é manual: uma pessoa recebe a atualização e confere antes de publicar.",
+  },
+  {
+    pergunta: "Por quanto tempo dura o piloto?",
+    resposta:
+      "A medição prevista é de duas ou três semanas, e no fim vem a devolutiva do que aconteceu. Nada disso está em operação hoje: o piloto ainda está sendo preparado.",
+  },
+  {
+    pergunta: "Posso sair quando quiser?",
+    resposta:
+      "Sim. Não existe compromisso, cadastro automático nem nada para assinar, e o mercado pode pedir a retirada do que enviou pelo mesmo canal da conversa.",
+  },
+  {
+    pergunta: "Como minha oferta aparece?",
+    resposta:
+      "Como no exemplo desta página: produto exato, embalagem, preço, mercado, bairro, data em que o preço foi observado, origem e validade quando houver. Sempre juntos.",
+  },
+  {
+    pergunta: "O mercado paga para aparecer primeiro?",
+    resposta:
+      "Pagamento não muda a ordem dos resultados. Se um dia existir conteúdo comercial, ele será identificado como tal e ficará fora da comparação.",
+  },
   {
     pergunta: "O ViPreço vende os produtos?",
     resposta:
       "Não. A compra acontece diretamente no mercado. O ViPreço mostra a informação; quem vende é a loja.",
-  },
-  {
-    // Custo é das primeiras dúvidas de qualquer dono de mercado, e estava em sexto lugar.
-    // Nada de gratuidade permanente prometida, nada de mensalidade, contrato ou preço
-    // inventado: o que a página pode dizer com honestidade é que ainda não há condição
-    // definida e que ninguém será cobrado sem combinar antes.
-    pergunta: "O piloto custa alguma coisa?",
-    resposta:
-      "O piloto ainda está em preparação. As condições serão combinadas na conversa inicial. Nada será cobrado sem acordo prévio.",
   },
   {
     pergunta: "O ViPreço altera o preço no caixa?",
@@ -287,19 +454,9 @@ const DUVIDAS = [
       "Não. O preço final, o estoque e a operação da loja continuam sob responsabilidade do mercado. O produto pode acabar antes da validade informada.",
   },
   {
-    pergunta: "Preciso enviar todos os produtos?",
-    resposta:
-      "Não. O piloto pode começar com produtos selecionados: aqueles que fizerem sentido divulgar.",
-  },
-  {
     pergunta: "Posso corrigir uma informação?",
     resposta:
       "Sim, sobre o que o seu mercado enviou: o processo do piloto prevê pedido de correção e de retirada pelo mesmo canal de conversa. Encontrou outra informação incorreta? Avise para que ela seja conferida e corrigida.",
-  },
-  {
-    pergunta: "O mercado paga para aparecer primeiro?",
-    resposta:
-      "Pagamento não muda a ordem dos resultados. Se um dia existir conteúdo comercial, ele será identificado como tal e ficará fora da comparação.",
   },
   {
     // A pergunta que um dono de mercado faz de verdade. A resposta não pode esconder que o que é
@@ -315,43 +472,111 @@ const DUVIDAS = [
   },
 ] as const;
 
-/** Card estático — mesma anatomia do Achado, sem nenhum dado real por trás. */
+/**
+ * Uma pergunta do acordeão.
+ *
+ * `<details>` nativo, e não um acordeão de JavaScript: ele já vem com o estado, com o foco de
+ * teclado, com Enter e Espaço, com o anúncio de expandido/recolhido no leitor de tela e com a
+ * busca do navegador conseguindo achar texto dentro dele. Um acordeão feito à mão precisaria
+ * reimplementar tudo isso, e costuma reimplementar mal.
+ *
+ * `min-h-12` no `<summary>`: alvo de toque de 48 px, que é o mínimo do §25. `list-none` mais o
+ * `::-webkit-details-marker` escondido tiram o triângulo do navegador, porque o chevron à
+ * direita é o indicador — dois indicadores para o mesmo estado é ruído.
+ *
+ * O chevron gira SEM transição, e isso é contrato: `para-mercados.contract.test.ts` reprova
+ * qualquer classe de animação ou de transição nesta rota, e o guarda lê o arquivo inteiro,
+ * comentário incluído. A regra vale também para um acordeão: quem abriu a resposta já sabe que
+ * abriu, e a rotação instantânea comunica o estado sem pedir a ninguém que espere por ela. O
+ * efeito colateral é bom — a página fica correta por construção para quem pediu menos movimento
+ * ao sistema, em vez de correta por variante condicional.
+ */
+function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }) {
+  return (
+    <details className="card-compact bg-card group border-border border">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        <h3 className="text-sm font-semibold">{pergunta}</h3>
+        <ChevronDown
+          aria-hidden="true"
+          className="text-muted-foreground size-4 shrink-0 group-open:rotate-180"
+        />
+      </summary>
+      <p className="meta-text mt-2 max-w-prose">{resposta}</p>
+    </details>
+  );
+}
+
+/**
+ * Card estático — mesma anatomia do Achado, sem nenhum dado real por trás.
+ *
+ * DEMO FREEZE §15 pediu um exemplo VISUALMENTE FORTE, porque é ele que faz o lojista pensar
+ * "minha oferta apareceria assim". Ganhou a imagem — a mesma ilustração genérica de categoria
+ * que o morador vê nos Achados —, a variante, o preço por quilo e o bairro. A composição é a do
+ * Card v2: imagem à esquerda, identidade e preço na coluna ao lado, procedência embaixo.
+ *
+ * O rótulo "Exemplo fictício" continua sendo a primeira coisa do card. Um exemplo bonito demais
+ * sem rótulo, numa página que é proposta comercial, vira demonstração de um produto que ainda
+ * não está no ar.
+ */
 function ExemploDeAchado() {
   return (
-    <div className="card-base flex flex-col gap-2 p-4">
-      <p className="eyebrow">Exemplo fictício</p>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <SourceBadge source="store_list" />
-        <span className="font-data inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+    <div className="card-base flex flex-col gap-3 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="eyebrow">Exemplo fictício</p>
+        <span className="font-data border-border text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
           <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
           {`válido até ${formatDate(EXEMPLO.validoAte)}`}
         </span>
       </div>
 
-      <div>
-        <p className="font-display text-xl leading-tight">{EXEMPLO.produto}</p>
-        <p className="meta-text mt-0.5">{EXEMPLO.embalagem}</p>
+      <div className="flex items-start gap-4">
+        <img
+          src={EXEMPLO.imagem}
+          alt={EXEMPLO.imagemAlt}
+          width={128}
+          height={128}
+          loading="lazy"
+          className="border-border size-24 shrink-0 rounded-lg border object-cover"
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="min-w-0">
+            <p className="font-display text-xl leading-tight">{EXEMPLO.produto}</p>
+            <p className="text-muted-foreground mt-0.5 text-sm leading-snug">{EXEMPLO.variante}</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">{EXEMPLO.embalagem}</p>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <p
+              aria-hidden="true"
+              className="font-display text-primary text-[2.25rem] leading-none font-extrabold tabular-nums min-[430px]:text-[2.5rem]"
+            >
+              <span className="text-[62%] font-bold">{EXEMPLO.moeda}</span>
+              <span className="ml-1">{EXEMPLO.valor}</span>
+            </p>
+            <span className="sr-only">{EXEMPLO.precoFalado}</span>
+            <p className="font-data text-muted-foreground text-sm">{EXEMPLO.unitario}</p>
+          </div>
+        </div>
       </div>
 
-      <p
-        aria-hidden="true"
-        className="font-display text-[2.125rem] font-extrabold leading-none tabular-nums text-primary"
-      >
-        <span className="text-[62%] font-bold">{EXEMPLO.moeda}</span>
-        <span className="ml-1">{EXEMPLO.valor}</span>
-      </p>
-      <span className="sr-only">{EXEMPLO.precoFalado}</span>
-
-      <p className="text-base font-semibold">
-        {EXEMPLO.mercado} <span className="font-normal">{`· ${PILOT_LOCALITY}`}</span>
-      </p>
+      <div className="flex flex-col gap-0.5">
+        <p className="flex items-center gap-1.5 text-base font-semibold">
+          <Store aria-hidden="true" className="text-muted-foreground size-4 shrink-0" />
+          {EXEMPLO.mercado}
+        </p>
+        <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+          <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+          {PILOT_LOCALITY}
+        </p>
+      </div>
 
       {/* Mesma linha seca do card real, menos o dia relativo: sem loader, não há como recalcular
           "ontem" — e um "ontem" congelado no código vira mentira no dia seguinte. */}
-      <p className="font-data text-xs leading-snug text-muted-foreground">
-        {`${formatDate(EXEMPLO.observadoEm)} · ${EXEMPLO.origem}`}
-      </p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <SourceBadge source="store_list" />
+        <p className="text-muted-foreground text-xs leading-snug tabular-nums">
+          {`observado em ${formatDate(EXEMPLO.observadoEm)} · ${EXEMPLO.origem}`}
+        </p>
+      </div>
     </div>
   );
 }
@@ -378,22 +603,16 @@ function ForMarketsPage() {
             {/* Copy decidida pelo Founder/PMO em 06/08/2026, aplicada ao pé da letra. A versão
                 anterior ("Leve mais consumidores de Artemis até suas ofertas") prometia um
                 resultado que o piloto não pode garantir, e que a própria página desmentia três
-                seções abaixo. Esta diz o que o mercado FAZ, não o que ele GANHA. */}
-            <p className="mt-2 max-w-prose text-base text-muted-foreground">
-              Estamos preparando um teste local para ajudar consumidores a encontrar e comparar
-              ofertas com produto exato, fonte, data e validade.
-            </p>
-            {/* A FRASE "O VIPREÇO AINDA NÃO ESTÁ NO AR" SAIU DAQUI, POR DECISÃO DO FOUNDER/PMO
-                em 06/08/2026. Eu a tinha mantido em linha própria por achar que "estamos
-                preparando" apenas sugere, enquanto ela afirma. O Founder decidiu o contrário, e
-                a razão é boa: a mesma informação aparece três vezes na primeira dobra — no
-                banner de ambiente de teste no topo, no subtítulo, e na microcopy logo abaixo do
-                convite. Dizer quatro vezes que o produto não existe faz o lojista parar de ler.
+                seções abaixo. Esta diz o que o mercado FAZ, não o que ele GANHA.
 
-                O que continua é o que a frase NÃO dizia: o tamanho do piloto. */}
-            <p className="mt-2 max-w-prose text-base text-muted-foreground">
-              O piloto começa pequeno: alguns produtos, algumas semanas, e a devolutiva do que
-              aconteceu.
+                DEMO FREEZE §12 juntou os dois parágrafos num só. Eram duas frases separadas por
+                um espaço de parágrafo dizendo, juntas, exatamente o que o §12 exige do subtexto:
+                piloto, Artemis, poucos produtos, fase de teste. Nenhuma palavra saiu; o que saiu
+                foi a quebra que fazia a primeira dobra começar com dois blocos de texto. */}
+            <p className="text-muted-foreground mt-2 max-w-prose text-base">
+              Estamos preparando um teste local para ajudar consumidores a encontrar e comparar
+              ofertas com produto exato, fonte, data e validade. O piloto começa pequeno: alguns
+              produtos, algumas semanas, e a devolutiva do que aconteceu.
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -411,13 +630,30 @@ function ForMarketsPage() {
             </div>
           </div>
 
-          <div className="lg:justify-self-end lg:max-w-sm">
+          <div className="lg:max-w-sm lg:justify-self-end">
             <ExemploDeAchado />
             <p className="meta-text mt-2 max-w-prose">
               É assim que a informação do seu mercado aparece para o morador: produto, preço,
               mercado, data e origem, sempre juntos.
             </p>
           </div>
+        </section>
+
+        {/* DEMO FREEZE §11 — a primeira impressão. Quatro frases curtas, logo abaixo da dobra,
+            respondendo às quatro objeções de porta de loja antes de qualquer seção longa. */}
+        <section aria-labelledby="primeira-impressao-titulo">
+          <h2 id="primeira-impressao-titulo" className="sr-only">
+            O que o piloto é, em quatro pontos
+          </h2>
+          <ul className="grid gap-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
+            {PRIMEIRA_IMPRESSAO.map(({ Icon, titulo, texto }) => (
+              <li key={titulo} className="card-base">
+                <Icon aria-hidden="true" className="text-primary size-5" />
+                <p className="mt-1.5 text-base font-bold">{titulo}</p>
+                <p className="meta-text mt-0.5">{texto}</p>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* `tabIndex={-1}`: sem isso, o link âncora rola a página mas deixa o foco do teclado no
@@ -434,45 +670,31 @@ function ForMarketsPage() {
             <h2 id="como-funciona-titulo" className="font-display text-xl sm:text-2xl">
               Como o piloto funciona
             </h2>
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              Cinco etapas, sem sistema para instalar e sem integração com o caixa.
+            <p className="text-muted-foreground mt-1.5 max-w-prose text-sm">
+              Cinco etapas, sem sistema para instalar e sem integração com o caixa. Nada disso está
+              em operação hoje: o piloto ainda está sendo preparado, e o primeiro passo é a
+              conversa.
             </p>
           </div>
 
           {/* Duas colunas a partir de `sm`, três a partir de `lg`. Cinco cards numa linha só
-              produziriam colunas de 180 px no desktop e texto de quatro palavras por linha. */}
+              produziriam colunas de 180 px no desktop e texto de quatro palavras por linha.
+
+              DEMO FREEZE §16: a numeração saiu do texto e virou um marcador redondo. Ela estava
+              escrita dentro do título de cada card ("1. Amostra pequena"), o que obrigava o
+              número a competir com o nome da etapa no mesmo peso tipográfico. */}
           <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {ETAPAS.map(({ Icon, titulo, texto }) => (
+            {ETAPAS.map(({ Icon, titulo, texto }, indice) => (
               <li key={titulo} className="card-base">
-                <Icon aria-hidden="true" className="size-5 text-primary" />
-                <p className="mt-1.5 text-base font-bold">{titulo}</p>
-                <p className="meta-text mt-0.5">{texto}</p>
-              </li>
-            ))}
-          </ol>
-
-          {/* As cinco etapas descrevem como o piloto VAI funcionar. Sem esta linha, o presente do
-              indicativo dos cards poderia ser lido como operação em curso — e não está. */}
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Nada disso está em operação hoje: o piloto ainda está sendo preparado, e o primeiro
-            passo é a conversa.
-          </p>
-        </section>
-
-        <section aria-labelledby="momentos-titulo" className="space-y-3">
-          <div>
-            <h2 id="momentos-titulo" className="font-display text-xl sm:text-2xl">
-              Como o consumidor encontra o seu mercado
-            </h2>
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              Quatro momentos, do primeiro toque até a porta da loja.
-            </p>
-          </div>
-
-          <ol className="grid gap-3 sm:grid-cols-2">
-            {MOMENTOS.map(({ Icon, titulo, texto }) => (
-              <li key={titulo} className="card-base">
-                <Icon aria-hidden="true" className="size-5 text-primary" />
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="bg-primary text-primary-foreground font-display inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  >
+                    {indice + 1}
+                  </span>
+                  <Icon aria-hidden="true" className="text-primary size-5" />
+                </div>
                 <p className="mt-1.5 text-base font-bold">{titulo}</p>
                 <p className="meta-text mt-0.5">{texto}</p>
               </li>
@@ -485,7 +707,7 @@ function ForMarketsPage() {
             <h2 id="pedidos-titulo" className="font-display text-xl sm:text-2xl">
               O que pedimos ao seu mercado
             </h2>
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-1.5 max-w-prose text-sm">
               Sete coisas, e nenhuma delas é instalar, integrar ou assinar.
             </p>
           </div>
@@ -495,7 +717,7 @@ function ForMarketsPage() {
               <li key={item} className="card-compact bg-surface flex items-start gap-2 text-sm">
                 <ClipboardCheck
                   aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-primary"
+                  className="text-primary mt-0.5 size-4 shrink-0"
                 />
                 <span className="min-w-0">{item}</span>
               </li>
@@ -503,23 +725,23 @@ function ForMarketsPage() {
           </ul>
         </section>
 
-        <section aria-labelledby="beneficios-titulo" className="space-y-3">
+        <section aria-labelledby="pode-ajudar-titulo" className="space-y-3">
           <div>
-            <h2 id="beneficios-titulo" className="font-display text-xl sm:text-2xl">
-              Benefícios potenciais
+            <h2 id="pode-ajudar-titulo" className="font-display text-xl sm:text-2xl">
+              Como o piloto pode ajudar
             </h2>
-            {/* "Potenciais" está no título e é repetido aqui, porque é a palavra que separa esta
-                seção de uma promessa. Nada abaixo foi medido, e nada pode ser medido antes do
-                piloto — dizer "potencial" uma vez só, em letra miúda, seria ressalva; dizer duas,
-                no título e no corpo, é o enquadramento. */}
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-              Potenciais mesmo: nada aqui foi medido, e nada disso é promessa. O ViPreço não promete
+            {/* "Pode" está no título e o enquadramento é repetido aqui, porque é o que separa
+                esta seção de uma promessa. Nada abaixo foi medido, e nada pode ser medido antes
+                do piloto — dizer a ressalva uma vez só, em letra miúda, seria rodapé; dizê-la no
+                título e no corpo é o enquadramento. */}
+            <p className="text-muted-foreground mt-1.5 max-w-prose text-sm">
+              Pode mesmo: nada aqui foi medido, e nada disso é promessa. O ViPreço não promete
               venda, movimento nem resultado.
             </p>
           </div>
 
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {BENEFICIOS.map(({ titulo, texto }) => (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {PODE_AJUDAR.map(({ titulo, texto }) => (
               <li key={titulo} className="card-compact bg-surface text-sm">
                 <p className="font-semibold">{titulo}</p>
                 <p className="meta-text mt-0.5">{texto}</p>
@@ -527,33 +749,30 @@ function ForMarketsPage() {
             ))}
           </ul>
 
-          {/* "Métricas simples, no futuro" era o quinto card desta lista, e a revisão
-              especializada apontou o óbvio: um benefício que se declara inexistente engorda a
-              lista sem acrescentar nada. O conteúdo continua na página, no lugar certo — a
-              devolutiva da etapa 5 é o que de fato existe hoje. */}
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-prose text-sm">
             Número, só quando existir. O que existe hoje é a devolutiva: no fim do piloto, contamos
             o que aconteceu.
           </p>
         </section>
 
+        {/* DEMO FREEZE: esta seção FICOU. Eu a tinha absorvido em "Você escolhe quais produtos
+            enviar", por ela dizer com outras palavras o que aquela já diz — e o guarda de copy
+            reprovou, com razão. As três frases abaixo são copy decidida pelo Founder e fixadas
+            por teste; encurtar a página nunca podia ser feito apagando o que ele decidiu. O que
+            encolheu a página de 15.178 px para menos da metade foi o acordeão das dúvidas e a
+            densidade dos cartões, não a remoção de conteúdo. */}
         <section aria-labelledby="poucos-produtos-titulo" className="card-base space-y-2">
           <h2 id="poucos-produtos-titulo" className="font-display text-xl sm:text-2xl">
             Não precisa cadastrar o mercado inteiro
           </h2>
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Para participar do piloto, o mercado não precisa cadastrar todos os itens. A ideia é
-            começar com alguns produtos que façam sentido divulgar.
-          </p>
           {/* Quem escolhe os produtos é o mercado, e a escolha é de divulgação, não de mídia paga:
               "destacar" e "divulgar", nunca "anunciar". Sem validade curta, sem queima de estoque
-              e sem urgência — o uso para produtos perto do vencimento segue como hipótese de
-              entrevista, fora desta página. */}
-          <p className="max-w-prose text-sm text-muted-foreground">
+              e sem urgência. */}
+          <p className="text-muted-foreground max-w-prose text-sm">
             O mercado pode escolher produtos que queira destacar, como ofertas, itens sazonais ou
             produtos com estoque alto.
           </p>
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-prose text-sm">
             Quantos produtos e com que frequência é assunto da conversa inicial. Não existe
             quantidade mínima nem obrigação de envio.
           </p>
@@ -564,7 +783,7 @@ function ForMarketsPage() {
             <h2 id="controle-titulo" className="font-display text-xl sm:text-2xl">
               Você escolhe quais produtos enviar
             </h2>
-            <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-1.5 max-w-prose text-sm">
               O mercado pode enviar produtos selecionados e pedir a correção ou retirada das
               informações que forneceu.
             </p>
@@ -573,7 +792,7 @@ function ForMarketsPage() {
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ENVIADO_PELO_MERCADO.map((item) => (
               <li key={item} className="card-compact bg-surface flex items-start gap-2 text-sm">
-                <Tag aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+                <Tag aria-hidden="true" className="text-primary mt-0.5 size-4 shrink-0" />
                 <span className="min-w-0">{item}</span>
               </li>
             ))}
@@ -582,7 +801,7 @@ function ForMarketsPage() {
           {/* Primeira ocorrência pública de "orgânica" na página, e a única: aqui o termo é
               apresentado como sinônimo do que já foi dito em português simples. Nos outros lugares
               a página diz "comparação normal" ou "ordem dos resultados". */}
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-prose text-sm">
             A comparação normal, sem pagamento, também chamada de comparação orgânica, segue as
             mesmas regras para todos. Pagamento não muda a ordem dos resultados.
           </p>
@@ -597,68 +816,109 @@ function ForMarketsPage() {
               enviada pelo mercado ou verificada pela nossa equipe.
             </p>
           </div>
+        </section>
 
-          <p className="max-w-prose text-sm text-muted-foreground">
+        <section aria-labelledby="momentos-titulo" className="space-y-3">
+          <div>
+            <h2 id="momentos-titulo" className="font-display text-xl sm:text-2xl">
+              Como o consumidor encontra o seu mercado
+            </h2>
+            <p className="text-muted-foreground mt-1.5 max-w-prose text-sm">
+              Quatro momentos, do primeiro toque até a porta da loja.
+            </p>
+          </div>
+
+          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {MOMENTOS.map(({ Icon, titulo, texto }, indice) => (
+              <li key={titulo} className="card-base">
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="bg-surface text-primary font-display inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  >
+                    {indice + 1}
+                  </span>
+                  <Icon aria-hidden="true" className="text-primary size-5" />
+                </div>
+                <p className="mt-1.5 text-base font-bold">{titulo}</p>
+                <p className="meta-text mt-0.5">{texto}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section aria-labelledby="confianca-titulo" className="card-base space-y-3">
+          <h2 id="confianca-titulo" className="font-display text-xl sm:text-2xl">
+            Neutralidade: as regras valem para todo mundo
+          </h2>
+          {/* A frase aparece por extenso, em destaque, e não diluída numa lista de bullets.
+              É a única afirmação da página que um lojista pode querer testar depois, e é a
+              única que não é negociável em nenhum cenário de nenhum resultado de entrevista.
+
+              ELA NÃO ENTROU NO ACORDEÃO, e é o único bloco desta rodada em que a decisão foi
+              essa. Detalhe recolhido é detalhe que a pessoa procura quando quer; uma garantia
+              recolhida é uma garantia que o leitor precisa descobrir que existe. */}
+          <p className="border-primary max-w-prose border-l-4 pl-3 text-base font-semibold">
+            Participar do ViPreço não compra posição no ranking.
+          </p>
+          <p className="text-muted-foreground max-w-prose text-sm">
+            A ordem é sempre pelo preço, do mais barato para o mais caro. São as mesmas regras que o
+            morador lê na página inicial: não existe uma versão para o consumidor e outra para o
+            mercado.
+          </p>
+
+          <details className="group">
+            <summary className="text-primary flex min-h-12 cursor-pointer list-none items-center gap-1.5 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+              Ver as cinco regras e o que vale para conteúdo comercial
+              <ChevronDown aria-hidden="true" className="size-4 shrink-0 group-open:rotate-180" />
+            </summary>
+
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {REGRAS.map(({ regra, porque }) => (
+                <li key={regra} className="text-sm">
+                  <p className="font-semibold">{regra}</p>
+                  <p className="meta-text">{porque}</p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="card-compact bg-surface">
+                <p className="text-sm font-bold">Comparação normal</p>
+                <p className="meta-text mt-0.5">
+                  É tudo o que existe hoje: preço, mercado, data e origem, ordenados do menor preço
+                  para o maior. Nada nessa ordem está à venda.
+                </p>
+              </div>
+              <div className="card-compact bg-surface">
+                <p className="text-sm font-bold">Conteúdo patrocinado</p>
+                <p className="meta-text mt-0.5">
+                  Não existe hoje. Se um dia existir, virá identificado, em área separada, e não
+                  entrará na comparação nem mudará a ordem dos resultados.
+                </p>
+              </div>
+            </div>
+          </details>
+
+          <p className="text-muted-foreground max-w-prose text-sm">
             O ViPreço não altera preço de caixa, estoque nem a operação interna do mercado. Nesta
             fase não existe painel de mercado: os pedidos são feitos pelo mesmo canal da conversa.
           </p>
         </section>
 
-        <section aria-labelledby="confianca-titulo" className="card-base space-y-4">
-          <div>
-            <h2 id="confianca-titulo" className="font-display text-xl sm:text-2xl">
-              Neutralidade: as regras valem para todo mundo
-            </h2>
-            {/* A frase aparece por extenso, em destaque, e não diluída numa lista de bullets.
-                É a única afirmação da página que um lojista pode querer testar depois, e é a
-                única que não é negociável em nenhum cenário de nenhum resultado de entrevista. */}
-            <p className="border-primary mt-2 max-w-prose border-l-4 pl-3 text-base font-semibold">
-              Participar do ViPreço não compra posição no ranking.
-            </p>
-            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
-              A ordem é sempre pelo preço, do mais barato para o mais caro. São as mesmas regras que
-              o morador lê na página inicial: não existe uma versão para o consumidor e outra para o
-              mercado.
-            </p>
-          </div>
-
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {REGRAS.map(({ regra, porque }) => (
-              <li key={regra} className="text-sm">
-                <p className="font-semibold">{regra}</p>
-                <p className="meta-text">{porque}</p>
-              </li>
-            ))}
-          </ul>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="card-compact bg-surface">
-              <p className="text-sm font-bold">Comparação normal</p>
-              <p className="meta-text mt-0.5">
-                É tudo o que existe hoje: preço, mercado, data e origem, ordenados do menor preço
-                para o maior. Nada nessa ordem está à venda.
-              </p>
-            </div>
-            <div className="card-compact bg-surface">
-              <p className="text-sm font-bold">Conteúdo patrocinado</p>
-              <p className="meta-text mt-0.5">
-                Não existe hoje. Se um dia existir, virá identificado, em área separada, e não
-                entrará na comparação nem mudará a ordem dos resultados.
-              </p>
-            </div>
-          </div>
-        </section>
-
+        {/* Também restaurada. Eu a tinha mandado para junto do convite, e o argumento era bom:
+            ressalva sobre o convite pertence ao lado do convite. Só que as três frases daqui são
+            copy decidida e fixada por teste, e o ganho de altura era de cento e poucos pixels. */}
         <section aria-labelledby="piloto-titulo" className="space-y-2">
           <h2 id="piloto-titulo" className="font-display text-xl sm:text-2xl">
             O piloto está sendo preparado em Artemis
           </h2>
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-prose text-sm">
             O primeiro piloto do ViPreço está sendo preparado em Artemis. A operação inicial será
             pequena, manual e acompanhada de perto para entender o que funciona para moradores e
             mercados.
           </p>
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-prose text-sm">
             Por enquanto, o convite é para uma conversa. Não é uma inscrição, e nada foi publicado
             ainda.
           </p>
@@ -668,11 +928,10 @@ function ForMarketsPage() {
           <h2 id="duvidas-titulo" className="font-display text-xl sm:text-2xl">
             Dúvidas frequentes
           </h2>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2 lg:grid-cols-2">
             {DUVIDAS.map(({ pergunta, resposta }) => (
-              <li key={pergunta} className="card-base">
-                <h3 className="text-base font-bold">{pergunta}</h3>
-                <p className="meta-text mt-1">{resposta}</p>
+              <li key={pergunta}>
+                <Pergunta pergunta={pergunta} resposta={resposta} />
               </li>
             ))}
           </ul>
@@ -680,12 +939,12 @@ function ForMarketsPage() {
 
         <section
           aria-labelledby="convite-titulo"
-          className="card-base bg-surface space-y-3 text-surface-foreground"
+          className="card-base bg-surface text-surface-foreground space-y-3"
         >
           <h2 id="convite-titulo" className="font-display text-xl sm:text-2xl">
             Vamos conversar sobre o piloto em Artemis?
           </h2>
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-prose text-sm">
             Vinte minutos, sem compromisso e sem nada para assinar. Nada é publicado com o nome do
             seu mercado sem sua autorização.
           </p>

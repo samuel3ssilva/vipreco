@@ -39,14 +39,14 @@ import { PILOT_REGION_LABEL } from "@/lib/pilot";
  */
 export function HomeContexto() {
   return (
-    <header className="space-y-1.5">
+    <header className="space-y-1">
       <p className="eyebrow inline-flex items-center gap-1.5">
         <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
         {PILOT_REGION_LABEL}
       </p>
       <h1
         id="titulo-principal"
-        className="font-display text-[2rem] leading-[1.1] font-extrabold tracking-tight sm:text-[2.5rem]"
+        className="font-display text-[1.65rem] leading-[1.12] font-extrabold tracking-tight sm:text-[2.125rem]"
       >
         Achados em Artemis
       </h1>
@@ -55,7 +55,7 @@ export function HomeContexto() {
           lida como "todos os mercados daqui". "Monitorados" delimita o universo pelo que o
           produto de fato faz, que é a única promessa que o piloto sustenta. Nenhuma palavra sobre
           frescor: "de hoje" só poderia entrar depois de existir contrato de frescor. */}
-      <p className="text-muted-foreground max-w-prose text-base">
+      <p className="text-muted-foreground max-w-prose text-sm">
         Preços observados nos mercados monitorados, com data e fonte.
       </p>
     </header>

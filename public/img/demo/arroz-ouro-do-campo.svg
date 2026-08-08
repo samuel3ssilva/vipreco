@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" role="img" aria-hidden="true" focusable="false">
+  <!--
+    ViPreço — embalagem FICTÍCIA "Ouro do Campo", desenhada para a demonstração.
+    Marca inventada, sem logotipo, sem trade dress de terceiro. Ver docs/data/IMAGE-POLICY.md.
+
+    Saco de polipropileno de 5 kg: mais largo que alto, ombros arredondados pela pressão do
+    conteúdo, solda superior estreita e a janela transparente que toda embalagem de arroz tem —
+    é a janela, e não o rótulo, que faz o desenho ser reconhecido como arroz de longe.
+  -->
+  <defs>
+    <linearGradient id="arroz-corpo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d8d2c0" />
+      <stop offset="0.1" stop-color="#fbf9f2" />
+      <stop offset="0.34" stop-color="#ffffff" />
+      <stop offset="0.62" stop-color="#f6f3e9" />
+      <stop offset="0.86" stop-color="#ddd7c6" />
+      <stop offset="1" stop-color="#c2bba7" />
+    </linearGradient>
+    <linearGradient id="arroz-faixa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12694a" />
+      <stop offset="1" stop-color="#0a3f29" />
+    </linearGradient>
+    <linearGradient id="arroz-janela" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3e6c4" />
+      <stop offset="1" stop-color="#e2d0a4" />
+    </linearGradient>
+    <clipPath id="arroz-clip">
+      <path d="M52 108c0-14 12-20 30-23l138-2c18 3 30 9 30 23v128c0 16-14 26-32 26H84c-18 0-32-10-32-26z" />
+    </clipPath>
+  </defs>
+
+  <ellipse cx="150" cy="272" rx="96" ry="13" fill="#10231c" opacity="0.16" />
+
+  <!-- solda superior com os vincos -->
+  <rect x="96" y="64" width="108" height="17" rx="3" fill="#0a3f29" />
+  <g fill="#ffffff" opacity="0.16">
+    <rect x="108" y="67" width="3" height="11" rx="1.5" />
+    <rect x="128" y="67" width="3" height="11" rx="1.5" />
+    <rect x="148" y="67" width="3" height="11" rx="1.5" />
+    <rect x="168" y="67" width="3" height="11" rx="1.5" />
+    <rect x="188" y="67" width="3" height="11" rx="1.5" />
+  </g>
+  <!-- orelhas do saco, onde a solda encontra o corpo cheio -->
+  <path d="M96 78c-16 6-30 14-44 30l32 8z" fill="#e6e0cf" />
+  <path d="M204 78c16 6 30 14 44 30l-32 8z" fill="#cfc8b5" />
+
+  <!-- corpo -->
+  <path d="M52 108c0-14 12-20 30-23l138-2c18 3 30 9 30 23v128c0 16-14 26-32 26H84c-18 0-32-10-32-26z" fill="url(#arroz-corpo)" />
+  <g clip-path="url(#arroz-clip)">
+    <!-- vincos de plástico -->
+    <path d="M74 84v182" stroke="#10231c" stroke-opacity="0.07" stroke-width="7" />
+    <path d="M228 84v182" stroke="#10231c" stroke-opacity="0.1" stroke-width="9" />
+    <rect x="92" y="80" width="18" height="190" fill="#ffffff" opacity="0.5" />
+
+    <!-- faixa da marca -->
+    <rect x="46" y="112" width="212" height="52" fill="url(#arroz-faixa)" />
+    <rect x="46" y="164" width="212" height="4" fill="#f5c24b" />
+    <text x="150" y="136" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="0.4" fill="#fbf7ec">OURO DO CAMPO</text>
+    <text x="150" y="155" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="4" fill="#8cc7ab">ARROZ TIPO 1</text>
+
+    <!-- janela transparente com os grãos -->
+    <rect x="88" y="174" width="124" height="56" rx="8" fill="url(#arroz-janela)" />
+    <g fill="#fbf7ec" stroke="#c9a06a" stroke-width="0.7">
+      <g transform="rotate(-18 108 190)"><ellipse cx="108" cy="190" rx="9" ry="3.4" /></g>
+      <g transform="rotate(14 132 186)"><ellipse cx="132" cy="186" rx="9" ry="3.4" /></g>
+      <g transform="rotate(-6 158 192)"><ellipse cx="158" cy="192" rx="9" ry="3.4" /></g>
+      <g transform="rotate(22 184 188)"><ellipse cx="184" cy="188" rx="9" ry="3.4" /></g>
+      <g transform="rotate(8 100 206)"><ellipse cx="100" cy="206" rx="9" ry="3.4" /></g>
+      <g transform="rotate(-24 126 210)"><ellipse cx="126" cy="210" rx="9" ry="3.4" /></g>
+      <g transform="rotate(4 152 206)"><ellipse cx="152" cy="206" rx="9" ry="3.4" /></g>
+      <g transform="rotate(-14 178 212)"><ellipse cx="178" cy="212" rx="9" ry="3.4" /></g>
+      <g transform="rotate(18 198 204)"><ellipse cx="198" cy="204" rx="9" ry="3.4" /></g>
+      <g transform="rotate(-10 114 224)"><ellipse cx="114" cy="224" rx="9" ry="3.4" /></g>
+      <g transform="rotate(12 144 226)"><ellipse cx="144" cy="226" rx="9" ry="3.4" /></g>
+      <g transform="rotate(-20 172 224)"><ellipse cx="172" cy="224" rx="9" ry="3.4" /></g>
+    </g>
+    <rect x="88" y="174" width="124" height="56" rx="8" fill="none" stroke="#0a3f29" stroke-opacity="0.35" stroke-width="2" />
+    <rect x="94" y="178" width="26" height="48" fill="#ffffff" opacity="0.3" />
+
+    <!-- peso -->
+    <rect x="118" y="236" width="64" height="24" rx="12" fill="#0a3f29" />
+    <text x="150" y="253" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#fbf7ec">5 kg</text>
+  </g>
+</svg>

@@ -42,16 +42,16 @@ export function ShareAchadoButton({ payload }: { payload: ShareAchadoPayload }) 
     // `btn-quiet-bordered` foi a correção de contraste de elemento não textual (SC 1.4.11) feita
     // na Parte 2 depois de o botão ficar sem limite visível. Encolher a largura resolve a
     // aparência de formulário sem desfazer isso; tirar a borda desfaria.
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex shrink-0 items-center gap-2">
       <button
         type="button"
         onClick={compartilhar}
-        className="btn-base btn-quiet btn-quiet-bordered btn-sm btn-touch-48 w-auto px-4"
+        className="btn-base btn-quiet btn-quiet-bordered size-11 shrink-0 rounded-full p-0"
       >
-        <Share2 aria-hidden="true" className="size-4" />
-        Compartilhar este achado
+        <Share2 aria-hidden="true" className="size-[18px]" />
+        <span className="sr-only">Compartilhar este achado</span>
       </button>
-      <p role="status" aria-live="polite" className="meta-text min-h-4">
+      <p role="status" aria-live="polite" className="meta-text sr-only">
         {mensagem}
       </p>
     </div>

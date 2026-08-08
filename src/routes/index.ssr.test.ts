@@ -85,7 +85,7 @@ describe("HTML inicial da Home (SSR)", () => {
 
   it("abre com a faixa de ambiente, antes de qualquer outro conteúdo", () => {
     expect(html).toContain("AMBIENTE DE TESTE");
-    expect(html).toContain("esta não é a versão pública do ViPreço");
+    expect(html).toContain("não é a versão pública");
     expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(html.indexOf("Achados em Artemis"));
   });
 
@@ -416,8 +416,12 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
     const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
     expect(imgs).toHaveLength(3);
     for (const img of imgs) {
-      expect(img).toContain("Ilustração genérica");
-      expect(img).toContain("não é a embalagem do produto");
+      // "genérica" saiu do alt junto com o desenho genérico: o asset agora é uma embalagem
+      // FICTÍCIA com rótulo. O que o alt continua obrigado a dizer — e o que o princípio 11
+      // protege — é que não é FOTO.
+      expect(img).toContain("Ilustração");
+      expect(img).toContain("fictícia");
+      expect(img).toContain("não é foto do produto");
     }
   });
 
@@ -469,8 +473,14 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
     // "Produto exato antes do preço" não é preferência de leitura: um preço cujo item o leitor
     // ainda não identificou não serve para comparar nada, que é a única coisa que este produto
     // existe para fazer. Vale para o olho e para o leitor de tela, e os dois seguem o DOM.
-    const card = html.slice(html.indexOf('aria-labelledby="achados-titulo"'));
-    const nome = card.indexOf("Arroz");
+    // A MEDIÇÃO PULA O `alt` DA IMAGEM, e o motivo é um falso positivo real: desde que o alt
+    // passou a descrever a embalagem fictícia ("arroz Ouro do Campo, 5 kg"), ele contém
+    // "5 kg" ANTES do `<h2>` com o nome — e a asserção reprovava uma ordem que estava certa.
+    // O que interessa é a ordem do conteúdo, não a do texto alternativo, então a fatia começa
+    // depois do `<img>` do destaque.
+    const secao = html.slice(html.indexOf('aria-labelledby="achados-titulo"'));
+    const card = secao.slice(secao.indexOf("</img>") + 1 || secao.indexOf('class="size-28'));
+    const nome = card.indexOf(">Arroz<");
     const quantidade = card.indexOf("5 kg");
     const preco = card.indexOf("26,49");
     expect(nome).toBeGreaterThan(-1);

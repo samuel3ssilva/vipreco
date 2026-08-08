@@ -73,13 +73,13 @@ export type DemoOpportunity = OfertaCardV2;
  * É o mesmo raciocínio que já tinha tirado o GTIN do café: um código válido pertence a algum
  * produto real, e ausência é o estado honesto.
  */
-function ilustracao(arquivo: string, categoria: string): ImagemDeProduto {
+function ilustracao(arquivo: string, descricao: string): ImagemDeProduto {
   return {
     src: `/img/demo/${arquivo}`,
     // O `alt` diz o que a imagem É. Chamá-la de "foto do produto" seria a afirmação que o
     // princípio 11 proíbe — e quem usa leitor de tela é justamente quem não pode conferir
     // olhando que aquilo é um desenho.
-    alt: `Ilustração genérica de ${categoria} — não é a embalagem do produto`,
+    alt: `Ilustração: ${descricao} — desenho próprio, não é foto do produto`,
     review_status: "approved",
     variant_match: "exact",
     ilustrativa: true,
@@ -219,7 +219,10 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedYesterday,
       market: MARKET_LOCAL_3,
       product: PRODUCT_ARROZ,
-      image: ilustracao("arroz.svg", "arroz"),
+      image: ilustracao(
+        "arroz-ouro-do-campo.svg",
+        "embalagem fictícia de arroz Ouro do Campo, 5 kg",
+      ),
     },
     {
       id: "demo-fixture-price-cafe-mercado-local-2",
@@ -237,7 +240,10 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedTwoDaysAgo,
       market: MARKET_LOCAL_2,
       product: PRODUCT_CAFE,
-      image: ilustracao("cafe.svg", "café"),
+      image: ilustracao(
+        "cafe-serra-alta.svg",
+        "embalagem fictícia de café Serra Alta Tradicional, 500 g",
+      ),
     },
     {
       id: "demo-fixture-price-leite-mercado-principal",
@@ -255,7 +261,10 @@ export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[
       created_at: observedTwoDaysAgo,
       market: MARKET_PRINCIPAL,
       product: PRODUCT_LEITE,
-      image: ilustracao("leite.svg", "leite"),
+      image: ilustracao(
+        "leite-boa-serra.svg",
+        "embalagem fictícia de leite Boa Serra Integral, 1 L",
+      ),
     },
   ];
 }

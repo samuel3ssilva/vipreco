@@ -133,7 +133,7 @@ function HomePage() {
 
   return (
     <AppShell>
-      <div className="space-y-10">
+      <div className="space-y-7">
         <HomeContexto />
 
         {/* A BUSCA NA PRIMEIRA DOBRA. Sem `autoFocus`: abrir o teclado do celular por conta
@@ -144,7 +144,7 @@ function HomePage() {
             lupa, `placeholder` e quatro atalhos com nomes de produto. A seção continua nomeada
             para quem navega por regiões, via `aria-label`; o que saiu foi o desenho de duas
             frases que ninguém precisa ler para saber o que fazer ali. */}
-        <section aria-label="Busca de produto" className="space-y-3">
+        <section aria-label="Busca de produto" className="space-y-2.5">
           <ProductSearch destaque label="Busque um produto exato" />
           <ul className="flex flex-wrap gap-2">
             {SHORTCUTS.map((shortcut) => (
@@ -152,14 +152,13 @@ function HomePage() {
                 <Link
                   to="/buscar"
                   search={{ q: shortcut }}
-                  className="btn-base btn-secondary btn-sm btn-touch-48 rounded-full px-4"
+                  className="btn-base btn-secondary rounded-full px-3.5 py-2 text-sm font-semibold"
                 >
                   {shortcut}
                 </Link>
               </li>
             ))}
           </ul>
-          <AvisoDePreco />
         </section>
 
         <HomeAchados
@@ -206,6 +205,8 @@ function HomePage() {
             />
           }
         />
+
+        <AvisoDePreco />
 
         {/* O WHATSAPP É SECUNDÁRIO, e a posição diz isso. Ele vem depois do que o produto
             entrega, não antes: pedir o contato de alguém que ainda não viu nada é pedir cedo

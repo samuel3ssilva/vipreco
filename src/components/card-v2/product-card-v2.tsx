@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Star } from "lucide-react";
 import { Skeleton, Surface } from "@/components/primitives";
 import { montarVisaoDoCard } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
@@ -118,6 +118,28 @@ export function ProductCardV2({
       {/* Tarja temporal — decorativa. Tudo o que ela sugere está em texto abaixo. */}
       <div aria-hidden="true" style={{ height, backgroundColor: color }} />
 
+      {/* =====================================================================
+          A FAIXA "ACHADO EM DESTAQUE" (North Star, tela 1)
+          =====================================================================
+
+          A referência abre o card com uma faixa creme e uma estrela. Ela existe por uma razão
+          de composição: sem ela o card de destaque e os da lista são o mesmo retângulo branco,
+          e a hierarquia da tela passa a depender só de tamanho.
+
+          O RÓTULO NÃO É "DESTAQUE DO DIA", e a diferença importa. "Do dia" afirma curadoria
+          diária, e nenhum critério editorial escolhe este card — ele é o primeiro da lista que
+          o serviço já entregou ordenada por preço. "Achado em destaque" descreve a posição na
+          tela, que é a única coisa verdadeira aqui. Nada nesta faixa reordena coisa alguma. */}
+      {destaque ? (
+        <div className="border-caution/70 bg-caution/45 flex items-center justify-between gap-2 border-b px-4 py-2">
+          <p className="text-caution-foreground inline-flex items-center gap-1.5 text-xs font-bold tracking-wide uppercase">
+            <Star aria-hidden="true" className="size-3.5 shrink-0" />
+            Achado em destaque
+          </p>
+          {acaoSecundaria}
+        </div>
+      ) : null}
+
       {/* TRÊS ZONAS, E NÃO OITO LINHAS EQUIDISTANTES.
           O `gap-3` uniforme de antes punha identidade, preço, mercado, condição,
           procedência e CTA todos à mesma distância entre si — e um card assim é lido como
@@ -210,7 +232,7 @@ export function ProductCardV2({
             {visao.cta.rotulo}
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-          {acaoSecundaria}
+          {destaque ? null : acaoSecundaria}
         </div>
       </div>
     </Surface>

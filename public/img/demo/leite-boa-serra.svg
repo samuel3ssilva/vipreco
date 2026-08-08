@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" role="img" aria-hidden="true" focusable="false">
+  <!--
+    ViPreço — embalagem FICTÍCIA "Boa Serra", desenhada para a demonstração.
+    Marca inventada, sem logotipo, sem trade dress de terceiro. Ver docs/data/IMAGE-POLICY.md.
+
+    Caixa longa vida de 1 L: o prisma com a aba superior inclinada, a tampa de rosca
+    deslocada para a direita e a face lateral mais escura. São essas três coisas — e não a
+    cor — que fazem o desenho ser lido como caixa de leite e não como caixa qualquer.
+  -->
+  <defs>
+    <linearGradient id="leite-frente" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#dfe7ee" />
+      <stop offset="0.12" stop-color="#ffffff" />
+      <stop offset="0.5" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#e4e9ef" />
+    </linearGradient>
+    <linearGradient id="leite-lado" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c3ced9" />
+      <stop offset="1" stop-color="#9aa9b8" />
+    </linearGradient>
+    <linearGradient id="leite-faixa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e6fa8" />
+      <stop offset="1" stop-color="#14507c" />
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="150" cy="300" rx="80" ry="12" fill="#10231c" opacity="0.16" />
+
+  <!-- aba superior: topo inclinado do prisma -->
+  <path d="M78 74l84-16 60 12-46 12-98 4z" fill="#eef2f6" />
+  <path d="M222 70l-46 12v14l46-12z" fill="#c3ced9" />
+  <path d="M78 74l98-4v12l-98 4z" fill="#dbe2e9" />
+
+  <!-- tampa de rosca -->
+  <ellipse cx="196" cy="72" rx="17" ry="7" fill="#0e5c3c" />
+  <rect x="179" y="58" width="34" height="15" rx="4" fill="#12694a" />
+  <ellipse cx="196" cy="58" rx="17" ry="7" fill="#178a5f" />
+  <g stroke="#0a3f29" stroke-opacity="0.45" stroke-width="1.4">
+    <path d="M182 62v9M190 60v11M198 60v11M206 62v9" />
+  </g>
+
+  <!-- corpo: face frontal + face lateral -->
+  <path d="M78 86h98v206H78z" fill="url(#leite-frente)" />
+  <path d="M176 86l46-12v194l-46 24z" fill="url(#leite-lado)" />
+  <path d="M78 86h98v4H78z" fill="#10231c" opacity="0.08" />
+
+  <!-- faixa da marca na face frontal -->
+  <rect x="78" y="126" width="98" height="62" fill="url(#leite-faixa)" />
+  <path d="M176 126l46-12v62l-46 12z" fill="#14507c" />
+  <rect x="78" y="188" width="98" height="4" fill="#f5c24b" />
+  <path d="M176 188l46-12v4l-46 12z" fill="#d9a83f" />
+
+  <!-- serra, o mesmo signo da marca irmã do catálogo fictício -->
+  <path d="M92 172l14-19 10 13 12-18 12 15 11-10 13 19z" fill="#ffffff" opacity="0.9" />
+
+  <text x="127" y="150" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="0.4" fill="#ffffff">BOA SERRA</text>
+
+  <text x="127" y="212" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2.4" fill="#14507c">INTEGRAL</text>
+  <text x="127" y="230" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8.5" letter-spacing="0.6" fill="#5b6b63">LEITE UHT LONGA VIDA</text>
+
+  <!-- respingo: a categoria dita sem depender do rótulo -->
+  <path d="M96 250c14-9 34-9 48 0-10 5-16 12-24 12s-14-7-24-12z" fill="#e8eef4" />
+  <ellipse cx="152" cy="248" r="4" rx="4" ry="4" fill="#e8eef4" />
+  <ellipse cx="162" cy="256" rx="3" ry="3" fill="#e8eef4" />
+
+  <!-- volume -->
+  <rect x="94" y="266" width="66" height="24" rx="12" fill="#14507c" />
+  <text x="127" y="283" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">1 L</text>
+
+  <!-- reflexo vertical do papelão plastificado -->
+  <rect x="86" y="86" width="13" height="206" fill="#ffffff" opacity="0.55" />
+</svg>

@@ -152,7 +152,7 @@ function HomePage() {
                 <Link
                   to="/buscar"
                   search={{ q: shortcut }}
-                  className="btn-base btn-secondary rounded-full px-3.5 py-2 text-sm font-semibold"
+                  className="btn-base btn-secondary btn-touch-48 rounded-full px-4 text-sm font-semibold"
                 >
                   {shortcut}
                 </Link>

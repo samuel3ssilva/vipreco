@@ -1518,3 +1518,45 @@ Alinhar exige reseed, que é banco, e banco continua fora do escopo (§18).
 
 **Não tocado:** banco, migrations, backfill, dados reais, produção, DNS, Worker, RLS, ranking,
 comparação, detalhe da oferta, busca, analytics e `/para-mercados`.
+
+---
+
+## DL-039 — O guarda de escopo de R3.3 foi aposentado junto com a onda (08/08/2026)
+
+- **Decisão do:** CTO, dentro do mandato PRE-WEEKEND LIVE DEMO RELEASE §3 ("resolver apenas
+  conflitos/revalidações necessários"), depois de o merge do #97 deixar a `main` vermelha
+- **Reversível:** sim, restaurando o arquivo de `574d754`
+
+**O que aconteceu.** Os PRs #99 e #97 mergearam com todos os checks verdes, e a `main` ficou
+**vermelha no commit seguinte**. Dois testes de `src/routes/index.escopo.test.ts` falharam com
+`expected [] to include 'src/routes/index.tsx'`.
+
+**Por que era inevitável, e por que ninguém errou.** O guarda de escopo de R3.3 media
+`git diff` contra `origin/main` e afirmava, entre outras coisas, que **a Home tinha mudado** —
+"o guarda não passa por vacuidade". Essa afirmação é verdadeira dentro da branch da onda e
+**necessariamente falsa na `main`**, onde a Home é igual a si mesma. O mesmo vale para qualquer
+PR futuro que não mexa na Home: o guarda reprovaria todos eles, exigindo que cada um se
+declarasse no allowlist de uma onda encerrada.
+
+Ou seja: não é um teste que quebrou, é um teste que **terminou**. A evidência do #99 já tinha
+previsto as duas saídas ("mergear o #99 antes, ou aposentar o guarda junto com a onda"), e a
+ordem de merge escolhida pelo Founder resolveu o conflito de intocáveis — mas não este, que é de
+natureza diferente e só aparece depois do merge.
+
+**O que foi feito, e o que NÃO foi.** O arquivo da onda saiu. O **detector não saiu**:
+`caminhosAlterados()` e `foraDoEscopo()` continuam em `src/test-support/git-guard.ts`, e os
+controles positivos que provavam que eles enxergam de verdade **foram movidos** para
+`src/test-support/git-guard.test.ts`, reescritos para não depender de onda nenhuma — criam um
+arquivo, medem, apagam. São três: um caminho fora do allowlist é reportado; o mesmo caminho,
+quando permitido, não é; e a impossibilidade de medir continua **lançando** em vez de responder
+"nada fora do escopo".
+
+Isso importa porque a tentação aqui era apagar o arquivo e seguir. Apagar o arquivo inteiro
+teria deixado `foraDoEscopo` sem nenhum controle positivo na suíte — e um detector sem controle
+positivo é exatamente o defeito que o `git-guard` inteiro existe para impedir. As três asserções
+de "intacto" das outras rotas (`laboratorio-visual`, `laboratorio-card-v2`, `para-mercados`) não
+foram tocadas: elas usam `compararComMain`, valem em qualquer branch, e continuam valendo.
+
+**A regra que fica.** Um guarda de escopo de onda é um instrumento com data de validade. Ele
+deve nascer com a onda, reprovar durante a onda, e **sair no mesmo PR que fecha a onda** — não
+no PR seguinte, e nunca depois de a `main` já ter ficado vermelha.

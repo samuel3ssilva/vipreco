@@ -13,11 +13,43 @@ animação congelada. Os scripts que os produzem estão em `scripts/visual/`.
 | `home-final-states.png`           | os sete estados da seção de Achados, lado a lado                     | `screenshot-home-estados.ts` |
 | `home-final-comparison-board.png` | quatro áreas: anterior · referência aprovada · R3.3A · entrega final | `comparison-board-home.ts`   |
 
-**A coluna D do painel é a entrega final: R3.3B mais R3.3C.** R3.3C foi a convergência estética
-pedida depois de o Founder aprovar o diagnóstico de R3.3B e ainda assim segurar o merge. O que ela
-mudou está em `DL-038`; o resumo em duas linhas é que as três ilustrações foram **redesenhadas
-para serem reconhecíveis a 64 px** e que **o preço subiu para a coluna da identidade**, ao lado da
-imagem, como a tela 1 do North Star V2 compõe.
+**A coluna D do painel é a entrega final: R3.3B, R3.3C e o Demo Freeze.** R3.3C foi a convergência
+estética pedida depois de o Founder aprovar o diagnóstico de R3.3B e ainda assim segurar o merge. O
+que ela mudou está em `DL-038`; o resumo em duas linhas é que as três ilustrações foram
+**redesenhadas para serem reconhecíveis a 64 px** e que **o preço subiu para a coluna da
+identidade**, ao lado da imagem, como a tela 1 do North Star V2 compõe.
+
+## O que o Demo Freeze mudou por cima disso
+
+As duas referências visuais que o mandato de R3.3C dizia anexar **não tinham chegado** — a mensagem
+veio só com texto, e a convergência daquela rodada foi feita contra a descrição escrita. Elas
+chegaram agora e estão versionadas em `docs/product/visual-north-star-v2/referencias/`, com os
+mesmos bytes do original: `9f5459a4…cab19d` e `2ef7f30b…ecd47d`, 1448 × 1086 as duas.
+
+O §4 não pede mais peso para o card: pede peso **redistribuído** — mais em imagem, nome, quantidade
+e preço; menos em metadata, fonte, datas e selos secundários; e nenhuma informação de confiança a
+menos. Cinco mudanças, todas nessa direção:
+
+1. **A procedência perdeu o fio e virou uma faixa que flui.** O `border-t` era o único filete do
+   card e fazia sentido quando preço e identidade eram faixas separadas; depois de R3.3C a
+   composição já separa as zonas sozinha. Fonte, validade e observação continuam as três, juntas.
+2. **A condição da promoção encolheu ao próprio texto.** Sendo um `<p>`, ela atravessava o card de
+   ponta a ponta: a largura de um banner de alerta para uma ressalva de uma linha.
+3. **O compartilhar entrou para dentro do card.** Solto entre o destaque e o rótulo da lista, era um
+   controle órfão sem nada que dissesse a que pertencia.
+4. **O `h2` "Achados" saiu da tela e ficou na árvore** (`sr-only`). O `h1` já diz "Achados em
+   Artemis" quarenta pixels acima.
+5. O preço da linha compacta foi de 1.375 rem para 1.5 rem, e o botão do bloco de procedência
+   deixou de ser largura inteira no celular.
+
+**Medido:** a página a 390 px foi de 4356 para **4226** pixels de dispositivo. Zero estouro a 320,
+duas abas, um CTA de WhatsApp, zero histórico de preço, nenhum alvo abaixo de 48 px.
+
+**A coluna B do painel continua sendo `tela-1-home.png`**, e não a referência recém-chegada. O
+motivo é geométrico: a referência A é uma folha de **cinco telas** a 1448 × 1086, e a coluna do
+painel tem largura de celular. Encaixá-la ali exigiria recortar — e recortar um mockup de direção
+visual mente sobre a própria direção. Ela está publicada inteira, em tamanho real, no comentário do
+Gate. O painel compara aplicação com aplicação; a referência fica a um clique.
 
 **O conjunto `home-achados-*.png` saiu.** Ele fotografava a Home de R3.3A, que o Founder reprovou
 na direção visual — e evidência de um desenho superado guardada ao lado da evidência correta é

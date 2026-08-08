@@ -11,12 +11,12 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Produtos fictícios
 INSERT INTO public.products (id, name, brand, variant, size_text, gtin, category, is_active, is_demo) VALUES
-  ('22222222-2222-2222-2222-000000000001', 'Arroz', 'Ouro do Campo', 'Tipo 1', '5 kg', '7896006711117', 'Mercearia', true, true),
+  ('22222222-2222-2222-2222-000000000001', 'Arroz', 'Ouro do Campo', 'Tipo 1', '5 kg', NULL, 'Mercearia', true, true),
   ('22222222-2222-2222-2222-000000000002', 'Café', 'Serra Alta', 'Tradicional', '500 g', NULL, 'Mercearia', true, true),
-  ('22222222-2222-2222-2222-000000000003', 'Leite', 'Boa Serra', 'Integral', '1 L', '7898080640611', 'Laticínios', true, true),
-  ('22222222-2222-2222-2222-000000000004', 'Óleo de Soja', 'Liza', 'Tradicional', '900 ml', '7896036090015', 'Mercearia', true, true),
-  ('22222222-2222-2222-2222-000000000005', 'Detergente', 'Ypê', 'Neutro', '500 ml', '7896098900116', 'Limpeza', true, true),
-  ('22222222-2222-2222-2222-000000000006', 'Papel Higiênico', 'Neve', 'Folha Dupla', '12 rolos', '7891008140019', 'Higiene', true, true),
+  ('22222222-2222-2222-2222-000000000003', 'Leite', 'Boa Serra', 'Integral', '1 L', NULL, 'Laticínios', true, true),
+  ('22222222-2222-2222-2222-000000000004', 'Óleo de Soja', 'Vale Dourado', 'Tradicional', '900 ml', NULL, 'Mercearia', true, true),
+  ('22222222-2222-2222-2222-000000000005', 'Detergente', 'Brilho Claro', 'Neutro', '500 ml', NULL, 'Limpeza', true, true),
+  ('22222222-2222-2222-2222-000000000006', 'Papel Higiênico', 'Flor Macia', 'Folha Dupla', '12 rolos', NULL, 'Higiene', true, true),
   ('22222222-2222-2222-2222-000000000007', 'Café', 'Serra Alta', 'Tradicional', '250 g', NULL, 'Mercearia', true, true)
 ON CONFLICT (id) DO NOTHING;
 
@@ -49,16 +49,16 @@ INSERT INTO public.prices (id, product_id, market_id, price, source_type, observ
   -- histórico do mesmo produto e mercado
   ('33333333-3333-3333-3333-00000000000e', '22222222-2222-2222-2222-000000000003', '11111111-1111-1111-1111-000000000002', 5.79, 'weekly_audit', now() - interval '18 days', NULL, NULL, 'Pesquisa semanal anterior', false, true, true),
 
-  -- Óleo Liza 900 ml
+  -- Óleo Vale Dourado 900 ml
   ('33333333-3333-3333-3333-00000000000f', '22222222-2222-2222-2222-000000000004', '11111111-1111-1111-1111-000000000002', 7.49, 'store_list',   now() - interval '2 days', now() + interval '4 days', NULL, 'Lista enviada pelo mercado', false, true, true),
   ('33333333-3333-3333-3333-000000000010', '22222222-2222-2222-2222-000000000004', '11111111-1111-1111-1111-000000000003', 7.99, 'community',    now() - interval '3 days', NULL, NULL, 'Informado pela comunidade', false, true, true),
 
-  -- Detergente Ypê 500 ml
+  -- Detergente Brilho Claro 500 ml
   ('33333333-3333-3333-3333-000000000011', '22222222-2222-2222-2222-000000000005', '11111111-1111-1111-1111-000000000001', 2.79, 'shelf_photo',  now() - interval '1 day', NULL, NULL, 'Foto da etiqueta', false, true, true),
   ('33333333-3333-3333-3333-000000000012', '22222222-2222-2222-2222-000000000005', '11111111-1111-1111-1111-000000000004', 2.49, 'receipt',      now() - interval '2 days', NULL, NULL, 'Nota fiscal conferida', true, true, true),
   ('33333333-3333-3333-3333-000000000013', '22222222-2222-2222-2222-000000000005', '11111111-1111-1111-1111-000000000002', 2.99, 'weekly_audit', now() - interval '5 days', NULL, NULL, 'Pesquisa semanal', false, true, true),
 
-  -- Papel higiênico Neve 12 rolos
+  -- Papel higiênico Flor Macia 12 rolos
   ('33333333-3333-3333-3333-000000000014', '22222222-2222-2222-2222-000000000006', '11111111-1111-1111-1111-000000000003', 24.90, 'store_list',   now() - interval '2 days', now() + interval '6 days', 'Preço válido para pagamento à vista', 'Lista enviada pelo mercado', true, true, true),
   ('33333333-3333-3333-3333-000000000015', '22222222-2222-2222-2222-000000000006', '11111111-1111-1111-1111-000000000004', 26.90, 'weekly_audit', now() - interval '4 days', NULL, NULL, 'Pesquisa semanal', false, true, true),
   -- preço inativo (não deve aparecer)

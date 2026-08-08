@@ -234,12 +234,26 @@ describe("R3.2 não toca em nada que já está no ar", () => {
     // Quem os protege agora é `src/routes/index.escopo.test.ts`, que faz a pergunta inversa e
     // mais forte: em vez de "a Home continua intacta?", "tudo o que mudou estava autorizado?".
     // O resto desta lista continua valendo, e continua sendo o que esta onda não pode tocar.
+    //
+    // `src/services/catalog.ts` SAIU em 08/08/2026, e o motivo precisa ficar escrito porque a
+    // fronteira entre "retirar uma entrada" e "afrouxar o guarda" é fina.
+    //
+    // O que este `describe` afirma é "R3.2 não tocou nisto" — uma frase sobre UMA ONDA, que
+    // parou de ser uma pergunta viva no dia em que R3.2 mergeou. Ela sobreviveu porque a forma
+    // "intacto" passa por vacuidade na `main`, e só reprova quando alguém mexe no arquivo. Foi
+    // exatamente o que aconteceu: o Demo Freeze mediu `/produto/<id-malformado>` respondendo
+    // **HTTP 500** em staging, e o conserto — tratar id que não é UUID como "não encontrado" —
+    // mora aqui. O guarda de uma onda encerrada estava barrando a correção de um defeito medido
+    // numa onda posterior.
+    //
+    // A lição já tinha sido registrada em DL-039 para o guarda de escopo de R3.3, e este é o
+    // mesmo defeito com outra roupa. O restante da lista fica: ele ainda protege comparação,
+    // ranking, migrations e Worker, que esta onda de fato não toca.
     "src/routes/buscar.tsx",
     "src/routes/produto.$productId.tsx",
     "src/components/PriceCard.tsx",
     "src/components/PriceSummary.tsx",
     "src/lib/comparison.ts",
-    "src/services/catalog.ts",
     "supabase/migrations",
     "wrangler.jsonc",
   ] as const;

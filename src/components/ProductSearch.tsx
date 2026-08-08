@@ -149,7 +149,13 @@ export function ProductSearch({
             // arroz…") saía cortada já a 390, e `placeholder` cortado é a pior forma de texto
             // que existe: some sem avisar e leva junto o exemplo que ele existia para dar. Os
             // exemplos vivem nos quatro atalhos logo abaixo, onde são clicáveis.
-            destaque ? "Busque um produto exato" : "Ex.: café, arroz 5 kg, 7896..."
+            //
+            // O exemplo de código de barras SAIU. A busca por GTIN existe e continua funcionando
+            // — o campo `search_text` carrega o código —, mas nenhum produto de demonstração tem
+            // GTIN: código de barras real pertence a produto real, e o contrato de fixture não
+            // admite um nem inventado nem emprestado. Um exemplo que não devolve nada é pior do
+            // que exemplo nenhum, porque parece defeito da busca em vez de ausência do dado.
+            destaque ? "Busque um produto exato" : "Ex.: café, arroz 5 kg, leite 1 L"
           }
           value={term}
           onChange={(event) => {

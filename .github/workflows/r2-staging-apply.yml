@@ -44,6 +44,7 @@ on:
           - apply-r2a
           - apply-r2b
           - align-demo-brands
+          - sanitize-demo-identity
           - validate
       expected_main_sha:
         description: "SHA da main que você leu ao decidir. O job aborta se a main tiver avançado."

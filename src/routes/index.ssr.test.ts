@@ -26,6 +26,34 @@ beforeAll(async () => {
   html = await renderRoute("/");
 });
 
+/**
+ * Os tamanhos de fonte dos preços da página, em `rem`, na ordem em que aparecem.
+ *
+ * =============================================================================
+ * POR QUE MEDIR A RELAÇÃO, E NÃO O NÚMERO
+ * =============================================================================
+ *
+ * Estas asserções afirmavam literais — `text-[2.625rem]` uma vez, `text-[1.375rem]` duas. Elas
+ * pegavam a regressão que importa (a lista voltar a ser Card v2 completo, e os três preços
+ * empatarem em peso), mas reprovavam também quando alguém só mudava o tamanho do destaque, que
+ * é decisão de desenho e não regressão nenhuma — foi o que aconteceu em R3.3C. O §19 pede
+ * exatamente isto: "não criar testes frágeis de pixel".
+ *
+ * O que o produto garante é a RELAÇÃO: um preço de destaque, maior que os da lista, e os da
+ * lista iguais entre si. É isso que se mede aqui.
+ *
+ * Cada preço é um `<p aria-hidden="true">` com `font-display` — o número visível, com o valor
+ * falado ao lado em `sr-only`. O tamanho considerado é o da classe SEM prefixo de faixa, que é
+ * o que vale na largura mais estreita que o produto atende.
+ */
+function tamanhosDePreco(pagina: string): number[] {
+  const paragrafos = pagina.match(/<p aria-hidden="true" class="font-display[^"]*"/g) ?? [];
+  return paragrafos.flatMap((p) => {
+    const base = p.match(/(?:^|\s)text-\[([\d.]+)rem\]/);
+    return base === null ? [] : [Number(base[1])];
+  });
+}
+
 describe("HTML inicial da Home (SSR)", () => {
   it("contém os três produtos e mercados do fixture antes da hidratação", () => {
     const fixture = buildDemoOpportunities();
@@ -100,7 +128,9 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
   it("abre com o contexto: eyebrow → H1 → o que estes preços são", () => {
     const eyebrow = html.indexOf("Artemis · Piracicaba, SP");
     const h1 = html.indexOf("Achados em Artemis");
-    const subtexto = html.indexOf("Preços observados nos mercados do bairro");
+    // R3.3C §4 fixou a frase. "Do bairro" afirmava COBERTURA — lê-se como "todos os mercados
+    // daqui"; "monitorados" delimita pelo que o produto de fato faz.
+    const subtexto = html.indexOf("Preços observados nos mercados monitorados, com data e fonte.");
     expect(eyebrow).toBeGreaterThan(-1);
     expect(h1).toBeGreaterThan(eyebrow);
     expect(subtexto).toBeGreaterThan(h1);
@@ -137,8 +167,10 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     // Se a lista voltar a ser Card v2 completo, o primeiro número muda e este teste reprova —
     // que é a regressão de densidade que R3.3 mediu e R3.3B manteve.
     expect(html).toContain("Outros Achados");
-    expect(html.match(/text-\[2\.625rem\]/g) ?? []).toHaveLength(1);
-    expect(html.match(/text-\[1\.375rem\]/g) ?? []).toHaveLength(2);
+    const [destaque, ...lista] = tamanhosDePreco(html);
+    expect(lista).toHaveLength(2);
+    expect(lista[0]).toBe(lista[1]);
+    expect(destaque).toBeGreaterThan(lista[0]);
     // E as duas composições saem do mesmo domínio: nenhum card sem procedência.
     expect(html.match(/Mercado (principal|local \d)/g) ?? []).toHaveLength(3);
   });
@@ -158,10 +190,12 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     expect(posicoes).toEqual([...posicoes].sort((a, b) => a - b));
   });
 
-  it("em DEMO, diz que os preços são fictícios e o que muda no piloto", () => {
-    expect(html).toContain(
-      "Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com origem identificada.",
-    );
+  it("em DEMO, diz que os preços são fictícios", () => {
+    // R3.3C §7 encurtou para uma frase. A segunda — "no piloto, cada preço será publicado com
+    // origem identificada" — é verdadeira e é exatamente o assunto de `/como-funciona`, para
+    // onde o botão logo abaixo leva. O que a Home precisa dizer aqui é sobre ESTES preços.
+    expect(html).toContain("Nesta demonstração, os preços são fictícios.");
+    expect(html).not.toContain("No piloto, cada preço será publicado com origem identificada.");
   });
 
   it("fala do piloto sem expor nenhuma pessoa", () => {
@@ -426,11 +460,32 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
     expect(secao).not.toContain("font-data");
   });
 
+  it("R3.3C — no destaque, o produto exato ainda vem ANTES do preço", () => {
+    // A convergência do §14 subiu o preço para a MESMA coluna da identidade, ao lado da imagem.
+    // Ganhou-se composição e perdeu-se uma proteção implícita: enquanto o preço era uma faixa
+    // separada, era difícil ele acabar acima do nome por acidente. Agora são irmãos no mesmo
+    // `flex-col`, e trocar a ordem é uma linha de diff.
+    //
+    // "Produto exato antes do preço" não é preferência de leitura: um preço cujo item o leitor
+    // ainda não identificou não serve para comparar nada, que é a única coisa que este produto
+    // existe para fazer. Vale para o olho e para o leitor de tela, e os dois seguem o DOM.
+    const card = html.slice(html.indexOf('aria-labelledby="achados-titulo"'));
+    const nome = card.indexOf("Arroz");
+    const quantidade = card.indexOf("5 kg");
+    const preco = card.indexOf("26,49");
+    expect(nome).toBeGreaterThan(-1);
+    expect(quantidade).toBeGreaterThan(nome);
+    expect(preco).toBeGreaterThan(quantidade);
+  });
+
   it("a hierarquia visual do preço é uma só por composição", () => {
     // Um preço em tamanho de destaque, dois em tamanho de lista, e o de destaque é o maior.
     // Se os três empatarem, não há hierarquia — que foi exatamente o diagnóstico do §8.
-    expect(html.match(/text-\[2\.625rem\]/g) ?? []).toHaveLength(1);
-    expect(html.match(/text-\[1\.375rem\]/g) ?? []).toHaveLength(2);
+    const tamanhos = tamanhosDePreco(html);
+    expect(tamanhos).toHaveLength(3);
+    const [destaque, ...lista] = tamanhos;
+    expect(new Set(lista).size, "os dois preços de lista têm de ter o mesmo peso").toBe(1);
+    expect(destaque).toBeGreaterThan(lista[0]);
   });
 
   it("continua sem personalização, sem prova social e sem parceiro", () => {

@@ -103,9 +103,13 @@ export function ProductIdentity({
  * de "Outros Achados", onde a imagem serve para reconhecer, não para dominar.
  */
 const TAMANHO_DA_IMAGEM = {
-  compacto: "size-16",
+  compacto: "size-16 min-[360px]:size-[4.5rem]",
   lista: "size-20",
-  destaque: "size-28 sm:size-32",
+  // R3.3C: o destaque escalona por faixa de largura, e o número sai de uma conta, não do gosto.
+  // Desde que o PREÇO passou para a coluna ao lado da imagem, os dois disputam a mesma largura:
+  // a 320 px sobram 144 px para a coluna com a imagem em 96, e "R$ 26,49" a 2.25rem ocupa ~130
+  // deles. Cada degrau de imagem só entra na largura em que a coluna já comporta o preço maior.
+  destaque: "size-24 min-[430px]:size-28 sm:size-32",
 } as const;
 
 export type TamanhoDaImagem = keyof typeof TAMANHO_DA_IMAGEM;

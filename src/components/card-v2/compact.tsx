@@ -119,15 +119,18 @@ export function AchadoCompacto({
             {[visao.identidade.variante, visao.identidade.quantidade].filter(Boolean).join(" · ")}
           </p>
         )}
-        {/* Mercado e bairro na mesma linha. O bairro é âncora de proximidade — "é aqui perto" é
-            metade da razão de alguém confiar num preço local — e quando o mercado não tem bairro
-            cadastrado a parte simplesmente não aparece: inventar bairro é inventar proximidade. */}
-        <p className="mt-0.5 text-sm font-semibold">
-          {visao.mercado.nome}
-          {visao.mercado.bairro === null || visao.mercado.bairro.trim().length === 0 ? null : (
-            <span className="text-muted-foreground font-normal"> · {visao.mercado.bairro}</span>
-          )}
-        </p>
+        {/* Mercado e bairro. O bairro é âncora de proximidade — "é aqui perto" é metade da razão
+            de alguém confiar num preço local — e quando o mercado não tem bairro cadastrado a
+            linha simplesmente não aparece: inventar bairro é inventar proximidade.
+
+            R3.3C SEPAROU AS DUAS LINHAS. Elas eram uma só, unidas por "·", e na coluna estreita
+            desta composição a quebra caía sempre depois do separador: "Mercado local 2 ·" numa
+            linha e "Jardim Novo" na outra. Um separador pendurado no fim da linha é ruído que
+            ninguém escolheu — e como a quebra já acontecia, separar não custa altura nenhuma. */}
+        <p className="mt-0.5 text-sm leading-tight font-semibold">{visao.mercado.nome}</p>
+        {visao.mercado.bairro === null || visao.mercado.bairro.trim().length === 0 ? null : (
+          <p className="text-muted-foreground text-xs leading-tight">{visao.mercado.bairro}</p>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-1 min-[360px]:self-start min-[360px]:pt-0.5">
@@ -139,7 +142,7 @@ export function AchadoCompacto({
           )}
         >
           <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
-          <span className="ml-0.5">{visao.preco.numero}</span>
+          <span className="ml-1">{visao.preco.numero}</span>
         </p>
         <VisuallyHidden>{visao.preco.falado}</VisuallyHidden>
         <ChevronRight

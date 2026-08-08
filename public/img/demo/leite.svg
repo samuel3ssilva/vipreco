@@ -3,22 +3,31 @@
     ViPreço — ilustração GENÉRICA de categoria, feita para a demonstração do piloto.
     Não representa nenhuma embalagem, marca, logotipo ou identidade visual de terceiro.
     Ver docs/data/IMAGE-POLICY.md e docs/evidence/visual/r33/README.md.
+
+    R3.3C: deixou de ser a caixa de topo triangular e passou a ser a caixa longa com tampa de
+    rosca no canto — que é a silhueta do leite que se vende em Artemis, e a que uma pessoa
+    reconhece sem precisar ler nada. Continua sem qualquer elemento de marca: a forma é
+    genérica, a cor é a da paleta do ViPreço e não há texto nenhum dentro do arquivo.
   -->
-  <rect width="160" height="160" rx="14" fill="#F1EFE4" />
-  <ellipse cx="80" cy="142" rx="34" ry="6" fill="#10231C" opacity="0.08" />
+  <rect width="160" height="160" fill="#F1EFE4" />
+  <ellipse cx="80" cy="141" rx="38" ry="6.5" fill="#10231C" opacity="0.09" />
 
-  <!-- caixa de topo triangular (gable top) -->
-  <path d="M52 40 80 18l28 22z" fill="#8CC7AB" />
-  <path d="M52 40 80 18v22z" fill="#2F7A56" />
-  <rect x="52" y="40" width="56" height="9" fill="#0E5C3C" />
+  <!-- tampa de rosca -->
+  <rect x="88" y="17" width="17" height="13" rx="3" fill="#2F7A56" />
+  <ellipse cx="96.5" cy="17.5" rx="8.5" ry="3" fill="#8CC7AB" />
 
-  <rect x="52" y="49" width="56" height="92" rx="5" fill="#FFFFFF" />
-  <rect x="52" y="49" width="16" height="92" fill="#F1EFE4" opacity="0.8" />
-  <rect x="52" y="49" width="56" height="92" rx="5" fill="none" stroke="#C9C4B2" stroke-width="2" />
+  <!-- ombro chanfrado e corpo -->
+  <path d="M50 41 62 28h36l12 13z" fill="#F1EFE4" stroke="#C9C4B2" stroke-width="2" stroke-linejoin="round" />
+  <rect x="50" y="40" width="60" height="95" rx="6" fill="#FFFFFF" stroke="#C9C4B2" stroke-width="2" />
+  <rect x="57" y="47" width="9" height="80" rx="4.5" fill="#F1EFE4" opacity="0.75" />
 
-  <!-- faixa com a gota -->
-  <rect x="52" y="80" width="56" height="30" fill="#0E5C3C" />
-  <path d="M80 86c5.2 5.8 8 9.7 8 13.1a8 8 0 0 1-16 0c0-3.4 2.8-7.3 8-13.1z" fill="#FBF7EC" />
+  <!-- faixa da frente, com a gota -->
+  <rect x="50" y="71" width="60" height="31" fill="#0E5C3C" />
+  <rect x="50" y="102" width="60" height="3" fill="#F5C24B" />
+  <path d="M80 77c5.4 6.1 8.4 10.2 8.4 13.8a8.4 8.4 0 0 1-16.8 0c0-3.6 3-7.7 8.4-13.8z" fill="#FBF7EC" />
+  <circle cx="62" cy="88" r="2.8" fill="#FBF7EC" opacity="0.55" />
+  <circle cx="98" cy="88" r="2.8" fill="#FBF7EC" opacity="0.55" />
 
-  <rect x="62" y="121" width="36" height="6" rx="3" fill="#E2DED2" />
+  <!-- vinco da base -->
+  <rect x="61" y="117" width="38" height="5" rx="2.5" fill="#E2DED2" />
 </svg>

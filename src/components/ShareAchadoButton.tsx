@@ -31,11 +31,22 @@ export function ShareAchadoButton({ payload }: { payload: ShareAchadoPayload }) 
   }
 
   return (
-    <div className="space-y-1">
+    // R3.3C §14 ENCOLHEU A PEGADA, E SÓ ELA.
+    //
+    // O botão era de largura inteira e ficava colado logo abaixo do CTA verde do card. Duas
+    // caixas empilhadas ocupando a mesma largura leem como formulário — o defeito que o mandato
+    // nomeia em "cards sem aparência de formulário" —, e a segunda delas é uma ação secundária
+    // que não deveria ter o mesmo tamanho da principal.
+    //
+    // A BORDA FICOU. Ela não é decoração: `btn-quiet` tem borda transparente, e
+    // `btn-quiet-bordered` foi a correção de contraste de elemento não textual (SC 1.4.11) feita
+    // na Parte 2 depois de o botão ficar sem limite visível. Encolher a largura resolve a
+    // aparência de formulário sem desfazer isso; tirar a borda desfaria.
+    <div className="flex flex-col items-end gap-1">
       <button
         type="button"
         onClick={compartilhar}
-        className="btn-base btn-quiet btn-quiet-bordered btn-sm btn-touch-48 w-full"
+        className="btn-base btn-quiet btn-quiet-bordered btn-sm btn-touch-48 w-auto px-4"
       >
         <Share2 aria-hidden="true" className="size-4" />
         Compartilhar este achado

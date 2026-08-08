@@ -50,8 +50,13 @@ export function HomeContexto() {
       >
         Achados em Artemis
       </h1>
+      {/* R3.3C §4 fixou a frase: "Preços observados nos mercados monitorados, com data e fonte."
+          A anterior dizia "nos mercados do bairro", e "do bairro" é uma afirmação de COBERTURA —
+          lida como "todos os mercados daqui". "Monitorados" delimita o universo pelo que o
+          produto de fato faz, que é a única promessa que o piloto sustenta. Nenhuma palavra sobre
+          frescor: "de hoje" só poderia entrar depois de existir contrato de frescor. */}
       <p className="text-muted-foreground max-w-prose text-base">
-        Preços observados nos mercados do bairro, com a data e a fonte de cada um.
+        Preços observados nos mercados monitorados, com data e fonte.
       </p>
     </header>
   );

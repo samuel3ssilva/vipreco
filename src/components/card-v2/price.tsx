@@ -45,7 +45,14 @@ export function PriceDisplay({
           // R3.3B §8: no destaque o preço passou de 2rem para 2.625rem. A hierarquia pedida é
           // PRODUTO → PREÇO → MERCADO, e a 2rem o preço empatava com o nome do produto e com o
           // nome do mercado logo abaixo — três linhas com o mesmo peso não são hierarquia.
-          destaque ? "text-[2.625rem]" : "text-[1.625rem]",
+          // R3.3C §14 ("preço maior") levou o destaque até 3rem, POR FAIXA DE LARGURA. Ele
+          // divide a coluna com a imagem desde que subiu para o lado dela, então o teto de cada
+          // faixa é o que a coluna comporta: 144 px a 320, 184 a 360, 238 a 430. Um único
+          // `text-[3rem]` caberia no desktop e estouraria no aparelho mais estreito que o
+          // produto atende — e é o estreito que manda.
+          destaque
+            ? "text-[2.25rem] min-[360px]:text-[2.5rem] min-[430px]:text-[2.75rem] sm:text-[3rem]"
+            : "text-[1.625rem]",
         )}
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>

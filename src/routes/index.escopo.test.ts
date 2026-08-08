@@ -157,6 +157,22 @@ const PERMITIDOS = [
   //    antes do commit de documentação. A ordem certa continua sendo a mesma — o guarda pega,
   //    e a entrada entra depois, com o motivo escrito.
   "docs/data/IMAGE-POLICY.md",
+
+  // ===========================================================================
+  // R3.3C — a convergência visual final, pedida depois de o Founder aprovar o diagnóstico de
+  // R3.3B e ainda assim segurar o merge por uma última rodada de estética.
+  // ===========================================================================
+  // Quase tudo o que R3.3C mexeu já estava autorizado acima: as três ilustrações, os arquivos
+  // de `card-v2/`, a Home, os blocos de confiança e piloto. O guarda reprovou UM caminho novo,
+  // e ele entra aqui depois de reprovado, com o motivo:
+  //
+  // O botão de compartilhar era de largura inteira e ficava colado abaixo do CTA verde do card.
+  // Duas caixas empilhadas na mesma largura leem como formulário — o defeito que o §14 nomeia
+  // em "cards sem aparência de formulário". A mudança encolhe a pegada e alinha à direita; a
+  // borda de `btn-quiet-bordered` NÃO saiu, porque ela é a correção de contraste de elemento
+  // não textual (SC 1.4.11) feita na Parte 2, e desfazê-la seria trocar estética por
+  // acessibilidade — que é a única troca que esta missão não pode fazer.
+  "src/components/ShareAchadoButton.tsx",
 ] as const;
 
 /**

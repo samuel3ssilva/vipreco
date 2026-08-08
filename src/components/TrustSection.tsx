@@ -41,10 +41,14 @@ export function TrustSection({ isDemo }: { isDemo: boolean }) {
           <p className="text-muted-foreground mt-1 max-w-prose text-sm">
             Cada preço mostra mercado, fonte, atualização e validade.
           </p>
+          {/* R3.3C §7 ("não voltar com uma seção extensa na Home") encurtou esta linha de duas
+              frases para uma. A segunda dizia que no piloto cada preço teria origem identificada —
+              informação verdadeira e útil, que é exatamente o assunto de `/como-funciona`, para
+              onde o botão logo abaixo leva. O que a Home precisa dizer aqui é só que ESTES preços
+              são fictícios, e isso continua dito. */}
           {isDemo ? (
             <p className="meta-text mt-1.5 max-w-prose">
-              Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com
-              origem identificada.
+              Nesta demonstração, os preços são fictícios.
             </p>
           ) : null}
         </div>

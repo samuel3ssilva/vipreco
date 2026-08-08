@@ -16,11 +16,15 @@
  *   para que "Ver preços por mercado" continue abrindo a página do produto — este PR não
  *   pode quebrar a navegação existente.
  *
- * DIVERGÊNCIA CONHECIDA, REGISTRADA E NÃO CORRIGIDA AQUI: as marcas fictícias abaixo ainda
- * não existem em `supabase/seed.sql`, que segue com as reais. Em staging, portanto, a Home
- * mostra "Serra Alta" e a página do produto — que lê do banco — mostra a marca antiga.
- * Alinhar as duas exige reseed de staging, que é banco, e banco está explicitamente fora do
- * escopo de R3.3B (§10: "Se encontrar melhoria de backend: documentar; não implementar").
+ * A DIVERGÊNCIA QUE ESTAVA REGISTRADA AQUI FOI RESOLVIDA, e não por reseed: `supabase/seed.sql`
+ * passou a trazer estas mesmas marcas fictícias, e staging recebe as quatro por uma operação
+ * de escrita controlada, `align-demo-brands`, que muda UMA coluna de QUATRO linhas nomeadas
+ * por id, dentro de uma transação que se recusa a rodar contra qualquer outro estado.
+ *
+ * As marcas literais abaixo são, portanto, o MESMO valor que o banco guarda — e há teste que
+ * reprova se uma das duas pontas mudar sem a outra (`scripts/r2/apply/apply.test.ts`).
+ * Se alguém trocar "Serra Alta" aqui, precisa trocar no seed e rodar a operação; senão a Home
+ * volta a chamar de um jeito o produto que a página do detalhe chama de outro.
  * - Datas são **relativas** ao momento em que o loader roda (múltiplos exatos de 24 h), para
  *   que "ontem"/"há 2 dias" e a data exibida continuem coerentes entre si em qualquer dia.
  *

@@ -11,38 +11,38 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Produtos fictícios
 INSERT INTO public.products (id, name, brand, variant, size_text, gtin, category, is_active, is_demo) VALUES
-  ('22222222-2222-2222-2222-000000000001', 'Arroz', 'Camil', 'Tipo 1', '5 kg', '7896006711117', 'Mercearia', true, true),
-  ('22222222-2222-2222-2222-000000000002', 'Café', 'Pilão', 'Tradicional', '500 g', NULL, 'Mercearia', true, true),
-  ('22222222-2222-2222-2222-000000000003', 'Leite', 'Italac', 'Integral', '1 L', '7898080640611', 'Laticínios', true, true),
+  ('22222222-2222-2222-2222-000000000001', 'Arroz', 'Ouro do Campo', 'Tipo 1', '5 kg', '7896006711117', 'Mercearia', true, true),
+  ('22222222-2222-2222-2222-000000000002', 'Café', 'Serra Alta', 'Tradicional', '500 g', NULL, 'Mercearia', true, true),
+  ('22222222-2222-2222-2222-000000000003', 'Leite', 'Boa Serra', 'Integral', '1 L', '7898080640611', 'Laticínios', true, true),
   ('22222222-2222-2222-2222-000000000004', 'Óleo de Soja', 'Liza', 'Tradicional', '900 ml', '7896036090015', 'Mercearia', true, true),
   ('22222222-2222-2222-2222-000000000005', 'Detergente', 'Ypê', 'Neutro', '500 ml', '7896098900116', 'Limpeza', true, true),
   ('22222222-2222-2222-2222-000000000006', 'Papel Higiênico', 'Neve', 'Folha Dupla', '12 rolos', '7891008140019', 'Higiene', true, true),
-  ('22222222-2222-2222-2222-000000000007', 'Café', 'Pilão', 'Tradicional', '250 g', NULL, 'Mercearia', true, true)
+  ('22222222-2222-2222-2222-000000000007', 'Café', 'Serra Alta', 'Tradicional', '250 g', NULL, 'Mercearia', true, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Preços fictícios
 -- id explícito + ON CONFLICT DO NOTHING (mesmo padrão de markets/products) para manter o seed
 -- idempotente: sem isso, rodar o seed duas vezes duplicava cada linha de preço.
 INSERT INTO public.prices (id, product_id, market_id, price, source_type, observed_at, valid_until, special_condition, source_reference, is_featured, is_active, is_demo) VALUES
-  -- Arroz Camil 5 kg
+  -- Arroz Ouro do Campo 5 kg
   ('33333333-3333-3333-3333-000000000001', '22222222-2222-2222-2222-000000000001', '11111111-1111-1111-1111-000000000001', 27.90, 'receipt',      now() - interval '2 days', NULL, NULL, 'Nota fiscal conferida', true,  true, true),
   ('33333333-3333-3333-3333-000000000002', '22222222-2222-2222-2222-000000000001', '11111111-1111-1111-1111-000000000002', 29.50, 'weekly_audit', now() - interval '3 days', NULL, NULL, 'Pesquisa semanal', false, true, true),
   ('33333333-3333-3333-3333-000000000003', '22222222-2222-2222-2222-000000000001', '11111111-1111-1111-1111-000000000003', 26.49, 'store_list',   now() - interval '1 day',  now() + interval '5 days', 'Limite de 2 unidades por cliente', 'Lista enviada pelo mercado', true, true, true),
   -- histórico do mesmo produto e mercado (deve ser ignorado na comparação)
   ('33333333-3333-3333-3333-000000000004', '22222222-2222-2222-2222-000000000001', '11111111-1111-1111-1111-000000000001', 31.00, 'weekly_audit', now() - interval '25 days', NULL, NULL, 'Pesquisa semanal anterior', false, true, true),
 
-  -- Café Pilão 500 g
+  -- Café Serra Alta 500 g
   ('33333333-3333-3333-3333-000000000005', '22222222-2222-2222-2222-000000000002', '11111111-1111-1111-1111-000000000001', 18.90, 'shelf_photo',  now() - interval '1 day', NULL, NULL, 'Foto da etiqueta', false, true, true),
   ('33333333-3333-3333-3333-000000000006', '22222222-2222-2222-2222-000000000002', '11111111-1111-1111-1111-000000000002', 17.49, 'social_media', now() - interval '2 days', now() + interval '3 days', 'Oferta válida enquanto durar o estoque', 'Anúncio na rede social do mercado', true, true, true),
   ('33333333-3333-3333-3333-000000000007', '22222222-2222-2222-2222-000000000002', '11111111-1111-1111-1111-000000000004', 19.90, 'community',    now() - interval '4 days', NULL, NULL, 'Informado pela comunidade', false, true, true),
   -- preço vencido (não deve aparecer)
   ('33333333-3333-3333-3333-000000000008', '22222222-2222-2222-2222-000000000002', '11111111-1111-1111-1111-000000000003', 15.90, 'social_media', now() - interval '20 days', now() - interval '10 days', 'Oferta encerrada', 'Anúncio antigo', false, true, true),
 
-  -- Café Pilão 250 g (produto separado)
+  -- Café Serra Alta 250 g (produto separado)
   ('33333333-3333-3333-3333-000000000009', '22222222-2222-2222-2222-000000000007', '11111111-1111-1111-1111-000000000001', 10.90, 'receipt',      now() - interval '3 days', NULL, NULL, 'Nota fiscal conferida', false, true, true),
   ('33333333-3333-3333-3333-00000000000a', '22222222-2222-2222-2222-000000000007', '11111111-1111-1111-1111-000000000003', 11.49, 'weekly_audit', now() - interval '5 days', NULL, NULL, 'Pesquisa semanal', false, true, true),
 
-  -- Leite Italac 1 L
+  -- Leite Boa Serra 1 L
   ('33333333-3333-3333-3333-00000000000b', '22222222-2222-2222-2222-000000000003', '11111111-1111-1111-1111-000000000001', 5.29, 'weekly_audit', now() - interval '1 day', NULL, NULL, 'Pesquisa semanal', false, true, true),
   ('33333333-3333-3333-3333-00000000000c', '22222222-2222-2222-2222-000000000003', '11111111-1111-1111-1111-000000000002', 4.89, 'receipt',      now() - interval '2 days', NULL, 'Máximo de 6 unidades', 'Nota fiscal conferida', true, true, true),
   ('33333333-3333-3333-3333-00000000000d', '22222222-2222-2222-2222-000000000003', '11111111-1111-1111-1111-000000000004', 5.49, 'shelf_photo',  now() - interval '6 days', NULL, NULL, 'Foto da etiqueta', false, true, true),

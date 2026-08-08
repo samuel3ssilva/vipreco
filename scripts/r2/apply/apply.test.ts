@@ -19,6 +19,7 @@ const REMEDIACAO = readFileSync(
   join(RAIZ, "scripts/r2/apply/sql/remediate-demo-gtins.sql"),
   "utf-8",
 );
+const ALINHAMENTO = readFileSync(join(RAIZ, "scripts/r2/apply/sql/align-demo-brands.sql"), "utf-8");
 
 /** O runner sem comentário: a verificação é sobre o que o script EXECUTA. */
 const runnerExecutavel = RUNNER.split("\n")
@@ -32,6 +33,11 @@ const runnerExecutavel = RUNNER.split("\n")
  * já tinham encontrado: uma verificação que lê comentário mede o texto, e não o programa.
  */
 const remediacaoExecutavel = REMEDIACAO.split("\n")
+  .filter((linha) => !linha.trimStart().startsWith("--"))
+  .join("\n");
+
+/** Mesma armadilha, mesmo tratamento: o cabeçalho do alinhamento fala de preço e de GTIN. */
+const alinhamentoExecutavel = ALINHAMENTO.split("\n")
   .filter((linha) => !linha.trimStart().startsWith("--"))
   .join("\n");
 
@@ -190,15 +196,16 @@ describe("o workflow", () => {
     }
   });
 
-  it("exige o SHA da main e oferece exatamente as nove operações", () => {
+  it("exige o SHA da main e oferece exatamente as dez operações", () => {
     expect(WORKFLOW).toMatch(/expected_main_sha:[\s\S]*?required:\s*true/);
     const opcoes = /options:\s*\n((?:\s*-\s*[\w-]+\n)+)/.exec(WORKFLOW)?.[1] ?? "";
     const lista = opcoes
       .split("\n")
       .map((l) => l.replace(/^\s*-\s*/, "").trim())
       .filter(Boolean);
-    expect(lista).toHaveLength(9);
+    expect(lista).toHaveLength(10);
     expect(lista).toContain("plan");
+    expect(lista).toContain("align-demo-brands");
     expect(lista.some((o) => /all/i.test(o))).toBe(false);
   });
 
@@ -397,6 +404,102 @@ describe("o SQL de remediação dos GTINs", () => {
     // E as duas listas de comprimento GS1 precisam ser a mesma.
     expect(conteudo).toContain("length(c.gtin) IN (8, 12, 13, 14)");
     expect(REMEDIACAO).toContain("length(c.gtin) IN (8, 12, 13, 14)");
+  });
+});
+
+describe("o SQL de alinhamento das marcas demo", () => {
+  it("escreve uma coluna só, e os quatro valores são literais do fixture", () => {
+    const updates = alinhamentoExecutavel.match(/UPDATE\s+public\.\w+\s+SET\s+[^;]+/gi) ?? [];
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatch(/UPDATE public\.products SET brand = alvo\[3\] WHERE id = /);
+
+    // As marcas de destino são exatamente as que a Home mostra. Se alguém trocar uma das
+    // duas pontas sem trocar a outra, o alinhamento passa a desalinhar — que é o defeito
+    // que ele existe para consertar.
+    const fixture = readFileSync(join(RAIZ, "src/lib/demo-opportunities.ts"), "utf-8");
+    for (const marca of ["Ouro do Campo", "Serra Alta", "Boa Serra"]) {
+      expect(ALINHAMENTO, `o alinhamento não cita ${marca}`).toContain(`'${marca}'`);
+      expect(fixture, `o fixture não usa ${marca}`).toContain(`"${marca}"`);
+    }
+  });
+
+  it("os quatro ids alinhados existem no seed, e são produtos demo", () => {
+    const seed = readFileSync(join(RAIZ, "supabase/seed.sql"), "utf-8");
+    const ids = [...ALINHAMENTO.matchAll(/'(22222222-2222-2222-2222-\d{12})'/g)].map((m) => m[1]);
+    expect(new Set(ids).size).toBe(4);
+    for (const id of ids) expect(seed, `${id} não está no seed`).toContain(id);
+  });
+
+  it("não cria, não apaga e não toca em schema", () => {
+    for (const proibido of [
+      /\bDELETE\s+FROM\b/i,
+      /\bINSERT\s+INTO\b/i,
+      /\bDROP\b/i,
+      /\bCREATE\b/i,
+      /\bALTER\s+TABLE\b/i,
+      /\bTRUNCATE\b/i,
+      /\bGRANT\b/i,
+      /\bREVOKE\b/i,
+    ]) {
+      expect(alinhamentoExecutavel, `o alinhamento contém ${proibido}`).not.toMatch(proibido);
+    }
+  });
+
+  it("não toca em preço, mercado, GTIN nem em nenhuma coluna de R2-A", () => {
+    for (const proibida of [
+      "public.prices",
+      "public.markets",
+      "quantity_value",
+      "quantity_unit",
+      "package_type",
+      "units_per_package",
+    ]) {
+      expect(alinhamentoExecutavel, `o alinhamento menciona ${proibida}`).not.toContain(proibida);
+    }
+    // `gtin` aparece — mas SÓ dentro da recomposição de `search_text`, que o trigger produz
+    // a partir de seis campos. Em nenhum `SET`.
+    expect(alinhamentoExecutavel).not.toMatch(/SET[^;]*\bgtin\b\s*=/i);
+  });
+
+  it("abre e fecha exatamente uma transação, e exige quatro linhas", () => {
+    expect((alinhamentoExecutavel.match(/^BEGIN;/gm) ?? []).length).toBe(1);
+    expect((alinhamentoExecutavel.match(/^COMMIT;/gm) ?? []).length).toBe(1);
+    expect(ALINHAMENTO).toContain("GET DIAGNOSTICS fora_do_esperado = ROW_COUNT");
+    expect(ALINHAMENTO).toMatch(/IF alterados <> 4 THEN/);
+  });
+
+  it("verifica de novo depois do UPDATE, em vez de confiar no ROW_COUNT", () => {
+    // Quatro linhas mudaram não é o mesmo que as quatro certas ficaram certas.
+    expect(ALINHAMENTO).toMatch(/marcas_antigas <> 0/);
+    expect(ALINHAMENTO).toMatch(/search_text_desatualizado <> 0/);
+  });
+
+  it("confere que o trigger de search_text rodou, com a MESMA expressão da tabela", () => {
+    // Sem isto, a página do produto mostraria a marca nova e a busca continuaria achando a
+    // antiga. A expressão é a do trigger, e não uma paráfrase dela.
+    const migration = readFileSync(
+      join(RAIZ, "supabase/migrations/20260727005424_c8ae0284-20d5-452d-9b4b-f346857a8b82.sql"),
+      "utf-8",
+    );
+    const nucleo = "concat_ws(' ', ";
+    expect(migration).toContain(nucleo);
+    expect(ALINHAMENTO).toContain("public.pa_normalize_text(");
+    expect(ALINHAMENTO).toContain(
+      "concat_ws(' ', name, brand, variant, size_text, gtin, category)",
+    );
+  });
+
+  it("recusa qualquer ambiente que não seja o do seed de demonstração", () => {
+    expect(ALINHAMENTO).toMatch(/total_produtos <> 7/);
+    expect(ALINHAMENTO).toMatch(/produtos_demo <> total_produtos/);
+  });
+
+  it("não imprime nome de produto nem marca no NOTICE", () => {
+    const notices = ALINHAMENTO.match(/RAISE NOTICE[^;]+/g) ?? [];
+    for (const notice of notices) {
+      expect(notice).not.toMatch(/%.*\bbrand\b/i);
+      expect(notice).not.toMatch(/%.*\bname\b/i);
+    }
   });
 });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ESCRITAS_FORA_DA_SEQUENCIA,
   OPERACOES,
   OPERACOES_VALIDAS,
   SEQUENCIA_DE_ESCRITA,
@@ -15,9 +16,13 @@ import {
 const ESTADO_INICIAL: EstadoMedido = { historicoRemoto: 0, gtinsInvalidos: 2 };
 
 describe("catálogo de operações", () => {
-  it("tem exatamente as nove operações do mandato, e nenhuma a mais", () => {
+  it("tem exatamente as dez operações do catálogo, e nenhuma a mais", () => {
+    // Nove vieram do mandato de R2.6. `align-demo-brands` é a décima, e entrou por uma razão
+    // de PRODUTO e não de schema: a Home mostra marca fictícia e a página do produto lê do
+    // banco, então quem navega de uma para a outra vê dois nomes para o mesmo item.
     expect(OPERACOES_VALIDAS.sort()).toEqual(
       [
+        "align-demo-brands",
         "adopt-seven-baseline",
         "apply-contribution-hardening",
         "apply-core-hardening",
@@ -56,7 +61,7 @@ describe("catálogo de operações", () => {
       .map((d) => d.frase)
       .filter((f): f is string => f !== null);
     expect(new Set(frases).size).toBe(frases.length);
-    expect(frases.length).toBe(7);
+    expect(frases.length).toBe(8);
   });
 
   it("toda frase nomeia o ambiente, para não poder ser reaproveitada em produção", () => {
@@ -72,9 +77,42 @@ describe("catálogo de operações", () => {
     }
   });
 
-  it("a sequência de escrita cobre todas as operações que escrevem, e só elas", () => {
+  it("toda operação que escreve está classificada, e em exatamente uma família", () => {
+    // A garantia original era "a sequência cobre todas as que escrevem". Ela deixou de valer
+    // quando surgiu uma escrita que NÃO é degrau da escada de R2 — e a resposta certa não é
+    // afrouxar a asserção, é dizer as duas famílias em voz alta.
+    //
+    // O que continua sendo impossível: uma operação que escreve e não aparece em lista
+    // nenhuma. Era essa a proteção, e ela está inteira.
     const escrevem = OPERACOES_VALIDAS.filter((n) => OPERACOES[n].escreve).sort();
-    expect([...SEQUENCIA_DE_ESCRITA].sort()).toEqual(escrevem);
+    const classificadas = [...SEQUENCIA_DE_ESCRITA, ...ESCRITAS_FORA_DA_SEQUENCIA].sort();
+    expect(classificadas).toEqual(escrevem);
+
+    // E nenhuma nas duas ao mesmo tempo: estar na escada e fora dela é um estado sem
+    // significado, e `proximaOperacao` daria um passo que a escada não previu.
+    const naEscada = new Set<Operacao>(SEQUENCIA_DE_ESCRITA);
+    for (const fora of ESCRITAS_FORA_DA_SEQUENCIA) {
+      expect(naEscada.has(fora), `${fora} está nas duas famílias`).toBe(false);
+    }
+  });
+
+  it("a escrita fora da sequência não é sugerida por `proximaOperacao`", () => {
+    // `proximaOperacao` navega a escada de R2. Se ela passasse a devolver o alinhamento de
+    // marcas, alguém leria "o próximo passo do rollout é este" — e não é: o rollout terminou.
+    const estadoFinal: EstadoMedido = { historicoRemoto: 12, gtinsInvalidos: 0 };
+    expect(proximaOperacao(estadoFinal)).toBeNull();
+  });
+
+  it("o alinhamento de marcas só roda com a sequência de R2 inteira aplicada", () => {
+    expect(podeExecutar("align-demo-brands", { historicoRemoto: 12, gtinsInvalidos: 0 }).pode).toBe(
+      true,
+    );
+    expect(podeExecutar("align-demo-brands", { historicoRemoto: 11, gtinsInvalidos: 0 }).pode).toBe(
+      false,
+    );
+    expect(podeExecutar("align-demo-brands", { historicoRemoto: 0, gtinsInvalidos: 2 }).pode).toBe(
+      false,
+    );
   });
 
   it("cada passo da sequência começa onde o anterior termina", () => {

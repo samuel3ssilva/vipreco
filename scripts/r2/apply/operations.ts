@@ -22,6 +22,7 @@ export type Operacao =
   | "remediate-demo-gtins"
   | "apply-r2a"
   | "apply-r2b"
+  | "align-demo-brands"
   | "validate";
 
 /**
@@ -126,6 +127,19 @@ export const OPERACOES: Readonly<Record<Operacao, DefinicaoDeOperacao>> = {
     escreve: true,
     descricao: "aplica a integridade de GTIN",
   },
+  // Fora da sequência de R2 de propósito: não aplica migration, não depende de nenhuma das
+  // anteriores por conteúdo, e existe por uma razão de PRODUTO — a Home e a página do
+  // produto precisam falar do mesmo item na demonstração. Ela exige o histórico COMPLETO
+  // (12) porque só faz sentido contra um staging que já terminou a sequência de R2.
+  "align-demo-brands": {
+    frase: "ALIGN FOUR DEMO BRANDS IN VIPRECO STAGING",
+    historicoAntes: 12,
+    historicoDepois: 12,
+    versaoAlvo: null,
+    escreve: true,
+    descricao:
+      "alinha exatamente quatro marcas demo ao fixture da Home, em transação, sem criar nem apagar linha",
+  },
   validate: {
     frase: null,
     historicoAntes: null,
@@ -156,6 +170,21 @@ export const SEQUENCIA_DE_ESCRITA: readonly Operacao[] = [
   "apply-r2a",
   "apply-r2b",
 ];
+
+/**
+ * As escritas que NÃO pertencem à escada de R2, e por que a distinção existe.
+ *
+ * `SEQUENCIA_DE_ESCRITA` é uma escada: cada degrau exige o anterior, o histórico sobe de um
+ * em um, e `proximaOperacao` navega por ela. Uma operação que não aplica migration e não é
+ * pré-requisito de nenhuma outra não é degrau — enfiá-la ali quebraria "cada passo começa
+ * onde o anterior termina", que é a asserção que dá sentido à escada inteira.
+ *
+ * O que ELA NÃO PODE SER é invisível. Toda operação que escreve precisa estar numa das duas
+ * listas, e `operations.test.ts` reprova se alguma escapar das duas ou aparecer nas duas.
+ * É essa a garantia que importa: nenhuma escrita entra no catálogo sem alguém ter dito, por
+ * escrito, a que família ela pertence.
+ */
+export const ESCRITAS_FORA_DA_SEQUENCIA: readonly Operacao[] = ["align-demo-brands"];
 
 export interface EstadoMedido {
   /** Quantas versões o histórico remoto tem AGORA. */

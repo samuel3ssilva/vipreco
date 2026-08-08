@@ -1,15 +1,32 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Home, Search, HelpCircle, Store } from "lucide-react";
+import { Home, Search } from "lucide-react";
 import { PageContainer } from "@/components/PageContainer";
 import { StagingBanner } from "@/components/StagingBanner";
+import { PILOT_LOCALITY } from "@/lib/pilot";
 
+/**
+ * DUAS ABAS, E SÓ DUAS (R3.3, North Star V2 §3 itens 1, 2, 17 e 18).
+ *
+ * Eram quatro: Achados, Buscar, Ajuda e Mercados. As duas que saíram, saíram por motivos
+ * diferentes, e vale registrar os dois:
+ *
+ * **"Mercados"** era a `/para-mercados` — uma landing B2B — vestida de seção do aplicativo do
+ * consumidor. O contrato aprovado diz rota separada, NUNCA aba do app B2C. Foi ela que apareceu
+ * na captura do gate de B2B-0, encostada no polegar de um dono de mercado lendo a proposta.
+ *
+ * **"Ajuda"** era `/como-funciona`, e o problema não é a página: é o custo de uma aba. Numa barra
+ * de quatro, cada aba leva um quarto da largura e um quarto da atenção. Ajuda não é uma jornada
+ * — é uma consulta pontual, e consulta pontual vive em link, não em aba.
+ *
+ * As duas continuam alcançáveis, pelo rodapé. Aba não é o único jeito de chegar a uma página; é
+ * o jeito que declara "esta é uma das coisas principais que você faz aqui". Achar e comparar
+ * preço são duas. Não há uma terceira.
+ */
 const NAV = [
   // "Achados" é o rótulo oficial da entrada principal (North Star v1.2.2). A rota continua "/".
   { to: "/", label: "Achados", short: "Achados", icon: Home },
   { to: "/buscar", label: "Buscar produto", short: "Buscar", icon: Search },
-  { to: "/como-funciona", label: "Como funciona", short: "Ajuda", icon: HelpCircle },
-  { to: "/para-mercados", label: "Para mercados", short: "Mercados", icon: Store },
 ] as const;
 
 export function AppShell({
@@ -64,7 +81,11 @@ export function AppShell({
             </span>
           </Link>
           <div className="hidden items-center gap-2 sm:flex">
-            <nav aria-label="Navegação principal" className="flex gap-0.5">
+            {/* Nome distinto do da barra inferior. Dois landmarks de navegação com o MESMO
+                nome acessível ficam indistinguíveis na lista de regiões do leitor de tela —
+                "Navegação principal" e "Navegação principal", e a pessoa escolhe no escuro.
+                Só um dos dois está visível por vez, mas a árvore acessível não sabe disso. */}
+            <nav aria-label="Navegação principal do cabeçalho" className="flex gap-0.5">
               {NAV.map((item) => (
                 <Link
                   key={item.to}
@@ -91,24 +112,51 @@ export function AppShell({
               </Link>
             )}
           </div>
-          <Link
-            to="/buscar"
-            aria-label="Buscar produto"
-            className="btn-base btn-secondary btn-sm btn-touch-48 sm:hidden"
-          >
-            <Search aria-hidden="true" className="size-5" />
-            <span>Buscar</span>
-          </Link>
+          {/* O BOTÃO "BUSCAR" DO CABEÇALHO SAIU EM R3.3, e o motivo é aritmética de tela.
+              Com a busca na primeira dobra da Home e "Buscar" como aba da barra inferior, o
+              botão era a TERCEIRA forma de fazer a mesma coisa no mesmo viewport de 390 px —
+              e as três brigavam pela mesma decisão nos primeiros cinco segundos. A aba fica
+              porque está no polegar em todas as rotas; o campo fica porque é onde a busca
+              acontece. O botão não tinha o que acrescentar. */}
         </PageContainer>
       </header>
 
-      <main id="conteudo" className="flex-1 pb-24 pt-4 sm:pb-12">
+      <main id="conteudo" className="flex-1 pt-4">
         <PageContainer>{children}</PageContainer>
       </main>
+
+      {/* AS DUAS PÁGINAS QUE PERDERAM A ABA VIVEM AQUI, e o rodapé é o lugar certo para elas:
+          alcançáveis para quem procura, silenciosas para quem não está procurando. A barra
+          inferior reserva o polegar para as duas ações que o produto realmente é. */}
+      <footer
+        className="mt-10 border-t border-border bg-card pb-24 pt-6 sm:pb-6"
+        inert={isInert || undefined}
+      >
+        <PageContainer className="flex flex-col gap-2">
+          <nav aria-label="Links do rodapé" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link
+              to="/como-funciona"
+              className="text-sm text-primary underline-offset-2 hover:underline"
+            >
+              Como funciona
+            </Link>
+            <Link
+              to="/para-mercados"
+              className="text-sm text-primary underline-offset-2 hover:underline"
+            >
+              Tenho um mercado
+            </Link>
+          </nav>
+          <p className="meta-text">
+            ViPreço. Comparador de preços de supermercado em preparação para {PILOT_LOCALITY}.
+          </p>
+        </PageContainer>
+      </footer>
 
       <nav
         aria-label="Navegação principal"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card sm:hidden"
+        data-barra-inferior=""
         inert={isInert || undefined}
       >
         <ul className="mx-auto flex max-w-md">

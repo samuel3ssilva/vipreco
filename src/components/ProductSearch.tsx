@@ -13,6 +13,18 @@ interface ProductSearchProps {
   initialTerm?: string;
   /** Quando definido, o resultado aparece em lista fixa e não em painel flutuante. */
   inline?: boolean;
+  /**
+   * A busca como protagonista da primeira dobra (R3.3B §6): campo maior, tipografia maior, e
+   * rótulo e instrução **apenas** para leitor de tela.
+   *
+   * Os dois textos continuam existindo — o `<label>` continua associado e a instrução continua
+   * ligada por `aria-describedby`. O que muda é que eles deixam de ser desenhados: numa tela
+   * cuja função é descoberta, "Busque por nome, marca, variante, tamanho ou código de barras.
+   * Digite pelo menos 2 letras." é manual de instruções acima do campo, e é justamente o tipo
+   * de texto que fazia a Home parecer documentação (§7). Em `/buscar`, onde a pessoa já está
+   * buscando e a tela inteira é a busca, os dois continuam visíveis.
+   */
+  destaque?: boolean;
   onTermChange?: (term: string) => void;
 }
 
@@ -47,6 +59,7 @@ export function ProductSearch({
   label = "Buscar produto",
   initialTerm = "",
   inline = false,
+  destaque = false,
   onTermChange,
 }: ProductSearchProps) {
   const navigate = useNavigate();
@@ -108,21 +121,36 @@ export function ProductSearch({
 
   return (
     <div ref={containerRef} className="relative">
-      <label htmlFor={inputId} className="mb-1 block text-sm font-semibold">
+      <label
+        htmlFor={inputId}
+        className={destaque ? "sr-only" : "mb-1 block text-sm font-semibold"}
+      >
         {label}
       </label>
       <div className="relative">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          className={`text-muted-foreground pointer-events-none absolute top-1/2 -translate-y-1/2 ${
+            destaque ? "left-4 size-5" : "left-3 size-4"
+          }`}
         />
         <input
           id={inputId}
           type="search"
           inputMode="search"
           autoFocus={autoFocus}
-          className="field-base pl-9"
-          placeholder="Ex.: café, arroz 5 kg, 7896..."
+          className={
+            destaque
+              ? "field-base shadow-card min-h-14 rounded-xl border-[1.5px] pr-4 pl-12 text-base"
+              : "field-base pl-9"
+          }
+          placeholder={
+            // Curto o bastante para caber inteiro a 320 px. A versão com exemplos ("— café,
+            // arroz…") saía cortada já a 390, e `placeholder` cortado é a pior forma de texto
+            // que existe: some sem avisar e leva junto o exemplo que ele existia para dar. Os
+            // exemplos vivem nos quatro atalhos logo abaixo, onde são clicáveis.
+            destaque ? "Busque um produto exato" : "Ex.: café, arroz 5 kg, 7896..."
+          }
           value={term}
           onChange={(event) => {
             setTerm(event.target.value);
@@ -136,7 +164,7 @@ export function ProductSearch({
           aria-describedby={`${inputId}-ajuda`}
         />
       </div>
-      <p id={`${inputId}-ajuda`} className="meta-text mt-1">
+      <p id={`${inputId}-ajuda`} className={destaque ? "sr-only" : "meta-text mt-1"}>
         Busque por nome, marca, variante, tamanho ou código de barras. Digite pelo menos 2 letras.
       </p>
 

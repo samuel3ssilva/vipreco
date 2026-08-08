@@ -39,7 +39,7 @@ export function ValidityLabel({ validoAte }: { validoAte: string | null }) {
     );
   }
   return (
-    <span className="text-muted-foreground font-data inline-flex items-center gap-1 text-xs">
+    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs tabular-nums">
       <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
       válido até {validoAte}
     </span>
@@ -54,21 +54,34 @@ export function ProvenanceBlock({
   sourceType: SourceType;
 }) {
   return (
-    // O FIO É O ÚNICO DO CARD, e ele separa duas coisas que respondem perguntas
-    // diferentes: acima, o que se está comprando e quanto custa; abaixo, de onde veio esse
-    // número e até quando ele vale. Sem ele, todos os blocos ficavam à mesma distância uns
-    // dos outros e o card lia como oito linhas equidistantes em vez de três zonas.
-    <div className="border-border flex flex-col gap-1 border-t pt-2">
-      {/* Empilhado por padrão, lado a lado a partir de `sm`.
-          O `flex-wrap` anterior produzia as duas composições sem que ninguém escolhesse
-          nenhuma: a 320 px o selo tomava a linha inteira e a validade caía sozinha embaixo,
-          desalinhada; a 390 px ficavam lado a lado. Assumir a pilha nas larguras estreitas
-          é escolher a que se lê melhor lá, em vez de herdar a que sobrou. */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
-        <SourceBadge source={sourceType} />
-        <ValidityLabel validoAte={procedencia.validoAte} />
-      </div>
-      <p className="font-data text-muted-foreground text-xs leading-snug">
+    // =========================================================================================
+    // DEMO FREEZE §4 — O FIO SAIU, E A PROCEDÊNCIA VIROU UMA FAIXA QUE FLUI
+    // =========================================================================================
+    //
+    // Havia aqui um `border-t` — o único fio do card — separando "o que é e quanto custa" de
+    // "de onde veio". A separação é real, mas depois de R3.3C ela já é feita pela própria
+    // composição: identidade e preço vivem numa coluna ao lado da imagem, e tudo o que vem
+    // abaixo é outra coisa por construção. O fio virou o que o §14 chama de divisor a mais, e o
+    // §4 é explícito: **reduzir o peso visual de metadata, fonte, datas e selos secundários.**
+    //
+    // NENHUMA INFORMAÇÃO SAIU. Fonte, validade e observação continuam as três, juntas, no bloco
+    // inseparável do `R3-SCREEN-SPEC.md`. O que mudou é que elas param de ocupar três linhas
+    // empilhadas e passam a fluir numa faixa só: a 390 px o selo e a validade cabem lado a lado
+    // e a observação desce sozinha — duas linhas onde antes eram três, sem tirar uma palavra.
+    //
+    // O `flex-col` abaixo de `sm` que existia aqui foi escrito para consertar um defeito que já
+    // não existe: o selo esticava para a largura inteira porque faltava `items-start`. Com
+    // `items-center` num `flex-wrap`, a largura estreita quebra sozinha, e nas larguras em que
+    // cabe lado a lado ela economiza a linha em vez de gastá-la por precaução.
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <SourceBadge source={sourceType} />
+      <ValidityLabel validoAte={procedencia.validoAte} />
+      {/* R3.3B tirou o `font-data` desta linha e da validade. "observado em 05/08/2026 · ontem"
+          é texto corrido, e a própria regra do design system reserva a monoespaçada a dado
+          tabular de fato. Em mono, ela era o elemento que mais fazia o card parecer log de
+          sistema — o defeito exato que o mandato §7 mandou reduzir. `tabular-nums` preserva a
+          largura fixa do dígito, que é a única coisa que a mono acrescentava. */}
+      <p className="text-muted-foreground text-xs leading-snug tabular-nums">
         {`observado em ${procedencia.observadoEm} · ${procedencia.relativo}`}
       </p>
     </div>

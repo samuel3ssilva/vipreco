@@ -82,3 +82,46 @@ export function compararComMain(caminho: string): EstadoDoCaminho {
 
   return alterados.trim().length > 0 || novos.trim().length > 0 ? "mudou" : "intacto";
 }
+
+/**
+ * =============================================================================
+ * O GUARDA DE ESCOPO — R3.3 EM DIANTE
+ * =============================================================================
+ *
+ * Até R3.2, o contrato era simples: uma lista de caminhos, e nenhum deles podia mudar. R3.3
+ * quebra isso, porque **a Home agora está autorizada a mudar**. E um guarda que apenas deixa de
+ * proteger o que a onda vai mexer não guarda nada: ele passa a aprovar qualquer diff que por
+ * acaso inclua aqueles arquivos, junto com o que mais estiver lá.
+ *
+ * A inversão: em vez de listar o que não pode mudar, listar o que **pode**, e reprovar todo o
+ * resto. A pergunta deixa de ser "a Home continua intacta?" e passa a ser "tudo o que mudou
+ * estava autorizado a mudar?".
+ *
+ * Isso troca uma lista que envelhece por uma que aperta sozinha: um arquivo novo criado fora do
+ * allowlist reprova sem ninguém precisar lembrar de adicioná-lo a uma lista de proibidos.
+ */
+
+/** Todo caminho que difere de `origin/main`, incluindo arquivos novos ainda não rastreados. */
+export function caminhosAlterados(): string[] {
+  if (!mainDisponivel()) {
+    throw new MainIndisponivelError("`origin/main` não existe neste ambiente.");
+  }
+  const alterados = git(["diff", "--name-only", "origin/main"]).split("\n");
+  const novos = git(["ls-files", "--others", "--exclude-standard"]).split("\n");
+  return [...new Set([...alterados, ...novos])].filter((linha) => linha.trim().length > 0).sort();
+}
+
+/**
+ * Os caminhos que mudaram e **não** estavam autorizados.
+ *
+ * Um item do allowlist casa por prefixo, para que `docs/evidence/visual/r33/` cubra a pasta
+ * inteira sem listar cada PNG. Prefixo é deliberadamente literal: nada de glob, nada de regex.
+ * Um padrão que ninguém consegue ler de cabeça é um padrão que um dia autoriza o que não devia.
+ *
+ * @throws {MainIndisponivelError} quando a comparação é impossível — nunca "nada fora do escopo".
+ */
+export function foraDoEscopo(permitidos: readonly string[]): string[] {
+  return caminhosAlterados().filter(
+    (caminho) => !permitidos.some((prefixo) => caminho === prefixo || caminho.startsWith(prefixo)),
+  );
+}

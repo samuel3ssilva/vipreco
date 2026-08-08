@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
@@ -427,8 +427,11 @@ describe("nomes longos e preço grande", () => {
     const c = COM_OFERTA.find((v) => v.chave === "C");
     const html = await cardDe(c!.oferta);
     expect(html).toContain("line-clamp-2");
-    // A gramatura é o que separa dois SKUs; cortá-la para caber apaga a comparação.
-    expect(html).toMatch(/font-data[^"]*break-words/);
+    // A gramatura é o que separa dois SKUs; cortá-la para caber apaga a comparação. R3.3B
+    // trocou a monoespaçada por `tabular-nums` — a regra do design system reserva a mono a dado
+    // tabular de fato, e "1 L · Caixa" é texto corrido. O que este teste guarda é o
+    // `break-words`: a garantia de não truncar, que é a que importa.
+    expect(html).toMatch(/break-words[^"]*tabular-nums/);
     expect(html).toContain("1 L");
   });
 });
@@ -437,15 +440,40 @@ describe("nomes longos e preço grande", () => {
 // A Home e o ranking continuam intocados
 // ---------------------------------------------------------------------------------
 
-describe("R3.2 não toca no que já está no ar", () => {
-  it("o `AchadoCard` continua sendo o card da Home, e não foi reescrito aqui", () => {
-    const achado = readFileSync(join(process.cwd(), "src/components/AchadoCard.tsx"), "utf-8");
-    expect(achado).not.toContain("card-v2");
-    expect(achado).not.toContain("ProductCardV2");
+/**
+ * O QUE ESTE BLOCO GUARDAVA, E O QUE ELE GUARDA AGORA.
+ *
+ * Em R3.2 ele afirmava o isolamento da onda: o Card v2 vivia no laboratório, o `AchadoCard`
+ * continuava sendo o card da Home, e a Home não importava nada daqui. Era a garantia certa
+ * naquele momento — trocar os dois no mesmo PR misturaria "o card novo está certo?" com "a Home
+ * continua certa?" num diff só.
+ *
+ * R3.3 levou o Card v2 ao destaque da Home e R3.3B levou a mesma visão à lista, com Gate próprio
+ * para cada passo. O `AchadoCard` deixou de existir. A afirmação de isolamento não é mais
+ * verdadeira, e um teste que afirma o que não é verdade não protege nada.
+ *
+ * O que sobrevive é a garantia que nunca dependeu do isolamento: **uma anatomia só**. As duas
+ * composições da Home saem daqui, e nenhuma delas reimplementa as regras de exibição.
+ */
+describe("uma anatomia só (R3.3B)", () => {
+  it("o `AchadoCard` não existe mais — a lista é composição do Card v2", () => {
+    expect(existsSync(join(process.cwd(), "src/components/AchadoCard.tsx"))).toBe(false);
   });
 
-  it("a Home não importa o Card v2", () => {
-    const home = readFileSync(join(process.cwd(), "src/routes/index.tsx"), "utf-8");
-    expect(home).not.toContain("card-v2");
+  it("as duas composições da Home leem a MESMA visão", () => {
+    // Se uma delas parar de chamar `montarVisaoDoCard`, ela passa a decidir por conta própria o
+    // que mostrar — e é exatamente assim que uma regra some de um lado e sobrevive no outro.
+    for (const arquivo of ["product-card-v2.tsx", "compact.tsx"]) {
+      const fonte = readFileSync(join(process.cwd(), "src/components/card-v2", arquivo), "utf-8");
+      expect(fonte, arquivo).toContain("montarVisaoDoCard");
+    }
+  });
+
+  it("nenhuma das duas exibe histórico de preço (DL-030)", () => {
+    for (const arquivo of ["product-card-v2.tsx", "compact.tsx"]) {
+      const fonte = readFileSync(join(process.cwd(), "src/components/card-v2", arquivo), "utf-8");
+      expect(fonte, arquivo).not.toContain("previous_price");
+      expect(fonte, arquivo).not.toContain("PreviousPrice");
+    }
   });
 });

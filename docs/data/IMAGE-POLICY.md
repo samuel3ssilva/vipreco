@@ -127,3 +127,34 @@ autorizam relaxar §1 — abaixo da meta usa-se placeholder, nunca aproximação
 
 Registrada como `image_source = gtin_lookup` e **fora do MVP**: licença incerta e cobertura fraca no
 varejo brasileiro. Reabrir exige verificação de direito de uso e decisão do PMO.
+
+## Adendo R3.3B (07/08/2026) — ilustração genérica de categoria
+
+O mandato de R3.3B §5 autorizou criar assets visuais para a demonstração, e delimitou no mesmo
+parágrafo o que eles não podem ser:
+
+> "pode criar assets visuais GENÉRICOS e claramente fictícios que representem categorias de
+> supermercado, sem copiar embalagem real, marca real, logotipo real ou trade dress de terceiros
+> (…) Não tratar imagem ilustrativa como correspondência real de SKU."
+
+**Nada nesta política foi afrouxado.** As duas portas continuam sendo as mesmas — revisão
+aprovada **e** correspondência exata de variante e gramatura —, e `resolverImagem` continua
+devolvendo `null` para qualquer outra combinação, inclusive "aprovada, mas aproximada".
+
+O que R3.3B acrescentou foi uma **distinção**, não uma exceção: `ImagemDeProduto.ilustrativa`.
+Ela marca o desenho de categoria feito para a demonstração, e existe porque a diferença vai
+importar quando houver fotografia de verdade — "exata" e "ilustrativa" podem passar pelo mesmo
+portão dentro de um universo fictício, e não podem se confundir fora dele.
+
+A fronteira é medida, não prometida (`src/lib/demo-opportunities.ilustrativas.test.ts`):
+
+- toda oferta com `ilustrativa: true` é `is_demo` nas três entidades — preço, produto e mercado;
+- todo `src` de imagem vive sob `/img/demo/`;
+- o `alt` declara que é ilustração e que **não é a embalagem do produto**, e nunca usa a palavra
+  "foto";
+- nenhum SVG tem `<text>` dentro — um rótulo desenhado seria o começo de uma marca desenhada;
+- nenhum busca recurso externo.
+
+**Consequência para o piloto:** um preço real **não pode** receber ilustração de categoria. Ele
+recebe foto com correspondência exata aprovada, ou recebe o placeholder — que continua sendo o
+estado padrão, e não o de exceção.

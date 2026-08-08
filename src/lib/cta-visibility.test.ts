@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  consumerCtaStore,
-  createStickyCtaStore,
-  hiddenCtaAttributes,
-  marketCtaStore,
-} from "@/lib/cta-visibility";
+import { createStickyCtaStore, hiddenCtaAttributes, marketCtaStore } from "@/lib/cta-visibility";
 
 describe("quem está no comando do CTA", () => {
   it("começa com o CTA do fluxo no comando", () => {
@@ -66,17 +61,21 @@ describe("quem está no comando do CTA", () => {
 });
 
 describe("cada rota tem a sua loja", () => {
-  it("o convite do morador e o do dono de mercado não se silenciam", () => {
-    // A Home e `/para-mercados` compartilham o mecanismo, não o estado: o CTA fixo de uma rota
-    // não pode apagar o CTA do fluxo da outra.
-    expect(consumerCtaStore).not.toBe(marketCtaStore);
+  it("a loja de uma rota não silencia a de outra", () => {
+    // Até R3.3A eram duas lojas de produção — a do morador e a do dono de mercado — e este
+    // teste as comparava. O CTA fixo saiu da Home, e a do morador saiu junto. A propriedade que
+    // importa não é "existem duas": é que **instâncias não compartilham estado**, e é ela que a
+    // próxima rota com CTA fixo vai herdar. Por isso a prova passou a ser contra uma instância
+    // nova, e não contra uma constante que só existiria para o teste ter o que comparar.
+    const outraRota = createStickyCtaStore();
+    expect(outraRota).not.toBe(marketCtaStore);
 
-    consumerCtaStore.set(true);
+    outraRota.set(true);
     expect(marketCtaStore.get()).toBe(false);
-    consumerCtaStore.set(false);
+    outraRota.set(false);
 
     marketCtaStore.set(true);
-    expect(consumerCtaStore.get()).toBe(false);
+    expect(outraRota.get()).toBe(false);
     marketCtaStore.set(false);
   });
 

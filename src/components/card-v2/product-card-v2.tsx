@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Skeleton, Surface } from "@/components/primitives";
@@ -78,6 +78,18 @@ interface ProductCardV2Props {
    * continua identificável, e o que falta é dito em vez de aparecer como buraco.
    */
   avisoParcial?: string | null;
+  /**
+   * Ação secundária do card, desenhada DENTRO dele, logo abaixo do CTA.
+   *
+   * Existe por causa do §4 do Demo Freeze. "Compartilhar este achado" vivia solto entre o card
+   * de destaque e o rótulo "Outros Achados" — um botão contornado, alinhado à direita, sem
+   * moldura em volta e sem nada que dissesse a que ele pertencia. Um controle órfão entre dois
+   * blocos é exatamente o que faz uma tela parecer formulário em vez de aplicativo.
+   *
+   * Opcional e sem padrão: `/produto/$productId` e o laboratório continuam renderizando o card
+   * sem nada aqui, e nada muda para eles.
+   */
+  acaoSecundaria?: ReactNode;
   className?: string;
 }
 
@@ -86,6 +98,7 @@ export function ProductCardV2({
   now,
   variant = "secundario",
   avisoParcial = null,
+  acaoSecundaria = null,
   className = "",
 }: ProductCardV2Props) {
   const tituloId = useId();
@@ -110,35 +123,59 @@ export function ProductCardV2({
           procedência e CTA todos à mesma distância entre si — e um card assim é lido como
           uma lista de linhas, não como uma composição com hierarquia. Agora o espaço é
           hierárquico: apertado dentro de cada grupo, folgado entre grupos. */}
-      <div className={`flex flex-1 flex-col p-3 ${destaque ? "gap-3" : "gap-2"}`}>
-        <div className="flex items-start gap-3">
+      <div className={`flex flex-1 flex-col ${destaque ? "gap-3 p-4 sm:p-5" : "gap-2 p-3"}`}>
+        {/* =====================================================================
+            R3.3C §14 — O PREÇO SUBIU PARA A COLUNA DA IDENTIDADE
+            =====================================================================
+
+            Até aqui o card era duas faixas: [imagem | identidade] em cima, e preço, mercado,
+            condição e procedência em linhas de largura inteira embaixo. Com a imagem em 128 px
+            e a identidade em três linhas curtas, sobrava um retângulo vazio à DIREITA da imagem
+            e outro à direita do preço — e é esse vazio, mais do que qualquer cor ou tipografia,
+            o que fazia a composição parecer registro em vez de produto.
+
+            A referência aprovada (North Star V2, tela 1) resolve exatamente assim: nome, marca,
+            variante, quantidade e preço empilhados numa coluna só, ao lado da imagem. A ordem
+            de leitura do §5 não muda — imagem, nome, marca/variante, quantidade, preço, mercado
+            —, e a ordem do DOM tampouco, que é o que o leitor de tela ouve.
+
+            AS MEDIDAS SÃO POR FAIXA, E NÃO POR GOSTO. A coluna útil a 320 px tem 144 px depois
+            da imagem de 96; "R$ 26,49" a 2.25rem ocupa ~130. A cada faixa em que a coluna
+            cresce, imagem e preço crescem junto — nunca antes. Foi assim que R3.3B descobriu o
+            estouro a 320: medindo a captura, não lendo o código. */}
+        <div className={`flex items-start ${destaque ? "gap-4 sm:gap-5" : "gap-3"}`}>
           <ProductImage
             imagem={visao.imagem}
             categoria={oferta.product.category}
-            destaque={destaque}
+            tamanho={destaque ? "destaque" : "lista"}
             prioridade={destaque}
           />
-          <ProductIdentity identidade={visao.identidade} tituloId={tituloId} destaque={destaque} />
+
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <ProductIdentity
+              identidade={visao.identidade}
+              tituloId={tituloId}
+              destaque={destaque}
+            />
+            <OfferStatus estado={visao.estado} />
+            <div className="flex flex-col gap-0.5">
+              <PriceDisplay
+                preco={visao.preco}
+                destaque={destaque}
+                atenuado={!visao.naListaOrganica}
+              />
+              <UnitPrice unitario={visao.unitario} />
+            </div>
+          </div>
         </div>
 
-        <OfferStatus estado={visao.estado} />
-
-        {/* Preço, unitário, mercado e bairro são UM grupo: "quanto custa, e onde". Separá-los
-            em dois blocos com o mesmo respiro dos demais fazia o bairro parecer tão distante
-            do preço quanto a procedência. */}
+        {/* Mercado e bairro continuam colados no preço — "quanto custa, e onde" segue sendo uma
+            pergunta só. O que mudou é que o preço agora termina a coluna da direita, e estas
+            duas linhas vêm logo abaixo dela em largura inteira, onde o nome do mercado cabe sem
+            disputar espaço com a imagem. */}
         <div className="flex flex-col gap-0.5">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <PriceDisplay
-              preco={visao.preco}
-              destaque={destaque}
-              atenuado={!visao.naListaOrganica}
-            />
-          </div>
-          <UnitPrice unitario={visao.unitario} />
-          <div className="mt-1 flex flex-col gap-0.5">
-            <MarketBadge nome={visao.mercado.nome} destaque={destaque} />
-            <NeighborhoodLabel bairro={visao.mercado.bairro} />
-          </div>
+          <MarketBadge nome={visao.mercado.nome} destaque={destaque} />
+          <NeighborhoodLabel bairro={visao.mercado.bairro} />
         </div>
 
         <PromotionCondition condicao={visao.condicao} />
@@ -158,18 +195,22 @@ export function ProductCardV2({
             enfraquecendo a ação que o card existe para oferecer é trocar propósito por
             densidade. O que muda é o peso: em lista, superfície discreta em vez de caixa
             contornada — mesma forma, mesmo alvo de 48 px, menos linha desenhada por card. */}
-        <div className="mt-auto pt-1">
+        <div className="mt-auto flex flex-col gap-1 pt-1">
           <Link
             to="/produto/$productId"
             params={{ productId: oferta.product.id }}
             aria-describedby={avisoParcial !== null ? avisoId : undefined}
+            // R3.3B §6 INVERTEU A ÊNFASE ENTRE OS DOIS CTAs DA HOME. O do destaque era
+            // contornado e o do WhatsApp era sólido — a página pedia o contato com mais força
+            // do que oferecia a comparação, que é o núcleo do produto. Agora o sólido é este.
             className={`btn-base btn-touch-48 w-full ${
-              destaque ? "btn-secondary" : "bg-surface text-primary"
+              destaque ? "btn-primary" : "bg-surface text-primary"
             }`}
           >
             {visao.cta.rotulo}
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
+          {acaoSecundaria}
         </div>
       </div>
     </Surface>

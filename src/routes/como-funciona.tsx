@@ -79,6 +79,27 @@ const DETAIL_GROUPS = [
       },
     ],
   },
+  // AS TRÊS REGRAS VIERAM DA HOME EM R3.3A, e o motivo é onde cada coisa pertence: a Home é
+  // descoberta, esta rota é explicação. A terceira delas — "a ordem não é vendida" — é o
+  // princípio de neutralidade do produto declarado em público, e foi a razão de o encolhimento
+  // da Home só poder acontecer depois de o texto existir aqui. Ele não pode desaparecer do site.
+  {
+    title: "O que o ViPreço não faz",
+    items: [
+      {
+        title: "Você compra na loja",
+        text: "O ViPreço mostra preços; a compra continua sendo feita no mercado. Nada aqui altera o preço que aparece no caixa.",
+      },
+      {
+        title: "O estoque é do mercado",
+        text: "O produto pode acabar antes da validade informada. O ViPreço não tem acesso ao estoque de nenhuma loja.",
+      },
+      {
+        title: "A ordem não é vendida",
+        text: "A lista de comparação é ordenada pelo preço de prateleira, do menor para o maior — nunca por pagamento. Conteúdo destacado ou patrocinado, quando existir, aparece em seção separada e rotulada, e não altera a ordem da comparação.",
+      },
+    ],
+  },
 ];
 
 function HowItWorksPage() {

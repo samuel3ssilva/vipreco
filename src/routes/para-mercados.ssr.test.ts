@@ -578,7 +578,7 @@ describe("navegação e rotas vizinhas", () => {
   });
 
   it("as outras rotas continuam renderizando", async () => {
-    expect(await renderRoute("/")).toContain("Veja como os Achados de Artemis vão aparecer");
+    expect(await renderRoute("/")).toContain("Achados em Artemis");
     expect(await renderRoute("/buscar")).toContain("Buscar produto");
     expect(await renderRoute("/como-funciona")).toContain("Como funciona");
   });

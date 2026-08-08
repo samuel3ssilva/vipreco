@@ -100,8 +100,17 @@ export function MarketShell({ children }: { children: ReactNode }) {
               O lojista precisa poder ver o que o morador vê; ele não precisa ser levado para
               lá. Por isso o link vive no rodapé, em peso de texto, e não numa aba encostada no
               polegar. */}
+          {/* DEMO FREEZE §25 — `min-h-12` e `inline-flex`.
+              O link media 17 px de altura, que é a altura da letra: menos de metade do alvo de
+              48 px que o produto exige em toda parte, e o único controle da página que ficava
+              abaixo dele. A medição saiu da própria captura desta rodada, não de uma revisão.
+              Ele continua discreto — peso de texto, no rodapé, sublinhado — e passa a ser
+              acertável com o polegar. Nada mais do shell muda: o §18 manda preservá-lo. */}
           <p className="text-sm">
-            <Link to="/" className="text-primary underline underline-offset-2">
+            <Link
+              to="/"
+              className="text-primary inline-flex min-h-12 items-center underline underline-offset-2"
+            >
               Ver a experiência do morador
             </Link>{" "}
             <span className="text-muted-foreground">

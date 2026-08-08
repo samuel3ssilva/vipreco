@@ -97,10 +97,17 @@ describe("alvo de toque e link externo", () => {
 describe("hierarquia de títulos", () => {
   it("um h1 só, e nenhum h3 fora das dúvidas frequentes", () => {
     expect(rota.match(/<h1\b/g) ?? []).toHaveLength(1);
-    // O único `h3` da rota é o da pergunta, dentro do bloco de dúvidas.
+    // O único `h3` da rota continua sendo o da pergunta. O que mudou no Demo Freeze é ONDE ele
+    // é escrito: a dúvida virou um `<details>` e a marcação foi extraída para o componente
+    // `Pergunta`, então o `<h3>` está lá dentro e não mais no corpo do `DUVIDAS.map`.
+    //
+    // A garantia é a mesma e continua medida: um `h3` na rota inteira, e ele é o da pergunta.
+    // Um `<h3>` dentro de `<summary>` é permitido pela especificação, e é o que faz um leitor
+    // de tela anunciar a pergunta como cabeçalho de nível 3 e como controle de expansão.
     expect(rota.match(/<h3\b/g) ?? []).toHaveLength(1);
-    const duvidas = rota.slice(rota.indexOf("DUVIDAS.map"));
-    expect(duvidas).toContain("<h3");
+    const acordeao = rota.slice(rota.indexOf("function Pergunta"));
+    expect(acordeao).toContain("<h3");
+    expect(acordeao.indexOf("<h3")).toBeLessThan(acordeao.indexOf("</summary>"));
   });
 
   it("cada seção é anunciada pelo próprio título", () => {

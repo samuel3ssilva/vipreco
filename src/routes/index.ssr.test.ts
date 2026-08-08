@@ -488,6 +488,34 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
     expect(destaque).toBeGreaterThan(lista[0]);
   });
 
+  it("DEMO FREEZE §4 — o compartilhar vive DENTRO do card de destaque", () => {
+    // Ele era um botão contornado solto entre o card e o rótulo "Outros Achados": sem moldura em
+    // volta, sem nada que dissesse a que achado pertencia, alinhado à direita no vazio. Um
+    // controle órfão entre dois blocos é o que faz uma tela parecer formulário em vez de
+    // aplicativo — e era um dos poucos elementos que ainda faziam isso na Home.
+    //
+    // O teste mede a RELAÇÃO, não a classe: o botão tem de aparecer antes do `</article>` que
+    // fecha o card. Assim ele continua verde se o desenho do botão mudar, e vermelho se alguém
+    // devolvê-lo para fora do card, que é a regressão que importa.
+    const secao = html.slice(html.indexOf('aria-labelledby="achados-titulo"'));
+    const fechamentoDoCard = secao.indexOf("</article>");
+    const compartilhar = secao.indexOf("Compartilhar este achado");
+    expect(fechamentoDoCard).toBeGreaterThan(-1);
+    expect(compartilhar).toBeGreaterThan(-1);
+    expect(compartilhar, "o compartilhar voltou para fora do card").toBeLessThan(fechamentoDoCard);
+  });
+
+  it("DEMO FREEZE §4 — o título da seção sai da tela sem sair da árvore", () => {
+    // O `h1` já diz "Achados em Artemis"; o `h2` logo abaixo dizia "Achados" outra vez. A
+    // repetição saiu do desenho — e não podia sair da acessibilidade junto. A seção continua
+    // nomeada, e quem navega por cabeçalhos continua encontrando o nível 2 onde ele estava.
+    expect(html).toMatch(/<h2[^>]*id="achados-titulo"[^>]*class="[^"]*sr-only[^"]*"[^>]*>/);
+    expect(html).toContain('aria-labelledby="achados-titulo"');
+    // E o `h1` continua sendo quem diz onde a pessoa está — o teste de 5 segundos do §22 depende
+    // dessa frase, e ela é a única ocorrência visível de "Achados em Artemis".
+    expect(html).toContain("Achados em Artemis");
+  });
+
   it("continua sem personalização, sem prova social e sem parceiro", () => {
     for (const termo of [
       "mercado habitual",

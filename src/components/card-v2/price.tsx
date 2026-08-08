@@ -122,7 +122,12 @@ export function PromotionCondition({ condicao }: { condicao: string | null }) {
     // de 14 px, e num card cuja hierarquia é produto → preço → mercado ela competia com o preço.
     // Continua sempre visível e sempre junto do preço — promoção sem condição é promessa que o
     // produto não pode cumprir —, agora como nota, que é o que ela é.
-    <p className="bg-caution/25 text-caution-foreground rounded-md px-2 py-1 text-xs">
+    //
+    // DEMO FREEZE §4: `w-fit`. Um `<p>` é bloco, então a nota atravessava o card de ponta a
+    // ponta como uma faixa âmbar — a largura de um banner de alerta para o que é uma ressalva de
+    // uma linha. Encolhida ao próprio texto ela vira etiqueta, que é o peso certo. `max-w-full`
+    // porque condição é texto livre do mercado e pode ser longa: encolher não pode virar estouro.
+    <p className="bg-caution/25 text-caution-foreground w-fit max-w-full rounded-md px-2 py-1 text-xs">
       <span className="font-semibold">Condição:</span> {condicao}
     </p>
   );

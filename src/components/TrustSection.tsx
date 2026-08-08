@@ -54,10 +54,12 @@ export function TrustSection({ isDemo }: { isDemo: boolean }) {
         </div>
       </div>
 
-      <Link
-        to="/como-funciona"
-        className="btn-base btn-secondary btn-sm btn-touch-48 w-full sm:w-auto"
-      >
+      {/* DEMO FREEZE §14 ("cards sem aparência de formulário"): `w-auto` em toda largura.
+          Ele era `w-full sm:w-auto`, então no celular — que é onde a demonstração acontece — o
+          bloco terminava numa caixa branca de ponta a ponta dentro de outra caixa. Duas
+          superfícies concêntricas da mesma largura é o desenho de um formulário, não de um
+          convite. O rótulo, o destino e o alvo de 48 px continuam os mesmos. */}
+      <Link to="/como-funciona" className="btn-base btn-secondary btn-sm btn-touch-48 w-auto">
         Entender como funciona
       </Link>
     </section>

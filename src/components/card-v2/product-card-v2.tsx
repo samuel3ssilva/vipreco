@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Skeleton, Surface } from "@/components/primitives";
@@ -78,6 +78,18 @@ interface ProductCardV2Props {
    * continua identificável, e o que falta é dito em vez de aparecer como buraco.
    */
   avisoParcial?: string | null;
+  /**
+   * Ação secundária do card, desenhada DENTRO dele, logo abaixo do CTA.
+   *
+   * Existe por causa do §4 do Demo Freeze. "Compartilhar este achado" vivia solto entre o card
+   * de destaque e o rótulo "Outros Achados" — um botão contornado, alinhado à direita, sem
+   * moldura em volta e sem nada que dissesse a que ele pertencia. Um controle órfão entre dois
+   * blocos é exatamente o que faz uma tela parecer formulário em vez de aplicativo.
+   *
+   * Opcional e sem padrão: `/produto/$productId` e o laboratório continuam renderizando o card
+   * sem nada aqui, e nada muda para eles.
+   */
+  acaoSecundaria?: ReactNode;
   className?: string;
 }
 
@@ -86,6 +98,7 @@ export function ProductCardV2({
   now,
   variant = "secundario",
   avisoParcial = null,
+  acaoSecundaria = null,
   className = "",
 }: ProductCardV2Props) {
   const tituloId = useId();
@@ -182,7 +195,7 @@ export function ProductCardV2({
             enfraquecendo a ação que o card existe para oferecer é trocar propósito por
             densidade. O que muda é o peso: em lista, superfície discreta em vez de caixa
             contornada — mesma forma, mesmo alvo de 48 px, menos linha desenhada por card. */}
-        <div className="mt-auto pt-1">
+        <div className="mt-auto flex flex-col gap-1 pt-1">
           <Link
             to="/produto/$productId"
             params={{ productId: oferta.product.id }}
@@ -197,6 +210,7 @@ export function ProductCardV2({
             {visao.cta.rotulo}
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
+          {acaoSecundaria}
         </div>
       </div>
     </Surface>

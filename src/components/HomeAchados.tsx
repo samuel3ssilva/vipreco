@@ -60,13 +60,23 @@ export function HomeAchados({ opportunities, now, seal, fallback, shareSlot }: H
       {/* "Achados", e não "Achados de hoje". O fixture tem preços de ontem, de dois e de
           três dias atrás — e o piloto vai ter dados mais velhos que isso. Um título que diz
           "de hoje" promete uma frescura que a linha de procedência de cada card desmente três
-          linhas abaixo. Foi um teste de regressão que pegou isto, não uma revisão. */}
-      <h2 id="achados-titulo" className="font-display text-xl">
+          linhas abaixo. Foi um teste de regressão que pegou isto, não uma revisão.
+
+          DEMO FREEZE §4: O TÍTULO SAIU DA TELA E FICOU NA ÁRVORE.
+          O `h1` da primeira dobra diz "Achados em Artemis". Quarenta pixels abaixo dele vinha um
+          `h2` dizendo "Achados" — a mesma palavra, outra vez, para nomear a seção que vem logo
+          em seguida e que ninguém confundiria com outra coisa. Repetir o título é o tipo de
+          redundância que faz uma tela parecer documento.
+          `sr-only`, e não removido: a seção continua com nome acessível e continua no sumário de
+          quem navega por cabeçalhos. O que sai é o desenho, para quem já leu a mesma palavra. */}
+      <h2 id="achados-titulo" className="sr-only">
         Achados
       </h2>
 
-      <ProductCardV2 oferta={destaque} now={now} variant="destaque" />
-      {shareSlot}
+      {/* O compartilhar entrou PARA DENTRO do card (§4). Solto aqui embaixo, ele era um botão
+          contornado flutuando entre o destaque e o rótulo da lista, sem pertencer a nenhum dos
+          dois. Dentro, é o que sempre foi: a ação secundária daquele achado. */}
+      <ProductCardV2 oferta={destaque} now={now} variant="destaque" acaoSecundaria={shareSlot} />
 
       {secundarios.length > 0 ? (
         <>

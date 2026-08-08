@@ -137,7 +137,11 @@ export function AchadoCompacto({
         <p
           aria-hidden="true"
           className={cn(
-            "font-display text-[1.375rem] leading-none font-extrabold tabular-nums",
+            // DEMO FREEZE §4 ("dar mais peso ao preço"): 1.375rem → 1.5rem. Numa linha em que o
+            // nome está em 0.9375rem, o preço a 1.375 era grande sem ser dominante — e o preço é
+            // o que faz alguém parar de rolar. O teto é a coluna: a 320 px sobram ~78 px para o
+            // bloco de preço, e "R$ 26,49" a 1.5rem ocupa ~76. Um degrau acima estouraria.
+            "font-display text-[1.5rem] leading-none font-extrabold tabular-nums",
             visao.naListaOrganica ? "text-primary" : "text-muted-foreground",
           )}
         >

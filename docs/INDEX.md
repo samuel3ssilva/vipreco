@@ -40,6 +40,7 @@ próprio documento.
 | [`data/PROMOTION-TYPES.md`](data/PROMOTION-TYPES.md)         | **NORMATIVO** |
 | [`data/OFFER-STATES.md`](data/OFFER-STATES.md)               | **NORMATIVO** |
 | [`data/IMAGE-POLICY.md`](data/IMAGE-POLICY.md)               | **NORMATIVO** |
+| [`data/image-0/`](data/image-0/README.md)                    | DESCRITIVO    |
 
 Operação de aplicação de R2 — como o dado **vai para o banco**. Os dois nascem da missão
 R2.1 e valem enquanto as migrations de R2 não estiverem aplicadas e validadas:

@@ -127,3 +127,32 @@ autorizam relaxar §1 — abaixo da meta usa-se placeholder, nunca aproximação
 
 Registrada como `image_source = gtin_lookup` e **fora do MVP**: licença incerta e cobertura fraca no
 varejo brasileiro. Reabrir exige verificação de direito de uso e decisão do PMO.
+
+## Adendo IMAGE-0 (08/08/2026) — o caminho até aqui virar código
+
+O §30 do mandato PRE-WEEKEND VISUAL DEMO FREEZE pediu a estratégia completa de imagem. Ela está em
+[`docs/data/image-0/`](./image-0/README.md), e **nada nela altera esta política** — os documentos
+dizem como chegar ao que já está escrito aqui.
+
+**Três fatos que este documento não dizia, e que a medição de IMAGE-0 encontrou:**
+
+1. **As sete colunas da §2 não existem em nenhuma migration.** `grep` em `supabase/migrations/`
+   devolve zero linhas para `image_url`, `image_variant_match` e `image_review_status`. O cabeçalho
+   já avisava "nada aqui está implementado"; o inventário mede o tamanho disso: o primeiro trabalho
+   de R6 é uma migration, e migration não é aplicada sem gate humano.
+2. **O produto tem zero fotografia de produto.** Tem três ilustrações genéricas de categoria, e elas
+   vivem numa branch que ainda não foi mergeada.
+3. **O CSP `img-src 'self' data:` decide a arquitetura sozinho.** Ele elimina host externo, Supabase
+   Storage e CDN de terceiro sem que ninguém precise argumentar, e deixa uma opção que não exige
+   alterar nada: arquivo servido pelo próprio domínio.
+
+**A §8 (importação por GTIN fora do MVP) foi confirmada, não revisada.** A pesquisa de catálogo está
+em [`FONTES-E-DIREITOS.md`](./image-0/FONTES-E-DIREITOS.md) §2, com as cinco perguntas que precisam
+de resposta antes de qualquer linha de código. A quarta delas — se a imagem devolvida é do item
+exato ou "da linha" — provavelmente elimina a opção sozinha: a força de um catálogo por GTIN é
+cobertura, e a §1 desta política é justamente onde cobertura larga costuma falhar.
+
+**O validador não substitui a revisão da §4.** `scripts/image/validar-imagens.ts` reprova formato,
+dimensão, proporção, peso e nome fora da convenção. Ele **não** sabe se a foto é do produto certo,
+se a gramatura confere, se a embalagem é a atual, nem se há direito de uso — as quatro perguntas que
+mais importam continuam humanas, e o próprio validador imprime isso junto de todo verde.

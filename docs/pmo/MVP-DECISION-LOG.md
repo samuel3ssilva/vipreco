@@ -1560,3 +1560,54 @@ foram tocadas: elas usam `compararComMain`, valem em qualquer branch, e continua
 **A regra que fica.** Um guarda de escopo de onda é um instrumento com data de validade. Ele
 deve nascer com a onda, reprovar durante a onda, e **sair no mesmo PR que fecha a onda** — não
 no PR seguinte, e nunca depois de a `main` já ter ficado vermelha.
+
+---
+
+## DL-040 — As marcas demo do banco passaram a ser as mesmas da Home (08/08/2026)
+
+- **Decisão do:** Founder, no mandato PRE-WEEKEND LIVE DEMO RELEASE §6 ("autorizar uma
+  remediação mínima e controlada SOMENTE EM STAGING", condicionada a prova de DEMO ONLY)
+- **Executado por:** CTO, depois da prova
+- **Reversível:** sim; as quatro marcas antigas estão escritas no próprio arquivo da transação
+
+**A divergência, e por que ela importava.** R3.3B trocou as marcas do fixture da Home por
+fictícias, e o motivo está no próprio arquivo: uma ilustração genérica ao lado do nome de uma
+marca existente **é** a representação da embalagem daquela marca. O banco ficou para trás, e a
+página do produto lê do banco. Quem navegasse da Home para o detalhe veria "Ouro do Campo"
+virar a marca antiga na mesma sessão — e numa entrevista com dono de mercado isso não lê como
+dado de demonstração, lê como produto que não sabe o que está mostrando. Estava fotografado:
+o título da aba do navegador trazia a marca antiga.
+
+**A prova de DEMO ONLY veio antes de qualquer escrita**, por dois caminhos independentes: a
+Data API com a chave anônima e a operação `plan`
+([run 31277223186](https://github.com/samuel3ssilva/vipreco/actions/runs/31277223186)).
+7 produtos, 4 mercados, 22 preços, histórico em 12, **zero registros com `is_demo = false`**.
+A condição do §6 é "se e somente se", e ela foi satisfeita.
+
+**Quatro linhas, e a conta de por que não três nem sete.** Três são as que a Home mostra. O
+quarto é o café de 250 g: ele não aparece na Home, mas aparece na **seção de outro tamanho** da
+página do café de 500 g, que é o fluxo que a demonstração percorre. Os outros três produtos
+ficaram de fora porque só são alcançados por busca digitada e porque mexer neles multiplicaria
+uma contradição que já existe e ninguém decidiu: **marca fictícia carregando GTIN real** — o
+arroz e o leite já são assim no fixture aprovado. Fica registrada como pendência aberta.
+
+**O mecanismo.** `supabase/seed.sql` passou a trazer as marcas fictícias, senão um reseed
+futuro restauraria as reais e a divergência voltaria sozinha. E `align-demo-brands`, operação
+nova do workflow de escrita controlada, levou as mesmas quatro a staging: uma coluna, quatro
+linhas nomeadas por id, transação única que mede as pré-condições dentro dela mesma — incluindo
+a marca **de antes** de cada alvo —, exige `ROW_COUNT = 4`, relê os quatro por id, e confere que
+o trigger `products_search_text` rodou. Sem essa última conferência, a página do produto
+mostraria a marca nova e a busca continuaria achando a antiga.
+
+Aplicada no [run 31277953518](https://github.com/samuel3ssilva/vipreco/actions/runs/31277953518):
+4 marcas alinhadas, 7 produtos, todos `is_demo`, 0 `search_text` fora do contrato, e as sete
+contagens de linha **inalteradas** antes e depois. Verificado ao vivo em staging.
+
+**O guarda que precisou ser reformulado.** `operations.test.ts` afirmava que a sequência de
+escrita cobria todas as operações que escrevem. Esta não é degrau da escada de R2 — não aplica
+migration e não é pré-requisito de nada. Em vez de afrouxar a asserção, as duas famílias
+passaram a ser declaradas, e o teste reprova se alguma escrita ficar **fora das duas** ou
+aparecer **nas duas**. A proteção que importava continua inteira.
+
+**Não tocado:** produção, DNS, migrations, RLS, backfill, dado real, preços, mercados, GTINs e
+qualquer coluna de R2-A.

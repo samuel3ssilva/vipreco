@@ -152,6 +152,29 @@ Lista fechada. Nenhum destes itens entra sem novo gate do Founder/PMO, e nenhum 
 O último item merece ênfase: não é uma funcionalidade adiada, é uma **proibição**. Similar nunca
 entra na comparação exata, em nenhuma fase. Ver [`CANONICAL-PRODUCT-SPEC.md`](CANONICAL-PRODUCT-SPEC.md).
 
+### Personalização por mercado — POST-MVP
+
+Registrado em **06/08/2026** pela revisão visual R3.3A do Founder, ao pedir a remoção do seletor
+"Seu mercado habitual" da Home. Abrange três coisas que andam juntas:
+
+- **preferência de mercado** — a pessoa declarar onde costuma comprar;
+- **mercado habitual** — o produto usar essa declaração para contextualizar preço;
+- **personalização futura** — qualquer ordenação, recorte ou destaque derivado dessa preferência.
+
+**O que continua existindo hoje, e não é isto:** em `/produto/$productId` a pessoa escolhe o
+mercado habitual e o `PriceSummary` mostra quanto ela economiza mudando de loja. Isso é
+**comparação com contexto**, entregue na tela onde a comparação acontece, e é escopo do MVP.
+
+**O que está adiado:** trazer essa escolha para a Home, e qualquer uso dela que vá além da linha
+de diferença na comparação. Um seletor na primeira tela declara um produto personalizado, e o
+MVP não é um. Nada aqui pode ser "preparado por antecipação": **nenhuma segmentação, nenhum
+ranking por preferência e nenhum recorte da lista orgânica** — o princípio 4 de neutralidade
+continua valendo integralmente, e personalização é exatamente o tipo de mecanismo que consegue
+reordenar a comparação sem que ninguém tenha decidido reordená-la.
+
+O código do seletor e do pré-carregamento de servidor (`src/components/UsualMarketPicker.tsx`,
+`src/services/home-markets.ts`) foi preservado, não apagado — ver DL-036.
+
 ### Automação de ingestão de preços — fora do MVP
 
 A trilha de **automação complementar de ingestão de preços** (conectores lendo preço de sites e

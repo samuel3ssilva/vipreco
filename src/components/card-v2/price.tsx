@@ -42,7 +42,17 @@ export function PriceDisplay({
         className={cn(
           "font-display leading-none tabular-nums",
           atenuado ? "text-muted-foreground font-bold" : "text-primary font-extrabold",
-          destaque ? "text-[2rem]" : "text-[1.625rem]",
+          // R3.3B §8: no destaque o preço passou de 2rem para 2.625rem. A hierarquia pedida é
+          // PRODUTO → PREÇO → MERCADO, e a 2rem o preço empatava com o nome do produto e com o
+          // nome do mercado logo abaixo — três linhas com o mesmo peso não são hierarquia.
+          // R3.3C §14 ("preço maior") levou o destaque até 3rem, POR FAIXA DE LARGURA. Ele
+          // divide a coluna com a imagem desde que subiu para o lado dela, então o teto de cada
+          // faixa é o que a coluna comporta: 144 px a 320, 184 a 360, 238 a 430. Um único
+          // `text-[3rem]` caberia no desktop e estouraria no aparelho mais estreito que o
+          // produto atende — e é o estreito que manda.
+          destaque
+            ? "text-[2.25rem] min-[360px]:text-[2.5rem] min-[430px]:text-[2.75rem] sm:text-[3rem]"
+            : "text-[1.625rem]",
         )}
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>
@@ -108,7 +118,11 @@ export function UnitPrice({ unitario }: { unitario: UnitarioExibido | null }) {
 export function PromotionCondition({ condicao }: { condicao: string | null }) {
   if (condicao === null || condicao.trim().length === 0) return null;
   return (
-    <p className="border-caution bg-caution/15 rounded-md border-l-2 px-2 py-1 text-sm">
+    // R3.3B §8 aliviou o peso, sem tirar a informação: era uma caixa com filete lateral e texto
+    // de 14 px, e num card cuja hierarquia é produto → preço → mercado ela competia com o preço.
+    // Continua sempre visível e sempre junto do preço — promoção sem condição é promessa que o
+    // produto não pode cumprir —, agora como nota, que é o que ela é.
+    <p className="bg-caution/25 text-caution-foreground rounded-md px-2 py-1 text-xs">
       <span className="font-semibold">Condição:</span> {condicao}
     </p>
   );

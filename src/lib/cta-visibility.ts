@@ -49,10 +49,15 @@ export function createStickyCtaStore(): StickyCtaStore {
   };
 }
 
-/** O convite do morador, na Home: `WhatsAppCta` lê, `StickyWhatsAppCta` escreve. */
-export const consumerCtaStore = createStickyCtaStore();
-
-/** O convite do dono de mercado, em `/para-mercados`. Instância própria, medição própria. */
+/**
+ * O convite do dono de mercado, em `/para-mercados` — hoje a **única** rota com CTA fixo.
+ *
+ * A loja do morador existia ao lado desta até R3.3A, quando o CTA fixo saiu da Home: o convite
+ * de lá passou a ser um só, inline, depois dos Achados, e uma duplicação que não existe mais não
+ * precisa de um mecanismo para resolvê-la. A instância por rota continua sendo a forma certa —
+ * uma variável só faria a segunda rota herdar a medição da primeira —, e é isso que
+ * `createStickyCtaStore()` garante para a próxima que precisar.
+ */
 export const marketCtaStore = createStickyCtaStore();
 
 /**

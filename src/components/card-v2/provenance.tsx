@@ -39,7 +39,7 @@ export function ValidityLabel({ validoAte }: { validoAte: string | null }) {
     );
   }
   return (
-    <span className="text-muted-foreground font-data inline-flex items-center gap-1 text-xs">
+    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs tabular-nums">
       <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
       válido até {validoAte}
     </span>
@@ -64,11 +64,21 @@ export function ProvenanceBlock({
           nenhuma: a 320 px o selo tomava a linha inteira e a validade caía sozinha embaixo,
           desalinhada; a 390 px ficavam lado a lado. Assumir a pilha nas larguras estreitas
           é escolher a que se lê melhor lá, em vez de herdar a que sobrou. */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+      {/* `items-start`, e não o `stretch` que um `flex-col` dá de graça. Sem ele o selo de fonte
+          esticava para a largura inteira do card e virava uma barra cinza de ponta a ponta — o
+          mesmo defeito que `OfferStatus` já tinha corrigido logo abaixo, e um dos elementos que
+          mais davam ao card a "aparência de formulário" que o §14 mandou tirar. Ele só apareceu
+          ao olhar o PNG; nenhuma asserção de texto pegaria. */}
+      <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
         <SourceBadge source={sourceType} />
         <ValidityLabel validoAte={procedencia.validoAte} />
       </div>
-      <p className="font-data text-muted-foreground text-xs leading-snug">
+      {/* R3.3B tirou o `font-data` desta linha e da validade. "observado em 05/08/2026 · ontem"
+          é texto corrido, e a própria regra do design system reserva a monoespaçada a dado
+          tabular de fato. Em mono, ela era o elemento que mais fazia o card parecer log de
+          sistema — o defeito exato que o mandato §7 mandou reduzir. `tabular-nums` preserva a
+          largura fixa do dígito, que é a única coisa que a mono acrescentava. */}
+      <p className="text-muted-foreground text-xs leading-snug tabular-nums">
         {`observado em ${procedencia.observadoEm} · ${procedencia.relativo}`}
       </p>
     </div>

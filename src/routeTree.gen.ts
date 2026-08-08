@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as ComoFuncionaRouteImport } from './routes/como-funciona'
 import { Route as LaboratorioCardV2RouteImport } from './routes/laboratorio-card-v2'
+import { Route as LaboratorioHomeEstadosRouteImport } from './routes/laboratorio-home-estados'
 import { Route as LaboratorioVisualRouteImport } from './routes/laboratorio-visual'
 import { Route as ParaMercadosRouteImport } from './routes/para-mercados'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
@@ -37,6 +38,11 @@ const ComoFuncionaRoute = ComoFuncionaRouteImport.update({
 const LaboratorioCardV2Route = LaboratorioCardV2RouteImport.update({
   id: '/laboratorio-card-v2',
   path: '/laboratorio-card-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaboratorioHomeEstadosRoute = LaboratorioHomeEstadosRouteImport.update({
+  id: '/laboratorio-home-estados',
+  path: '/laboratorio-home-estados',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LaboratorioVisualRoute = LaboratorioVisualRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/buscar': typeof BuscarRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/laboratorio-card-v2': typeof LaboratorioCardV2Route
+  '/laboratorio-home-estados': typeof LaboratorioHomeEstadosRoute
   '/laboratorio-visual': typeof LaboratorioVisualRoute
   '/para-mercados': typeof ParaMercadosRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/buscar': typeof BuscarRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/laboratorio-card-v2': typeof LaboratorioCardV2Route
+  '/laboratorio-home-estados': typeof LaboratorioHomeEstadosRoute
   '/laboratorio-visual': typeof LaboratorioVisualRoute
   '/para-mercados': typeof ParaMercadosRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/buscar': typeof BuscarRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/laboratorio-card-v2': typeof LaboratorioCardV2Route
+  '/laboratorio-home-estados': typeof LaboratorioHomeEstadosRoute
   '/laboratorio-visual': typeof LaboratorioVisualRoute
   '/para-mercados': typeof ParaMercadosRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/como-funciona'
     | '/laboratorio-card-v2'
+    | '/laboratorio-home-estados'
     | '/laboratorio-visual'
     | '/para-mercados'
     | '/robots.txt'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/como-funciona'
     | '/laboratorio-card-v2'
+    | '/laboratorio-home-estados'
     | '/laboratorio-visual'
     | '/para-mercados'
     | '/robots.txt'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/como-funciona'
     | '/laboratorio-card-v2'
+    | '/laboratorio-home-estados'
     | '/laboratorio-visual'
     | '/para-mercados'
     | '/robots.txt'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   BuscarRoute: typeof BuscarRoute
   ComoFuncionaRoute: typeof ComoFuncionaRoute
   LaboratorioCardV2Route: typeof LaboratorioCardV2Route
+  LaboratorioHomeEstadosRoute: typeof LaboratorioHomeEstadosRoute
   LaboratorioVisualRoute: typeof LaboratorioVisualRoute
   ParaMercadosRoute: typeof ParaMercadosRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/laboratorio-card-v2'
       fullPath: '/laboratorio-card-v2'
       preLoaderRoute: typeof LaboratorioCardV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/laboratorio-home-estados': {
+      id: '/laboratorio-home-estados'
+      path: '/laboratorio-home-estados'
+      fullPath: '/laboratorio-home-estados'
+      preLoaderRoute: typeof LaboratorioHomeEstadosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/laboratorio-visual': {
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscarRoute: BuscarRoute,
   ComoFuncionaRoute: ComoFuncionaRoute,
   LaboratorioCardV2Route: LaboratorioCardV2Route,
+  LaboratorioHomeEstadosRoute: LaboratorioHomeEstadosRoute,
   LaboratorioVisualRoute: LaboratorioVisualRoute,
   ParaMercadosRoute: ParaMercadosRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

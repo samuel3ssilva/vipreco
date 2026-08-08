@@ -128,13 +128,21 @@ describe("CTA renderizado", () => {
     vi.stubEnv("VITE_WHATSAPP_NUMBER", "5519999999999");
     const html = renderToString(createElement(WhatsAppCta));
 
-    expect(html).toContain("Receber os Achados no WhatsApp");
+    // R3.3A renomeou o rótulo e a microcopy: o bairro passou a ser dito, e a saída passou a ser
+    // uma frase completa. O convite continua sendo UM link — agora sem o CTA fixo ao lado.
+    expect(html).toContain("Receber Achados de Artemis no WhatsApp");
     expect(html.match(/https:\/\/wa\.me\//g) ?? []).toHaveLength(1);
     expect(html).toContain("Quero%20receber%20os%20Achados%20de%20Artemis");
-    expect(html).toContain("Só achados de Artemis, com preço e mercado. Sair quando quiser.");
+    expect(html).toContain("Só achados de Artemis. Você pode sair quando quiser.");
     expect(html).toContain('rel="noopener noreferrer"');
-    // Verde oficial da ação (btn-primary), não a variante verde-WhatsApp.
-    expect(html).toContain("btn-primary");
+    // R3.3B rebaixou o peso visual: o convite deixou de ser um botão verde sólido e passou a ser
+    // contornado no verde da ação. O motivo é hierarquia, não estética — o sólido da Home é o
+    // CTA de comparação, que é o núcleo do produto. A variante "verde WhatsApp" segue não
+    // aprovada, e o alvo de 48 px continua sendo obrigatório.
+    expect(html).toContain("border-primary/45");
+    expect(html).toContain("text-primary");
+    expect(html).toContain("btn-touch-48");
+    expect(html).not.toContain("btn-primary");
   });
 });
 

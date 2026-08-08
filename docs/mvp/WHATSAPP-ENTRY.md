@@ -3,11 +3,17 @@
 Decisão do PMO registrada em **30/07/2026 — horário de Brasília** (North Star v1.2.2, Assets §6,
 variante B). Implementação: `src/lib/whatsapp.ts`, `src/components/WhatsAppCta.tsx`.
 
+> **ATUALIZADO POR R3.3A** (06/08/2026, `docs/pmo/MVP-DECISION-LOG.md` DL-036): na Home, o
+> convite é **um só, inline, depois dos Achados** — o CTA fixo saiu. O rótulo passou a ser
+> **"Receber Achados de Artemis no WhatsApp"** e a microcopy, **"Só achados de Artemis. Você pode
+> sair quando quiser."**. O destino, a mensagem pré-preenchida e o "falha fechado sem número
+> configurado" não mudaram. Em `/para-mercados` nada mudou: lá o CTA fixo continua existindo.
+
 ## O que é
 
 Um **link**. Nada além disso.
 
-1. O morador toca em "Receber os Achados no WhatsApp".
+1. O morador toca em "Receber Achados de Artemis no WhatsApp".
 2. Abre a conversa individual com a mensagem já escrita: **"Quero receber os Achados de
    Artemis"**. Ele só aperta enviar.
 3. A resposta de onboarding é manual, por pessoa.
@@ -17,10 +23,10 @@ Um **link**. Nada além disso.
 
 A partir da Parte 3, `/para-mercados` usa o mesmo mecanismo com outro texto pré-preenchido:
 
-| Quem toca       | Onde                    | Mensagem                                                           |
-| --------------- | ----------------------- | ------------------------------------------------------------------ |
-| Morador         | Home (fluxo e CTA fixo) | "Quero receber os Achados de Artemis"                              |
-| Dono de mercado | `/para-mercados`        | "Tenho um mercado e quero conhecer o piloto do ViPreço em Artemis" |
+| Quem toca       | Onde                 | Mensagem                                                           |
+| --------------- | -------------------- | ------------------------------------------------------------------ |
+| Morador         | Home (um CTA inline) | "Quero receber os Achados de Artemis"                              |
+| Dono de mercado | `/para-mercados`     | "Tenho um mercado e quero conhecer o piloto do ViPreço em Artemis" |
 
 **Um número só.** Quem responde é a mesma pessoa; o texto é o que diz de onde a conversa veio.
 Ver `docs/mvp/FOR-MARKETS-PAGE.md`.

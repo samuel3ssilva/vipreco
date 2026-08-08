@@ -1317,3 +1317,204 @@ produção foi executado**.
 recebem `X-Robots-Tag`, porque `_headers` é estático e não pode variar por ambiente sem também
 bloquear a produção futura. Mitigado pelo `Disallow: /`. Ver
 `docs/security/EDGE-SECURITY-POLICY.md` § "Riscos residuais conhecidos", item 3.
+
+---
+
+### DL-036 — R3.3A: a Home entrega antes de pedir
+
+- **Data:** 06/08/2026
+- **Decisão do:** Founder/PMO, após revisar `home-achados-390.png`,
+  `home-achados-states.png` e `home-achados-comparison-board.png`
+- **Veredito do Gate:** `R3.3 VISUAL REMEDIATION REQUIRED — MINOR`
+- **PR:** #97 (`feat/r3.3-home-achados`), **sem merge**
+
+**O que foi aprovado e não muda:** direção visual, navegação de duas abas, busca na primeira
+dobra, Card v2, procedência e os sete estados. A Home **não** foi redesenhada.
+
+**Cinco ajustes, e o fio que os liga: a Home pedia antes de entregar.**
+
+**1. O CTA fixo de WhatsApp saiu.** Ele acompanhava a rolagem desde a primeira dobra — opt-in
+oferecido a quem ainda não tinha visto um Achado. Ficou **um** convite, inline, depois dos
+Achados: "Receber Achados de Artemis no WhatsApp", com "Só achados de Artemis. Você pode sair
+quando quiser.". `StickyWhatsAppCta` foi removido do repositório, e com ele a máquina de
+anti-duplicação da Home (`consumerCtaStore`, `WHATSAPP_CTA_MARKER`, o `inert` condicional). **O
+conserto de uma duplicação some junto com a duplicação** — o mecanismo continua inteiro em
+`/para-mercados`, onde o CTA fixo continua existindo e o problema é real.
+
+**2. O seletor de mercado habitual saiu da Home.** Personalização não é escopo do MVP. Ele
+**não** foi apagado do produto: continua em `/produto/$productId`, na variante compacta, onde a
+preferência tem consequência imediata. A ideia está registrada como POST-MVP em
+`ROADMAP-MVP-v3.md` §4. `home-markets.ts` ficou estacionado, com nota no cabeçalho — adiado não
+é rejeitado, e reescrever o tratamento de falha depois seria jogar trabalho fora.
+
+**3 e 4. Os dois blocos longos do rodapé viraram compactos.** "Nenhum preço aparece sozinho"
+(quatro cartões + três regras) virou "Preço com procedência" — uma frase e uma porta. "Começou em
+Artemis" virou "Feito para começar por Artemis", com a expectativa dita: poucos mercados, poucos
+produtos, ampliação depois.
+
+**A redução só foi possível porque o conteúdo mudou de lugar, não de existência.** As três regras
+— você compra na loja, o estoque é do mercado, **a ordem não é vendida** — foram para
+`/como-funciona`. A terceira é o princípio 4 de neutralidade declarado em público; ela não pode
+sumir do site, e um teste em `index.ssr.test.ts` amarra as duas pontas para que a redução não
+vire remoção silenciosa numa próxima rodada.
+
+**5. "Sem ofertas vigentes" ganhou copy própria.** Era a divergência que o próprio painel de
+estados de R3.3 registrou: os dois estados caíam em _"Estamos começando a mapear preços na sua
+região."_ — verdadeiro quando nada foi conferido, **falso** quando houve mapeamento e o preço
+envelheceu. Agora são duas telas, e a distinção é **dado, não heurística**: lista de origem vazia
+é vazio real; lista com itens e nenhum válido é oferta vencida (`src/lib/home-states.ts`). Só a
+segunda oferece "Buscar produto" — no vazio real não há o que buscar, e o botão levaria a uma
+segunda tela vazia.
+
+**As copies moram num módulo só** porque a Home e o laboratório de estados mostram a mesma
+mensagem por definição: uma evidência de Gate que exibe copy que o produto não tem é pior do que
+evidência nenhuma. O teste exigido pelo mandato verifica a **propriedade** — nenhum campo visível
+coincide entre as duas telas —, não as frases de hoje.
+
+**Escopo:** o guarda de `index.escopo.test.ts` reprovou cada arquivo novo antes de ele entrar no
+allowlist, que é a ordem certa. Banco, migrations, ranking, comparação, detalhe, `/para-mercados`,
+Worker e produção não foram tocados.
+
+### DL-037 — R3.3B: a Home volta a ter produto
+
+- **Data:** 07/08/2026
+- **Decisão do:** Founder/PMO, após revisar o checkpoint de R3.3A
+- **Veredito do Gate:** aprovado nos contratos, **reprovado na direção visual**
+- **PR:** #97 (`feat/r33-home-achados`), **sem merge**
+
+O Founder foi explícito sobre o diagnóstico e sobre a prioridade: _"Tecnicamente, a R3.3A está
+boa… PORÉM O FOUNDER NÃO APROVA A DIREÇÃO VISUAL ATUAL."_ e _"NÃO FAZER MAIS BACKEND NESTA
+MISSÃO. CONCENTRAR O ESFORÇO EM DESIGN, UX E POLIMENTO VISUAL."_ O MVP vai ser mostrado a
+consumidores de Artemis e a donos de supermercado, e para essas conversas parecer produto vale
+mais do que somar capacidade.
+
+**O fio de tudo: a Home não tinha produto.** Todo Achado era um retângulo cinza com uma silhueta
+de ícone, e o resto da tela era texto — datas em monoespaçada, um selo tracejado de fixture, dois
+parágrafos explicando o campo de busca. Nada disso estava errado; tudo somado dava um painel
+administrativo.
+
+**1. Ilustrações genéricas de categoria (§5).** Três SVGs planos em `public/img/demo/`, sem
+texto, sem embalagem, marca, logotipo ou trade dress de terceiro. O contrato do Card v2 ganhou a
+bandeira `ilustrativa`, e o teste `demo-opportunities.ilustrativas.test.ts` reprova qualquer
+oferta que a carregue sem `is_demo` — a proibição do mandato ("não tratar imagem ilustrativa como
+correspondência real de SKU") virou portão, não prosa.
+
+**As marcas do fixture passaram a ser fictícias**, e isso não é escopo extra: um desenho genérico
+ao lado do nome de uma marca existente representa a embalagem daquela marca, por mais genérico
+que seja o traço. O assessment da North Star V2 já tinha rejeitado marcas reais nas telas; esta
+rodada fechou a ponta do dado. As substitutas vêm da própria North Star V2.
+
+**Divergência registrada e não corrigida:** `supabase/seed.sql` segue com as marcas antigas, e em
+staging a Home mostrará "Serra Alta" enquanto a página do produto — que lê do banco — mostra a
+anterior. Alinhar exige reseed, que é banco, e §10 manda documentar em vez de implementar.
+
+**2. Uma anatomia, duas composições (§6).** A lista deixou de ser o `AchadoCard` e passou a ser
+`card-v2/compact.tsx`, que chama a **mesma** `montarVisaoDoCard` do destaque. Duas anatomias eram
+duas chances de uma regra ser cumprida de um lado e esquecida do outro — foi assim que o histórico
+de preço sobreviveu na Home por uma onda inteira depois de sair do Card v2 (DL-030). O
+`AchadoCard` deixou de existir; a densidade que R3.3 mediu foi preservada pela composição, não
+por um segundo componente.
+
+**3. A ênfase entre os dois CTAs se inverteu (§6).** O botão sólido da Home passou a ser o de
+comparação, que é o núcleo do produto; o convite de WhatsApp ficou contornado. A página pedia
+contato com mais força do que oferecia comparação.
+
+**4. A primeira dobra encolheu (§6, §7).** Título de sete palavras para três — "Achados em
+Artemis", que diz **menos**, não mais —, campo de busca de 56 px, atalhos em pílula, e o aviso de
+confiança discreto em vez de caixa de alerta. O cabeçalho de seção da busca saiu: duas frases
+explicando um campo com lupa, `placeholder` e quatro atalhos com nome de produto. Rótulo e
+instrução continuam no HTML, em `sr-only` — escondido visualmente não é ausente.
+
+**5. Saiu o que parecia laboratório (§7).** A moldura tracejada em monoespaçada do selo de dados
+fictícios — **a frase ficou** —, e o `font-data` das linhas de procedência. A regra é do próprio
+design system: mono só em dado tabular de fato, e "observado em 06/08/2026 · ontem" é texto
+corrido.
+
+**6. Hierarquia (§8).** Preço do destaque de 2 rem para 2,625 rem, imagem de 96 px para 112, e a
+condição de promoção como nota em vez de caixa contornada. A ordem pedida — produto, preço,
+mercado, confiança, ação — passou a ter pesos distintos em vez de seis linhas equidistantes.
+
+**7. Os sete estados (§9)** continuam sendo contrato, um a um. O que mudou foi a apresentação:
+ícone em círculo, título na tipografia de display, espaço para respirar.
+
+**Medido, não afirmado:** cinco larguras sem rolagem horizontal, duas abas em todas, zero
+controles abaixo de 48 px, zero histórico de preço, exatamente um CTA de WhatsApp, e a página
+~19% mais curta a 390 px. O guarda de escopo reprovou os treze caminhos novos antes de cada um
+entrar no allowlist com o seu motivo escrito.
+
+**Não tocado:** banco, migrations, backfill, dados reais, produção, DNS, Worker, RLS, ranking,
+comparação, detalhe da oferta, busca e `/para-mercados`.
+
+---
+
+## DL-038 — R3.3C: a convergência visual final da Home (07/08/2026)
+
+**Contexto.** O Founder aprovou o diagnóstico de R3.3B ("a Home não tinha produto") e ainda assim
+segurou o merge do PR #97 por uma última rodada: _"A R3.3B melhorou significativamente… PORÉM o
+Founder quer uma última convergência visual antes do merge."_ A pergunta da missão foi escrita
+assim: _"Conseguimos fazer a Home real parecer tão desejável quanto a referência visual, sem
+mentir, inventar cobertura ou aumentar o escopo?"_ Nenhuma linha de backend foi tocada.
+
+**1. As três ilustrações foram REDESENHADAS (§1, §11).** As de R3.3B eram corretas na política e
+fracas no reconhecimento: a 64 px — o tamanho em que aparecem na lista — o arroz lia como um pote
+com uma faixa escura. Agora o arroz é o fardo com **janela transparente e grãos à vista**, que é o
+que nomeia a categoria; o café ganhou a solda superior mais larga que o corpo (sem ela lia como
+tampa de pote) e os **grãos soltos fora do contorno**; o leite virou a caixa longa com tampa de
+rosca, que é a silhueta do leite que se vende em Artemis. A política não mudou em nada: sem
+embalagem, marca, logotipo ou trade dress de terceiro, sem `<text>` no arquivo, sem recurso
+externo, e presas por teste a dado `is_demo` nas três entidades.
+
+**2. O preço subiu para a coluna da identidade (§14).** É a mudança estrutural da rodada, e ela
+vem da própria referência aprovada: a tela 1 da North Star V2 empilha nome, marca, variante,
+quantidade e preço numa coluna só, ao lado da imagem. O card entregue em R3.3B era duas faixas
+— `[imagem | identidade]` em cima, tudo o mais em largura inteira embaixo — e sobrava um retângulo
+vazio à direita da imagem e outro à direita do preço. **Esse vazio, mais do que qualquer cor ou
+tipografia, era o que fazia a composição parecer registro em vez de produto.** A ordem do §5 e a
+ordem do DOM não mudaram; há teste novo que reprova o preço subir acima do nome.
+
+**Consequência medida:** imagem e preço passaram a dividir a mesma largura, então os dois
+escalonam **por faixa** — 96 px/2,25 rem a 320, até 128 px/3 rem a partir de `sm`. O teto de cada
+faixa é o que a coluna comporta, não o gosto.
+
+**3. Copy do §4 e do §7.** O subtexto passou de "nos mercados do bairro" para **"nos mercados
+monitorados, com data e fonte"**: "do bairro" afirma COBERTURA, e o piloto não pode sustentar
+"todos os mercados daqui". O bloco de procedência perdeu a segunda frase — o que ela dizia é o
+assunto de `/como-funciona`, para onde o botão logo abaixo leva.
+
+**4. Saiu o que parecia formulário (§14).** O botão de compartilhar deixou de ocupar a largura
+inteira colada sob o CTA verde, e o selo de fonte deixou de esticar de ponta a ponta do card (um
+`items-start` que faltava, o mesmo defeito que `OfferStatus` já tinha corrigido). **A borda do
+botão de compartilhar ficou:** ela é a correção de contraste de elemento não textual (SC 1.4.11)
+feita na Parte 2, e trocar acessibilidade por estética é a única troca que esta missão não podia
+fazer.
+
+**5. Dois testes de literal viraram testes de relação (§19: "não criar testes frágeis de pixel").**
+As asserções de hierarquia de preço fixavam `text-[2.625rem]` e `text-[1.375rem]`. Elas pegavam a
+regressão que importa — os três preços empatarem —, mas reprovavam também quando alguém só mudava
+o tamanho do destaque, que é decisão de desenho. Passaram a medir o que o produto garante: **um
+preço de destaque, maior que os dois da lista, e os dois da lista iguais entre si.**
+
+**6. §13 — a direção B2B foi registrada, e `/para-mercados` não foi tocada.**
+`docs/product/B2B-VISUAL-DIRECTION.md` guarda a referência como _future polish reference_, com a
+lista de promessas que precisam sair antes de qualquer implementação: "milhares de moradores",
+"mais clientes", "mais visibilidade" garantida, "destaque nas buscas" — esta última não é feature
+adiada, é feature **vetada** pelo princípio 4 de neutralidade —, "seguro" como promessa ampla,
+"parceiro oficial" e o cadastro de oferta pelo lojista, que não existe.
+
+**NOT VERIFIED — as duas referências visuais anexadas não chegaram.** O mandato citou dois anexos
+("A. ViPreço MVP — visão final do cliente" e "B. /para-mercados — versão final"); **a mensagem
+recebida continha apenas texto.** A convergência foi feita contra a descrição escrita do mandato e
+contra a referência **versionada** que já existe no repositório
+(`docs/product/visual-north-star-v2/telas/tela-1-home.png`), que é a coluna B do painel. Se as
+duas imagens forem versionadas depois, esta decisão deve ser reconfrontada com elas.
+
+**Medido, não afirmado:** cinco larguras sem rolagem horizontal, duas abas em todas, zero
+controles abaixo de 48 px, zero histórico de preço, exatamente um CTA de WhatsApp, e a página a
+390 px em **4356 px** — 5568 px em R3.3A, cerca de **22% mais curta**. O guarda de escopo reprovou
+`ShareAchadoButton.tsx` **antes** de a entrada existir no allowlist, que é a ordem certa.
+
+**Divergência que continua aberta:** `supabase/seed.sql` segue com as marcas antigas (DL-037).
+Alinhar exige reseed, que é banco, e banco continua fora do escopo (§18).
+
+**Não tocado:** banco, migrations, backfill, dados reais, produção, DNS, Worker, RLS, ranking,
+comparação, detalhe da oferta, busca, analytics e `/para-mercados`.

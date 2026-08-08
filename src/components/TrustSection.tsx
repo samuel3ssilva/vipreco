@@ -1,72 +1,63 @@
 import { Link } from "@tanstack/react-router";
-import { Store, CalendarDays, FileSearch, Clock3 } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 /**
- * "Nenhum preço aparece sozinho" (North Star v1.2.2, seção H do mandato da Parte 2).
+ * "Preço com procedência" — o bloco compacto da Home (R3.3A, item 3 da remediação).
  *
- * A seção existe para responder, antes que a pergunta apareça, o que o ViPreço faz e o que ele
- * não faz. Tom direto, sem jargão jurídico: cada regra é uma frase do que acontece e uma frase
- * do porquê.
+ * =============================================================================
+ * ERA UMA AULA; VIROU UMA FRASE E UMA PORTA
+ * =============================================================================
+ *
+ * A seção anterior — "Nenhum preço aparece sozinho" — ocupava quatro cartões de atributo, três
+ * regras com o seu porquê e um CTA. Ela estava certa no conteúdo e errada no lugar: quem chega
+ * na Home quer ver preço, e a explicação de por que o preço é confiável só interessa a quem já
+ * decidiu perguntar. Uma tela de descoberta que gasta um terço da rolagem explicando a si mesma
+ * empurra os Achados para longe do polegar.
+ *
+ * O conteúdo NÃO foi descartado. As três regras — você compra na loja, o estoque é do mercado, a
+ * ordem não é vendida — foram para `/como-funciona`, que é a rota que existe exatamente para
+ * isso. Aqui fica o que a Home precisa dizer: o que acompanha todo preço, e onde ler o resto.
+ *
+ * A neutralidade continua declarada em público, com todas as letras, na rota de destino. Ela é
+ * princípio inviolável do produto, não copy de apoio — e por isso a redução da Home só pôde
+ * acontecer depois de o texto existir do outro lado.
  */
-
-const ACOMPANHA = [
-  { Icon: Store, titulo: "Mercado", detalhe: "Onde o preço foi visto." },
-  { Icon: CalendarDays, titulo: "Data", detalhe: "Quando foi observado." },
-  { Icon: FileSearch, titulo: "Origem", detalhe: "De onde veio a informação." },
-  { Icon: Clock3, titulo: "Validade", detalhe: "Quando o mercado informa até quando vale." },
-] as const;
-
-const REGRAS = [
-  { regra: "Você compra na loja.", porque: "O ViPreço não altera o preço no caixa." },
-  {
-    regra: "O estoque é do mercado.",
-    porque: "O produto pode acabar antes da validade informada.",
-  },
-  { regra: "A ordem não é vendida.", porque: "Pagamento nunca muda a comparação orgânica." },
-] as const;
-
 export function TrustSection({ isDemo }: { isDemo: boolean }) {
   return (
-    <section aria-labelledby="confianca-titulo" className="card-base space-y-4">
-      <div>
-        <h2 id="confianca-titulo" className="font-display text-xl sm:text-2xl">
-          Nenhum preço aparece sozinho
-        </h2>
-        <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-          Todo preço no ViPreço chega acompanhado de mercado, data e origem — e da validade, quando
-          informada.
-        </p>
+    // R3.3B trocou o `card-base` por uma superfície calma. O bloco estava desenhado como card —
+    // borda, sombra, fundo branco —, e um card no rodapé compete pela mesma leitura que os cards
+    // de Achado logo acima, que são a coisa que a tela existe para mostrar. Aqui a informação é
+    // de apoio, e o desenho passou a dizer isso.
+    <section
+      aria-labelledby="confianca-titulo"
+      className="bg-surface/70 border-border space-y-3 rounded-xl border p-5"
+    >
+      <div className="flex items-start gap-3">
+        <ShieldCheck aria-hidden="true" className="text-primary mt-0.5 size-6 shrink-0" />
+        <div>
+          <h2 id="confianca-titulo" className="font-display text-lg leading-tight sm:text-xl">
+            Preço com procedência
+          </h2>
+          <p className="text-muted-foreground mt-1 max-w-prose text-sm">
+            Cada preço mostra mercado, fonte, atualização e validade.
+          </p>
+          {/* R3.3C §7 ("não voltar com uma seção extensa na Home") encurtou esta linha de duas
+              frases para uma. A segunda dizia que no piloto cada preço teria origem identificada —
+              informação verdadeira e útil, que é exatamente o assunto de `/como-funciona`, para
+              onde o botão logo abaixo leva. O que a Home precisa dizer aqui é só que ESTES preços
+              são fictícios, e isso continua dito. */}
+          {isDemo ? (
+            <p className="meta-text mt-1.5 max-w-prose">
+              Nesta demonstração, os preços são fictícios.
+            </p>
+          ) : null}
+        </div>
       </div>
 
-      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {ACOMPANHA.map(({ Icon, titulo, detalhe }) => (
-          <li key={titulo} className="card-compact bg-surface flex items-start gap-2">
-            <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <p className="text-sm font-bold">{titulo}</p>
-              <p className="meta-text">{detalhe}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      <ul className="grid gap-2 sm:grid-cols-3">
-        {REGRAS.map(({ regra, porque }) => (
-          <li key={regra} className="text-sm">
-            <p className="font-semibold">{regra}</p>
-            <p className="meta-text">{porque}</p>
-          </li>
-        ))}
-      </ul>
-
-      {isDemo ? (
-        <p className="text-sm text-muted-foreground">
-          Nesta demonstração, os preços são fictícios. No piloto, cada preço será publicado com
-          origem identificada.
-        </p>
-      ) : null}
-
-      <Link to="/como-funciona" className="btn-base btn-secondary btn-sm btn-touch-48">
+      <Link
+        to="/como-funciona"
+        className="btn-base btn-secondary btn-sm btn-touch-48 w-full sm:w-auto"
+      >
         Entender como funciona
       </Link>
     </section>

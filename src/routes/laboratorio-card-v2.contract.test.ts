@@ -229,13 +229,15 @@ describe("R3.2 não toca em nada que já está no ar", () => {
    * e viraria uma falha na `main` no dia em que este PR fosse mergeado.
    */
   const PROTEGIDOS = [
-    "src/routes/index.tsx",
+    // R3.3 AUTORIZOU A HOME A MUDAR. `src/routes/index.tsx`, `AppShell.tsx` e `AchadoCard.tsx`
+    // saíram desta lista em 06/08/2026, por decisão do Founder/PMO — não por afrouxamento.
+    // Quem os protege agora é `src/routes/index.escopo.test.ts`, que faz a pergunta inversa e
+    // mais forte: em vez de "a Home continua intacta?", "tudo o que mudou estava autorizado?".
+    // O resto desta lista continua valendo, e continua sendo o que esta onda não pode tocar.
     "src/routes/buscar.tsx",
     "src/routes/produto.$productId.tsx",
-    "src/components/AchadoCard.tsx",
     "src/components/PriceCard.tsx",
     "src/components/PriceSummary.tsx",
-    "src/components/AppShell.tsx",
     "src/lib/comparison.ts",
     "src/services/catalog.ts",
     "supabase/migrations",

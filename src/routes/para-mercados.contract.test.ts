@@ -187,11 +187,8 @@ describe("o shell B2B é separado do app do consumidor", () => {
  */
 describe("as rotas do consumidor não foram tocadas", () => {
   it.each([
-    "src/routes/index.tsx",
     "src/routes/buscar.tsx",
     "src/routes/produto.$productId.tsx",
-    "src/components/AppShell.tsx",
-    "src/components/AchadoCard.tsx",
     "src/components/PriceCard.tsx",
     "src/components/PriceSummary.tsx",
     "src/lib/comparison.ts",

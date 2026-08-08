@@ -10,7 +10,65 @@ Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 > ele é, e continua vinculante: hero, CTA fixo, estados da busca, alvo de toque, cascata das
 > utilities e as regras do que o card **não** faz.
 
+> **SUPERSEDED PARA A HOME POR R3.3A** (06/08/2026), em quatro pontos e só neles, todos
+> registrados em `docs/pmo/MVP-DECISION-LOG.md` DL-036:
+>
+> 1. **Não existe mais CTA fixo de WhatsApp na Home.** A seção "CTA fixo do mobile" abaixo
+>    continua descrevendo o mecanismo com precisão — mas hoje ele roda **apenas** em
+>    `/para-mercados` (`StickyMarketCta`). `StickyWhatsAppCta` foi removido do repositório, e a
+>    loja `consumerCtaStore` junto com ele.
+> 2. **Não existe mais seletor de mercado habitual na Home.** O `UsualMarketPicker` continua
+>    existindo em `/produto/$productId`; personalização na Home é POST-MVP.
+> 3. **`TrustSection` e `LocalStory` viraram blocos compactos**, com outros títulos. As três
+>    regras de confiança foram para `/como-funciona`.
+> 4. **O estado "sem ofertas vigentes" tem copy própria**, separada do vazio real
+>    (`src/lib/home-states.ts`).
+
+> **SUPERSEDED PARA A HOME POR R3.3B** (07/08/2026), em mais quatro pontos, registrados em
+> `docs/pmo/MVP-DECISION-LOG.md` DL-037. O Founder aprovou os contratos de R3.3A e **reprovou a
+> direção visual**; esta rodada é design, sem backend nenhum.
+>
+> 1. **O `AchadoCard` não existe mais.** A lista de "Outros Achados" passou a ser
+>    `card-v2/compact.tsx`, uma composição da mesma `montarVisaoDoCard` do destaque. Toda
+>    descrição de anatomia de card abaixo que se refira ao `AchadoCard` descreve um arquivo
+>    apagado — o que vale hoje é `docs/product/CARD-V2-SPEC.md` mais as duas composições.
+> 2. **Todo Achado tem imagem.** São ilustrações genéricas de categoria, criadas para a
+>    demonstração (`public/img/demo/`), com a bandeira `ilustrativa` no contrato e um teste que
+>    as prende a dado `is_demo`. Fotografia real continua dependendo da política de revisão (R6).
+> 3. **O título da Home é "Achados em Artemis"**, e a busca perdeu o cabeçalho de seção — o
+>    rótulo e a instrução do campo passaram a `sr-only`. O aviso de preço da Home é uma linha
+>    discreta; `PriceDisclaimer` segue intacto em `/buscar` e em `/produto/$productId`.
+> 4. **O CTA sólido da Home é o de comparação.** O convite de WhatsApp passou a ser contornado —
+>    secundário à descoberta e à comparação, como o mandato pede.
+
+> **SUPERSEDED PARA A HOME POR R3.3C** (07/08/2026), em mais três pontos, registrados em
+> `docs/pmo/MVP-DECISION-LOG.md` DL-038. É a convergência estética final, também sem backend.
+>
+> 1. **O preço do destaque vive na coluna da identidade**, ao lado da imagem — nome, marca,
+>    variante, quantidade e preço empilhados, como a tela 1 do North Star V2 compõe. Qualquer
+>    descrição abaixo que ponha o preço numa faixa própria de largura inteira descreve o card de
+>    R3.3B. A ORDEM não mudou: produto exato continua antes do preço, no desenho e no DOM, e há
+>    teste que reprova a inversão.
+> 2. **O subtexto da primeira dobra é "Preços observados nos mercados monitorados, com data e
+>    fonte."** "Do bairro" saiu porque afirmava cobertura — lê-se como "todos os mercados daqui".
+> 3. **As três ilustrações foram redesenhadas** para serem reconhecíveis a 64 px, que é o tamanho
+>    em que aparecem na lista. A política de imagem não mudou em nada.
+
 ## Ordem da página
+
+**Vigente desde R3.3B** (o que o código renderiza hoje — a ordem não mudou em R3.3B, só o peso
+visual de cada bloco):
+
+| #   | Seção                               | Componente                                         |
+| --- | ----------------------------------- | -------------------------------------------------- |
+| 1   | Contexto do bairro                  | `HomeContexto`                                     |
+| 2   | Busca de produto (primeira dobra)   | `ProductSearch`                                    |
+| 3   | Achados                             | `HomeAchados` + `ProductCardV2` + `AchadoCompacto` |
+| 4   | Convite de WhatsApp (inline, um só) | `WhatsAppCta`                                      |
+| 5   | Preço com procedência               | `TrustSection`                                     |
+| 6   | Feito para começar por Artemis      | `LocalStory`                                       |
+
+Histórica, da Parte 2, preservada para leitura do que mudou:
 
 | #   | Seção                          | Componente                |
 | --- | ------------------------------ | ------------------------- |
@@ -20,12 +78,12 @@ Home é servida pelo loader) e `DEMO-ENVIRONMENT.md` (que explica o modo DEMO).
 | 4   | Pertencimento local            | `LocalStory`              |
 | 5   | Entrada resumida para mercados | dentro de `LocalStory`    |
 
-O seletor de mercado habitual (`UsualMarketPicker`) fica entre 2 e 3: é ferramenta de
-comparação, e o lugar dele é junto da busca, não no meio das seções de contexto.
+O seletor de mercado habitual (`UsualMarketPicker`) ficava entre 2 e 3. Ele saiu da Home em
+R3.3A; a entrada B2B saiu de `LocalStory` na mesma rodada e vive no cabeçalho e no rodapé do
+`AppShell`, que passaram a existir em R3.3.
 
-**Não existe rodapé próprio.** A barra inferior de navegação do `AppShell` cumpre esse papel no
-mobile e a ordem termina na entrada para mercados. Criar um rodapé novo não estava no escopo da
-Parte 2.
+**Não existe rodapé próprio** — isto deixou de valer em R3.3: o `AppShell` ganhou rodapé com
+"Como funciona" e "Tenho um mercado", que são as duas páginas que perderam a aba.
 
 ## Hero: duas coreografias, uma árvore de DOM
 

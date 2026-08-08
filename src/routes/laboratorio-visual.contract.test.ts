@@ -112,11 +112,8 @@ describe("a Home e o ranking continuam intocados", () => {
    * onde `origin/main` nem existia.
    */
   it.each([
-    "src/routes/index.tsx",
-    "src/components/AchadoCard.tsx",
     "src/components/PriceCard.tsx",
     "src/components/PriceSummary.tsx",
-    "src/components/AppShell.tsx",
     "src/lib/comparison.ts",
   ])("%s não foi alterado por R3.1", (caminho) => {
     expect(compararComMain(caminho), `${caminho} mudou nesta branch`).toBe("intacto");

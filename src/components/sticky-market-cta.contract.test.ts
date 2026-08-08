@@ -157,7 +157,8 @@ describe("posição, alvo de toque e movimento", () => {
     expect(mecanismo).toContain("calc(${alturaDaBarra} +");
     // AQUI A BARRA NÃO EXISTE. `/para-mercados` passou a ter shell próprio, sem barra
     // inferior: o CTA fixo desce até a área segura em vez de flutuar 56 px acima de nada.
-    // O padrão de 3.5 rem continua valendo para quem não passa o parâmetro, que é a Home.
+    // O padrão de 3.5 rem continua sendo o do `AppShell`, para a próxima rota que tiver os dois
+    // — desde R3.3A não há nenhuma: a Home perdeu o CTA fixo, e este é o único que existe.
     expect(fixo).toContain('alturaDaBarra="0rem"');
   });
 

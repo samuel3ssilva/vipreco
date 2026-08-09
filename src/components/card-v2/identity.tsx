@@ -34,6 +34,26 @@ export function ProductIdentity({
     (v): v is string => typeof v === "string" && v.length > 0,
   );
 
+  /**
+   * O TÍTULO DO DESTAQUE É A IDENTIDADE INTEIRA — e é uma correção de coerência, não de gosto.
+   *
+   * Até aqui ele mostrava só `nome`. Numa Home cujo primeiro card diz **"Café"** e cuja busca,
+   * comparação e detalhe dizem **"Café Serra Alta Tradicional 500 g"**, a mesma coisa tem dois
+   * nomes em quatro telas — que é exatamente o que o §8 do mandato proíbe.
+   *
+   * A referência faz igual: o título é "Café Pilão Tradicional" e a linha abaixo repete
+   * "Pilão • Tradicional • 500 g". A repetição não é desperdício — o título identifica o
+   * produto de longe, e a linha abaixo separa os três campos para quem for comparar.
+   *
+   * Na variante de lista o título continua sendo só o nome: ali a embalagem tem 80 px e o card
+   * inteiro tem três linhas, e a identidade completa transformaria cada item num parágrafo.
+   */
+  const titulo = destaque
+    ? [identidade.nome, identidade.marca, identidade.variante, identidade.quantidade]
+        .filter((v): v is string => typeof v === "string" && v.length > 0)
+        .join(" ")
+    : identidade.nome;
+
   return (
     <div className="min-w-0">
       {/* `h2` porque o card vive sob o `h1` da primeira dobra. Um `h3` pularia um nível. */}
@@ -44,7 +64,7 @@ export function ProductIdentity({
           destaque ? "text-[1.35rem] leading-tight sm:text-2xl" : "text-base leading-tight",
         )}
       >
-        {identidade.nome}
+        {titulo}
       </h2>
 
       {detalhes.length > 0 ? (

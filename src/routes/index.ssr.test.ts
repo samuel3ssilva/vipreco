@@ -305,7 +305,20 @@ describe("anatomia do card oficial de Achado", () => {
     expect(html).toContain("5 kg");
     expect(html).toContain("Serra Alta");
     expect(html).toContain("500 g");
-    expect(html).not.toContain("Café Serra Alta Tradicional");
+
+    // O TÍTULO DO DESTAQUE PASSOU A SER A IDENTIDADE INTEIRA, e é deliberado: a busca, a
+    // comparação e o detalhe escrevem "Café Serra Alta Tradicional 500 g", e uma Home que
+    // chama o mesmo item de "Café" dá dois nomes à mesma coisa em quatro telas (§8).
+    //
+    // O que continua proibido — e é o que este teste passou a medir — é a LISTA concatenar.
+    // Nela a embalagem tem 80 px e o card tem três linhas: a identidade completa no título
+    // transformaria cada item num parágrafo, que foi o defeito que R3.3B corrigiu.
+    const lista = html.slice(html.indexOf("Outros Achados"));
+    expect(lista).not.toContain("Arroz Ouro do Campo Tipo 1 5 kg");
+    expect(lista).not.toContain("Leite Boa Serra Integral 1 L");
+    // e os campos continuam separados lá, cada um no seu elemento
+    expect(lista).toContain("Tipo 1 · 5 kg");
+    expect(lista).toContain("Integral · 1 L");
   });
 
   it("nenhuma marca real aparece no fixture de demonstração", () => {
@@ -496,7 +509,7 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
       secao.indexOf("/>", secao.indexOf("<img")),
       secao.indexOf("</article>"),
     );
-    const nome = card.indexOf(">Café<");
+    const nome = card.indexOf(">Café Serra Alta Tradicional 500 g<");
     const quantidade = card.indexOf("500 g");
     const preco = card.indexOf("17,49");
     expect(nome).toBeGreaterThan(-1);

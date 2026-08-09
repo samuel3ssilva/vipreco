@@ -133,8 +133,10 @@ describe("relatório", () => {
 describe("impacto sobre os dados fictícios versionados", () => {
   const produtos = produtosDoSeed();
 
-  it("o seed tem os sete produtos esperados", () => {
-    expect(produtos).toHaveLength(7);
+  it("o seed tem os nove produtos esperados", () => {
+    // Sete até 08/08/2026; nove desde que a busca por "café" passou a devolver TRÊS marcas
+    // exatas — que é a tese do produto vista em vez de explicada.
+    expect(produtos).toHaveLength(9);
     expect(produtos.map((p) => p.name)).toContain("Café");
   });
 
@@ -145,11 +147,18 @@ describe("impacto sobre os dados fictícios versionados", () => {
     expect(formatarRelatorio(colisoes, produtos.length)).toContain("Nenhuma colisão");
   });
 
-  it("os dois tamanhos do mesmo café continuam sendo produtos distintos", () => {
-    // O seed tem Café Pilão Tradicional em 500 g e em 250 g de propósito. Nenhuma
-    // mudança de normalização pode transformá-los no mesmo registro.
+  it("os quatro cafés do seed continuam sendo produtos distintos", () => {
+    // O seed tem QUATRO cafés de propósito, e eles cobrem as duas formas de "produto
+    // diferente" que o princípio 1 separa:
+    //
+    //   - Serra Alta, Montanha Clara e Vale Verde, todos 500 g — MARCAS diferentes;
+    //   - Serra Alta 500 g e Serra Alta 250 g — mesma marca, GRAMATURA diferente.
+    //
+    // Nenhuma mudança de normalização pode transformar qualquer par deles no mesmo registro.
+    // Se colidissem, a busca por "café" fundiria produtos que a comparação precisa manter
+    // separados — que é o defeito mais grave que este produto pode ter.
     const cafes = produtos.filter((p) => p.name === "Café");
-    expect(cafes).toHaveLength(2);
+    expect(cafes).toHaveLength(4);
     expect(encontrarColisoes(cafes)).toEqual([]);
   });
 });

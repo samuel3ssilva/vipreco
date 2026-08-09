@@ -110,11 +110,17 @@ describe("HTML inicial da Home (SSR)", () => {
     }
   });
 
-  it("sem destino de WhatsApp configurado, nenhum CTA e nenhum link quebrado", () => {
+  it("sem destino de WhatsApp configurado, nenhum link quebrado — e o convite não some", () => {
     // O ambiente de teste não define VITE_WHATSAPP_NUMBER — é exatamente o estado de staging
     // enquanto o número real não for cadastrado.
+    //
+    // A regra continua sendo "nenhum `wa.me` sem número". O que mudou é o que acontece no
+    // lugar: em vez de o convite desaparecer da Home, ele aponta para `/whatsapp`, a tela que
+    // explica a proposta sem prometer canal nenhum. Um convite que some quebra o fluxo da
+    // demonstração; um `wa.me` vazio quebra a confiança. Esta asserção cobre os dois.
     expect(html).not.toContain("wa.me");
     expect(html).not.toContain("Receber os Achados no WhatsApp");
+    expect(html).toContain('href="/whatsapp"');
   });
 
   it("não apresenta nenhum mercado real como participante", () => {
@@ -337,7 +343,7 @@ describe("anatomia do card oficial de Achado", () => {
     // mesmo dado, que é o sintoma de duas anatomias.
     expect(html).toContain("Verificado em pesquisa");
     expect(html).toContain("Informado pelo mercado");
-    expect(html).toContain("Oferta anunciada");
+    expect(html).toContain("Informado pelo mercado");
     // A data vem do fixture, que é relativa ao instante em que o loader roda. Fixá-la em texto
     // fazia o teste passar no dia em que foi escrito e reprovar no dia seguinte.
     expect(html).toContain(`observado em ${formatDate(arroz.observed_at)}`);
@@ -375,10 +381,12 @@ describe("anatomia do card oficial de Achado", () => {
     // Cada Achado nomeia a SUA origem, e nenhuma origem aparece mais vezes do que existe no
     // fixture — que é como se pega uma composição herdando o rótulo da outra.
     expect(arroz.source_type).toBe("store_list");
-    expect(cafe.source_type).toBe("social_media");
+    expect(cafe.source_type).toBe("store_list");
     expect(leite.source_type).toBe("weekly_audit");
-    expect(html.match(/Informado pelo mercado/g) ?? []).toHaveLength(1);
-    expect(html.match(/Oferta anunciada/g) ?? []).toHaveLength(1);
+    // Café e arroz compartilham `store_list`; o leite é `weekly_audit`. A contagem por origem
+    // é o que pega uma composição herdando o rótulo da outra — e ela tem de bater com o
+    // fixture, não com um número fixo.
+    expect(html.match(/Informado pelo mercado/g) ?? []).toHaveLength(2);
     expect(html.match(/Verificado em pesquisa/g) ?? []).toHaveLength(1);
     expect(html).not.toContain("Preço de gôndola observado, sem remarcação.");
   });
@@ -473,16 +481,24 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
     // "Produto exato antes do preço" não é preferência de leitura: um preço cujo item o leitor
     // ainda não identificou não serve para comparar nada, que é a única coisa que este produto
     // existe para fazer. Vale para o olho e para o leitor de tela, e os dois seguem o DOM.
-    // A MEDIÇÃO PULA O `alt` DA IMAGEM, e o motivo é um falso positivo real: desde que o alt
-    // passou a descrever a embalagem fictícia ("arroz Ouro do Campo, 5 kg"), ele contém
-    // "5 kg" ANTES do `<h2>` com o nome — e a asserção reprovava uma ordem que estava certa.
-    // O que interessa é a ordem do conteúdo, não a do texto alternativo, então a fatia começa
-    // depois do `<img>` do destaque.
+    // A MEDIÇÃO É FEITA DENTRO DO CARD DE DESTAQUE, E DEPOIS DO `alt` DA IMAGEM.
+    //
+    // Duas armadilhas, e as duas produziram falso positivo antes de a fatia ficar assim:
+    //
+    //  1. o `alt` da embalagem fictícia cita a gramatura ("café Serra Alta Tradicional,
+    //     500 g"), e ela aparece ANTES do `<h2>` com o nome. Medir o card inteiro reprovava
+    //     uma ordem que estava certa;
+    //  2. medir a SEÇÃO inteira encontrava o nome do segundo Achado, na lista de baixo.
+    //
+    // A fatia começa no fim do `<img>` do destaque e termina no fim do `<article>` dele.
     const secao = html.slice(html.indexOf('aria-labelledby="achados-titulo"'));
-    const card = secao.slice(secao.indexOf("</img>") + 1 || secao.indexOf('class="size-28'));
-    const nome = card.indexOf(">Arroz<");
-    const quantidade = card.indexOf("5 kg");
-    const preco = card.indexOf("26,49");
+    const card = secao.slice(
+      secao.indexOf("/>", secao.indexOf("<img")),
+      secao.indexOf("</article>"),
+    );
+    const nome = card.indexOf(">Café<");
+    const quantidade = card.indexOf("500 g");
+    const preco = card.indexOf("17,49");
     expect(nome).toBeGreaterThan(-1);
     expect(quantidade).toBeGreaterThan(nome);
     expect(preco).toBeGreaterThan(quantidade);

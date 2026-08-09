@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" role="img" aria-hidden="true" focusable="false">
+  <!--
+    ViPreço — embalagem FICTÍCIA "Vale Verde", desenhada para a demonstração.
+    Marca inventada, sem logotipo, sem trade dress de terceiro. Ver docs/data/IMAGE-POLICY.md.
+
+    Terceira silhueta da prateleira de café: lata cilíndrica com tampa plástica. Serra Alta é
+    tijolinho, Montanha Clara é pouch, esta é lata — três formas que se distinguem a 64 px,
+    que é o tamanho em que elas aparecem lado a lado na busca.
+  -->
+  <defs>
+    <linearGradient id="vv-corpo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#062e1d" />
+      <stop offset="0.12" stop-color="#0e5c3c" />
+      <stop offset="0.34" stop-color="#178a5f" />
+      <stop offset="0.55" stop-color="#12694a" />
+      <stop offset="0.82" stop-color="#0a3f29" />
+      <stop offset="1" stop-color="#052416" />
+    </linearGradient>
+    <linearGradient id="vv-tampa" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a6412" />
+      <stop offset="0.3" stop-color="#f5c24b" />
+      <stop offset="0.7" stop-color="#d9a83f" />
+      <stop offset="1" stop-color="#7a5511" />
+    </linearGradient>
+    <clipPath id="vv-clip">
+      <rect x="76" y="80" width="148" height="196" />
+    </clipPath>
+  </defs>
+
+  <ellipse cx="150" cy="282" rx="82" ry="12" fill="#10231c" opacity="0.16" />
+
+  <!-- corpo cilíndrico -->
+  <rect x="76" y="80" width="148" height="196" fill="url(#vv-corpo)" />
+  <ellipse cx="150" cy="276" rx="74" ry="14" fill="#05241e" />
+  <g clip-path="url(#vv-clip)">
+    <rect x="96" y="74" width="22" height="210" fill="#ffffff" opacity="0.22" />
+    <rect x="124" y="74" width="6" height="210" fill="#ffffff" opacity="0.12" />
+    <rect x="200" y="74" width="20" height="210" fill="#02150d" opacity="0.3" />
+
+    <!-- frisos da lata -->
+    <g fill="#02150d" opacity="0.18">
+      <rect x="70" y="240" width="160" height="5" />
+      <rect x="70" y="252" width="160" height="5" />
+    </g>
+
+    <!-- rótulo -->
+    <rect x="70" y="120" width="160" height="96" fill="#fbf7ec" />
+    <rect x="70" y="120" width="160" height="5" fill="#f5c24b" />
+    <rect x="70" y="211" width="160" height="5" fill="#f5c24b" />
+
+    <!-- vale entre duas encostas: o nome desenhado -->
+    <path d="M96 168l24-30 18 22 16-26 18 24 16-16 18 26z" fill="#0e5c3c" />
+    <path d="M120 138l8 10-8 10-8-10z" fill="#fbf7ec" />
+
+    <text x="150" y="146" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="0.5" fill="#0a3f29">VALE VERDE</text>
+    <text x="150" y="190" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="2.8" fill="#12694a">TRADICIONAL</text>
+    <text x="150" y="205" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" letter-spacing="0.6" fill="#5b6b63">CAFÉ TORRADO E MOÍDO</text>
+
+    <rect x="112" y="222" width="76" height="24" rx="12" fill="#fbf7ec" opacity="0.94" />
+    <text x="150" y="239" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a3f29">500 g</text>
+  </g>
+
+  <!-- tampa plástica -->
+  <rect x="70" y="58" width="160" height="26" rx="6" fill="url(#vv-tampa)" />
+  <ellipse cx="150" cy="58" rx="80" ry="14" fill="#f7cf6c" />
+  <ellipse cx="150" cy="58" rx="62" ry="10" fill="#e8ba4e" />
+  <g stroke="#7a5511" stroke-opacity="0.35" stroke-width="1.6">
+    <path d="M82 66v12M100 64v16M120 63v18M150 62v20M180 63v18M200 64v16M218 66v12" />
+  </g>
+
+  <!-- grãos soltos -->
+  <g transform="rotate(-24 50 280)">
+    <ellipse cx="50" cy="280" rx="12" ry="8.4" fill="#3a1410" />
+    <path d="M50 272.2c-3.2 3.7-3.2 11.9 0 15.6" fill="none" stroke="#c9a06a" stroke-width="2.1" stroke-linecap="round" />
+  </g>
+  <g transform="rotate(18 252 286)">
+    <ellipse cx="252" cy="286" rx="11" ry="7.7" fill="#4d1712" />
+    <path d="M252 278.8c-2.9 3.4-2.9 10.9 0 14.3" fill="none" stroke="#c9a06a" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>

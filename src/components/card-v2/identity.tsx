@@ -110,6 +110,10 @@ const TAMANHO_DA_IMAGEM = {
   // a 320 px sobram 144 px para a coluna com a imagem em 96, e "R$ 26,49" a 2.25rem ocupa ~130
   // deles. Cada degrau de imagem só entra na largura em que a coluna já comporta o preço maior.
   destaque: "size-28 min-[360px]:size-32 min-[430px]:size-36 sm:size-40",
+  // A ficha da oferta (tela 4) é a única em que o produto não divide a largura com uma lista:
+  // ela pode dar à embalagem o tamanho que a referência dá, e é isso que faz a tela parecer
+  // ficha comercial em vez de linha de resultado.
+  ficha: "size-32 min-[360px]:size-36 min-[430px]:size-40 sm:size-44",
 } as const;
 
 export type TamanhoDaImagem = keyof typeof TAMANHO_DA_IMAGEM;

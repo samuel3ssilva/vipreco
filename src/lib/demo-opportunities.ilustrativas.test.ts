@@ -76,7 +76,19 @@ describe("ilustração genérica só existe em dado de demonstração", () => {
 
 describe("os arquivos das ilustrações", () => {
   const PASTA = join(process.cwd(), "public", "img", "demo");
-  const arquivos = readdirSync(PASTA).filter((n) => n.endsWith(".svg"));
+  const todos = readdirSync(PASTA).filter((n) => n.endsWith(".svg"));
+
+  /**
+   * `cafe.svg` é o pictograma antigo, e ele continua no repositório por uma razão de escopo:
+   * `/para-mercados` o referencia, e o Founder CONGELOU a experiência B2B nesta rodada. Apagá-lo
+   * teria sido "aproveitar a rodada para alinhar o B2B", que o §19 proíbe com todas as letras.
+   *
+   * Ele fica fora das asserções de EMBALAGEM — que descrevem a coleção nova do B2C — e continua
+   * dentro das asserções que valem para qualquer asset: nada de marca real, nada de recurso
+   * externo. É a fronteira certa: o que muda é a direção visual do B2C, não a política.
+   */
+  const LEGADO_B2B = new Set(["cafe.svg"]);
+  const arquivos = todos.filter((n) => !LEGADO_B2B.has(n));
 
   it("existem, e todos são SVG versionado", () => {
     expect(arquivos.length).toBeGreaterThan(0);
@@ -136,7 +148,7 @@ describe("os arquivos das ilustrações", () => {
       "Prato Fino",
     ];
     let textosLidos = 0;
-    for (const nome of arquivos) {
+    for (const nome of todos) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
       // só o conteúdo desenhado; o comentário de cabeçalho cita marca nenhuma, mas o que
       // importa aqui é o que aparece NA TELA.
@@ -155,7 +167,7 @@ describe("os arquivos das ilustrações", () => {
   });
 
   it("nenhum busca recurso de fora", () => {
-    for (const nome of arquivos) {
+    for (const nome of todos) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
       expect(svg, nome).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
       expect(svg, nome).not.toContain("<script");

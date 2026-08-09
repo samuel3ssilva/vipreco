@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { getProductsPriceStats, searchProducts } from "@/services/catalog";
+import { buscarProdutos, resumirBusca } from "@/services/demo-source";
 import { searchState, type SearchState } from "@/lib/search-state";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/types/domain";
@@ -25,6 +25,14 @@ interface ProductSearchProps {
    * buscando e a tela inteira é a busca, os dois continuam visíveis.
    */
   destaque?: boolean;
+  /**
+   * Desliga o painel de sugestões.
+   *
+   * A página de resultados (`/buscar?q=…`) já É a resposta da busca. Um painel flutuante por
+   * cima dela repete os mesmos produtos em formato menor e esconde a tela que a busca acabou
+   * de produzir — foi o que a primeira captura mostrou.
+   */
+  semSugestoes?: boolean;
   onTermChange?: (term: string) => void;
 }
 
@@ -60,6 +68,7 @@ export function ProductSearch({
   initialTerm = "",
   inline = false,
   destaque = false,
+  semSugestoes = false,
   onTermChange,
 }: ProductSearchProps) {
   const navigate = useNavigate();
@@ -67,14 +76,14 @@ export function ProductSearch({
   const listId = useId();
   const [term, setTerm] = useState(initialTerm);
   const [debounced, setDebounced] = useState(initialTerm);
-  const [open, setOpen] = useState(Boolean(initialTerm));
+  const [open, setOpen] = useState(semSugestoes ? false : Boolean(initialTerm));
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTerm(initialTerm);
     setDebounced(initialTerm);
-    if (initialTerm) setOpen(true);
-  }, [initialTerm]);
+    if (initialTerm && !semSugestoes) setOpen(true);
+  }, [initialTerm, semSugestoes]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(term), 300);
@@ -88,19 +97,25 @@ export function ProductSearch({
   const enabled = debounced.trim().length >= 2;
   const { data, isFetching, isError, refetch } = useQuery({
     queryKey: ["product-search", debounced],
-    queryFn: () => searchProducts(debounced),
+    queryFn: () => buscarProdutos(debounced),
     enabled,
     staleTime: 30_000,
   });
 
   const results = data ?? [];
   const ids = results.map((product) => product.id);
-  const { data: stats } = useQuery({
+  const { data: resumos } = useQuery({
     queryKey: ["product-search-stats", ids],
-    queryFn: () => getProductsPriceStats(ids),
+    queryFn: () => resumirBusca(results),
     enabled: ids.length > 0,
     staleTime: 30_000,
   });
+  const stats = Object.fromEntries(
+    (resumos ?? []).map((r) => [
+      r.product.id,
+      { lowest: r.menorPreco, marketCount: r.mercados, lastObservedAt: null },
+    ]),
+  );
 
   useEffect(() => {
     if (inline) return;
@@ -117,7 +132,7 @@ export function ProductSearch({
   }
 
   const estado = searchState({ enabled, isFetching, isError, count: results.length });
-  const showPanel = (inline || open) && estado !== "inicial";
+  const showPanel = !semSugestoes && (inline || open) && estado !== "inicial";
 
   return (
     <div ref={containerRef} className="relative">
@@ -160,9 +175,11 @@ export function ProductSearch({
           value={term}
           onChange={(event) => {
             setTerm(event.target.value);
-            setOpen(true);
+            if (!semSugestoes) setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            if (!semSugestoes) setOpen(true);
+          }}
           role="combobox"
           aria-expanded={showPanel}
           aria-controls={listId}

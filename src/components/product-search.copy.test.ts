@@ -44,7 +44,9 @@ describe("copy e estados da busca", () => {
   });
 
   it("o painel só existe quando o estado deixa de ser inicial", () => {
-    expect(busca).toContain('const showPanel = (inline || open) && estado !== "inicial"');
+    expect(busca).toContain(
+      'const showPanel = !semSugestoes && (inline || open) && estado !== "inicial"',
+    );
   });
 });
 

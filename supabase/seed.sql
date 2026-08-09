@@ -17,7 +17,12 @@ INSERT INTO public.products (id, name, brand, variant, size_text, gtin, category
   ('22222222-2222-2222-2222-000000000004', 'Óleo de Soja', 'Vale Dourado', 'Tradicional', '900 ml', NULL, 'Mercearia', true, true),
   ('22222222-2222-2222-2222-000000000005', 'Detergente', 'Brilho Claro', 'Neutro', '500 ml', NULL, 'Limpeza', true, true),
   ('22222222-2222-2222-2222-000000000006', 'Papel Higiênico', 'Flor Macia', 'Folha Dupla', '12 rolos', NULL, 'Higiene', true, true),
-  ('22222222-2222-2222-2222-000000000007', 'Café', 'Serra Alta', 'Tradicional', '250 g', NULL, 'Mercearia', true, true)
+  ('22222222-2222-2222-2222-000000000007', 'Café', 'Serra Alta', 'Tradicional', '250 g', NULL, 'Mercearia', true, true),
+  -- Duas marcas fictícias a mais de café 500 g. Elas existem para que a busca por "café"
+  -- devolva TRÊS produtos exatos e distintos — que é a tese do produto vista em vez de
+  -- explicada: marcas diferentes são produtos diferentes, e cada um tem a sua comparação.
+  ('22222222-2222-2222-2222-000000000008', 'Café', 'Montanha Clara', 'Tradicional', '500 g', NULL, 'Mercearia', true, true),
+  ('22222222-2222-2222-2222-000000000009', 'Café', 'Vale Verde', 'Tradicional', '500 g', NULL, 'Mercearia', true, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Preços fictícios
@@ -61,6 +66,13 @@ INSERT INTO public.prices (id, product_id, market_id, price, source_type, observ
   -- Papel higiênico Flor Macia 12 rolos
   ('33333333-3333-3333-3333-000000000014', '22222222-2222-2222-2222-000000000006', '11111111-1111-1111-1111-000000000003', 24.90, 'store_list',   now() - interval '2 days', now() + interval '6 days', 'Preço válido para pagamento à vista', 'Lista enviada pelo mercado', true, true, true),
   ('33333333-3333-3333-3333-000000000015', '22222222-2222-2222-2222-000000000006', '11111111-1111-1111-1111-000000000004', 26.90, 'weekly_audit', now() - interval '4 days', NULL, NULL, 'Pesquisa semanal', false, true, true),
+  -- Café Montanha Clara 500 g e Café Vale Verde 500 g — os outros dois produtos exatos que a
+  -- busca por "café" devolve. Preços fictícios, coerentes com o fixture da demonstração.
+  ('33333333-3333-3333-3333-000000000020', '22222222-2222-2222-2222-000000000008', '11111111-1111-1111-1111-000000000003', 18.90, 'store_list',   now() - interval '1 day', now() + interval '5 days', NULL, 'Lista enviada pelo mercado', false, true, true),
+  ('33333333-3333-3333-3333-000000000021', '22222222-2222-2222-2222-000000000008', '11111111-1111-1111-1111-000000000001', 19.49, 'weekly_audit', now() - interval '2 days', NULL, NULL, 'Pesquisa semanal', false, true, true),
+  ('33333333-3333-3333-3333-000000000022', '22222222-2222-2222-2222-000000000009', '11111111-1111-1111-1111-000000000004', 21.90, 'shelf_photo',  now() - interval '2 days', NULL, NULL, 'Foto da etiqueta', false, true, true),
+  ('33333333-3333-3333-3333-000000000023', '22222222-2222-2222-2222-000000000009', '11111111-1111-1111-1111-000000000002', 22.40, 'store_list',   now() - interval '3 days', now() + interval '3 days', NULL, 'Lista enviada pelo mercado', false, true, true),
+
   -- preço inativo (não deve aparecer)
   ('33333333-3333-3333-3333-000000000016', '22222222-2222-2222-2222-000000000006', '11111111-1111-1111-1111-000000000001', 19.90, 'community',    now() - interval '2 days', NULL, NULL, 'Registro desativado na revisão', false, false, true)
 ON CONFLICT (id) DO NOTHING;

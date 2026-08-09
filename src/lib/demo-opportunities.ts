@@ -1,270 +1,56 @@
-/**
- * Fixture versionado da Home no modo DEMO (Teste MVP): os três Achados e a lista de mercados
- * do seletor "Seu mercado habitual".
- *
- * Por que existe: até este PR os três primeiros Achados eram buscados no cliente
- * (`useQuery` + Supabase), o que produzia um HTML inicial sem conteúdo e o texto
- * "Carregando oportunidades…". Com o loader da rota, a Home precisa de uma fonte que o
- * servidor possa resolver sem rede — este arquivo é essa fonte.
- *
- * Regras que este arquivo respeita (não afrouxar sem decisão do PMO):
- * - Todos os dados são **fictícios** e marcados com `is_demo: true` nas três entidades.
- * - Nenhum mercado real aparece como participante: os nomes seguem a mesma convenção
- *   genérica de `supabase/seed.sql` ("Mercado principal", "Mercado local 2"…).
- * - Sem segredo, sem telefone, sem endereço de pessoa, sem qualquer dado pessoal.
- * - Os `id` de produto e de mercado são os mesmos do seed fictício aplicado em staging,
- *   para que "Ver preços por mercado" continue abrindo a página do produto — este PR não
- *   pode quebrar a navegação existente.
- *
- * A DIVERGÊNCIA QUE ESTAVA REGISTRADA AQUI FOI RESOLVIDA, e não por reseed: `supabase/seed.sql`
- * passou a trazer estas mesmas marcas fictícias, e staging recebe as quatro por uma operação
- * de escrita controlada, `align-demo-brands`, que muda UMA coluna de QUATRO linhas nomeadas
- * por id, dentro de uma transação que se recusa a rodar contra qualquer outro estado.
- *
- * As marcas literais abaixo são, portanto, o MESMO valor que o banco guarda — e há teste que
- * reprova se uma das duas pontas mudar sem a outra (`scripts/r2/apply/apply.test.ts`).
- * Se alguém trocar "Serra Alta" aqui, precisa trocar no seed e rodar a operação; senão a Home
- * volta a chamar de um jeito o produto que a página do detalhe chama de outro.
- * - Datas são **relativas** ao momento em que o loader roda (múltiplos exatos de 24 h), para
- *   que "ontem"/"há 2 dias" e a data exibida continuem coerentes entre si em qualquer dia.
- *
- * Este arquivo não cria migration, não altera schema e não é inserido no Supabase.
- */
-import type { ImagemDeProduto, OfertaCardV2 } from "@/lib/card-v2";
-import type { Market, Product } from "@/types/domain";
-
-/** Quantidade de Achados que a Home entrega no modo DEMO. */
-export const HOME_OPPORTUNITY_COUNT = 3;
-
-/** Marcador explícito de demonstração, carregado por todo preço deste fixture. */
-export const DEMO_FIXTURE_REFERENCE = "Dado fictício de demonstração (fixture versionado)";
+import {
+  DEMO_FIXTURE_REFERENCE,
+  DEMO_MARKETS,
+  PRODUTO_ARROZ,
+  PRODUTO_CAFE_SERRA_ALTA,
+  PRODUTO_LEITE,
+  construirOfertasDemo,
+} from "@/lib/demo-catalog";
+import type { OfertaCardV2 } from "@/lib/card-v2";
 
 /**
- * Achado de demonstração.
+ * Os Achados da Home — TRÊS ofertas escolhidas do catálogo único da demonstração.
  *
- * Ele teve um `previous_price?` opcional, para alimentar o "antes R$ X" do North Star. O campo
- * saiu em R3.3 junto com o que o exibia: sem P-01 decidida (MVP-DOCS-02), não existe critério
- * escrito para QUAL observação anterior conta, e um fixture que carrega o número mantém vivo o
- * componente que o mostra. Tirar do card e deixar no dado é adiar, não decidir.
+ * =============================================================================
+ * ESTE ARQUIVO DEIXOU DE SER UMA SEGUNDA VERDADE (§8)
+ * =============================================================================
  *
- * Em R3.3B ele passou a ser `OfertaCardV2` — o mesmo tipo que o Card v2 lê — porque o fixture
- * ganhou imagem. `Opportunity` continuaria compilando (todo campo extra é opcional), e é
- * exatamente esse o problema: o dado atravessaria a Home invisível para o compilador, e a
- * imagem apareceria na tela sem existir para o tipo.
+ * Ele carregava os seus próprios produtos, mercados e imagens. Descreviam o mesmo item que o
+ * banco — `demo-identity.test.ts` garantia campo a campo —, mas eram outra lista, e "outra lista
+ * que por enquanto concorda" é a definição de divergência esperando acontecer. Foi assim que a
+ * Home mostrou "Ouro do Campo" enquanto a página do produto mostrava a marca antiga.
+ *
+ * Agora ele SELECIONA do `@/lib/demo-catalog`, que é a coleção que a busca, a comparação e o
+ * detalhe também leem. A Home não pode mais discordar delas: não há de onde discordar.
+ *
+ * A ORDEM É O GOLDEN PATH (§9). O café Serra Alta 500 g é o primeiro — logo, o destaque —,
+ * porque é por ele que a demonstração começa. Nenhum critério editorial escolhe destaque; o que
+ * existe é uma ordem fixa de fixture, e ela está escrita aqui, à vista.
  */
+export { DEMO_FIXTURE_REFERENCE, DEMO_MARKETS };
+
 export type DemoOpportunity = OfertaCardV2;
 
-/**
- * =============================================================================
- * AS ILUSTRAÇÕES, E POR QUE ELAS SÃO GENÉRICAS
- * =============================================================================
- *
- * R3.3B §5 autorizou criar assets visuais para que a Home volte a ter produto reconhecível, e
- * delimitou o que eles não podem ser: "sem copiar embalagem real, marca real, logotipo real ou
- * trade dress de terceiros". São desenhos planos de **categoria** — um pacote, um saco, uma
- * caixa —, versionados em `public/img/demo/`, e nenhum deles reproduz produto de ninguém.
- *
- * Foi por essa mesma razão que as marcas do fixture deixaram de ser reais nesta rodada. Um
- * desenho genérico ao lado do nome de uma marca existente **é** a representação da embalagem
- * daquela marca, por mais genérico que o traço seja — o nome faz o trabalho que o desenho se
- * absteve de fazer. As substitutas vêm da North Star V2, que o Founder já aprovou, e seguem a
- * mesma convenção dos mercados fictícios: nada aqui aponta para uma empresa real.
- *
- * É o mesmo raciocínio que já tinha tirado o GTIN do café: um código válido pertence a algum
- * produto real, e ausência é o estado honesto.
- */
-function ilustracao(arquivo: string, descricao: string): ImagemDeProduto {
-  return {
-    src: `/img/demo/${arquivo}`,
-    // O `alt` diz o que a imagem É. Chamá-la de "foto do produto" seria a afirmação que o
-    // princípio 11 proíbe — e quem usa leitor de tela é justamente quem não pode conferir
-    // olhando que aquilo é um desenho.
-    alt: `Ilustração: ${descricao} — desenho próprio, não é foto do produto`,
-    review_status: "approved",
-    variant_match: "exact",
-    ilustrativa: true,
-  };
-}
+/** Quantos Achados a Home pede à fonte. */
+export const HOME_OPPORTUNITY_COUNT = 3;
 
-const MARKET_PRINCIPAL: Market = {
-  id: "11111111-1111-1111-1111-000000000001",
-  name: "Mercado principal",
-  neighborhood: "Centro",
-  address: "Rua Exemplo, 100 - Artemis",
-  maps_url: "https://maps.google.com/?q=-22.5,-47.5",
-  is_active: true,
-  is_demo: true,
-};
+/** As três ofertas da Home, na ordem em que aparecem. */
+const ACHADOS_DA_HOME = [
+  { produto: PRODUTO_CAFE_SERRA_ALTA.id, oferta: "demo-price-cafe-serra-alta-m2" },
+  { produto: PRODUTO_ARROZ.id, oferta: "demo-price-arroz-m3" },
+  { produto: PRODUTO_LEITE.id, oferta: "demo-price-leite-m1" },
+] as const;
 
-const MARKET_LOCAL_2: Market = {
-  id: "11111111-1111-1111-1111-000000000002",
-  name: "Mercado local 2",
-  neighborhood: "Jardim Novo",
-  address: "Rua Exemplo, 200 - Artemis",
-  maps_url: "https://maps.google.com/?q=-22.51,-47.51",
-  is_active: true,
-  is_demo: true,
-};
-
-const MARKET_LOCAL_3: Market = {
-  id: "11111111-1111-1111-1111-000000000003",
-  name: "Mercado local 3",
-  neighborhood: "Vila Antiga",
-  address: "Rua Exemplo, 300 - Artemis",
-  maps_url: null,
-  is_active: true,
-  is_demo: true,
-};
-
-const MARKET_LOCAL_4: Market = {
-  id: "11111111-1111-1111-1111-000000000004",
-  name: "Mercado local 4",
-  neighborhood: "Beira Rio",
-  address: "Rua Exemplo, 400 - Artemis",
-  maps_url: "https://maps.google.com/?q=-22.52,-47.52",
-  is_active: true,
-  is_demo: true,
-};
-
-/**
- * Mercados fictícios oferecidos no seletor "Seu mercado habitual" em modo DEMO.
- *
- * São os mesmos quatro do seed fictício de staging, na mesma ordem alfabética que
- * `getMarkets()` devolveria: assim a escolha feita aqui continua válida na página do produto,
- * que lê o preço por mercado do banco. Nenhum mercado real aparece como participante.
- */
-export const DEMO_MARKETS: readonly Market[] = [
-  MARKET_LOCAL_2,
-  MARKET_LOCAL_3,
-  MARKET_LOCAL_4,
-  MARKET_PRINCIPAL,
-];
-
-const PRODUCT_ARROZ: Product = {
-  id: "22222222-2222-2222-2222-000000000001",
-  name: "Arroz",
-  brand: "Ouro do Campo",
-  variant: "Tipo 1",
-  size_text: "5 kg",
-  // Sem GTIN, pela mesma razão que o café: um código de barras VÁLIDO pertence a um produto
-  // real, e pendurá-lo numa identidade fictícia é dizer que "Ouro do Campo" tem o código de
-  // outra marca. Ausente é o estado honesto, e o contrato de fixture agora exige isso.
-  gtin: null,
-  category: "Mercearia",
-  is_active: true,
-  is_demo: true,
-};
-
-const PRODUCT_CAFE: Product = {
-  id: "22222222-2222-2222-2222-000000000002",
-  name: "Café",
-  brand: "Serra Alta",
-  variant: "Tradicional",
-  size_text: "500 g",
-  // Sem GTIN de propósito. O produto é fictício, e o valor que estava aqui reprovava no
-  // dígito verificador GS1: um código inválido em dado de demonstração vira defeito assim
-  // que a validação de MVP-E1-05 existir. Trocar por um código válido seria pior — um GTIN
-  // válido pertence a algum produto real. GTIN é opcional, e ausente é o estado honesto.
-  gtin: null,
-  category: "Mercearia",
-  is_active: true,
-  is_demo: true,
-};
-
-const PRODUCT_LEITE: Product = {
-  id: "22222222-2222-2222-2222-000000000003",
-  name: "Leite",
-  brand: "Boa Serra",
-  variant: "Integral",
-  size_text: "1 L",
-  gtin: null,
-  category: "Laticínios",
-  is_active: true,
-  is_demo: true,
-};
-
-const DAY_IN_MS = 86_400_000;
-
-/**
- * Instante exatamente `offsetDays` dias antes/depois de `now`. Múltiplo exato de 24 h de
- * propósito: é assim que `formatRelativeDay` conta, então "ontem" nunca aparece ao lado de uma
- * data que não é a de ontem.
- */
-function offsetByDays(now: Date, offsetDays: number): string {
-  return new Date(now.getTime() + offsetDays * DAY_IN_MS).toISOString();
-}
-
-/**
- * Os três Achados fictícios da Home, já na ordem em que aparecem (observação mais recente
- * primeiro), espelhando preços destacados do seed fictício de staging.
- */
 export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[] {
-  const observedYesterday = offsetByDays(now, -1);
-  const observedTwoDaysAgo = offsetByDays(now, -2);
-
-  return [
-    {
-      id: "demo-fixture-price-arroz-mercado-local-3",
-      product_id: PRODUCT_ARROZ.id,
-      market_id: MARKET_LOCAL_3.id,
-      price: 26.49,
-      source_type: "store_list",
-      observed_at: observedYesterday,
-      valid_until: offsetByDays(now, 5),
-      special_condition: "Limite de 2 unidades por cliente",
-      source_reference: DEMO_FIXTURE_REFERENCE,
-      is_featured: true,
-      is_active: true,
-      is_demo: true,
-      created_at: observedYesterday,
-      market: MARKET_LOCAL_3,
-      product: PRODUCT_ARROZ,
-      image: ilustracao(
-        "arroz-ouro-do-campo.svg",
-        "embalagem fictícia de arroz Ouro do Campo, 5 kg",
-      ),
-    },
-    {
-      id: "demo-fixture-price-cafe-mercado-local-2",
-      product_id: PRODUCT_CAFE.id,
-      market_id: MARKET_LOCAL_2.id,
-      price: 17.49,
-      source_type: "social_media",
-      observed_at: observedTwoDaysAgo,
-      valid_until: offsetByDays(now, 3),
-      special_condition: "Oferta válida enquanto durar o estoque",
-      source_reference: DEMO_FIXTURE_REFERENCE,
-      is_featured: true,
-      is_active: true,
-      is_demo: true,
-      created_at: observedTwoDaysAgo,
-      market: MARKET_LOCAL_2,
-      product: PRODUCT_CAFE,
-      image: ilustracao(
-        "cafe-serra-alta.svg",
-        "embalagem fictícia de café Serra Alta Tradicional, 500 g",
-      ),
-    },
-    {
-      id: "demo-fixture-price-leite-mercado-principal",
-      product_id: PRODUCT_LEITE.id,
-      market_id: MARKET_PRINCIPAL.id,
-      price: 5.29,
-      source_type: "weekly_audit",
-      observed_at: observedTwoDaysAgo,
-      valid_until: null,
-      special_condition: null,
-      source_reference: DEMO_FIXTURE_REFERENCE,
-      is_featured: true,
-      is_active: true,
-      is_demo: true,
-      created_at: observedTwoDaysAgo,
-      market: MARKET_PRINCIPAL,
-      product: PRODUCT_LEITE,
-      image: ilustracao(
-        "leite-boa-serra.svg",
-        "embalagem fictícia de leite Boa Serra Integral, 1 L",
-      ),
-    },
-  ];
+  const todas = construirOfertasDemo(now);
+  return ACHADOS_DA_HOME.map(({ oferta }) => {
+    const encontrada = todas.find((o) => o.id === oferta);
+    if (encontrada === undefined) {
+      // Falha ALTA e cedo. Um Achado da Home apontando para uma oferta que não existe mais no
+      // catálogo é o defeito que este arquivo inteiro existe para impedir; devolver a lista
+      // menor em silêncio esconderia exatamente isso.
+      throw new Error(`Achado da Home aponta para oferta inexistente: ${oferta}`);
+    }
+    return encontrada;
+  });
 }

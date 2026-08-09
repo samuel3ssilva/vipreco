@@ -70,10 +70,10 @@ function produtosDoSeed(): IdentidadeDoSeed[] {
 const SEED_PRODUTOS = produtosDoSeed();
 
 describe("o seed de demonstração é legível, e tem o que dizemos que tem", () => {
-  it("as sete linhas de products foram lidas", () => {
+  it("as nove linhas de products foram lidas", () => {
     // Sem esta asserção, um seed reformatado faria o parser devolver zero e TODAS as
     // comparações abaixo passariam sem comparar nada.
-    expect(SEED_PRODUTOS).toHaveLength(7);
+    expect(SEED_PRODUTOS).toHaveLength(9);
   });
 
   it("nenhum produto de demonstração tem GTIN", () => {

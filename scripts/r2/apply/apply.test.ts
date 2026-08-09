@@ -426,7 +426,11 @@ describe("o SQL de alinhamento das marcas demo", () => {
     // As marcas de destino são exatamente as que a Home mostra. Se alguém trocar uma das
     // duas pontas sem trocar a outra, o alinhamento passa a desalinhar — que é o defeito
     // que ele existe para consertar.
-    const fixture = readFileSync(join(RAIZ, "src/lib/demo-opportunities.ts"), "utf-8");
+    // A FONTE MUDOU DE ARQUIVO, NÃO DE PAPEL. As marcas viviam em `demo-opportunities.ts`,
+    // que era o fixture próprio da Home; desde 08/08/2026 a Home apenas SELECIONA do catálogo
+    // único que a busca, a comparação e o detalhe também leem. É lá que os literais estão, e é
+    // contra ele que o alinhamento do banco precisa continuar batendo.
+    const fixture = readFileSync(join(RAIZ, "src/lib/demo-catalog.ts"), "utf-8");
     for (const marca of ["Ouro do Campo", "Serra Alta", "Boa Serra"]) {
       expect(ALINHAMENTO, `o alinhamento não cita ${marca}`).toContain(`'${marca}'`);
       expect(fixture, `o fixture não usa ${marca}`).toContain(`"${marca}"`);

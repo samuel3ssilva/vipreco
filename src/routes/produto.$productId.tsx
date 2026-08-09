@@ -1,36 +1,50 @@
-import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Info } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { PriceCard } from "@/components/PriceCard";
-import { PriceSummary } from "@/components/PriceSummary";
-import { PriceDisclaimer } from "@/components/PriceDisclaimer";
+import { OfferRankRow } from "@/components/OfferRankRow";
+import { ProductImage } from "@/components/card-v2/identity";
 import { StateMessage } from "@/components/StateMessage";
-import { UsualMarketPicker } from "@/components/UsualMarketPicker";
-import { SectionHeader } from "@/components/PageContainer";
-import { getProductComparison } from "@/services/catalog";
-import { compareWithUsualMarket } from "@/lib/comparison";
-import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
-import { getUsualMarketId } from "@/lib/local-preferences";
+import { ShareAchadoButton } from "@/components/ShareAchadoButton";
+import { DemoNote } from "@/components/DemoNote";
+import { appMode, isDemoMode } from "@/lib/app-mode";
+import { carregarComparacao, imagemDoProduto } from "@/services/demo-source";
+import { absoluteAssetUrl } from "@/lib/og";
+import { formatPrice, formatProductName } from "@/lib/format";
 
-// Onda 3 (checkpoint PMO 2026-07-29): SubmitPriceForm, DecisionFeedback e o fluxo de
-// "acompanhar produto" (product_watch_requests) foram deliberadamente removidos da renderização
-// desta rota — as tabelas que essas ações escrevem tiveram o INSERT público fechado (ver
-// supabase/migrations/20260729223000_close_public_write_surfaces.sql). Os componentes continuam
-// no repositório, intocados, para religar quando a superfície de escrita for reaberta.
+const DEFAULT_TITLE = "Comparar produto — ViPreço";
 
-const DEFAULT_TITLE = "Comparar preços do produto — ViPreço";
-const DEFAULT_DESCRIPTION =
-  "Compare o preço válido mais recente de cada mercado para o mesmo produto e veja a diferença em relação ao seu mercado habitual.";
-
+/**
+ * =============================================================================
+ * TELA 3 DO NORTH STAR — COMPARAÇÃO DO PRODUTO
+ * =============================================================================
+ *
+ * O que esta tela era: um cabeçalho com categoria e nome, um bloco "Melhor preço encontrado"
+ * com quatro linhas de metadados, um seletor de mercado habitual, uma lista de `PriceCard` com
+ * diferença em reais e percentual, e um aviso. Sete blocos, cada um com a sua moldura.
+ *
+ * O que a referência mostra: uma seta, um título, o produto identificado uma vez, e uma lista
+ * numerada onde cada linha é **mercado, bairro, preço, procedência**. Nada mais.
+ *
+ * As três decisões desta reconstrução:
+ *
+ *  1. **O produto é dito UMA vez**, no topo, com a embalagem ao lado e o selo "Produto exato".
+ *     O bloco de resumo que repetia preço, mercado, data e fonte saiu: ele dizia de novo, em
+ *     formato de ficha, o que a primeira linha da lista já diz.
+ *  2. **A contagem é medida, nunca escrita à mão** (§4: "não inventar"). "Comparação em 3
+ *     mercados" é `entries.length`, e some quando há um só.
+ *  3. **O seletor de mercado habitual saiu desta tela.** Ele é personalização, e o §11 do
+ *     mandato anterior já tinha tirado da Home pelo mesmo motivo — na demonstração ele é um
+ *     controle a mais entre a pessoa e a comparação. A preferência continua no produto; o que
+ *     saiu foi o controle desta tela.
+ */
 export const Route = createFileRoute("/produto/$productId")({
-  loader: ({ params }) => getProductComparison(params.productId),
+  loader: ({ params }) => carregarComparacao(params.productId, appMode()),
   head: ({ loaderData }) => {
-    const lowest = loaderData?.entries[0];
+    const menor = loaderData?.entries[0];
     const title = loaderData ? `${formatProductName(loaderData.product)} — ViPreço` : DEFAULT_TITLE;
-    const description = lowest
-      ? `A partir de ${formatPrice(lowest.price)} no ${lowest.market.name}. Preço válido mais recente por mercado, fonte da informação e data da observação.`
-      : DEFAULT_DESCRIPTION;
+    const description = menor
+      ? `A partir de ${formatPrice(menor.price)} no ${menor.market.name}. Preço observado em cada mercado, com fonte, data e validade.`
+      : "Compare o preço observado do mesmo produto em cada mercado monitorado, com fonte, data e validade.";
 
     return {
       meta: [
@@ -62,46 +76,7 @@ export const Route = createFileRoute("/produto/$productId")({
 });
 
 function ProductPage() {
-  const { productId } = Route.useParams();
-  const loaderData = Route.useLoaderData();
-  const [usualMarketId, setUsual] = useState<string | null>(null);
-
-  useEffect(() => {
-    setUsual(getUsualMarketId());
-  }, [productId]);
-
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ["product-comparison", productId],
-    queryFn: () => getProductComparison(productId),
-    staleTime: 30_000,
-    initialData: loaderData ?? undefined,
-  });
-
-  const comparison = useMemo(
-    () => compareWithUsualMarket(data?.entries ?? [], usualMarketId),
-    [data, usualMarketId],
-  );
-
-  if (isPending) {
-    return (
-      <AppShell>
-        <StateMessage variant="loading" title="Carregando preços…" />
-      </AppShell>
-    );
-  }
-
-  if (isError) {
-    return (
-      <AppShell>
-        <StateMessage
-          variant="error"
-          title="Não conseguimos carregar os preços."
-          description="Verifique sua conexão e tente novamente."
-          onRetry={() => refetch()}
-        />
-      </AppShell>
-    );
-  }
+  const data = Route.useLoaderData();
 
   if (!data) {
     return (
@@ -109,8 +84,9 @@ function ProductPage() {
         <StateMessage
           variant="empty"
           title="Produto não encontrado."
-          description={
-            <Link to="/buscar" className="underline">
+          description="Ele pode ter saído do catálogo, ou o endereço está incompleto."
+          action={
+            <Link to="/buscar" className="btn-base btn-secondary btn-touch-48">
               Buscar outro produto
             </Link>
           }
@@ -119,63 +95,94 @@ function ProductPage() {
     );
   }
 
-  const { product, entries, lastUpdatedAt } = data;
-  const isDemo = product.is_demo || entries.some((entry) => entry.is_demo);
-  const lowest = entries[0]?.price ?? 0;
+  const { product, entries } = data;
+  const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
+  const menor = entries[0];
 
   return (
     <AppShell>
-      <div className="space-y-5">
-        <header className="space-y-1">
-          <p className="eyebrow">{product.category ?? "Produto"}</p>
-          <h1 className="text-xl font-bold sm:text-2xl">{product.name}</h1>
-          <p className="meta-text">
-            {product.brand ?? "Marca não informada"} · {product.variant ?? "Variante única"} ·{" "}
-            {product.size_text ?? "Tamanho não informado"}
-          </p>
-          <p className="meta-text">
-            {lastUpdatedAt
-              ? `${entries.length} ${entries.length === 1 ? "mercado" : "mercados"} · Preço mais recente em ${formatDate(lastUpdatedAt)} (${formatRelativeDay(lastUpdatedAt)})`
-              : "Ainda não há preços válidos cadastrados para este produto."}
-          </p>
-        </header>
+      <div className="mx-auto max-w-xl space-y-4">
+        {/* SETA · TÍTULO · COMPARTILHAR — a mesma barra da referência. */}
+        <div className="flex items-center gap-2">
+          <Link
+            to="/buscar"
+            aria-label="Voltar para a busca"
+            className="btn-base btn-quiet size-12 shrink-0 rounded-full p-0"
+          >
+            <ArrowLeft aria-hidden="true" className="size-5" />
+          </Link>
+          <h1 className="font-display flex-1 text-center text-base font-bold">Comparar produto</h1>
+          {menor ? (
+            <ShareAchadoButton
+              payload={{
+                produto: formatProductName(product),
+                preco: menor.price,
+                mercado: menor.market.name,
+                validUntil: menor.valid_until,
+                url: absoluteAssetUrl(`/produto/${product.id}`),
+                isDemo: isDemoMode(),
+              }}
+            />
+          ) : (
+            <span className="size-12 shrink-0" />
+          )}
+        </div>
+
+        {/* O PRODUTO, UMA VEZ. */}
+        <div className="flex items-start gap-4">
+          <ProductImage
+            imagem={imagemDoProduto(product.id)}
+            categoria={product.category}
+            tamanho="destaque"
+            prioridade
+          />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-display text-xl leading-tight font-bold sm:text-2xl">
+              {formatProductName(product)}
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">{detalhes}</p>
+            {/* "Produto exato" é o selo da referência, e aqui ele é literal: a comparação usa
+                um único `product_id`, e nada de tamanho ou marca diferente entra nela. */}
+            <p className="bg-secondary text-secondary-foreground mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold">
+              Produto exato
+            </p>
+          </div>
+        </div>
 
         {entries.length === 0 ? (
-          <>
-            <PriceDisclaimer showDemoNotice={isDemo} />
-            <StateMessage
-              variant="empty"
-              title="Nenhum preço válido cadastrado."
-              description="Ainda não há preços válidos cadastrados para este produto."
-            />
-          </>
+          <StateMessage
+            variant="empty"
+            title="Nenhum preço válido neste momento."
+            description="Os preços que tínhamos deste produto venceram ou saíram do ar."
+          />
         ) : (
           <>
-            <PriceSummary best={entries[0]} comparison={comparison} />
+            <div>
+              <h3 className="font-display text-base leading-tight font-bold">
+                {entries.length === 1
+                  ? "Preço observado em 1 mercado"
+                  : `Comparação em ${entries.length} mercados`}
+              </h3>
+              <p className="text-muted-foreground mt-0.5 text-sm">
+                Do menor para o maior. Um preço por mercado, o mais recente.
+              </p>
+            </div>
 
-            <UsualMarketPicker compact onChange={setUsual} />
+            <ul className="space-y-2.5">
+              {entries.map((entry, i) => (
+                <OfferRankRow key={entry.id} entry={entry} posicao={i + 1} productId={product.id} />
+              ))}
+            </ul>
 
-            <section aria-labelledby="precos-titulo" className="space-y-2">
-              <SectionHeader
-                id="precos-titulo"
-                title="Preços por mercado"
-                description="Preço válido mais recente de cada mercado, do menor para o maior."
-                display={false}
-              />
-              <ul className="space-y-2">
-                {entries.map((entry, index) => (
-                  <PriceCard
-                    key={entry.id}
-                    entry={entry}
-                    isLowest={index === 0}
-                    isUsualMarket={entry.market_id === usualMarketId}
-                    differenceToLowest={Number((entry.price - lowest).toFixed(2))}
-                  />
-                ))}
-              </ul>
-            </section>
+            <p className="bg-caution/25 text-caution-foreground flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs">
+              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <span>
+                <strong className="font-semibold">Importante.</strong> Preços e condições podem
+                mudar. Confira no mercado antes de comprar.
+              </span>
+            </p>
 
-            <PriceDisclaimer showDemoNotice={isDemo} />
+            <DemoNote />
           </>
         )}
       </div>

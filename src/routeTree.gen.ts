@@ -18,7 +18,9 @@ import { Route as LaboratorioVisualRouteImport } from './routes/laboratorio-visu
 import { Route as ParaMercadosRouteImport } from './routes/para-mercados'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as ProdutoProductIdRouteImport } from './routes/produto.$productId'
+import { Route as ProdutoProductIdOfertaPriceIdRouteImport } from './routes/produto_.$productId.oferta.$priceId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,11 +67,22 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WhatsappRoute = WhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutoProductIdRoute = ProdutoProductIdRouteImport.update({
   id: '/produto/$productId',
   path: '/produto/$productId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProdutoProductIdOfertaPriceIdRoute =
+  ProdutoProductIdOfertaPriceIdRouteImport.update({
+    id: '/produto_/$productId/oferta/$priceId',
+    path: '/produto/$productId/oferta/$priceId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,7 +94,9 @@ export interface FileRoutesByFullPath {
   '/para-mercados': typeof ParaMercadosRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/whatsapp': typeof WhatsappRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
+  '/produto/$productId/oferta/$priceId': typeof ProdutoProductIdOfertaPriceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,7 +108,9 @@ export interface FileRoutesByTo {
   '/para-mercados': typeof ParaMercadosRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/whatsapp': typeof WhatsappRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
+  '/produto/$productId/oferta/$priceId': typeof ProdutoProductIdOfertaPriceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,7 +123,9 @@ export interface FileRoutesById {
   '/para-mercados': typeof ParaMercadosRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/whatsapp': typeof WhatsappRoute
   '/produto/$productId': typeof ProdutoProductIdRoute
+  '/produto_/$productId/oferta/$priceId': typeof ProdutoProductIdOfertaPriceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,7 +139,9 @@ export interface FileRouteTypes {
     | '/para-mercados'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/whatsapp'
     | '/produto/$productId'
+    | '/produto/$productId/oferta/$priceId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -132,7 +153,9 @@ export interface FileRouteTypes {
     | '/para-mercados'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/whatsapp'
     | '/produto/$productId'
+    | '/produto/$productId/oferta/$priceId'
   id:
     | '__root__'
     | '/'
@@ -144,7 +167,9 @@ export interface FileRouteTypes {
     | '/para-mercados'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/whatsapp'
     | '/produto/$productId'
+    | '/produto_/$productId/oferta/$priceId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,7 +182,9 @@ export interface RootRouteChildren {
   ParaMercadosRoute: typeof ParaMercadosRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  WhatsappRoute: typeof WhatsappRoute
   ProdutoProductIdRoute: typeof ProdutoProductIdRoute
+  ProdutoProductIdOfertaPriceIdRoute: typeof ProdutoProductIdOfertaPriceIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -225,11 +252,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/whatsapp': {
+      id: '/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/produto/$productId': {
       id: '/produto/$productId'
       path: '/produto/$productId'
       fullPath: '/produto/$productId'
       preLoaderRoute: typeof ProdutoProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/produto_/$productId/oferta/$priceId': {
+      id: '/produto_/$productId/oferta/$priceId'
+      path: '/produto/$productId/oferta/$priceId'
+      fullPath: '/produto/$productId/oferta/$priceId'
+      preLoaderRoute: typeof ProdutoProductIdOfertaPriceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -245,7 +286,9 @@ const rootRouteChildren: RootRouteChildren = {
   ParaMercadosRoute: ParaMercadosRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  WhatsappRoute: WhatsappRoute,
   ProdutoProductIdRoute: ProdutoProductIdRoute,
+  ProdutoProductIdOfertaPriceIdRoute: ProdutoProductIdOfertaPriceIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

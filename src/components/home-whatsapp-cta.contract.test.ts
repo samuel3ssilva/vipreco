@@ -98,8 +98,20 @@ describe("um convite de WhatsApp na Home, e um só", () => {
     expect(cta).not.toMatch(/#25d366/i);
   });
 
-  it("falha fechado: sem destino configurado, nada é renderizado", () => {
-    expect(cta).toContain("if (!href) return null;");
+  it("falha fechado: sem destino configurado, nenhum link de WhatsApp é montado", () => {
+    // A REGRA MUDOU DE FORMA, NÃO DE CONTEÚDO.
+    //
+    // Era "sem número, devolve `null`" — o componente sumia da Home. Isso protegia contra o
+    // defeito certo (um botão que abre conversa com ninguém) e criava outro: o golden path da
+    // demonstração termina na tela `/whatsapp`, e uma Home que esconde a entrada quebra o
+    // fluxo que precisa ser mostrado.
+    //
+    // Agora o convite continua, e o que muda é o DESTINO: com número, `wa.me`; sem número, a
+    // rota que explica o convite sem prometer canal. O que esta asserção protege é o que
+    // sempre importou — `wa.me` só existe atrás de `href`, que só existe com número.
+    expect(cta).toContain("{href ? (");
+    expect(cta).toContain('to="/whatsapp"');
+    expect(cta).not.toContain("wa.me");
   });
 
   it("não carrega nenhum número escrito no código", () => {

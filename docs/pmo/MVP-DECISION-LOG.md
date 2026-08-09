@@ -1684,3 +1684,74 @@ decidi aqui.
 
 **Não tocado:** produção, DNS, migrations, RLS, backfill, dado real, preços, mercados, ranking,
 comparação e analytics.
+
+---
+
+## DL-042 — A convergência B2C com o North Star, e o catálogo que virou um só (08/08/2026)
+
+- **Decisão do:** Founder, no mandato B2C NORTH STAR REBUILD + a autorização de continuar
+- **Executado por:** CTO, com autonomia declarada no §1 ("não retornar após cada tela")
+- **Reversível:** sim, em todas as partes. Nada de banco, nada de produção.
+
+**O Founder reprovou a experiência B2C visualmente** — "muito sistema, pouco produto" — e
+anexou a imagem `vipreco-mvp-north-star.png` como autoridade visual principal. Cinco telas.
+
+## A causa raiz não era visual, era de dado
+
+A Home lia um fixture próprio; a busca, a comparação e o detalhe liam o banco. Os dois
+**descreviam** o mesmo produto — `demo-identity.test.ts` já comparava campo a campo — e só um
+deles tinha imagem. Tocar numa embalagem de café na Home levava a uma página com um retângulo
+cinza no lugar dela.
+
+Nenhuma quantidade de refinamento de CSS conserta isso. `src/lib/demo-catalog.ts` passou a ser
+a coleção única, e a Home apenas **seleciona** dela. As quatro telas não podem mais discordar:
+não há de onde discordar.
+
+## As embalagens
+
+Os três pictogramas planos saíram; entraram nove embalagens fictícias com fundo transparente,
+proporção de embalagem real, verniz por gradiente e rótulo com marca, descritor e gramatura.
+Três cafés de 500 g com **silhuetas diferentes** — tijolinho, pouch e lata — porque três marcas
+diferentes são três produtos diferentes, e três pacotes iguais recoloridos leriam como o mesmo
+item. O café de 250 g é visivelmente menor que o de 500 g.
+
+## Uma regra de teste que proibia exatamente o que foi pedido
+
+`"nenhum SVG carrega <text>"` existia para impedir marca desenhada. Mas embalagem sem rótulo não
+é embalagem — é pictograma —, e o §15 pedia rótulo. **Proibir texto nunca foi o objetivo;
+proibir MARCA REAL era.** A asserção passou a ler cada string desenhada e exigir que nenhuma
+nomeie marca existente, com contagem mínima anti-vacuidade. É mais forte que a anterior, que nem
+olhava para o conteúdo: um SVG com logotipo real em `<path>` passava por ela.
+
+## O guarda de onda mordeu pela quarta vez — e desta vez virou do avesso
+
+`"as rotas do consumidor não foram tocadas"` era escopo da onda B2B-0, encerrada. Ele passou a
+ser **ativamente falso**: as telas 2 e 3 são a reconstrução autorizada. Em vez de apagá-lo, ele
+foi INVERTIDO para a pergunta viva do §19 — `/para-mercados` e os três componentes B2B continuam
+idênticos à `main`, provado por `git diff`, junto com o domínio da comparação.
+
+**É a terceira vez que isto acontece** (DL-039, DL-041, agora). A recomendação continua de pé, e
+continua não implementada: guardas de onda precisam sair no PR que fecha a onda, ou virar um
+guarda único de superfície crítica que exija reconhecimento explícito.
+
+## Divergências deliberadas da referência
+
+| Referência                                              | Implementação             | Motivo                                            |
+| ------------------------------------------------------- | ------------------------- | ------------------------------------------------- |
+| 5 abas                                                  | 2 abas                    | contrato funcional; comparar e detalhar são fluxo |
+| São Luís, Cohab, Jd. Atlântico                          | Artemis · Piracicaba — SP | §12                                               |
+| Marcas e logotipos reais                                | fictícios, sem logotipo   | nenhum direito de uso, nenhum parceiro            |
+| "Preço anterior: ~~R$ 20,49~~"                          | ausente                   | P-01 nunca foi decidida                           |
+| R$/kg em todo card                                      | ausente                   | depende de quantidade estruturada (E1)            |
+| Sino de notificação                                     | ausente                   | exige canal e consentimento que não existem       |
+| "ofertas reais", "as melhores ofertas", "todos os dias" | copy escopada             | §13                                               |
+
+## Duas armadilhas de captura que viraram guarda
+
+O Chrome **recusa navegação de topo para `data:`, em silêncio** — a primeira prancha fotografou
+a página anterior com o nome do arquivo novo. E a coluna de confronto usava a página inteira,
+4118 px reduzidos ao lado de um aparelho: comparava duas coisas incomparáveis. As duas foram
+corrigidas com verificação, não com cuidado.
+
+**Não tocado:** produção, DNS, migrations, RLS, backfill, dado real, analytics, `/para-mercados`
+e o domínio da comparação.

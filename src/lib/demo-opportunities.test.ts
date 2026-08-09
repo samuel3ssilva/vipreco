@@ -24,7 +24,10 @@ describe("fixture de demonstração da Home", () => {
       expect(entry.product.is_demo).toBe(true);
       expect(entry.market.is_demo).toBe(true);
       expect(entry.source_reference).toBe(DEMO_FIXTURE_REFERENCE);
-      expect(entry.id).toMatch(/^demo-fixture-/);
+      // O prefixo mudou de `demo-fixture-` para `demo-price-` quando a Home deixou de ter
+      // fixture próprio e passou a SELECIONAR do catálogo único (`@/lib/demo-catalog`). O
+      // que a asserção protege é o mesmo: nenhum id daqui pode se passar por id de banco.
+      expect(entry.id).toMatch(/^demo-price-/);
     }
   });
 
@@ -68,11 +71,15 @@ describe("fixture de demonstração da Home", () => {
   });
 
   it("mantém a data exibida coerente com o texto relativo", () => {
-    const [arroz, cafe] = buildDemoOpportunities(NOW);
+    // A ORDEM MUDOU: o café é o primeiro Achado, porque é por ele que o golden path da
+    // demonstração começa (§9). Arroz e leite vêm em seguida.
+    const [cafe, arroz, leite] = buildDemoOpportunities(NOW);
+    expect(formatRelativeDay(cafe.observed_at, NOW)).toBe("ontem");
+    expect(formatDate(cafe.observed_at)).toBe("29/07/2026");
     expect(formatRelativeDay(arroz.observed_at, NOW)).toBe("ontem");
     expect(formatDate(arroz.observed_at)).toBe("29/07/2026");
-    expect(formatRelativeDay(cafe.observed_at, NOW)).toBe("há 2 dias");
-    expect(formatDate(cafe.observed_at)).toBe("28/07/2026");
+    expect(formatRelativeDay(leite.observed_at, NOW)).toBe("há 2 dias");
+    expect(formatDate(leite.observed_at)).toBe("28/07/2026");
   });
 
   it("nenhum Achado carrega preço anterior — o campo saiu em R3.3", () => {

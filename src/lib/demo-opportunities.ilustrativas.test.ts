@@ -50,9 +50,14 @@ describe("ilustração genérica só existe em dado de demonstração", () => {
     // desenho. Chamar de "foto" seria a afirmação que o princípio 11 proíbe.
     for (const achado of achados) {
       const alt = achado.image?.alt ?? "";
-      expect(alt, achado.id).toContain("Ilustração genérica");
-      expect(alt, achado.id).toContain("não é a embalagem do produto");
-      expect(alt.toLowerCase(), achado.id).not.toContain("foto");
+      // "Ilustração" continua obrigatório; o que mudou foi o resto da frase, junto com o
+      // desenho. Antes o alt dizia "não é a embalagem do produto" porque o desenho era um
+      // pictograma de categoria. Agora ele É uma embalagem — fictícia —, e a afirmação que
+      // precisa continuar sendo feita é a outra: não é FOTO. É essa a que o princípio 11
+      // protege, e é a única que um leitor de tela não tem como conferir olhando.
+      expect(alt, achado.id).toContain("Ilustração");
+      expect(alt, achado.id).toContain("não é foto do produto");
+      expect(alt, achado.id).toContain("fictícia");
     }
   });
 
@@ -71,7 +76,19 @@ describe("ilustração genérica só existe em dado de demonstração", () => {
 
 describe("os arquivos das ilustrações", () => {
   const PASTA = join(process.cwd(), "public", "img", "demo");
-  const arquivos = readdirSync(PASTA).filter((n) => n.endsWith(".svg"));
+  const todos = readdirSync(PASTA).filter((n) => n.endsWith(".svg"));
+
+  /**
+   * `cafe.svg` é o pictograma antigo, e ele continua no repositório por uma razão de escopo:
+   * `/para-mercados` o referencia, e o Founder CONGELOU a experiência B2B nesta rodada. Apagá-lo
+   * teria sido "aproveitar a rodada para alinhar o B2B", que o §19 proíbe com todas as letras.
+   *
+   * Ele fica fora das asserções de EMBALAGEM — que descrevem a coleção nova do B2C — e continua
+   * dentro das asserções que valem para qualquer asset: nada de marca real, nada de recurso
+   * externo. É a fronteira certa: o que muda é a direção visual do B2C, não a política.
+   */
+  const LEGADO_B2B = new Set(["cafe.svg"]);
+  const arquivos = todos.filter((n) => !LEGADO_B2B.has(n));
 
   it("existem, e todos são SVG versionado", () => {
     expect(arquivos.length).toBeGreaterThan(0);
@@ -81,27 +98,76 @@ describe("os arquivos das ilustrações", () => {
     }
   });
 
-  it("cada um se declara ilustração genérica no próprio arquivo", () => {
+  it("cada um se declara embalagem fictícia no próprio arquivo", () => {
     // O comentário no SVG não é decoração: quem abre o arquivo solto, fora do repositório,
     // precisa saber o que ele é e o que ele não é.
     for (const nome of arquivos) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
-      expect(svg, nome).toContain("ilustração GENÉRICA");
-      expect(svg, nome).toContain("Não representa nenhuma embalagem, marca, logotipo");
+      expect(svg, nome).toContain("FICTÍCIA");
+      expect(svg, nome).toMatch(/sem logotipo, sem trade dress|sem logotipo, sem trade dress/);
     }
   });
 
-  it("nenhum carrega texto — desenho não vira rótulo de embalagem", () => {
-    // Um `<text>` dentro do SVG seria o começo de uma marca desenhada. Sem texto, o asset não
-    // tem como afirmar nada sobre produto nenhum.
-    for (const nome of arquivos) {
+  /**
+   * =============================================================================
+   * A REGRA MUDOU, E O QUE ELA PROTEGE NÃO MUDOU
+   * =============================================================================
+   *
+   * Até 08/08/2026 esta asserção era **"nenhum SVG carrega `<text>`"**, com a justificativa de
+   * que "sem texto, o asset não tem como afirmar nada sobre produto nenhum". Era uma boa
+   * aproximação enquanto os desenhos eram pictogramas de categoria.
+   *
+   * O Founder reprovou aqueles desenhos e mandou o contrário: embalagem fictícia com rótulo,
+   * qualidade de catálogo, "sem logo real, sem trade dress copiado". Uma embalagem sem rótulo
+   * não é uma embalagem — é um pictograma —, então a proibição de `<text>` passou a proibir a
+   * própria coisa pedida.
+   *
+   * **Proibir texto nunca foi o objetivo; proibir MARCA REAL era.** A asserção agora mede
+   * isso diretamente: lê cada string desenhada e exige que nenhuma nomeie uma marca que
+   * existe. É uma verificação mais forte que a anterior, porque a anterior nem sequer olhava
+   * para o conteúdo — um SVG com o logotipo da Pilão em `<path>` passava por ela.
+   */
+  it("nenhum texto desenhado nomeia marca real", () => {
+    const REAIS = [
+      "Camil",
+      "Pilão",
+      "Pilao",
+      "Italac",
+      "Liza",
+      "Ypê",
+      "Ype",
+      "Neve",
+      "Tio João",
+      "Melitta",
+      "Corações",
+      "Qualy",
+      "Piracanjuba",
+      "Parmalat",
+      "Omo",
+      "Minerva",
+      "Prato Fino",
+    ];
+    let textosLidos = 0;
+    for (const nome of todos) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
-      expect(svg, nome).not.toMatch(/<text[\s>]/);
+      // só o conteúdo desenhado; o comentário de cabeçalho cita marca nenhuma, mas o que
+      // importa aqui é o que aparece NA TELA.
+      for (const m of svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)) {
+        textosLidos += 1;
+        for (const marca of REAIS) {
+          expect(m[1], `${nome} desenha a marca real "${marca}"`).not.toContain(marca);
+        }
+      }
     }
+    // Anti-vacuidade: sem isto, um SVG sem `<text>` nenhum faria o laço não rodar e o teste
+    // passar sem ter comparado coisa alguma — que é exatamente o defeito da regra anterior.
+    expect(textosLidos, "nenhum texto foi lido; a verificação não comparou nada").toBeGreaterThan(
+      10,
+    );
   });
 
   it("nenhum busca recurso de fora", () => {
-    for (const nome of arquivos) {
+    for (const nome of todos) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
       expect(svg, nome).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
       expect(svg, nome).not.toContain("<script");

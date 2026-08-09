@@ -29,7 +29,7 @@ export function StagingBanner() {
         <span aria-hidden="true" className="font-data">
           ·
         </span>{" "}
-        <span className="font-normal">esta não é a versão pública do ViPreço</span>
+        <span className="font-normal">não é a versão pública</span>
       </p>
     </div>
   );

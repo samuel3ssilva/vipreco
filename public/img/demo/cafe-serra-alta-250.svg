@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" role="img" aria-hidden="true" focusable="false">
+  <!--
+    ViPreço — embalagem FICTÍCIA "Serra Alta" de 250 g — a irmã menor do pacote de 500 g.
+
+    Marca inventada, rótulo inventado, sem logotipo, sem trade dress e sem qualquer
+    referência a produto de terceiro. Ver docs/data/IMAGE-POLICY.md.
+
+    O que mudou em relação ao ícone plano anterior: fundo transparente, proporção de
+    pacote de café de verdade (tijolinho a vácuo, mais alto que largo), verniz por
+    gradiente em vez de cor chapada, solda superior e inferior com os vincos, e um
+    rótulo com hierarquia tipográfica — marca, descritor, gramatura. É isso que faz
+    o desenho ler como EMBALAGEM e não como pictograma de categoria.
+  -->
+  <defs>
+    <linearGradient id="cafe250-corpo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3a1410" />
+      <stop offset="0.14" stop-color="#6b2018" />
+      <stop offset="0.38" stop-color="#8e2a1d" />
+      <stop offset="0.56" stop-color="#7a2419" />
+      <stop offset="0.82" stop-color="#4d1712" />
+      <stop offset="1" stop-color="#2c0f0c" />
+    </linearGradient>
+    <linearGradient id="cafe250-brilho" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0" />
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.34" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="cafe250-solda" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2c0f0c" />
+      <stop offset="0.3" stop-color="#5f1d15" />
+      <stop offset="0.7" stop-color="#4a1712" />
+      <stop offset="1" stop-color="#240c0a" />
+    </linearGradient>
+    <linearGradient id="cafe250-rotulo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf7ec" />
+      <stop offset="1" stop-color="#eadfc6" />
+    </linearGradient>
+    <clipPath id="cafe250-clip">
+      <path d="M70 66h160l7 214a16 16 0 0 1-16 17H79a16 16 0 0 1-16-17z" />
+    </clipPath>
+  </defs>
+
+  <!-- pacote menor: 250 g ocupa menos volume que 500 g, e a diferença precisa ser VISÍVEL -->
+  <g transform="translate(150 303) scale(0.76 0.84) translate(-150 -303)">
+  <!-- sombra de contato -->
+  <ellipse cx="150" cy="303" rx="86" ry="12" fill="#10231c" opacity="0.16" />
+
+  <!-- corpo do tijolinho -->
+  <path d="M70 66h160l7 214a16 16 0 0 1-16 17H79a16 16 0 0 1-16-17z" fill="url(#cafe250-corpo)" />
+  <g clip-path="url(#cafe250-clip)">
+    <!-- verniz especular -->
+    <rect x="96" y="60" width="30" height="250" fill="url(#cafe250-brilho)" />
+    <!-- vinco lateral do fole -->
+    <rect x="212" y="60" width="2" height="250" fill="#10231c" opacity="0.35" />
+    <rect x="86" y="60" width="1.5" height="250" fill="#ffffff" opacity="0.16" />
+
+    <!-- rótulo -->
+    <rect x="63" y="128" width="180" height="104" fill="url(#cafe250-rotulo)" />
+    <rect x="63" y="128" width="180" height="4" fill="#f5c24b" />
+    <rect x="63" y="228" width="180" height="4" fill="#f5c24b" />
+
+    <!-- serra: a marca é "Serra Alta", e o desenho diz o nome -->
+    <path d="M92 176l17-22 12 15 15-21 14 18 13-12 16 22z" fill="#0e5c3c" opacity="0.9" />
+    <path d="M109 154l6 7.6-6 7.6-6-7.6z" fill="#fbf7ec" opacity="0.85" />
+
+    <text x="150" y="150" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="21" font-weight="700" letter-spacing="1.6" fill="#3a1410">SERRA ALTA</text>
+    <text x="150" y="200" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="3.6" fill="#6b2018">TRADICIONAL</text>
+    <text x="150" y="219" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="1.2" fill="#5b6b63">CAFÉ TORRADO E MOÍDO</text>
+
+    <!-- gramatura, no canto de baixo como nas embalagens -->
+    <rect x="96" y="248" width="108" height="26" rx="13" fill="#fbf7ec" opacity="0.92" />
+    <text x="150" y="266" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="0.6" fill="#3a1410">250 g</text>
+  </g>
+
+  <!-- solda superior, mais larga que o corpo, com os vincos -->
+  <rect x="60" y="46" width="180" height="22" rx="4" fill="url(#cafe250-solda)" />
+  <g fill="#ffffff" opacity="0.13">
+    <rect x="76" y="50" width="3" height="14" rx="1.5" />
+    <rect x="100" y="50" width="3" height="14" rx="1.5" />
+    <rect x="124" y="50" width="3" height="14" rx="1.5" />
+    <rect x="148" y="50" width="3" height="14" rx="1.5" />
+    <rect x="172" y="50" width="3" height="14" rx="1.5" />
+    <rect x="196" y="50" width="3" height="14" rx="1.5" />
+    <rect x="220" y="50" width="3" height="14" rx="1.5" />
+  </g>
+  <rect x="60" y="46" width="180" height="3" rx="1.5" fill="#ffffff" opacity="0.18" />
+
+  <!-- grãos soltos: dizem a categoria antes de o rótulo ser legível -->
+  <g transform="rotate(-26 52 288)">
+    <ellipse cx="52" cy="288" rx="13" ry="9" fill="#3a1410" />
+    <path d="M52 279.6c-3.4 4-3.4 12.8 0 16.8" fill="none" stroke="#c9a06a" stroke-width="2.2" stroke-linecap="round" />
+  </g>
+  <g transform="rotate(20 254 293)">
+    <ellipse cx="254" cy="293" rx="12" ry="8.4" fill="#4d1712" />
+    <path d="M254 285.2c-3.2 3.7-3.2 11.9 0 15.6" fill="none" stroke="#c9a06a" stroke-width="2.1" stroke-linecap="round" />
+  </g>
+  <g transform="rotate(-8 232 305)">
+    <ellipse cx="232" cy="305" rx="10" ry="7" fill="#2c0f0c" />
+    <path d="M232 298.5c-2.7 3.1-2.7 9.9 0 13" fill="none" stroke="#c9a06a" stroke-width="1.9" stroke-linecap="round" />
+  </g>
+  </g>
+</svg>

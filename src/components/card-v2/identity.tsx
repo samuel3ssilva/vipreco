@@ -34,6 +34,26 @@ export function ProductIdentity({
     (v): v is string => typeof v === "string" && v.length > 0,
   );
 
+  /**
+   * O TÍTULO DO DESTAQUE É A IDENTIDADE INTEIRA — e é uma correção de coerência, não de gosto.
+   *
+   * Até aqui ele mostrava só `nome`. Numa Home cujo primeiro card diz **"Café"** e cuja busca,
+   * comparação e detalhe dizem **"Café Serra Alta Tradicional 500 g"**, a mesma coisa tem dois
+   * nomes em quatro telas — que é exatamente o que o §8 do mandato proíbe.
+   *
+   * A referência faz igual: o título é "Café Pilão Tradicional" e a linha abaixo repete
+   * "Pilão • Tradicional • 500 g". A repetição não é desperdício — o título identifica o
+   * produto de longe, e a linha abaixo separa os três campos para quem for comparar.
+   *
+   * Na variante de lista o título continua sendo só o nome: ali a embalagem tem 80 px e o card
+   * inteiro tem três linhas, e a identidade completa transformaria cada item num parágrafo.
+   */
+  const titulo = destaque
+    ? [identidade.nome, identidade.marca, identidade.variante, identidade.quantidade]
+        .filter((v): v is string => typeof v === "string" && v.length > 0)
+        .join(" ")
+    : identidade.nome;
+
   return (
     <div className="min-w-0">
       {/* `h2` porque o card vive sob o `h1` da primeira dobra. Um `h3` pularia um nível. */}
@@ -41,10 +61,10 @@ export function ProductIdentity({
         id={tituloId}
         className={cn(
           "font-display line-clamp-2 leading-tight",
-          destaque ? "text-xl sm:text-2xl" : "text-base",
+          destaque ? "text-[1.35rem] leading-tight sm:text-2xl" : "text-base leading-tight",
         )}
       >
-        {identidade.nome}
+        {titulo}
       </h2>
 
       {detalhes.length > 0 ? (
@@ -103,13 +123,17 @@ export function ProductIdentity({
  * de "Outros Achados", onde a imagem serve para reconhecer, não para dominar.
  */
 const TAMANHO_DA_IMAGEM = {
-  compacto: "size-16 min-[360px]:size-[4.5rem]",
-  lista: "size-20",
+  compacto: "size-[4.5rem] min-[360px]:size-20",
+  lista: "size-24",
   // R3.3C: o destaque escalona por faixa de largura, e o número sai de uma conta, não do gosto.
   // Desde que o PREÇO passou para a coluna ao lado da imagem, os dois disputam a mesma largura:
   // a 320 px sobram 144 px para a coluna com a imagem em 96, e "R$ 26,49" a 2.25rem ocupa ~130
   // deles. Cada degrau de imagem só entra na largura em que a coluna já comporta o preço maior.
-  destaque: "size-24 min-[430px]:size-28 sm:size-32",
+  destaque: "size-28 min-[360px]:size-32 min-[430px]:size-36 sm:size-40",
+  // A ficha da oferta (tela 4) é a única em que o produto não divide a largura com uma lista:
+  // ela pode dar à embalagem o tamanho que a referência dá, e é isso que faz a tela parecer
+  // ficha comercial em vez de linha de resultado.
+  ficha: "size-32 min-[360px]:size-36 min-[430px]:size-40 sm:size-44",
 } as const;
 
 export type TamanhoDaImagem = keyof typeof TAMANHO_DA_IMAGEM;
@@ -144,7 +168,7 @@ export function ProductImage({
       height={128}
       loading={prioridade ? "eager" : "lazy"}
       fetchPriority={prioridade ? "high" : "auto"}
-      className={cn(classe, "border-border shrink-0 rounded-lg border object-cover")}
+      className={cn(classe, "bg-surface/70 shrink-0 rounded-xl object-contain p-1")}
     />
   );
 }

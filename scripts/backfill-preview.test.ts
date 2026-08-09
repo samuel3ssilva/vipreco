@@ -204,16 +204,16 @@ describe("determinismo", () => {
 });
 
 describe("execução contra os dados versionados", () => {
-  it("os sete produtos do seed produzem proposta para todos", () => {
+  it("os nove produtos do seed produzem proposta para todos", () => {
     const seed = readFileSync(new URL("../supabase/seed.sql", import.meta.url), "utf-8");
     const bloco = seed.slice(seed.indexOf("INSERT INTO public.products"));
     const linhas = [
       ...bloco.matchAll(/\('([0-9a-f-]{36})',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)'/g),
     ].map((m) => ({ id: m[1], name: m[2], brand: m[3], variant: m[4], size_text: m[5] }));
-    expect(linhas.length).toBe(7);
+    expect(linhas.length).toBe(9);
 
     const relatorio = preverBackfill(linhas);
-    // Sete formatos diferentes de escrever a mesma ideia, e todos são legíveis. O que a
+    // Nove formatos diferentes de escrever a mesma ideia, e todos são legíveis. O que a
     // ferramenta NÃO faz é transformar isso em aprovação.
     expect(relatorio.every((p) => p.proposta !== null)).toBe(true);
     for (const p of relatorio) {

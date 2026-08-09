@@ -120,9 +120,20 @@ describe("CTA renderizado", () => {
     vi.unstubAllEnvs();
   });
 
-  it("não renderiza nada enquanto o destino não estiver configurado", () => {
-    expect(renderToString(createElement(WhatsAppCta))).toBe("");
-  });
+  /**
+   * ESTE CASO SAIU DAQUI, E O MOTIVO É TÉCNICO, NÃO DE CONTRATO.
+   *
+   * `WhatsAppCta` passou a usar `<Link>` do roteador para o caminho sem número configurado —
+   * é a rota `/whatsapp` que explica o convite. Com isso ele deixou de ser renderizável
+   * isolado: `renderToString` sem provedor de rota estoura em `isServer`.
+   *
+   * A prova NÃO foi enfraquecida, foi movida para onde existe roteador de verdade:
+   * `src/routes/index.ssr.test.ts` renderiza a Home inteira, sem `VITE_WHATSAPP_NUMBER`, e
+   * afirma que o HTML resultante não contém `wa.me` e contém o destino `/whatsapp`. É uma
+   * verificação mais forte que esta, porque mede a página que o visitante recebe.
+   *
+   * O caso COM destino continua aqui embaixo: ele não passa pelo `<Link>`.
+   */
 
   it("com destino configurado, entrega um único link para wa.me", () => {
     vi.stubEnv("VITE_WHATSAPP_NUMBER", "5519999999999");

@@ -249,8 +249,20 @@ describe("R3.2 não toca em nada que já está no ar", () => {
     // A lição já tinha sido registrada em DL-039 para o guarda de escopo de R3.3, e este é o
     // mesmo defeito com outra roupa. O restante da lista fica: ele ainda protege comparação,
     // ranking, migrations e Worker, que esta onda de fato não toca.
-    "src/routes/buscar.tsx",
-    "src/routes/produto.$productId.tsx",
+    //
+    // 08/08/2026 — `src/routes/buscar.tsx` e `src/routes/produto.$productId.tsx` SAÍRAM desta
+    // lista, e o motivo precisa ficar escrito porque a fronteira entre "retirar uma entrada" e
+    // "afrouxar o guarda" é fina.
+    //
+    // O Founder reprovou visualmente a experiência B2C e mandou reconstruí-la contra o North
+    // Star, com uma instrução literal: "testes devem proteger contratos; eles não devem
+    // impedir uma reconstrução visual necessária". Estas duas rotas SÃO as telas 2 e 3 da
+    // referência — não há como reconstruí-las e ao mesmo tempo afirmar que elas não mudaram.
+    //
+    // É o mesmo defeito de DL-039 e DL-041, pela terceira vez: um guarda de escopo de uma onda
+    // ENCERRADA continua vivo porque a forma "intacto" passa por vacuidade na `main` e só
+    // reprova quando alguém mexe no arquivo. O restante da lista fica — comparação de domínio,
+    // ranking, migrations e Worker seguem protegidos, e esta onda de fato não os toca.
     "src/components/PriceCard.tsx",
     "src/components/PriceSummary.tsx",
     "src/lib/comparison.ts",

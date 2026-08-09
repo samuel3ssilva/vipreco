@@ -192,15 +192,39 @@ describe("o shell B2B é separado do app do consumidor", () => {
  * `origin/main` prova que o arquivo inteiro é o mesmo. E quando a comparação é impossível o
  * guarda **lança**, em vez de responder "intacto" sem ter medido.
  */
-describe("as rotas do consumidor não foram tocadas", () => {
+/**
+ * =============================================================================
+ * O GUARDA VIROU DO AVESSO EM 08/08/2026, E A PERGUNTA QUE ELE FAZ FICOU VIVA
+ * =============================================================================
+ *
+ * Ele afirmava **"as rotas do consumidor não foram tocadas"** — um guarda de escopo da onda
+ * B2B-0, escrito para provar que o trabalho em `/para-mercados` não vazava para o B2C. A
+ * pergunta era boa **enquanto a onda B2B estava aberta**. Ela morreu no merge daquela onda, e
+ * sobreviveu apenas porque a forma "intacto" passa por vacuidade na `main`.
+ *
+ * Agora ela é ativamente falsa: o Founder reprovou a experiência B2C e mandou reconstruí-la
+ * contra o North Star. `buscar.tsx` e `produto.$productId.tsx` SÃO as telas 2 e 3 da
+ * referência. Manter o guarda seria pedir que a reconstrução autorizada não acontecesse.
+ *
+ * **A pergunta viva é a inversa**, e é literal no §19 do mandato atual: "/para-mercados:
+ * ZERO mudança. Confirmar diff: untouched." Então é isso que este bloco passa a medir. O
+ * mecanismo é o mesmo — `git diff` contra a `main`, que lança quando não consegue medir, em
+ * vez de responder "intacto" sem ter medido.
+ */
+describe("a experiência B2B está congelada, e o diff prova", () => {
   it.each([
-    "src/routes/buscar.tsx",
-    "src/routes/produto.$productId.tsx",
-    "src/components/PriceCard.tsx",
-    "src/components/PriceSummary.tsx",
-    "src/lib/comparison.ts",
+    "src/routes/para-mercados.tsx",
+    "src/components/MarketShell.tsx",
+    "src/components/MarketWhatsAppCta.tsx",
+    "src/components/StickyMarketCta.tsx",
   ])("%s continua idêntico à main", (caminho) => {
     expect(compararComMain(caminho), `${caminho} mudou nesta branch`).toBe("intacto");
+  });
+
+  it("o domínio da comparação também não foi tocado", () => {
+    // `comparison.ts` não é tela: é a regra de preço válido e de um preço por mercado. A
+    // convergência visual não tem por que chegar nela, e se chegar é defeito.
+    expect(compararComMain("src/lib/comparison.ts")).toBe("intacto");
   });
 });
 

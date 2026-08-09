@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { consumerWhatsappLink } from "@/lib/whatsapp";
 
 /**
@@ -41,7 +42,6 @@ export function WhatsAppGlyph({ className = "size-5" }: { className?: string }) 
 
 export function WhatsAppCta() {
   const href = consumerWhatsappLink();
-  if (!href) return null;
 
   return (
     // R3.3B §6 REBAIXOU O PESO VISUAL, sem mexer no texto nem no destino.
@@ -54,15 +54,32 @@ export function WhatsAppCta() {
     // O que NÃO mudou: contraste (verde da ação sobre superfície clara), alvo de 48 px e o
     // "falha fechado" sem número configurado. Secundário é hierarquia, não é escondido.
     <div className="bg-secondary/60 border-secondary-foreground/15 space-y-2 rounded-xl border p-4 text-center">
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-base btn-touch-48 border-primary/45 text-primary bg-card hover:bg-secondary w-full rounded-full border-[1.5px]"
-      >
-        <WhatsAppGlyph />
-        {WHATSAPP_CTA_LABEL}
-      </a>
+      {/* SEM NÚMERO CONFIGURADO, O CONVITE NÃO SOME — ELE MUDA DE DESTINO.
+          Até aqui o componente devolvia `null` sem número, e a razão era boa: um botão que abre
+          uma conversa com ninguém é pior do que botão nenhum. Só que agora existe uma terceira
+          opção, que não existia: `/whatsapp`, a tela que EXPLICA o convite sem prometer canal.
+          O golden path do §9 termina nela, e uma Home que esconde a entrada quebra o fluxo que
+          o Founder precisa demonstrar. A trava contra link quebrado continua inteira — o que
+          mudou é que agora há para onde ir. */}
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-base btn-touch-48 border-primary/45 text-primary bg-card hover:bg-secondary w-full rounded-full border-[1.5px]"
+        >
+          <WhatsAppGlyph />
+          {WHATSAPP_CTA_LABEL}
+        </a>
+      ) : (
+        <Link
+          to="/whatsapp"
+          className="btn-base btn-touch-48 border-primary/45 text-primary bg-card hover:bg-secondary w-full rounded-full border-[1.5px]"
+        >
+          <WhatsAppGlyph />
+          {WHATSAPP_CTA_LABEL}
+        </Link>
+      )}
       <p className="meta-text">Só achados de Artemis. Você pode sair quando quiser.</p>
     </div>
   );

@@ -20,7 +20,7 @@
  * mentiria sobre a própria direção.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { abrirChrome, capturarPagina, conectar, dimensoesDoPng, medir } from "./cdp";
@@ -151,6 +151,11 @@ async function folha(
     throw new Error(`${destino}: largura ${real}, esperado ${largura * 2}`);
   }
   writeFileSync(destino, bytes);
+  // O ARQUIVO TEM DE EXISTIR DEPOIS DE SER ESCRITO, e a verificação não é paranoia: a versão
+  // anterior deste bloco chamava `capturarPagina` com a assinatura antiga, nada era escrito, e
+  // o `console.log` da linha seguinte anunciava sucesso. Cinco arquivos "gerados" que não
+  // existiam — e uma prancha de revisão que o Founder abriria e não encontraria.
+  if (!existsSync(destino)) throw new Error(`${destino} não foi escrito`);
 }
 
 async function principal(): Promise<void> {
@@ -220,16 +225,7 @@ async function principal(): Promise<void> {
           </div>
         </div>`;
       const arquivo = join(DESTINO, `north-star-${tela.chave}-compare.png`);
-      await capturarPagina(
-        s,
-        `data:text/html;base64,${Buffer.from(html).toString("base64")}`,
-        arquivo,
-        {
-          largura: 1400,
-          altura: 900,
-          movel: false,
-        },
-      );
+      await folha(s, html, arquivo, 1400);
       console.log(`==> north-star-${tela.chave}-compare.png`);
     }
 

@@ -23,6 +23,7 @@ export type Operacao =
   | "apply-r2a"
   | "apply-r2b"
   | "align-demo-brands"
+  | "sanitize-demo-identity"
   | "validate";
 
 /**
@@ -140,6 +141,18 @@ export const OPERACOES: Readonly<Record<Operacao, DefinicaoDeOperacao>> = {
     descricao:
       "alinha exatamente quatro marcas demo ao fixture da Home, em transação, sem criar nem apagar linha",
   },
+  // A segunda escrita fora da escada, e pela mesma razão de produto. Ela fecha a pendência que
+  // `align-demo-brands` deixou registrada em DL-040: marca real em produto alcançável por busca,
+  // e GTIN real pendurado em identidade fictícia.
+  "sanitize-demo-identity": {
+    frase: "SANITIZE DEMO IDENTITY IN VIPRECO STAGING",
+    historicoAntes: 12,
+    historicoDepois: 12,
+    versaoAlvo: null,
+    escreve: true,
+    descricao:
+      "tira as três marcas reais restantes e anula os cinco GTINs, em transação, sem criar nem apagar linha",
+  },
   validate: {
     frase: null,
     historicoAntes: null,
@@ -184,7 +197,10 @@ export const SEQUENCIA_DE_ESCRITA: readonly Operacao[] = [
  * É essa a garantia que importa: nenhuma escrita entra no catálogo sem alguém ter dito, por
  * escrito, a que família ela pertence.
  */
-export const ESCRITAS_FORA_DA_SEQUENCIA: readonly Operacao[] = ["align-demo-brands"];
+export const ESCRITAS_FORA_DA_SEQUENCIA: readonly Operacao[] = [
+  "align-demo-brands",
+  "sanitize-demo-identity",
+];
 
 export interface EstadoMedido {
   /** Quantas versões o histórico remoto tem AGORA. */

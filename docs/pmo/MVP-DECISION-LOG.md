@@ -1611,3 +1611,76 @@ aparecer **nas duas**. A proteção que importava continua inteira.
 
 **Não tocado:** produção, DNS, migrations, RLS, backfill, dado real, preços, mercados, GTINs e
 qualquer coluna de R2-A.
+
+---
+
+## DL-041 — O endurecimento final antes das entrevistas (08/08/2026)
+
+- **Decisão do:** Founder, no mandato FINAL WEEKEND DEMO HARDENING + VISUAL FREEZE
+- **Executado por:** CTO, com autonomia declarada no §0 para decisão reversível
+- **Reversível:** sim, em todas as partes
+
+**A pergunta desta missão não era "o que falta construir".** Era: o Founder consegue entregar o
+celular para outra pessoa, deixá-la explorar, e não precisar dizer "não clica aí"? A auditoria
+percorreu a jornada inteira **no staging real** e achou quatro coisas.
+
+**1. `/produto/<id-malformado>` respondia HTTP 500.** O Postgres recusa o texto malformado como
+`uuid`, o erro subia como falha de serviço, e quem editava a URL recebia página técnica. Um UUID
+válido que não existe já respondia bem — "Produto não encontrado" com caminho de volta. Agora os
+dois respondem igual: a guarda é de **forma**, e quem decide se o produto existe continua sendo o
+banco.
+
+**2. O atalho "Feijão" da primeira dobra levava a "nenhum produto encontrado".** O catálogo nunca
+teve feijão. É o elemento mais clicável da Home, e o toque mais provável da demonstração levava ao
+vazio. Virou "Óleo", que existe — e `demo-identity.test.ts` passou a reprovar qualquer atalho sem
+produto correspondente. O controle foi exercitado: com "Feijão" na lista, o teste falha.
+
+**3. Três marcas reais e cinco GTINs reais continuavam no catálogo de demonstração.** DL-040 tinha
+tratado o fluxo Home → detalhe e **registrado esta pendência**; ela foi fechada agora, pela
+operação `sanitize-demo-identity`. O contrato de fixture ficou explícito: marca fictícia,
+quantidade coerente, **GTIN sempre nulo**. Um código de barras válido identifica um produto
+específico de um fabricante específico — pendurá-lo numa identidade fictícia é afirmação falsa
+sobre um identificador global, e inventar um é pior, porque ou colide com alguém ou reprova no
+dígito verificador.
+
+**4. O exemplo "7896..." no campo de busca virou promessa vazia.** Com zero GTINs, o exemplo mais
+específico do placeholder deixou de devolver qualquer coisa. Saiu. A busca por código continua
+existindo e continua funcionando; o que saiu foi o convite a testá-la num catálogo que não a
+sustenta. Está no runbook como a única entrada de DO NOT DEMO.
+
+## Duas decisões de NÃO mexer, e elas custaram mais reflexão que as quatro correções
+
+**"Melhor preço encontrado" ficou.** O §18 lista "melhor preço" entre as promessas proibidas, e
+essa é a frase do cabeçalho do bloco de decisão. Ela **não** saiu, e o motivo é o próprio §18:
+"preservar copy já aprovada quando correta". A frase é escopada por construção — "encontrado", e
+logo abaixo a lista declara o universo, "preço válido mais recente de cada mercado". O que pesou na
+balança foi o preço da mudança: **três guardas independentes** protegem `PriceSummary.tsx`, e trocar
+uma palavra exigiria abrir os três. Erodir três guardas sobre a superfície de comparação, horas
+antes das entrevistas, é exatamente o que o §29 chama de valor esperado negativo. **Fica como
+recomendação para depois do fim de semana, não como pendência técnica.**
+
+**Os `maps_url` fictícios ficaram.** "Ver endereço" abre o mapa num ponto real de Piracicaba para
+um endereço que não existe. Tirar o campo esconderia uma funcionalidade que o piloto vai ter; o
+runbook resolve com uma frase.
+
+## O guarda de onda mordeu de novo, e desta vez em três lugares
+
+DL-039 registrou a regra: **um guarda de escopo de onda sai no mesmo PR que fecha a onda.** Os
+guardas de R3.1 e R3.2 sobreviveram porque a forma deles — "este arquivo continua `intacto`" —
+passa por vacuidade na `main` e só reprova quando alguém mexe no arquivo. Foi o que aconteceu:
+`src/services/catalog.ts` está protegido pelo guarda de R3.2, e era onde morava o conserto do
+HTTP 500 de uma onda posterior.
+
+**Uma entrada saiu**, com o motivo escrito no lugar. O restante das três listas ficou intacto —
+`comparison.ts`, `PriceCard`, `buscar.tsx`, a rota do produto, migrations e Worker continuam
+protegidos, e esta onda de fato não os tocou.
+
+**A recomendação que fica, e que esta missão NÃO implementa** (§29 proíbe inventar mecanismo no
+congelamento): os guardas de onda de R3.1 e R3.2 deveriam ser aposentados como o de R3.3 foi, ou
+convertidos em um guarda único de superfície crítica que exija reconhecimento explícito em vez de
+proibir para sempre. Enquanto isso não acontecer, **a próxima correção legítima em qualquer um
+daqueles arquivos vai esbarrar neles**, e quem esbarrar vai ter que decidir de novo o que eu
+decidi aqui.
+
+**Não tocado:** produção, DNS, migrations, RLS, backfill, dado real, preços, mercados, ranking,
+comparação e analytics.

@@ -20,6 +20,10 @@ const REMEDIACAO = readFileSync(
   "utf-8",
 );
 const ALINHAMENTO = readFileSync(join(RAIZ, "scripts/r2/apply/sql/align-demo-brands.sql"), "utf-8");
+const SANITIZACAO = readFileSync(
+  join(RAIZ, "scripts/r2/apply/sql/sanitize-demo-identity.sql"),
+  "utf-8",
+);
 
 /** O runner sem comentário: a verificação é sobre o que o script EXECUTA. */
 const runnerExecutavel = RUNNER.split("\n")
@@ -38,6 +42,11 @@ const remediacaoExecutavel = REMEDIACAO.split("\n")
 
 /** Mesma armadilha, mesmo tratamento: o cabeçalho do alinhamento fala de preço e de GTIN. */
 const alinhamentoExecutavel = ALINHAMENTO.split("\n")
+  .filter((linha) => !linha.trimStart().startsWith("--"))
+  .join("\n");
+
+/** Idem: o cabeçalho da sanitização fala de preço, de mercado e de GTIN inventado. */
+const sanitizacaoExecutavel = SANITIZACAO.split("\n")
   .filter((linha) => !linha.trimStart().startsWith("--"))
   .join("\n");
 
@@ -196,16 +205,17 @@ describe("o workflow", () => {
     }
   });
 
-  it("exige o SHA da main e oferece exatamente as dez operações", () => {
+  it("exige o SHA da main e oferece exatamente as onze operações", () => {
     expect(WORKFLOW).toMatch(/expected_main_sha:[\s\S]*?required:\s*true/);
     const opcoes = /options:\s*\n((?:\s*-\s*[\w-]+\n)+)/.exec(WORKFLOW)?.[1] ?? "";
     const lista = opcoes
       .split("\n")
       .map((l) => l.replace(/^\s*-\s*/, "").trim())
       .filter(Boolean);
-    expect(lista).toHaveLength(10);
+    expect(lista).toHaveLength(11);
     expect(lista).toContain("plan");
     expect(lista).toContain("align-demo-brands");
+    expect(lista).toContain("sanitize-demo-identity");
     expect(lista.some((o) => /all/i.test(o))).toBe(false);
   });
 
@@ -499,6 +509,93 @@ describe("o SQL de alinhamento das marcas demo", () => {
     for (const notice of notices) {
       expect(notice).not.toMatch(/%.*\bbrand\b/i);
       expect(notice).not.toMatch(/%.*\bname\b/i);
+    }
+  });
+});
+
+describe("o SQL de sanitização da identidade demo", () => {
+  it("escreve duas colunas, e só elas", () => {
+    const updates = sanitizacaoExecutavel.match(/UPDATE\s+public\.\w+\s+SET\s+[^;]+/gi) ?? [];
+    // Três de marca (um por alvo, dentro do laço) e um de GTIN, sem lista de ids.
+    expect(updates).toHaveLength(2);
+    expect(updates.some((u) => /SET brand = alvo\[3\]/.test(u))).toBe(true);
+    expect(updates.some((u) => /SET gtin = NULL WHERE gtin IS NOT NULL/.test(u))).toBe(true);
+  });
+
+  it("varre a tabela inteira, e não só os alvos", () => {
+    // "Mudei as três que listei" e "não sobrou nenhuma" são afirmações diferentes, e só a
+    // segunda serve para declarar a demonstração limpa.
+    expect(SANITIZACAO).toMatch(/WHERE brand = ANY\(proibidas\)/);
+    expect(SANITIZACAO).toMatch(/WHERE gtin IS NOT NULL/);
+    expect(SANITIZACAO).toMatch(/sobraram <> 0/);
+  });
+
+  it("a lista de marcas proibidas cobre TODAS as que já passaram pelo catálogo demo", () => {
+    // As três desta rodada mais as três que `align-demo-brands` tratou. Uma varredura que só
+    // conhecesse as desta rodada deixaria a anterior voltar sem ninguém perceber.
+    for (const marca of ["Liza", "Ypê", "Neve", "Camil", "Pilão", "Italac"]) {
+      expect(SANITIZACAO, `a varredura não conhece ${marca}`).toContain(`'${marca}'`);
+    }
+  });
+
+  it("não inventa GTIN: o único valor escrito na coluna é NULL", () => {
+    expect(sanitizacaoExecutavel).not.toMatch(/gtin\s*=\s*'/);
+    expect(sanitizacaoExecutavel).toMatch(/SET gtin = NULL/);
+  });
+
+  it("não cria, não apaga e não toca em schema", () => {
+    for (const proibido of [
+      /\bDELETE\s+FROM\b/i,
+      /\bINSERT\s+INTO\b/i,
+      /\bDROP\b/i,
+      /\bCREATE\b/i,
+      /\bALTER\s+TABLE\b/i,
+      /\bTRUNCATE\b/i,
+      /\bGRANT\b/i,
+      /\bREVOKE\b/i,
+    ]) {
+      expect(sanitizacaoExecutavel, `a sanitização contém ${proibido}`).not.toMatch(proibido);
+    }
+  });
+
+  it("não toca em preço, mercado nem em nenhuma coluna de R2-A", () => {
+    for (const proibida of [
+      "public.prices",
+      "public.markets",
+      "quantity_value",
+      "quantity_unit",
+      "package_type",
+      "units_per_package",
+    ]) {
+      expect(sanitizacaoExecutavel, `a sanitização menciona ${proibida}`).not.toContain(proibida);
+    }
+  });
+
+  it("abre e fecha exatamente uma transação, e exige as contagens previstas", () => {
+    expect((sanitizacaoExecutavel.match(/^BEGIN;/gm) ?? []).length).toBe(1);
+    expect((sanitizacaoExecutavel.match(/^COMMIT;/gm) ?? []).length).toBe(1);
+    expect(SANITIZACAO).toMatch(/IF alterados <> 3 THEN/);
+    expect(SANITIZACAO).toMatch(/IF alterados <> 5 THEN/);
+  });
+
+  it("confere que o trigger de search_text rodou", () => {
+    expect(SANITIZACAO).toContain("public.pa_normalize_text(");
+    expect(SANITIZACAO).toContain(
+      "concat_ws(' ', name, brand, variant, size_text, gtin, category)",
+    );
+  });
+
+  it("recusa qualquer ambiente que não seja o do seed de demonstração", () => {
+    expect(SANITIZACAO).toMatch(/total_produtos <> 7/);
+    expect(SANITIZACAO).toMatch(/produtos_demo <> total_produtos/);
+  });
+
+  it("não imprime marca, nome nem GTIN no NOTICE", () => {
+    const notices = SANITIZACAO.match(/RAISE NOTICE[^;]+/g) ?? [];
+    for (const notice of notices) {
+      expect(notice).not.toMatch(/%.*\bbrand\b/i);
+      expect(notice).not.toMatch(/%.*\bname\b/i);
+      expect(notice).not.toMatch(/%.*\bgtin\b/i);
     }
   });
 });

@@ -467,6 +467,13 @@ case "$OPERACAO" in
     supabase_cli db push --workdir "$WORKDIR" --db-url "$DB_URL" --yes
     ;;
 
+  sanitize-demo-identity)
+    titulo "SANITIZACAO DA IDENTIDADE DEMO — transacao unica"
+    psql --no-psqlrc --no-password --quiet \
+      --variable=ON_ERROR_STOP=1 \
+      --file="$APPLY_DIR/sql/sanitize-demo-identity.sql"
+    ;;
+
   align-demo-brands)
     titulo "ALINHAMENTO DE QUATRO MARCAS DEMO — transacao unica"
     # Mesmo `ON_ERROR_STOP` de `remediate-demo-gtins`, e pela mesma razao: sem ele o psql

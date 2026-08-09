@@ -146,7 +146,10 @@ const PRODUCT_ARROZ: Product = {
   brand: "Ouro do Campo",
   variant: "Tipo 1",
   size_text: "5 kg",
-  gtin: "7896006711117",
+  // Sem GTIN, pela mesma razão que o café: um código de barras VÁLIDO pertence a um produto
+  // real, e pendurá-lo numa identidade fictícia é dizer que "Ouro do Campo" tem o código de
+  // outra marca. Ausente é o estado honesto, e o contrato de fixture agora exige isso.
+  gtin: null,
   category: "Mercearia",
   is_active: true,
   is_demo: true,
@@ -174,7 +177,7 @@ const PRODUCT_LEITE: Product = {
   brand: "Boa Serra",
   variant: "Integral",
   size_text: "1 L",
-  gtin: "7898080640611",
+  gtin: null,
   category: "Laticínios",
   is_active: true,
   is_demo: true,

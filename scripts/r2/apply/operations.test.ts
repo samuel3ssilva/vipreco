@@ -16,13 +16,14 @@ import {
 const ESTADO_INICIAL: EstadoMedido = { historicoRemoto: 0, gtinsInvalidos: 2 };
 
 describe("catálogo de operações", () => {
-  it("tem exatamente as dez operações do catálogo, e nenhuma a mais", () => {
+  it("tem exatamente as onze operações do catálogo, e nenhuma a mais", () => {
     // Nove vieram do mandato de R2.6. `align-demo-brands` é a décima, e entrou por uma razão
     // de PRODUTO e não de schema: a Home mostra marca fictícia e a página do produto lê do
     // banco, então quem navega de uma para a outra vê dois nomes para o mesmo item.
     expect(OPERACOES_VALIDAS.sort()).toEqual(
       [
         "align-demo-brands",
+        "sanitize-demo-identity",
         "adopt-seven-baseline",
         "apply-contribution-hardening",
         "apply-core-hardening",
@@ -61,7 +62,7 @@ describe("catálogo de operações", () => {
       .map((d) => d.frase)
       .filter((f): f is string => f !== null);
     expect(new Set(frases).size).toBe(frases.length);
-    expect(frases.length).toBe(8);
+    expect(frases.length).toBe(9);
   });
 
   it("toda frase nomeia o ambiente, para não poder ser reaproveitada em produção", () => {

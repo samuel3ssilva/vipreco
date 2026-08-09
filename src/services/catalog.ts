@@ -58,8 +58,28 @@ export async function getMarkets(): Promise<Market[]> {
   return (data ?? []) as Market[];
 }
 
+/**
+ * O `id` de produto é um UUID. Qualquer outra coisa não é "um produto que talvez exista": é uma
+ * string que **não pode** ser id de produto nenhum.
+ *
+ * Sem esta guarda, `/produto/qualquer-coisa` chegava ao Postgres, que recusa o texto malformado
+ * como `uuid`, e o erro subia como falha de serviço — HTTP 500 e página técnica para quem só
+ * editou a URL. Medido em staging antes da correção.
+ *
+ * A resposta certa é a mesma que o produto já dá para um UUID válido que não existe: **não
+ * encontrado**, com a tela que convida a buscar outro. A validação é de FORMA, não de existência
+ * — quem decide se o produto existe continua sendo o banco.
+ */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function podeSerIdDeProduto(valor: string): boolean {
+  return UUID.test(valor);
+}
+
 /** Comparação de um produto: apenas o preço válido mais recente de cada mercado. */
 export async function getProductComparison(productId: string): Promise<ProductComparison | null> {
+  if (!podeSerIdDeProduto(productId)) return null;
+
   const [productResult, pricesResult] = await Promise.all([
     supabase
       .from("products")

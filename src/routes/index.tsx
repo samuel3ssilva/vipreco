@@ -52,7 +52,17 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-const SHORTCUTS = ["Café", "Arroz", "Feijão", "Leite"];
+/**
+ * Os quatro atalhos da busca, e a única regra que eles têm: **todo atalho precisa devolver
+ * resultado**.
+ *
+ * "Feijão" estava aqui e o catálogo não tem feijão nenhum — o atalho mais visível da primeira
+ * dobra levava a "nenhum produto encontrado". Numa demonstração em que a pessoa recebe o celular
+ * na mão, esse é o toque que faz o produto parecer quebrado, e não o que faz parecer novo.
+ *
+ * `src/lib/demo-identity.test.ts` afirma que cada atalho corresponde a um produto do catálogo.
+ */
+const SHORTCUTS = ["Café", "Arroz", "Óleo", "Leite"];
 
 /**
  * O aviso de confiança da primeira dobra.

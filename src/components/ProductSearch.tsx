@@ -104,8 +104,15 @@ export function ProductSearch({
 
   const results = data ?? [];
   const ids = results.map((product) => product.id);
+  // A CHAVE MUDOU JUNTO COM A FORMA DO VALOR, e é por isso que ela mudou.
+  //
+  // Esta consulta devolvia um `Record<id, ProductPriceStats>` e passou a devolver uma LISTA de
+  // `ResumoDeBusca`. A chave antiga — `["product-search-stats", ids]` — continuava a mesma, e
+  // duas formas diferentes sob a mesma chave é uma entrada de cache que estoura ao ser lida com
+  // o código novo (`(resumos ?? []).map is not a function`). Aconteceu em desenvolvimento, com
+  // o cache sobrevivendo ao HMR; aconteceria com qualquer aba aberta durante um deploy.
   const { data: resumos } = useQuery({
-    queryKey: ["product-search-stats", ids],
+    queryKey: ["product-search-resumos", ids],
     queryFn: () => resumirBusca(results),
     enabled: ids.length > 0,
     staleTime: 30_000,

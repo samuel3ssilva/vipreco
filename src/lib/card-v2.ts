@@ -94,6 +94,18 @@ export interface ImagemDeProduto {
    * as duas passam pelo mesmo portão.
    */
   ilustrativa?: boolean;
+  /**
+   * Como o arquivo foi feito, porque disso depende como ele é desenhado.
+   *
+   * - `recorte` (padrão) — arte com fundo transparente, tipicamente SVG. Cabe DENTRO da moldura,
+   *   com respiro, sobre a superfície do card;
+   * - `foto` — imagem retangular com fundo próprio. Preenche a moldura inteira.
+   *
+   * É campo declarado e não dedução por extensão de arquivo. Um `.png` pode ser qualquer um dos
+   * dois, e adivinhar erraria em silêncio: recorte esticado até preencher fica cortado nas
+   * bordas, e foto encolhida para caber deixa duas faixas vazias de cada lado.
+   */
+  formato?: "recorte" | "foto";
 }
 
 /**
@@ -108,8 +120,38 @@ export interface ImagemDeProduto {
  * política de imagem é R6. Exigir qualquer um deles faria o card só funcionar num banco
  * que ainda não existe.
  */
+/**
+ * A unidade em que o preço é cobrado, quando ela não é "a embalagem".
+ *
+ * Carne é vendida a quilo, e a placa do balcão escreve isso junto do número: `R$ 20,99 KG`.
+ * Um card que mostrasse só `R$ 20,99` estaria afirmando outra coisa — o preço de uma peça —,
+ * e é o tipo de erro que quem compra carne percebe na hora.
+ *
+ * É **campo declarado**, nunca inferido. Nada aqui olha para o nome do produto e conclui
+ * "isto é carne, então é por quilo": inferência em tempo de apresentação é o que o
+ * `MVP-DATA-CONTRACT.md` §2 proíbe, e com razão — ela erra em silêncio.
+ *
+ * Não confundir com preço unitário (`UnitarioExibido`). Aquele é CALCULADO a partir de
+ * quantidade estruturada, para comparar embalagens de tamanhos diferentes. Este é a unidade
+ * em que o preço já foi observado.
+ */
+export type PriceUnit = "kg" | "L" | "un";
+
 export interface OfertaCardV2 extends Opportunity {
   offer_state?: OfferState;
+  /** `"kg"` quando o preço observado é por quilo. Ausente = preço da embalagem. */
+  price_unit?: PriceUnit;
+  /**
+   * Esta oferta **não foi observada**: existe para mostrar como a comparação vai funcionar.
+   *
+   * A demonstração do açougue tem duas naturezas de linha na mesma lista — preço que eu fui
+   * ver, e preço de exemplo. Sem esta distinção no DADO, a única coisa que separaria as duas
+   * seria a lembrança de quem montou a tela, e a lista inteira passaria a afirmar observação
+   * onde não houve nenhuma.
+   *
+   * Quem a carrega perde a procedência na tela: não se atribui fonte a um número inventado.
+   */
+  exemplo_ilustrativo?: boolean;
   /**
    * De onde veio a quantidade estruturada.
    *
@@ -153,6 +195,8 @@ export interface PrecoExibido {
   /** `R$` e `26,49` separados — o card compõe os dois em tamanhos diferentes. */
   simbolo: string;
   numero: string;
+  /** `"/kg"` quando a oferta declara unidade. `null` quando o preço é da embalagem. */
+  unidade: string | null;
   /** O que o leitor de tela ouve no lugar da composição visual. */
   falado: string;
 }
@@ -209,6 +253,15 @@ export interface VisaoDoCard {
   /** `null` quando não há imagem com correspondência exata aprovada. */
   imagem: ImagemDeProduto | null;
   cta: CtaExibido;
+  /**
+   * `true` quando a linha é exemplo, e não observação.
+   *
+   * Quem lê isto tem uma obrigação: **não desenhar procedência**. `procedencia` continua
+   * preenchida porque `source_type` é obrigatório no domínio, mas ela não descreve nada real
+   * numa linha de exemplo — exibi-la seria carimbar "foto da etiqueta" num preço que ninguém
+   * fotografou.
+   */
+  exemploIlustrativo: boolean;
 }
 
 // ---------------------------------------------------------------------------------
@@ -222,6 +275,13 @@ const UNIDADE_ESCRITA: Record<QuantityUnit, string> = {
   ml: "ml",
   l: "L",
   un: "un",
+};
+
+/** Como o leitor de tela ouve a unidade do preço. "kg" soletrado é ruído. */
+const UNIDADE_FALADA: Record<PriceUnit, string> = {
+  kg: "por quilo",
+  L: "por litro",
+  un: "por unidade",
 };
 
 const ROTULO_DA_BASE: Record<UnitPriceBasis, string> = {
@@ -443,7 +503,13 @@ export function montarVisaoDoCard(
       valor: oferta.price,
       simbolo: currency,
       numero: amount,
-      falado: spokenPrice(oferta.price),
+      unidade: oferta.price_unit === undefined ? null : `/${oferta.price_unit}`,
+      // O falado ganha a unidade por extenso: "20 reais e 99 centavos por quilo". Quem ouve
+      // não vê a barra, e "vinte reais e noventa e nove" sozinho descreveria o preço errado.
+      falado:
+        oferta.price_unit === undefined
+          ? spokenPrice(oferta.price)
+          : `${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]}`,
     },
     unitario: calcularUnitario(oferta),
     procedencia: {
@@ -459,5 +525,6 @@ export function montarVisaoDoCard(
     naListaOrganica: estado === null,
     imagem: resolverImagem(oferta),
     cta: resolverCta(oferta, estado === null),
+    exemploIlustrativo: oferta.exemplo_ilustrativo === true,
   };
 }

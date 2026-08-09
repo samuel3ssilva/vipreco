@@ -138,8 +138,19 @@ function OfferPage() {
             >
               <span className="text-[60%] font-bold">R$</span>
               <span className="ml-1">{formatPrice(oferta.price).replace("R$", "").trim()}</span>
+              {/* A unidade colada no número, como a placa do balcão escreve. Sem ela, "R$ 20,99"
+                  nesta tela — que é a ficha da oferta, onde alguém decide — seria lido como o
+                  preço de uma peça inteira. */}
+              {oferta.price_unit === undefined ? null : (
+                <span className="text-muted-foreground ml-0.5 text-[40%] font-bold">
+                  /{oferta.price_unit}
+                </span>
+              )}
             </p>
-            <span className="sr-only">Preço observado: {formatPrice(oferta.price)}</span>
+            <span className="sr-only">
+              Preço observado: {formatPrice(oferta.price)}
+              {oferta.price_unit === "kg" ? " por quilo" : ""}
+            </span>
             <p className="text-muted-foreground mt-1.5 text-xs">
               Preço observado neste mercado, nesta data.
             </p>
@@ -155,10 +166,16 @@ function OfferPage() {
             <Store aria-hidden="true" className="text-primary size-4 shrink-0" />
             {market.name}
           </p>
+          {/* A LOCALIDADE NÃO SE REPETE. A linha era `bairro · Artemis, Piracicaba — SP`, escrita
+              quando todo mercado do catálogo ficava num bairro DIFERENTE de Artemis. O Açougue
+              Mota fica em Artemis, e a linha saía "Artemis · Artemis, Piracicaba — SP". Quando o
+              bairro já é a localidade, ele é dito uma vez só. */}
           {market.neighborhood ? (
             <p className="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm">
               <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-              {market.neighborhood} · Artemis, Piracicaba — SP
+              {market.neighborhood === "Artemis"
+                ? "Artemis, Piracicaba — SP"
+                : `${market.neighborhood} · Artemis, Piracicaba — SP`}
             </p>
           ) : null}
 

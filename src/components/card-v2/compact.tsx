@@ -57,12 +57,21 @@ export function AchadoCompacto({
   // Fonte, atualização e validade continuam inseparáveis (`R3-SCREEN-SPEC.md`) — o que muda é
   // que aqui elas cabem numa linha só. A validade ausente é DITA, nunca omitida: sem isso o
   // leitor supõe que o preço vale indefinidamente, que é a suposição que o produto não induz.
+  /**
+   * A AUSÊNCIA DE VALIDADE VOLTOU A SER SILÊNCIO NESTA COMPOSIÇÃO — 09/08/2026.
+   *
+   * "Validade não informada" existe para impedir que o leitor suponha um prazo. Numa lista em
+   * que NENHUMA oferta tem validade — que é o caso de balcão de açougue, onde ninguém anuncia
+   * prazo —, a frase se repete linha a linha e passa a ocupar a metade direita de cada card sem
+   * distinguir card nenhum. Repetição idêntica não informa: vira textura.
+   *
+   * Ela continua **inteira** onde tem consequência: no card de destaque e na ficha da oferta,
+   * que é onde alguém decide. Aqui a linha diz o que a linha tem.
+   */
   const procedencia = [
     sourceLabel(oferta.source_type),
     visao.procedencia.relativo,
-    visao.procedencia.validoAte === null
-      ? "validade não informada"
-      : `válido até ${visao.procedencia.validoAte}`,
+    ...(visao.procedencia.validoAte === null ? [] : [`válido até ${visao.procedencia.validoAte}`]),
   ].join(" · ");
 
   return (
@@ -107,7 +116,11 @@ export function AchadoCompacto({
       </div>
 
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="font-display line-clamp-2 text-[0.9375rem] leading-tight font-bold">
+        {/* TRÊS LINHAS, E NÃO DUAS. "Coxa e sobrecoxa de frango" saía como "Coxa e
+            sobrecoxa…" na coluna estreita — e o nome do corte é a identidade inteira deste
+            produto, que não tem marca nem gramatura para desempatar. Cortá-lo é apagar a única
+            coisa que distingue esta linha da de baixo. */}
+        <p className="font-display line-clamp-3 text-[0.9375rem] leading-tight font-bold">
           {visao.identidade.nome}
           {visao.identidade.marca === null ? null : (
             <span className="font-normal"> {visao.identidade.marca}</span>
@@ -147,6 +160,11 @@ export function AchadoCompacto({
         >
           <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
           <span className="ml-1">{visao.preco.numero}</span>
+          {visao.preco.unidade === null ? null : (
+            <span className="text-muted-foreground ml-0.5 text-[46%] font-bold">
+              {visao.preco.unidade}
+            </span>
+          )}
         </p>
         <VisuallyHidden>{visao.preco.falado}</VisuallyHidden>
         <ChevronRight

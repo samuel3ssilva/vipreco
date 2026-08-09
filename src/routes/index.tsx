@@ -11,6 +11,7 @@ import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { StateMessage } from "@/components/StateMessage";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { appMode } from "@/lib/app-mode";
+import { DEMO_NATUREZA_DO_DADO } from "@/lib/demo-catalog";
 import { estadoSemAchados } from "@/lib/home-states";
 import { absoluteAssetUrl, ogImageMeta } from "@/lib/og";
 import { formatProductName } from "@/lib/format";
@@ -62,7 +63,7 @@ export const Route = createFileRoute("/")({
  *
  * `src/lib/demo-identity.test.ts` afirma que cada atalho corresponde a um produto do catálogo.
  */
-const SHORTCUTS = ["Café", "Arroz", "Óleo", "Leite"];
+const SHORTCUTS = ["Frango", "Linguiça", "Patinho", "Acém"];
 
 /**
  * O aviso de confiança da primeira dobra.
@@ -180,14 +181,11 @@ function HomePage() {
           }
           seal={
             isDemo ? (
-              // R3.3B §7 tirou a moldura, não a frase. Era um retângulo tracejado, em
-              // monoespaçada, com um glifo "◌" — o desenho exato de um rótulo de fixture, e o
-              // elemento que mais fazia a tela parecer laboratório. A honestidade sobre o dado
-              // ser fictício não depende de o aviso ser feio: ela depende de ele estar escrito,
-              // e continua — aqui, na faixa de ambiente no topo e no bloco de procedência.
-              <p className="text-muted-foreground pt-1 text-xs">
-                dados fictícios · exemplos para demonstrar o formato
-              </p>
+              // R3.3B §7 tirou a moldura, não a frase, e 09/08/2026 trocou a frase porque ela
+              // ficou falsa. Ela dizia "dados fictícios · exemplos para demonstrar o formato",
+              // e estes cinco preços não são fictícios: foram lidos nas placas de um balcão.
+              // O texto vem de `demo-catalog`, junto do dado que descreve.
+              <p className="text-muted-foreground pt-1 text-xs">{DEMO_NATUREZA_DO_DADO}</p>
             ) : null
           }
           fallback={
@@ -213,7 +211,7 @@ function HomePage() {
             demais. Nenhuma promessa de frequência — o texto do CTA não diz "todo dia". */}
         <WhatsAppCta />
 
-        <TrustSection isDemo={isDemo} />
+        <TrustSection />
 
         <LocalStory />
       </div>

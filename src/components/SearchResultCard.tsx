@@ -28,7 +28,7 @@ import type { ResumoDeBusca } from "@/services/demo-source";
  * mostrar "R$ 34,98/kg" derivado de texto livre seria inventar a conta.
  */
 export function SearchResultCard({ resumo }: { resumo: ResumoDeBusca }) {
-  const { product, imagem, menorPreco, mercado, mercados } = resumo;
+  const { product, imagem, menorPreco, unidadeDePreco, mercado, mercados } = resumo;
   const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
 
   return (
@@ -64,8 +64,18 @@ export function SearchResultCard({ resumo }: { resumo: ResumoDeBusca }) {
                 >
                   <span className="text-[62%] font-bold">R$</span>
                   <span className="ml-1">{formatPrice(menorPreco).replace("R$", "").trim()}</span>
+                  {/* Sem a unidade, "R$ 20,99" numa lista de cortes de carne é lido como o
+                      preço de uma peça — e o card de busca é onde a comparação começa. */}
+                  {unidadeDePreco === undefined ? null : (
+                    <span className="text-muted-foreground ml-0.5 text-[44%] font-bold">
+                      /{unidadeDePreco}
+                    </span>
+                  )}
                 </p>
-                <span className="sr-only">Menor preço observado: {formatPrice(menorPreco)}</span>
+                <span className="sr-only">
+                  Menor preço observado: {formatPrice(menorPreco)}
+                  {unidadeDePreco === "kg" ? " por quilo" : ""}
+                </span>
 
                 {mercado ? (
                   <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug">

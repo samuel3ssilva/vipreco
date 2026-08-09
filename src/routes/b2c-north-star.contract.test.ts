@@ -2,9 +2,12 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  ACOUGUE_MOTA,
   DEMO_MARKETS,
+  DEMO_NATUREZA_DO_DADO,
   DEMO_PRODUCTS,
-  PRODUTO_CAFE_SERRA_ALTA,
+  MERCADO_EXEMPLO,
+  PRODUTO_FILE_DE_PEITO,
   construirOfertasDemo,
   imagemDoProdutoDemo,
 } from "@/lib/demo-catalog";
@@ -127,19 +130,34 @@ describe("§12 — a geografia é Artemis, e só", () => {
     }
   });
 
-  it("nenhum mercado do catálogo fica fora de Artemis", () => {
-    for (const mercado of DEMO_MARKETS) {
-      expect(mercado.address ?? "", mercado.name).toContain("Artemis");
-    }
+  /**
+   * A ASSERÇÃO MUDOU DE CAMPO, E FICOU MAIS HONESTA.
+   *
+   * Ela lia `address`, que nos mercados inventados era "Rua Exemplo, N - Artemis". O Açougue Mota
+   * é uma loja de verdade e eu **não conferi o endereço dela** — escrever um só para o teste
+   * passar seria inventar dado sobre um lugar que existe, e endereço errado na tela de quem
+   * conhece a própria loja é pior do que endereço nenhum.
+   *
+   * O que a demonstração de fato afirma sobre geografia é o BAIRRO da loja coletada, e é isso que
+   * passa a ser medido. O mercado de exemplo não afirma bairro nenhum, e não pode mesmo: ele não
+   * fica em lugar algum.
+   */
+  it("a loja coletada é de Artemis, e o exemplo não afirma lugar nenhum", () => {
+    expect(ACOUGUE_MOTA.neighborhood).toBe("Artemis");
+    expect(MERCADO_EXEMPLO.neighborhood).toBeNull();
+    expect(MERCADO_EXEMPLO.address).toBeNull();
+    expect(DEMO_MARKETS).toHaveLength(2);
   });
 });
 
 describe("§16 — o dado da demonstração", () => {
-  it("todo produto é fictício, com GTIN nulo e `is_demo`", () => {
-    expect(DEMO_PRODUCTS.length).toBeGreaterThanOrEqual(9);
+  it("todo produto tem GTIN nulo e `is_demo`", () => {
+    // Corte fatiado no balcão não carrega código de barras de fabricante; inventar um seria
+    // afirmação falsa sobre um identificador global.
+    expect(DEMO_PRODUCTS).toHaveLength(5);
     for (const p of DEMO_PRODUCTS) {
-      expect(p.gtin, `${p.brand} ${p.name} tem GTIN`).toBeNull();
-      expect(p.is_demo, `${p.brand} ${p.name} não é demo`).toBe(true);
+      expect(p.gtin, `${p.name} tem GTIN`).toBeNull();
+      expect(p.is_demo, `${p.name} não é demo`).toBe(true);
     }
   });
 
@@ -165,15 +183,45 @@ describe("§16 — o dado da demonstração", () => {
 
   it("toda oferta é demo nas três entidades", () => {
     const ofertas = construirOfertasDemo(new Date("2026-08-08T12:00:00Z"));
-    expect(ofertas.length).toBeGreaterThan(10);
+    expect(ofertas).toHaveLength(10);
     for (const o of ofertas) {
       expect(o.is_demo && o.product.is_demo && o.market.is_demo, o.id).toBe(true);
     }
   });
 
+  /**
+   * AS DUAS NATUREZAS DE PREÇO ESTÃO SEPARADAS NO DADO, E NÃO NA LEMBRANÇA DE QUEM MONTOU A TELA.
+   *
+   * Cinco preços foram observados no balcão; cinco são exemplo. Se a distinção existisse só no
+   * comentário, a lista inteira passaria a afirmar observação onde não houve nenhuma — e essa é
+   * a única mentira que esta demonstração tem como contar.
+   */
+  it("as ofertas de exemplo se declaram, e as observadas não se disfarçam de exemplo", () => {
+    const ofertas = construirOfertasDemo(new Date("2026-08-08T12:00:00Z"));
+    const exemplo = ofertas.filter((o) => o.exemplo_ilustrativo === true);
+    const observadas = ofertas.filter((o) => o.exemplo_ilustrativo !== true);
+    expect(exemplo).toHaveLength(5);
+    expect(observadas).toHaveLength(5);
+    for (const o of exemplo) {
+      expect(o.market_id, o.id).toBe(MERCADO_EXEMPLO.id);
+      // Sem imagem: dar a mesma ilustração ao exemplo faria as duas linhas parecerem
+      // igualmente observadas, que é exatamente a confusão a evitar.
+      expect(o.image, o.id).toBeNull();
+    }
+    for (const o of observadas) {
+      expect(o.market_id, o.id).toBe(ACOUGUE_MOTA.id);
+      expect(o.image, o.id).not.toBeNull();
+      expect(o.source_type, o.id).toBe("shelf_photo");
+    }
+  });
+
   it("o indicador de demonstração existe, e é o mesmo em todas as telas", () => {
+    // A frase deixou de ser literal aqui e passou a vir de `demo-catalog`, junto do dado que ela
+    // descreve: quando a coleta mudar de data ou de loja, ela muda num lugar só.
     const nota = readFileSync(join(process.cwd(), "src/components/DemoNote.tsx"), "utf-8");
-    expect(nota).toContain("Demonstração — produtos e preços ilustrativos.");
+    expect(nota).toContain("DEMO_NATUREZA_DO_DADO");
+    expect(DEMO_NATUREZA_DO_DADO).toContain("Açougue Mota");
+    expect(DEMO_NATUREZA_DO_DADO).toContain("exemplo ilustrativo");
     for (const tela of [BUSCA, COMPARACAO, DETALHE, WHATSAPP]) {
       expect(tela).toContain("DemoNote");
     }
@@ -184,8 +232,10 @@ describe("§8 — a embalagem é do produto, e não da tela", () => {
   it("todo produto do catálogo tem imagem, e o mapa é a única fonte dela", () => {
     for (const p of DEMO_PRODUCTS) {
       const imagem = imagemDoProdutoDemo(p.id);
-      expect(imagem, `${p.brand} ${p.name} não tem embalagem`).not.toBeNull();
-      expect(imagem!.src).toMatch(/^\/img\/demo\/.+\.svg$/);
+      expect(imagem, `${p.name} não tem imagem`).not.toBeNull();
+      expect(imagem!.src).toMatch(/^\/img\/demo\/acougue\/.+\.jpg$/);
+      // Declarada como ilustrativa: ela mostra o CORTE, nunca a peça que estava no balcão.
+      expect(imagem!.ilustrativa, p.name).toBe(true);
     }
   });
 
@@ -197,9 +247,9 @@ describe("§8 — a embalagem é do produto, e não da tela", () => {
   });
 
   it("todo arquivo referenciado existe em disco", () => {
-    const naPasta = new Set(readdirSync(join(process.cwd(), "public/img/demo")));
+    const naPasta = new Set(readdirSync(join(process.cwd(), "public/img/demo/acougue")));
     for (const p of DEMO_PRODUCTS) {
-      const arquivo = imagemDoProdutoDemo(p.id)!.src.replace("/img/demo/", "");
+      const arquivo = imagemDoProdutoDemo(p.id)!.src.replace("/img/demo/acougue/", "");
       expect(naPasta, `${arquivo} não existe`).toContain(arquivo);
     }
   });
@@ -218,45 +268,61 @@ describe("§8 — a embalagem é do produto, e não da tela", () => {
 describe("§9 — o golden path é navegável de ponta a ponta", () => {
   const agora = new Date("2026-08-08T12:00:00Z");
 
-  it("1. a Home abre pelo café do golden path", () => {
+  it("1. a Home abre pelo filé de peito do golden path", () => {
     const [primeiro] = buildDemoOpportunities(agora);
-    expect(primeiro.product_id).toBe(PRODUTO_CAFE_SERRA_ALTA.id);
+    expect(primeiro.product_id).toBe(PRODUTO_FILE_DE_PEITO.id);
   });
 
-  it("2. buscar 'café' devolve três produtos exatos de 500 g, e o de 250 g", () => {
-    const achados = buscarNoCatalogoDemo("café");
-    const quinhentos = achados.filter((p) => p.size_text === "500 g");
-    expect(quinhentos).toHaveLength(3);
-    // Marcas diferentes: são produtos diferentes, e cada um tem a sua comparação.
-    expect(new Set(quinhentos.map((p) => p.brand)).size).toBe(3);
-    expect(achados.some((p) => p.size_text === "250 g")).toBe(true);
+  it("2. buscar 'frango' devolve os dois cortes de frango, e nada de bovino", () => {
+    const achados = buscarNoCatalogoDemo("frango");
+    expect(achados.map((p) => p.name).sort()).toEqual([
+      "Coxa e sobrecoxa de frango",
+      "Filé de peito de frango",
+    ]);
   });
 
-  it("3. a comparação do café tem três mercados, ordenados por preço", () => {
-    const comparacao = compararNoCatalogoDemo(PRODUTO_CAFE_SERRA_ALTA.id, agora);
+  it("3. a comparação do filé tem dois mercados, ordenados por preço", () => {
+    const comparacao = compararNoCatalogoDemo(PRODUTO_FILE_DE_PEITO.id, agora);
     expect(comparacao).not.toBeNull();
-    expect(comparacao!.entries).toHaveLength(3);
+    expect(comparacao!.entries).toHaveLength(2);
     const precos = comparacao!.entries.map((e) => e.price);
     expect([...precos].sort((a, b) => a - b)).toEqual(precos);
   });
 
+  /**
+   * A ORDEM CAI DO PREÇO, E NÃO DE UM CAMPO QUE PROMOVA A LOJA — princípio 4.
+   *
+   * O Açougue Mota abre as cinco comparações. É consequência de ele ser mais barato nas cinco, e
+   * a asserção diz isso na ordem certa: primeiro confere que ele é o menor preço, depois que é o
+   * primeiro. Inverter a leitura — "ele é o primeiro, logo está certo" — seria escrever um teste
+   * que aprovaria exatamente o favorecimento que o princípio proíbe.
+   */
+  it("3a. a loja coletada vem primeiro PORQUE é a mais barata, e não por ser a loja", () => {
+    for (const produto of DEMO_PRODUCTS) {
+      const { entries } = compararNoCatalogoDemo(produto.id, agora)!;
+      const menor = Math.min(...entries.map((e) => e.price));
+      const doMota = entries.find((e) => e.market_id === ACOUGUE_MOTA.id)!;
+      expect(doMota.price, produto.name).toBe(menor);
+      expect(entries[0].market_id, produto.name).toBe(ACOUGUE_MOTA.id);
+    }
+  });
+
   it("3b. nenhum mercado aparece duas vezes na mesma comparação", () => {
-    const comparacao = compararNoCatalogoDemo(PRODUTO_CAFE_SERRA_ALTA.id, agora)!;
+    const comparacao = compararNoCatalogoDemo(PRODUTO_FILE_DE_PEITO.id, agora)!;
     const mercados = comparacao.entries.map((e) => e.market_id);
     expect(new Set(mercados).size).toBe(mercados.length);
   });
 
-  it("3c. o café de 250 g NUNCA entra na comparação do de 500 g", () => {
-    // Princípio 1, e o exemplo que a demonstração existe para mostrar: mesma marca, mesma
-    // variante, gramatura diferente — produto diferente.
-    const comparacao = compararNoCatalogoDemo(PRODUTO_CAFE_SERRA_ALTA.id, agora)!;
+  it("3c. nenhum outro corte entra na comparação do filé de peito", () => {
+    // Princípio 1: a comparação usa um único `product_id`, e nada parecido entra nela.
+    const comparacao = compararNoCatalogoDemo(PRODUTO_FILE_DE_PEITO.id, agora)!;
     for (const entry of comparacao.entries) {
-      expect(entry.product_id).toBe(PRODUTO_CAFE_SERRA_ALTA.id);
+      expect(entry.product_id).toBe(PRODUTO_FILE_DE_PEITO.id);
     }
   });
 
   it("4. cada linha da comparação leva a uma oferta que existe", () => {
-    const comparacao = compararNoCatalogoDemo(PRODUTO_CAFE_SERRA_ALTA.id, agora)!;
+    const comparacao = compararNoCatalogoDemo(PRODUTO_FILE_DE_PEITO.id, agora)!;
     const todas = new Set(construirOfertasDemo(agora).map((o) => o.id));
     for (const entry of comparacao.entries) {
       expect(todas, `a oferta ${entry.id} não existe no catálogo`).toContain(entry.id);

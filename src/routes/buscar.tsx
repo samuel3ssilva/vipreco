@@ -130,7 +130,7 @@ function SearchPage() {
               <p className="text-muted-foreground mt-0.5 text-sm">
                 {resultados.length === 1
                   ? "1 produto exato."
-                  : `${resultados.length} produtos exatos. Marcas e tamanhos diferentes não se misturam.`}
+                  : `${resultados.length} produtos exatos. Cada um tem a sua própria comparação.`}
               </p>
             </div>
 

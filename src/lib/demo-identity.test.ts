@@ -2,30 +2,44 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEMO_MARKETS, buildDemoOpportunities } from "./demo-opportunities";
+import { DEMO_PRODUCTS, imagemDoProdutoDemo } from "./demo-catalog";
 
 /**
- * §19 — A IDENTIDADE EXATA NÃO PODE DIVERGIR ENTRE AS TELAS.
+ * A IDENTIDADE EXATA NÃO PODE DIVERGIR ENTRE AS TELAS — E A PERGUNTA MUDOU DUAS VEZES.
  *
  * =============================================================================
- * O DEFEITO QUE ESTE ARQUIVO EXISTE PARA IMPEDIR
+ * O DEFEITO ORIGINAL, E POR QUE ELE NÃO EXISTE MAIS
  * =============================================================================
  *
- * A Home é servida por um fixture versionado (`demo-opportunities.ts`). A página do produto, a
- * busca e a comparação são servidas pelo BANCO. São duas fontes, e nada obrigava as duas a
- * descreverem o mesmo item.
+ * A Home era servida por um fixture versionado; busca, comparação e detalhe eram servidas pelo
+ * BANCO. Duas fontes no MESMO modo, e nada obrigava as duas a descreverem o mesmo item. Não é
+ * hipótese: a Home dizia "Ouro do Campo" e a página aberta pelo botão da própria Home dizia a
+ * marca antiga, inclusive no título da aba.
  *
- * Não é hipótese: aconteceu. A Home dizia "Ouro do Campo" e a página do produto, aberta pelo
- * botão da própria Home, dizia a marca antiga — inclusive no título da aba do navegador. A
- * correção foi de dado, e ficou sem guarda. **Este arquivo é a guarda.**
+ * Este arquivo comparava fixture e seed campo a campo para pegar isso. Em 08/08/2026 a causa foi
+ * removida na raiz: existe **uma coleção só** por modo, e as quatro telas leem dela. Duas fontes
+ * no mesmo modo deixaram de ser possíveis, e uma comparação campo a campo entre elas deixou de
+ * ter o que comparar.
  *
- * A referência versionada do banco é `supabase/seed.sql`: é dele que sai qualquer ambiente
- * reconstruído, e é contra ele que o drill de schema roda a cada CI. Se o fixture e o seed
- * discordarem, alguém mexeu em uma ponta só — e é exatamente isso que precisa ficar vermelho
- * antes de chegar na tela de quem está sendo entrevistado.
+ * =============================================================================
+ * O QUE ESTE ARQUIVO PERGUNTA HOJE (09/08/2026)
+ * =============================================================================
+ *
+ * Os dois universos passaram a ser **deliberadamente diferentes**: o modo demo mostra o Açougue
+ * Mota, e o seed continua sendo a mercearia fictícia do piloto. Exigir que coincidam agora
+ * obrigaria a escrever "Açougue Mota" dentro de `supabase/seed.sql` — o oposto do que se quer.
+ *
+ * Então ficam três perguntas vivas, e nenhuma delas é vacuamente verdadeira:
+ *
+ * 1. **higiene do seed** — sem GTIN, sem marca real, sem nome de rede real. Intocada: ela guarda
+ *    a referência versionada do banco, e o banco não mudou de ramo;
+ * 2. **a demonstração lê uma coleção só** — todo Achado da Home vem de `demo-catalog`, com o
+ *    produto, o mercado e a imagem que estão lá, e não de uma segunda lista;
+ * 3. **os dois universos não se contaminam** — nome real de loja não entra no seed, e id de
+ *    demonstração não colide com id do seed.
  *
  * O que este teste NÃO faz: consultar o banco remoto. Um teste que depende de rede não roda no
- * CI e não protege ninguém. O seed é a fonte da verdade versionada; manter o banco fiel a ele é
- * trabalho das operações de escrita controlada, que têm verificação própria.
+ * CI e não protege ninguém.
  */
 
 const SEED = readFileSync(join(process.cwd(), "supabase/seed.sql"), "utf-8");
@@ -114,49 +128,72 @@ describe("o seed de demonstração é legível, e tem o que dizemos que tem", ()
   });
 });
 
-describe("a Home e o banco descrevem o MESMO produto", () => {
+describe("a demonstração inteira lê uma coleção só", () => {
   const achados = buildDemoOpportunities(new Date("2026-08-08T12:00:00.000Z"));
 
-  it("todo Achado da Home aponta para um produto que existe no seed", () => {
+  it("todo Achado da Home aponta para um produto do catálogo, e não para uma segunda lista", () => {
     expect(achados.length).toBeGreaterThan(0);
+    const doCatalogo = new Map(DEMO_PRODUCTS.map((p) => [p.id, p]));
     for (const achado of achados) {
-      const noSeed = SEED_PRODUTOS.find((p) => p.id === achado.product_id);
-      expect(noSeed, `o produto ${achado.product_id} não existe no seed`).toBeDefined();
+      const noCatalogo = doCatalogo.get(achado.product_id);
+      expect(noCatalogo, `${achado.product_id} não está no catálogo`).toBeDefined();
+      // Identidade **por referência**, não campo a campo. Comparar campo a campo só faz sentido
+      // entre duas listas; aqui a exigência é mais forte — tem de ser o mesmo objeto, porque só
+      // existe um lugar de onde ele pode vir.
+      expect(achado.product).toBe(noCatalogo);
     }
   });
 
-  it.each(["nome", "marca", "variante", "quantidade", "GTIN"])(
-    "%s é idêntico entre o fixture da Home e o seed",
-    (campo) => {
-      for (const achado of achados) {
-        const noSeed = SEED_PRODUTOS.find((p) => p.id === achado.product_id);
-        if (!noSeed) throw new Error(`o produto ${achado.product_id} não existe no seed`);
-        const daHome = achado.product;
-        const par = {
-          nome: [daHome.name, noSeed.name],
-          marca: [daHome.brand, noSeed.brand],
-          variante: [daHome.variant, noSeed.variant],
-          quantidade: [daHome.size_text, noSeed.size_text],
-          GTIN: [daHome.gtin, noSeed.gtin],
-        }[campo]!;
-        expect(par[0], `${campo} diverge no produto ${achado.product_id}`).toEqual(par[1]);
-      }
-    },
-  );
+  it("todo mercado citado é um mercado do catálogo, e o objeto é o mesmo", () => {
+    const doCatalogo = new Map(DEMO_MARKETS.map((m) => [m.id, m]));
+    for (const achado of achados) {
+      expect(doCatalogo.has(achado.market_id), `mercado desconhecido em ${achado.id}`).toBe(true);
+      expect(achado.market).toBe(doCatalogo.get(achado.market_id));
+    }
+  });
 
-  it("todo mercado da Home existe no seed, com o mesmo nome e bairro", () => {
+  it("a imagem de cada Achado é a do mapa do catálogo, e não uma escolhida na Home", () => {
+    // É isto que torna impossível a embalagem mudar entre Home, busca, comparação e detalhe:
+    // não existe um segundo lugar onde escolher outra.
+    for (const achado of achados) {
+      expect(achado.image).toBe(imagemDoProdutoDemo(achado.product_id));
+      expect(achado.image, `${achado.product.name} sem imagem`).not.toBeNull();
+    }
+  });
+
+  it("nenhum Achado da Home é exemplo ilustrativo", () => {
+    // A Home anuncia observação. Um preço de exemplo entre os Achados seria anunciar como achado
+    // um número que ninguém foi ver — que é a única mentira que esta demonstração pode contar.
+    for (const achado of achados) {
+      expect(achado.exemplo_ilustrativo, `${achado.id}`).toBeUndefined();
+    }
+  });
+});
+
+describe("os dois universos não se contaminam", () => {
+  /**
+   * O modo demo carrega o nome de um negócio REAL, por decisão do Founder em 09/08/2026: a
+   * demonstração é feita para o dono do Açougue Mota ver a própria loja na tela.
+   *
+   * O seed é outra coisa. Ele reconstrói qualquer ambiente do piloto e roda no drill de schema a
+   * cada CI; `CLAUDE.md` diz que ele nunca carrega nome real de mercado. A regra continua de pé —
+   * o que mudou foi só onde o nome real pode aparecer.
+   */
+  it("o nome do açougue não entra no seed", () => {
+    for (const termo of ["Açougue Mota", "Acougue Mota", "Mota"]) {
+      expect(SEED, `o seed cita ${termo}`).not.toContain(termo);
+    }
+  });
+
+  it("nenhum id da demonstração colide com id do seed", () => {
+    // Ids iguais fariam uma linha de demonstração se passar por linha de banco em qualquer
+    // consulta que cruzasse as duas — e a colisão só apareceria no dia do cruzamento.
+    const idsDoSeed = new Set(SEED_PRODUTOS.map((p) => p.id));
+    for (const produto of DEMO_PRODUCTS) {
+      expect(idsDoSeed.has(produto.id), `${produto.id} colide com o seed`).toBe(false);
+    }
     for (const mercado of DEMO_MARKETS) {
-      expect(SEED, `o mercado ${mercado.id} não está no seed`).toContain(mercado.id);
-      expect(SEED, `o nome de ${mercado.id} diverge`).toContain(`'${mercado.name}'`);
-      expect(SEED, `o bairro de ${mercado.id} diverge`).toContain(`'${mercado.neighborhood}'`);
-    }
-  });
-
-  it("o mercado citado em cada Achado é um dos mercados do seed", () => {
-    const ids = new Set(DEMO_MARKETS.map((m) => m.id));
-    for (const achado of achados) {
-      expect(ids.has(achado.market_id), `mercado desconhecido em ${achado.id}`).toBe(true);
-      expect(achado.market?.id).toBe(achado.market_id);
+      expect(SEED, `o mercado ${mercado.id} colide com o seed`).not.toContain(mercado.id);
     }
   });
 });
@@ -167,9 +204,13 @@ describe("os atalhos da busca não levam a lugar nenhum vazio", () => {
    * nunca teve feijão, e o toque mais provável da demonstração levava a "nenhum produto
    * encontrado".
    *
-   * A verificação é a MESMA que a busca faz: `search_text` normalizado contém o termo
-   * normalizado. Ela é feita contra o seed, não contra o banco, pelo mesmo motivo de sempre —
-   * teste que depende de rede não protege ninguém.
+   * A verificação é a MESMA que a busca faz: texto normalizado contém o termo normalizado.
+   *
+   * ELA MUDOU DE FONTE EM 09/08/2026, E A ANTIGA ESTAVA CONFERINDO O LUGAR ERRADO. Os atalhos
+   * eram verificados contra `supabase/seed.sql` — mas staging roda em **modo demo**, onde a busca
+   * lê `demo-catalog.ts` e não toca no banco. Ou seja: o teste aprovava o atalho num universo que
+   * a demonstração não usa. Enquanto os dois universos eram cópias um do outro isso não aparecia;
+   * agora que são ramos diferentes, o furo ficaria visível na primeira demonstração.
    */
   const ROTA = readFileSync(join(process.cwd(), "src/routes/index.tsx"), "utf-8");
   const atalhos = /const SHORTCUTS = \[([^\]]+)\]/
@@ -184,17 +225,20 @@ describe("os atalhos da busca não levam a lugar nenhum vazio", () => {
   });
 
   it.each(atalhos ?? [])("o atalho %s tem pelo menos um produto no catálogo", (atalho) => {
-    const normalizado = atalho.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-    const casam = SEED_PRODUTOS.filter((p) =>
-      `${p.name} ${p.brand} ${p.variant} ${p.size_text} ${""}`
+    const achatar = (v: string) =>
+      v
         .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .toLowerCase()
-        .includes(normalizado),
+        .replace(/\p{Diacritic}/gu, "")
+        .toLowerCase();
+    const normalizado = achatar(atalho);
+    const casam = DEMO_PRODUCTS.filter((p) =>
+      achatar([p.name, p.brand, p.variant, p.size_text].filter(Boolean).join(" ")).includes(
+        normalizado,
+      ),
     );
     expect(
       casam.length,
-      `o atalho "${atalho}" da Home não corresponde a nenhum produto do seed — na demonstração ele leva a "nenhum produto encontrado"`,
+      `o atalho "${atalho}" da Home não corresponde a nenhum produto do catálogo de demonstração — na demonstração ele leva a "nenhum produto encontrado"`,
     ).toBeGreaterThan(0);
   });
 });

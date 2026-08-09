@@ -45,19 +45,25 @@ describe("ilustração genérica só existe em dado de demonstração", () => {
     }
   });
 
-  it("o texto alternativo declara que é ilustração, e não foto do produto", () => {
-    // Quem usa leitor de tela é justamente quem não pode conferir olhando que aquilo é um
-    // desenho. Chamar de "foto" seria a afirmação que o princípio 11 proíbe.
+  /**
+   * A FRASE MUDOU TRÊS VEZES, E SEMPRE PELO MESMO MOTIVO: ela tem de descrever o desenho que
+   * existe, não o que existia antes.
+   *
+   * 1. pictograma de categoria → "não é a embalagem do produto";
+   * 2. embalagem fictícia desenhada → "não é foto do produto";
+   * 3. imagem gerada por IA de um corte de carne (09/08/2026) → as duas afirmações que um leitor
+   *    de tela não tem como conferir sozinho: **é ilustrativa** (não é a peça que estava no
+   *    balcão) e **foi gerada por IA** (não é fotografia de ninguém).
+   *
+   * O que nunca mudou é a regra por trás: o `alt` não pode deixar quem não vê acreditar que a
+   * imagem retrata o item real. É o princípio 11 no único lugar onde ele não é visível.
+   */
+  it("o texto alternativo declara o que a imagem é, e o que ela não é", () => {
     for (const achado of achados) {
       const alt = achado.image?.alt ?? "";
-      // "Ilustração" continua obrigatório; o que mudou foi o resto da frase, junto com o
-      // desenho. Antes o alt dizia "não é a embalagem do produto" porque o desenho era um
-      // pictograma de categoria. Agora ele É uma embalagem — fictícia —, e a afirmação que
-      // precisa continuar sendo feita é a outra: não é FOTO. É essa a que o princípio 11
-      // protege, e é a única que um leitor de tela não tem como conferir olhando.
-      expect(alt, achado.id).toContain("Ilustração");
-      expect(alt, achado.id).toContain("não é foto do produto");
-      expect(alt, achado.id).toContain("fictícia");
+      expect(alt, achado.id).toContain("ilustrativa");
+      expect(alt, achado.id).toContain("gerada por IA");
+      expect(alt, achado.id).toContain("não é a peça vendida");
     }
   });
 
@@ -90,12 +96,35 @@ describe("os arquivos das ilustrações", () => {
   const LEGADO_B2B = new Set(["cafe.svg"]);
   const arquivos = todos.filter((n) => !LEGADO_B2B.has(n));
 
-  it("existem, e todos são SVG versionado", () => {
+  /**
+   * ESTE BLOCO DEIXOU DE DESCREVER O B2C EM 09/08/2026.
+   *
+   * A demonstração do consumidor passou a usar imagens geradas por IA, em `/img/demo/acougue/`,
+   * e as embalagens SVG que viviam aqui saíram do caminho dela. O que sobrou nesta pasta é
+   * asset legado — `cafe.svg`, referenciado pelo `/para-mercados` CONGELADO, e as embalagens de
+   * mercearia que o laboratório visual ainda exercita.
+   *
+   * As asserções continuam valendo, e continuam valendo a pena: nada de marca real, nada de
+   * recurso externo, cada arquivo se declarando fictício. O que sairia de graça era apagar o
+   * bloco junto com a mudança de ramo — e aí a política deixaria de ser medida em cima de
+   * arquivos que continuam sendo servidos.
+   */
+  it("existem, e continuam sendo SVG versionado", () => {
     expect(arquivos.length).toBeGreaterThan(0);
+  });
+
+  it("as imagens do catálogo B2C existem em disco, e vivem na pasta do açougue", () => {
+    const doAcougue = readdirSync(join(PASTA, "acougue"));
+    let conferidas = 0;
     for (const achado of buildDemoOpportunities()) {
-      const nome = achado.image?.src.replace("/img/demo/", "") ?? "";
-      expect(arquivos, `${achado.id} aponta para um arquivo que não existe`).toContain(nome);
+      const src = achado.image?.src ?? "";
+      expect(src, `${achado.id} sem imagem`).toMatch(/^\/img\/demo\/acougue\//);
+      const nome = src.replace("/img/demo/acougue/", "");
+      expect(doAcougue, `${achado.id} aponta para um arquivo que não existe`).toContain(nome);
+      conferidas += 1;
     }
+    // Anti-vacuidade: uma Home que devolvesse zero Achados faria o laço não rodar.
+    expect(conferidas).toBeGreaterThan(0);
   });
 
   it("cada um se declara embalagem fictícia no próprio arquivo", () => {

@@ -3,144 +3,149 @@ import type { ImagemDeProduto, OfertaCardV2 } from "@/lib/card-v2";
 
 /**
  * =============================================================================
- * O CATÁLOGO DA DEMONSTRAÇÃO — UMA COLEÇÃO, QUATRO TELAS
+ * O CATÁLOGO DA DEMONSTRAÇÃO — AÇOUGUE MOTA, ARTEMIS
  * =============================================================================
  *
- * O mandato §8 é uma frase só, e ela é a razão deste arquivo existir:
- *
- *   HOME = BUSCA = COMPARAÇÃO = DETALHE
- *
- * para identidade, quantidade, imagem e oferta. Antes disto a Home lia um fixture versionado
- * e as outras três liam o banco. Os dois **descreviam** o mesmo produto — `demo-identity.test.ts`
- * garante isso campo a campo —, mas só um deles tinha imagem. Na prática, a pessoa tocava numa
- * embalagem de café na Home e chegava numa página com um retângulo cinza no lugar dela.
- *
- * Agora existe uma coleção só. As quatro telas leem daqui em modo `demo`, e o caminho do banco
- * continua inteiro e intocado para o piloto — ver `@/services/demo-source`.
+ * Uma coleção só, lida pelas quatro telas de produto em modo `demo`. É isto que torna
+ * impossível a imagem, o preço ou a gramatura mudarem entre Home, busca, comparação e
+ * detalhe: não existe um segundo lugar onde escolher outra coisa.
  *
  * =============================================================================
- * O QUE ISTO NÃO É
+ * DUAS NATUREZAS DE DADO NA MESMA LISTA, E POR QUE ISSO EXIGE CUIDADO
  * =============================================================================
  *
- * **Não é antecipação de backend** (§27). Não há motor de busca, ranking aprendido, nem
- * pipeline: há uma lista literal e duas funções puras que a filtram e a ordenam pela MESMA
- * regra que o produto usa no banco — preço crescente, observação mais recente, `id`. Quando o
- * piloto ligar, este módulo sai do caminho sem levar nada junto.
+ * **Açougue Mota é real.** Os cinco preços foram observados presencialmente em 08/08/2026,
+ * fotografando as placas do balcão. É por isso que a fonte declarada é `shelf_photo` — "Foto
+ * da etiqueta" —, e não porque soe bem: foi literalmente o que aconteceu.
  *
- * **Não é uma segunda verdade.** `supabase/seed.sql` continua sendo a referência versionada do
- * banco, e `demo-identity.test.ts` compara os dois campo a campo. Se divergirem, o CI reprova.
+ * **Mercado 2 não existe.** Os cinco preços dele são exemplo, escritos para mostrar ao dono
+ * do açougue como a comparação vai funcionar quando houver um segundo mercado de verdade.
+ * Nenhum deles foi observado em lugar nenhum.
+ *
+ * Misturar as duas naturezas numa lista só é exatamente o tipo de coisa que vira mentira
+ * quando ninguém marca a diferença NO DADO. Por isso `exemplo_ilustrativo` existe como campo,
+ * e não como lembrança: a linha que o carrega perde a procedência na tela, perde a imagem e
+ * perde o link para o detalhe — porque não há detalhe de uma oferta que não foi observada.
  *
  * =============================================================================
- * AS REGRAS DO DADO (§16)
+ * A ORDEM NÃO FOI ESCOLHIDA — ELA CAI
  * =============================================================================
  *
- * Todo produto daqui: marca fictícia, imagem fictícia, **GTIN nulo**, `is_demo` verdadeiro.
- * Nenhuma marca real, nenhum GTIN real, nenhuma geografia antiga — Artemis, e só.
+ * O Açougue Mota aparece em primeiro lugar nas cinco comparações. Isso é consequência de ele
+ * ser mais barato nos cinco produtos, e de `ordenarOfertas` ordenar por preço crescente. Não
+ * há nenhum campo aqui que o promova, e não pode haver: o princípio 4 do `CLAUDE.md` diz que
+ * conteúdo destacado **jamais** reordena a lista orgânica. Se o exemplo do Mercado 2 fosse
+ * mais barato, ele viria antes — e é assim que tem de ser numa demonstração honesta de um
+ * comparador neutro. Há teste para isso.
+ *
+ * =============================================================================
+ * IMAGENS
+ * =============================================================================
+ *
+ * Ilustrações geradas por IA, com marca d'água "Imagem ilustrativa" na própria arte. Elas
+ * mostram o CORTE, não a peça específica que estava no balcão naquele dia — e o `alt` diz
+ * isso em texto, porque quem usa leitor de tela é justamente quem não pode conferir olhando.
+ * `ilustrativa: true`, como o adendo R3.3B do `IMAGE-POLICY.md` exige.
+ *
+ * GTIN é nulo em todos: corte de carne fatiado no balcão não tem código de barras de
+ * fabricante, e inventar um seria afirmação falsa sobre um identificador global.
  */
 
-export const DEMO_FIXTURE_REFERENCE = "Dado fictício de demonstração (fixture versionado)";
+/** O nome da loja, escrito uma vez. Toda tela que o mostra lê daqui. */
+export const ACOUGUE_MOTA_NOME = "Açougue Mota";
 
-/** Todo preço da demonstração carrega o mesmo carimbo de origem. */
-function ilustracao(arquivo: string, descricao: string): ImagemDeProduto {
+export const DEMO_FIXTURE_REFERENCE = `Coleta presencial no ${ACOUGUE_MOTA_NOME}, 08/08/2026`;
+
+/** A data em que os preços do açougue foram observados, como o balcão os mostrava. */
+export const DEMO_OBSERVACAO_LABEL = "08/08/2026";
+
+/**
+ * A FRASE QUE DIZ O QUE ESTE DADO É — e ela mudou porque o dado mudou.
+ *
+ * Até 08/08/2026 a demonstração era mercearia inventada, e as telas diziam "produtos e preços
+ * ilustrativos". Era verdade. Hoje **não é**: cinco dos dez preços foram observados a olho nu
+ * num balcão real, e chamá-los de ilustrativos seria mentir para baixo — o tipo de imprecisão
+ * que parece cautela e que, na frente do dono da loja, desmente a única coisa que a demonstração
+ * tem para provar, que é ter ido lá.
+ *
+ * A frase separa as duas naturezas em uma linha, porque é assim que elas convivem na tela.
+ */
+export const DEMO_NATUREZA_DO_DADO = `Preços observados no ${ACOUGUE_MOTA_NOME} em ${DEMO_OBSERVACAO_LABEL}. Mercado 2 é exemplo ilustrativo.`;
+
+function ilustracao(arquivo: string, corte: string): ImagemDeProduto {
   return {
-    src: `/img/demo/${arquivo}`,
-    // O `alt` diz o que a imagem É. Chamá-la de "foto" seria a afirmação que o princípio 11
-    // proíbe — e quem usa leitor de tela é justamente quem não pode conferir olhando.
-    alt: `Ilustração: ${descricao} — desenho próprio, não é foto do produto`,
+    src: `/img/demo/acougue/${arquivo}`,
+    // Diz o que a imagem É, e as duas coisas que ela NÃO é. Quem usa leitor de tela é
+    // justamente quem não pode conferir olhando que aquilo não é a peça do balcão — e, sendo
+    // uma imagem gerada, quem também não tem como perceber que não é fotografia de ninguém.
+    alt: `Imagem ilustrativa de ${corte}, gerada por IA — não é a peça vendida`,
     review_status: "approved",
     variant_match: "exact",
     ilustrativa: true,
+    formato: "foto",
   };
 }
 
 // =============================================================================
 // MERCADOS
 // =============================================================================
-//
-// Quatro, fictícios, todos em Artemis. Os nomes NÃO imitam rede nenhuma, e os bairros são os
-// mesmos do seed — é por eles que `demo-identity.test.ts` casa as duas pontas.
 
-const MARKET_PRINCIPAL: Market = {
-  id: "11111111-1111-1111-1111-000000000001",
-  name: "Mercado principal",
-  neighborhood: "Centro",
-  address: "Rua Exemplo, 100 - Artemis",
-  maps_url: "https://maps.google.com/?q=-22.5,-47.5",
-  is_active: true,
-  is_demo: true,
-};
-
-const MARKET_LOCAL_2: Market = {
-  id: "11111111-1111-1111-1111-000000000002",
-  name: "Mercado local 2",
-  neighborhood: "Jardim Novo",
-  address: "Rua Exemplo, 200 - Artemis",
-  maps_url: "https://maps.google.com/?q=-22.51,-47.51",
-  is_active: true,
-  is_demo: true,
-};
-
-const MARKET_LOCAL_3: Market = {
-  id: "11111111-1111-1111-1111-000000000003",
-  name: "Mercado local 3",
-  neighborhood: "Vila Antiga",
-  address: "Rua Exemplo, 300 - Artemis",
+/**
+ * A loja real da demonstração.
+ *
+ * Endereço e link de mapa ficam nulos de propósito: eu não conferi nenhum dos dois, e um
+ * endereço errado na tela de alguém que conhece a própria loja é pior do que endereço nenhum.
+ */
+export const ACOUGUE_MOTA: Market = {
+  id: "11111111-1111-1111-1111-0000000000a1",
+  name: ACOUGUE_MOTA_NOME,
+  neighborhood: "Artemis",
+  address: null,
   maps_url: null,
   is_active: true,
   is_demo: true,
 };
 
-const MARKET_LOCAL_4: Market = {
-  id: "11111111-1111-1111-1111-000000000004",
-  name: "Mercado local 4",
-  neighborhood: "Beira Rio",
-  address: "Rua Exemplo, 400 - Artemis",
-  maps_url: "https://maps.google.com/?q=-22.52,-47.52",
+/**
+ * O segundo mercado — que não existe.
+ *
+ * Nome genérico, sem bairro, sem endereço, sem mapa. Cada campo vazio aqui é uma afirmação
+ * que a tela não vai poder fazer.
+ */
+export const MERCADO_EXEMPLO: Market = {
+  id: "11111111-1111-1111-1111-0000000000a2",
+  name: "Mercado 2",
+  neighborhood: null,
+  address: null,
+  maps_url: null,
   is_active: true,
   is_demo: true,
 };
 
-/**
- * Na ordem alfabética que `getMarkets()` devolveria — assim a escolha de mercado habitual feita
- * na demonstração continua válida se o ambiente trocar de fonte.
- */
-export const DEMO_MARKETS: readonly Market[] = [
-  MARKET_LOCAL_2,
-  MARKET_LOCAL_3,
-  MARKET_LOCAL_4,
-  MARKET_PRINCIPAL,
-];
+export const DEMO_MARKETS: readonly Market[] = [ACOUGUE_MOTA, MERCADO_EXEMPLO];
 
 // =============================================================================
 // PRODUTOS
 // =============================================================================
 //
-// TRÊS CAFÉS DE 500 g, e a razão é a tese inteira do produto: eles são marcas DIFERENTES, logo
-// produtos diferentes, logo comparações diferentes. Buscar "café" devolve três resultados; cada
-// um abre a sua própria comparação. Nada os mistura, em nenhum momento — princípio 1.
+// Corte de açougue não tem marca, variante nem embalagem — os três campos são nulos.
 //
-// O café de 250 g existe pelo motivo oposto: mesma marca, mesma variante, **gramatura
-// diferente**. Ele nunca entra na comparação do de 500 g, e a embalagem dele é visivelmente
-// menor. É o exemplo que faz a regra ser vista em vez de explicada.
+// Preencher `brand` com o nome da loja seria transformar o vendedor em fabricante, e faria dois
+// açougues venderem "produtos diferentes" para o mesmo corte, o que destruiria a comparação no
+// dia em que o segundo mercado for real.
+//
+// `size_text` é nulo porque **não existe gramatura**: a peça é fatiada na hora e pesada. Escrever
+// "1 kg" ali seria inventar uma embalagem para ter o que mostrar, e `parseSizeText` leria como
+// quantidade estruturada de verdade. Nulo produz o estado `missing` — ausência declarada, que é
+// o que de fato se sabe. A unidade de cobrança vive em `price_unit`, que é campo próprio.
 
-function produto(
-  id: string,
-  name: string,
-  brand: string,
-  variant: string,
-  size_text: string,
-  category: string,
-): Product {
+function corte(id: string, name: string, category: string): Product {
   return {
     id,
     name,
-    brand,
-    variant,
-    size_text,
-    // GTIN SEMPRE NULO (§16). Um código de barras válido pertence a um produto real de um
-    // fabricante real; pendurá-lo numa identidade fictícia é uma afirmação falsa sobre um
-    // identificador global, e inventar um é pior — ou colide com alguém, ou reprova no dígito
-    // verificador. Ausente é o estado honesto.
+    brand: null,
+    variant: null,
+    size_text: null,
     gtin: null,
     category,
     is_active: true,
@@ -148,131 +153,48 @@ function produto(
   };
 }
 
-export const PRODUTO_CAFE_SERRA_ALTA = produto(
-  "22222222-2222-2222-2222-000000000002",
-  "Café",
-  "Serra Alta",
-  "Tradicional",
-  "500 g",
-  "Mercearia",
+export const PRODUTO_FILE_DE_PEITO = corte(
+  "22222222-2222-2222-2222-0000000000a1",
+  "Filé de peito de frango",
+  "Aves",
 );
 
-export const PRODUTO_CAFE_MONTANHA_CLARA = produto(
-  "22222222-2222-2222-2222-000000000008",
-  "Café",
-  "Montanha Clara",
-  "Tradicional",
-  "500 g",
-  "Mercearia",
+export const PRODUTO_LINGUICA_CASEIRA = corte(
+  "22222222-2222-2222-2222-0000000000a2",
+  "Linguiça caseira",
+  "Embutidos",
 );
 
-export const PRODUTO_CAFE_VALE_VERDE = produto(
-  "22222222-2222-2222-2222-000000000009",
-  "Café",
-  "Vale Verde",
-  "Tradicional",
-  "500 g",
-  "Mercearia",
+export const PRODUTO_COXA_SOBRECOXA = corte(
+  "22222222-2222-2222-2222-0000000000a3",
+  "Coxa e sobrecoxa de frango",
+  "Aves",
 );
 
-export const PRODUTO_CAFE_SERRA_ALTA_250 = produto(
-  "22222222-2222-2222-2222-000000000007",
-  "Café",
-  "Serra Alta",
-  "Tradicional",
-  "250 g",
-  "Mercearia",
+export const PRODUTO_PATINHO = corte(
+  "22222222-2222-2222-2222-0000000000a4",
+  "Patinho bovino",
+  "Bovinos",
 );
 
-export const PRODUTO_ARROZ = produto(
-  "22222222-2222-2222-2222-000000000001",
-  "Arroz",
-  "Ouro do Campo",
-  "Tipo 1",
-  "5 kg",
-  "Mercearia",
-);
-
-export const PRODUTO_LEITE = produto(
-  "22222222-2222-2222-2222-000000000003",
-  "Leite",
-  "Boa Serra",
-  "Integral",
-  "1 L",
-  "Laticínios",
-);
-
-export const PRODUTO_OLEO = produto(
-  "22222222-2222-2222-2222-000000000004",
-  "Óleo de Soja",
-  "Vale Dourado",
-  "Tradicional",
-  "900 ml",
-  "Mercearia",
-);
-
-export const PRODUTO_DETERGENTE = produto(
-  "22222222-2222-2222-2222-000000000005",
-  "Detergente",
-  "Brilho Claro",
-  "Neutro",
-  "500 ml",
-  "Limpeza",
-);
-
-export const PRODUTO_PAPEL = produto(
-  "22222222-2222-2222-2222-000000000006",
-  "Papel Higiênico",
-  "Flor Macia",
-  "Folha Dupla",
-  "12 rolos",
-  "Higiene",
+export const PRODUTO_ACEM = corte(
+  "22222222-2222-2222-2222-0000000000a5",
+  "Acém sem osso",
+  "Bovinos",
 );
 
 /**
- * A EMBALAGEM É DO PRODUTO, NÃO DA TELA (§8).
+ * A IMAGEM É DO PRODUTO, NÃO DA TELA.
  *
- * Um mapa único, consultado por toda tela que desenha um produto. É isto que torna impossível
- * a embalagem mudar entre Home, busca, comparação e detalhe: não existe um segundo lugar onde
- * escolher outra.
+ * Um mapa único, consultado por toda tela que desenha um produto. É o que torna impossível a
+ * imagem mudar entre Home, busca, comparação e detalhe.
  */
 const IMAGEM_POR_PRODUTO: Readonly<Record<string, ImagemDeProduto>> = {
-  [PRODUTO_CAFE_SERRA_ALTA.id]: ilustracao(
-    "cafe-serra-alta.svg",
-    "embalagem fictícia de café Serra Alta Tradicional, 500 g",
-  ),
-  [PRODUTO_CAFE_SERRA_ALTA_250.id]: ilustracao(
-    "cafe-serra-alta-250.svg",
-    "embalagem fictícia de café Serra Alta Tradicional, 250 g",
-  ),
-  [PRODUTO_CAFE_MONTANHA_CLARA.id]: ilustracao(
-    "cafe-montanha-clara.svg",
-    "embalagem fictícia de café Montanha Clara Tradicional, 500 g",
-  ),
-  [PRODUTO_CAFE_VALE_VERDE.id]: ilustracao(
-    "cafe-vale-verde.svg",
-    "embalagem fictícia de café Vale Verde Tradicional, 500 g",
-  ),
-  [PRODUTO_ARROZ.id]: ilustracao(
-    "arroz-ouro-do-campo.svg",
-    "embalagem fictícia de arroz Ouro do Campo, 5 kg",
-  ),
-  [PRODUTO_LEITE.id]: ilustracao(
-    "leite-boa-serra.svg",
-    "embalagem fictícia de leite Boa Serra Integral, 1 L",
-  ),
-  [PRODUTO_OLEO.id]: ilustracao(
-    "oleo-vale-dourado.svg",
-    "embalagem fictícia de óleo de soja Vale Dourado, 900 ml",
-  ),
-  [PRODUTO_DETERGENTE.id]: ilustracao(
-    "detergente-brilho-claro.svg",
-    "embalagem fictícia de detergente Brilho Claro Neutro, 500 ml",
-  ),
-  [PRODUTO_PAPEL.id]: ilustracao(
-    "papel-flor-macia.svg",
-    "embalagem fictícia de papel higiênico Flor Macia Folha Dupla, 12 rolos",
-  ),
+  [PRODUTO_FILE_DE_PEITO.id]: ilustracao("file-de-peito.jpg", "filé de peito de frango"),
+  [PRODUTO_LINGUICA_CASEIRA.id]: ilustracao("linguica-caseira.jpg", "linguiça caseira"),
+  [PRODUTO_COXA_SOBRECOXA.id]: ilustracao("coxa-sobrecoxa.jpg", "coxa e sobrecoxa de frango"),
+  [PRODUTO_PATINHO.id]: ilustracao("patinho.jpg", "patinho bovino"),
+  [PRODUTO_ACEM.id]: ilustracao("acem-sem-osso.jpg", "acém sem osso"),
 };
 
 export function imagemDoProdutoDemo(productId: string): ImagemDeProduto | null {
@@ -280,15 +202,11 @@ export function imagemDoProdutoDemo(productId: string): ImagemDeProduto | null {
 }
 
 export const DEMO_PRODUCTS: readonly Product[] = [
-  PRODUTO_CAFE_SERRA_ALTA,
-  PRODUTO_CAFE_MONTANHA_CLARA,
-  PRODUTO_CAFE_VALE_VERDE,
-  PRODUTO_CAFE_SERRA_ALTA_250,
-  PRODUTO_ARROZ,
-  PRODUTO_LEITE,
-  PRODUTO_OLEO,
-  PRODUTO_DETERGENTE,
-  PRODUTO_PAPEL,
+  PRODUTO_FILE_DE_PEITO,
+  PRODUTO_LINGUICA_CASEIRA,
+  PRODUTO_COXA_SOBRECOXA,
+  PRODUTO_PATINHO,
+  PRODUTO_ACEM,
 ];
 
 // =============================================================================
@@ -307,224 +225,121 @@ interface Semente {
   readonly produto: Product;
   readonly mercado: Market;
   readonly price: number;
-  readonly source_type: OfertaCardV2["source_type"];
   readonly observadoHa: number;
-  readonly valePor: number | null;
-  readonly condicao: string | null;
+  /** Exemplo, e não observação. Nunca as duas coisas. */
+  readonly exemplo?: true;
 }
 
 /**
- * As ofertas da demonstração.
+ * Os dez preços: cinco observados, cinco de exemplo.
  *
- * Números escolhidos para que a comparação do café Serra Alta 500 g tenha **três** mercados —
- * que é o que o rótulo "Comparação em 3 mercados" vai dizer, e ele só pode dizer 3 porque são
- * 3 (§4 do mandato: "não inventar").
+ * Os observados são exatamente os das placas do balcão, sem arredondar e sem "melhorar".
+ * Os de exemplo foram escolhidos acima dos reais **porque foi assim que o Founder os pediu**
+ * — e nada no código garante que sempre será assim; a ordem continua saindo do preço.
  */
 const SEMENTES: readonly Semente[] = [
-  // Café Serra Alta 500 g — o produto do golden path, em três mercados.
+  // ---------- Açougue Mota — observado presencialmente em 08/08/2026 ----------
   {
-    id: "demo-price-cafe-serra-alta-m2",
-    produto: PRODUTO_CAFE_SERRA_ALTA,
-    mercado: MARKET_LOCAL_2,
-    price: 17.49,
-    source_type: "store_list",
+    id: "demo-price-mota-file-de-peito",
+    produto: PRODUTO_FILE_DE_PEITO,
+    mercado: ACOUGUE_MOTA,
+    price: 20.99,
     observadoHa: -1,
-    valePor: 4,
-    condicao: "Oferta válida enquanto durar o estoque",
   },
   {
-    id: "demo-price-cafe-serra-alta-m1",
-    produto: PRODUTO_CAFE_SERRA_ALTA,
-    mercado: MARKET_PRINCIPAL,
-    price: 18.29,
-    source_type: "weekly_audit",
-    observadoHa: -2,
-    valePor: null,
-    condicao: null,
+    id: "demo-price-mota-linguica-caseira",
+    produto: PRODUTO_LINGUICA_CASEIRA,
+    mercado: ACOUGUE_MOTA,
+    price: 26.99,
+    observadoHa: -1,
   },
   {
-    id: "demo-price-cafe-serra-alta-m4",
-    produto: PRODUTO_CAFE_SERRA_ALTA,
-    mercado: MARKET_LOCAL_4,
-    price: 19.9,
-    source_type: "shelf_photo",
-    observadoHa: -3,
-    valePor: 2,
-    condicao: "Limite de 2 unidades por cliente",
+    id: "demo-price-mota-coxa-sobrecoxa",
+    produto: PRODUTO_COXA_SOBRECOXA,
+    mercado: ACOUGUE_MOTA,
+    price: 11.99,
+    observadoHa: -1,
+  },
+  {
+    id: "demo-price-mota-patinho",
+    produto: PRODUTO_PATINHO,
+    mercado: ACOUGUE_MOTA,
+    price: 46.99,
+    observadoHa: -1,
+  },
+  {
+    id: "demo-price-mota-acem",
+    produto: PRODUTO_ACEM,
+    mercado: ACOUGUE_MOTA,
+    price: 39.99,
+    observadoHa: -1,
   },
 
-  // Os outros dois cafés de 500 g: marcas diferentes, comparações próprias.
+  // ---------- Mercado 2 — exemplo ilustrativo, nada disto foi observado ----------
   {
-    id: "demo-price-cafe-montanha-clara-m3",
-    produto: PRODUTO_CAFE_MONTANHA_CLARA,
-    mercado: MARKET_LOCAL_3,
-    price: 18.9,
-    source_type: "store_list",
+    id: "demo-price-exemplo-file-de-peito",
+    produto: PRODUTO_FILE_DE_PEITO,
+    mercado: MERCADO_EXEMPLO,
+    price: 22.49,
     observadoHa: -1,
-    valePor: 5,
-    condicao: null,
+    exemplo: true,
   },
   {
-    id: "demo-price-cafe-montanha-clara-m1",
-    produto: PRODUTO_CAFE_MONTANHA_CLARA,
-    mercado: MARKET_PRINCIPAL,
-    price: 19.49,
-    source_type: "weekly_audit",
-    observadoHa: -2,
-    valePor: null,
-    condicao: null,
-  },
-  {
-    id: "demo-price-cafe-vale-verde-m4",
-    produto: PRODUTO_CAFE_VALE_VERDE,
-    mercado: MARKET_LOCAL_4,
-    price: 21.9,
-    source_type: "shelf_photo",
-    observadoHa: -2,
-    valePor: null,
-    condicao: null,
-  },
-  {
-    id: "demo-price-cafe-vale-verde-m2",
-    produto: PRODUTO_CAFE_VALE_VERDE,
-    mercado: MARKET_LOCAL_2,
-    price: 22.4,
-    source_type: "store_list",
-    observadoHa: -3,
-    valePor: 3,
-    condicao: null,
-  },
-
-  // Mesma marca, OUTRA gramatura. Nunca entra na comparação do de 500 g.
-  {
-    id: "demo-price-cafe-serra-alta-250-m3",
-    produto: PRODUTO_CAFE_SERRA_ALTA_250,
-    mercado: MARKET_LOCAL_3,
-    price: 9.79,
-    source_type: "store_list",
+    id: "demo-price-exemplo-linguica-caseira",
+    produto: PRODUTO_LINGUICA_CASEIRA,
+    mercado: MERCADO_EXEMPLO,
+    price: 28.99,
     observadoHa: -1,
-    valePor: 4,
-    condicao: null,
+    exemplo: true,
   },
-
-  // Arroz — o segundo Achado da Home.
   {
-    id: "demo-price-arroz-m3",
-    produto: PRODUTO_ARROZ,
-    mercado: MARKET_LOCAL_3,
-    price: 26.49,
-    source_type: "store_list",
+    id: "demo-price-exemplo-coxa-sobrecoxa",
+    produto: PRODUTO_COXA_SOBRECOXA,
+    mercado: MERCADO_EXEMPLO,
+    price: 13.49,
     observadoHa: -1,
-    valePor: 5,
-    condicao: "Limite de 2 unidades por cliente",
+    exemplo: true,
   },
   {
-    id: "demo-price-arroz-m1",
-    produto: PRODUTO_ARROZ,
-    mercado: MARKET_PRINCIPAL,
-    price: 27.9,
-    source_type: "weekly_audit",
-    observadoHa: -2,
-    valePor: null,
-    condicao: null,
-  },
-
-  // Leite — o terceiro Achado da Home.
-  {
-    id: "demo-price-leite-m1",
-    produto: PRODUTO_LEITE,
-    mercado: MARKET_PRINCIPAL,
-    price: 5.29,
-    source_type: "weekly_audit",
-    observadoHa: -2,
-    valePor: null,
-    condicao: null,
-  },
-  {
-    id: "demo-price-leite-m2",
-    produto: PRODUTO_LEITE,
-    mercado: MARKET_LOCAL_2,
-    price: 5.69,
-    source_type: "store_list",
+    id: "demo-price-exemplo-patinho",
+    produto: PRODUTO_PATINHO,
+    mercado: MERCADO_EXEMPLO,
+    price: 49.99,
     observadoHa: -1,
-    valePor: 3,
-    condicao: null,
-  },
-
-  // O resto do catálogo, para que a busca não devolva vazio em nenhuma categoria da Home.
-  {
-    id: "demo-price-oleo-m2",
-    produto: PRODUTO_OLEO,
-    mercado: MARKET_LOCAL_2,
-    price: 7.49,
-    source_type: "store_list",
-    observadoHa: -2,
-    valePor: 4,
-    condicao: null,
+    exemplo: true,
   },
   {
-    id: "demo-price-oleo-m3",
-    produto: PRODUTO_OLEO,
-    mercado: MARKET_LOCAL_3,
-    price: 7.99,
-    source_type: "shelf_photo",
-    observadoHa: -3,
-    valePor: null,
-    condicao: null,
-  },
-  {
-    id: "demo-price-detergente-m4",
-    produto: PRODUTO_DETERGENTE,
-    mercado: MARKET_LOCAL_4,
-    price: 2.49,
-    source_type: "receipt",
-    observadoHa: -2,
-    valePor: null,
-    condicao: null,
-  },
-  {
-    id: "demo-price-detergente-m1",
-    produto: PRODUTO_DETERGENTE,
-    mercado: MARKET_PRINCIPAL,
-    price: 2.79,
-    source_type: "shelf_photo",
+    id: "demo-price-exemplo-acem",
+    produto: PRODUTO_ACEM,
+    mercado: MERCADO_EXEMPLO,
+    price: 42.99,
     observadoHa: -1,
-    valePor: null,
-    condicao: null,
-  },
-  {
-    id: "demo-price-papel-m3",
-    produto: PRODUTO_PAPEL,
-    mercado: MARKET_LOCAL_3,
-    price: 24.9,
-    source_type: "store_list",
-    observadoHa: -2,
-    valePor: 6,
-    condicao: "Preço válido para pagamento à vista",
-  },
-  {
-    id: "demo-price-papel-m4",
-    produto: PRODUTO_PAPEL,
-    mercado: MARKET_LOCAL_4,
-    price: 26.9,
-    source_type: "weekly_audit",
-    observadoHa: -4,
-    valePor: null,
-    condicao: null,
+    exemplo: true,
   },
 ];
 
-/** Todas as ofertas da demonstração, com produto, mercado e imagem já resolvidos. */
+/**
+ * Todas as ofertas da demonstração, com produto, mercado e imagem já resolvidos.
+ *
+ * A linha de exemplo sai daqui **sem imagem**. Não é economia de asset: dar a mesma
+ * ilustração ao Mercado 2 faria as duas linhas parecerem igualmente observadas, que é
+ * exatamente a confusão que esta demonstração não pode criar.
+ */
 export function construirOfertasDemo(now: Date = new Date()): OfertaCardV2[] {
   return SEMENTES.map((s) => ({
     id: s.id,
     product_id: s.produto.id,
     market_id: s.mercado.id,
     price: s.price,
-    source_type: s.source_type,
+    price_unit: "kg" as const,
+    // `shelf_photo` descreve a coleta real: as placas do balcão foram fotografadas. Na linha
+    // de exemplo o campo continua preenchido porque o domínio o exige, e a tela é proibida de
+    // desenhá-lo — ver `exemploIlustrativo` em `card-v2.ts`.
+    source_type: "shelf_photo" as const,
     observed_at: dias(now, s.observadoHa),
-    valid_until: s.valePor === null ? null : dias(now, s.valePor),
-    special_condition: s.condicao,
+    // Preço de balcão não tem validade anunciada, e inventar uma criaria urgência falsa.
+    valid_until: null,
+    special_condition: null,
     source_reference: DEMO_FIXTURE_REFERENCE,
     is_featured: true,
     is_active: true,
@@ -532,7 +347,8 @@ export function construirOfertasDemo(now: Date = new Date()): OfertaCardV2[] {
     created_at: dias(now, s.observadoHa),
     market: s.mercado,
     product: s.produto,
-    image: imagemDoProdutoDemo(s.produto.id),
+    image: s.exemplo === true ? null : imagemDoProdutoDemo(s.produto.id),
+    ...(s.exemplo === true ? { exemplo_ilustrativo: true as const } : {}),
   }));
 }
 

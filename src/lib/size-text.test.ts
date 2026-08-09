@@ -200,12 +200,38 @@ describe("parseSizeText — os sete produtos do seed fictício", () => {
     expect(normalizado).toEqual({ status: "ok", quantity: { value: valor, unit: unidade } });
   });
 
-  it("o fixture demo é legível de ponta a ponta, e continua sem virar identidade", () => {
+  /**
+   * A PERGUNTA MUDOU EM 09/08/2026, PORQUE O FIXTURE MUDOU DE RAMO.
+   *
+   * Antes ele descrevia mercearia embalada — café 500 g, arroz 5 kg —, e a pergunta certa era
+   * "todo `size_text` do fixture é legível?". Hoje ele descreve cortes de açougue vendidos a
+   * quilo, que **não têm gramatura**: a peça é fatiada na hora e pesada na balança.
+   *
+   * Manter o `parsed` teria uma única saída: escrever "1 kg" em `size_text` para o teste passar.
+   * Isso inventaria uma embalagem que não existe, e `parseSizeText` a leria como quantidade
+   * estruturada de verdade — exatamente o erro que este módulo inteiro existe para não cometer.
+   *
+   * Então a asserção passa a exigir o estado que corresponde ao mundo: **ausência declarada**.
+   * `missing` não é o teste desistindo; é a leitura dizendo "não há quantidade aqui" em vez de
+   * adivinhar uma. E a segunda metade continua igual e vale para os dois ramos: ler nunca
+   * escreve identidade.
+   */
+  it("o fixture demo declara ausência de gramatura, e não a inventa", () => {
     for (const achado of buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"))) {
-      expect(parseSizeText(achado.product.size_text).status).toBe("parsed");
+      const leitura = parseSizeText(achado.product.size_text);
+      expect(leitura.status, `${achado.product.name}`).toBe("missing");
       // A leitura não escreve em lugar nenhum: o produto continua sem campo estruturado.
       expect(achado.product.quantity_value).toBeUndefined();
       expect(achado.product.package_type).toBeUndefined();
+    }
+  });
+
+  it("e nenhum corte ganhou gramatura por um caminho lateral", () => {
+    // O risco que sobra depois da mudança acima: alguém preenche `size_text` com "1 kg" para
+    // "ficar mais bonito na tela" e reabre a porta que o teste anterior fechou. Aqui a proibição
+    // é dita no dado, e não na intenção.
+    for (const achado of buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"))) {
+      expect(achado.product.size_text).toBeNull();
     }
   });
 });

@@ -127,6 +127,8 @@ export interface ResumoDeBusca {
   readonly imagem: ImagemDeProduto | null;
   /** `null` quando o produto existe mas não tem preço válido em nenhum mercado. */
   readonly menorPreco: number | null;
+  /** Unidade em que o menor preço foi cobrado, quando a oferta declara uma. */
+  readonly unidadeDePreco: OfertaCardV2["price_unit"];
   readonly mercado: Market | null;
   readonly mercados: number;
 }
@@ -153,6 +155,7 @@ export async function resumirBusca(
       product,
       imagem: source === "demo" ? imagemDoProdutoDemo(product.id) : null,
       menorPreco: melhor?.price ?? null,
+      unidadeDePreco: melhor?.price_unit,
       mercado: melhor?.market ?? null,
       mercados: entries.length,
     };

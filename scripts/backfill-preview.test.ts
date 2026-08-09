@@ -221,7 +221,19 @@ describe("execução contra os dados versionados", () => {
     }
   });
 
-  it("o fixture de demonstração é legível de ponta a ponta", () => {
+  /**
+   * A PERGUNTA MUDOU COM O RAMO DO FIXTURE (09/08/2026).
+   *
+   * Ele descrevia mercearia embalada, e "toda linha vira proposta segura" era o que se queria
+   * saber. Hoje descreve cortes de açougue vendidos a quilo, sem gramatura nenhuma — e a
+   * ferramenta tem um estado exato para isso: `ausente`.
+   *
+   * O que o teste protege continua sendo o mesmo, e é a única coisa que importa aqui: a
+   * ferramenta **classifica** cada linha, e nenhuma delas escapa sem classificação. Exigir
+   * `proposta_segura` de um produto sem quantidade obrigaria a inventar uma quantidade só para
+   * o teste ficar verde, que é o oposto do que ela existe para impedir.
+   */
+  it("o fixture de demonstração é classificado linha a linha, sem nenhuma escapar", () => {
     const linhas = buildDemoOpportunities(new Date("2026-08-03T12:00:00Z")).map((achado) => ({
       id: achado.product.id,
       name: achado.product.name,
@@ -230,7 +242,13 @@ describe("execução contra os dados versionados", () => {
       size_text: achado.product.size_text,
     }));
     const relatorio = preverBackfill(linhas);
-    expect(relatorio.every((p) => p.estado === "proposta_segura")).toBe(true);
+    expect(relatorio).toHaveLength(linhas.length);
+    // Corte vendido a quilo não tem gramatura: `ausente` é a leitura correta, e nenhuma
+    // proposta pode sair dela.
+    for (const p of relatorio) {
+      expect(p.estado, `${p.product_id}`).toBe("ausente");
+      expect(p.proposta).toBeNull();
+    }
   });
 
   it("o relatório diz, em texto, que nada foi escrito", () => {

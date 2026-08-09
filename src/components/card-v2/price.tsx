@@ -57,6 +57,13 @@ export function PriceDisplay({
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>
         <span className="ml-1">{preco.numero}</span>
+        {/* A UNIDADE COLADA NO NÚMERO, como a placa do balcão escreve.
+            Menor e mais leve de propósito: ela qualifica o preço, não compete com ele. Fora
+            daqui — numa linha própria abaixo — deixaria de ser lida junto e voltaria a ser
+            possível ler "R$ 20,99" como o preço de uma peça. */}
+        {preco.unidade !== null ? (
+          <span className="text-muted-foreground ml-0.5 text-[42%] font-bold">{preco.unidade}</span>
+        ) : null}
       </p>
       <VisuallyHidden>{preco.falado}</VisuallyHidden>
     </>

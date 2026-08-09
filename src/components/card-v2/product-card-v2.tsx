@@ -165,31 +165,61 @@ export function ProductCardV2({
             da imagem de 96; "R$ 26,49" a 2.25rem ocupa ~130. A cada faixa em que a coluna
             cresce, imagem e preço crescem junto — nunca antes. Foi assim que R3.3B descobriu o
             estouro a 320: medindo a captura, não lendo o código. */}
-        <div className={`flex items-start ${destaque ? "gap-4 sm:gap-5" : "gap-3"}`}>
-          <ProductImage
-            imagem={visao.imagem}
-            categoria={oferta.product.category}
-            tamanho={destaque ? "destaque" : "lista"}
-            prioridade={destaque}
-          />
+        {/* =====================================================================
+            09/08/2026 — NO DESTAQUE A IMAGEM SAIU DA LINHA E VIROU A PRIMEIRA COISA DA TELA
+            =====================================================================
 
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <ProductIdentity
-              identidade={visao.identidade}
-              tituloId={tituloId}
-              destaque={destaque}
+            Enquanto o produto era embalagem desenhada em SVG, uma arte de 128 px ao lado do
+            texto funcionava: a silhueta do pacote é reconhecível pequena. Foto de alimento não
+            é — a 128 px, um corte de carne vira uma mancha vermelha, e o card volta a se
+            sustentar só na tipografia.
+
+            Agora o destaque empilha: foto em largura inteira, 5:3, e a identidade abaixo dela.
+            É a composição da referência, e é o que responde ao pedido de "imagens maiores, mais
+            bonitas e mais centrais". A ordem do DOM não muda — imagem, nome, preço, mercado —,
+            então o leitor de tela ouve exatamente a mesma sequência de antes.
+
+            Fora do destaque a imagem continua ao lado: numa lista de cinco linhas, cinco fotos
+            de largura inteira viram cinco telas de rolagem. */}
+        {destaque ? (
+          <div className="flex flex-col gap-3">
+            <ProductImage
+              imagem={visao.imagem}
+              categoria={oferta.product.category}
+              tamanho="heroi"
+              prioridade
             />
-            <OfferStatus estado={visao.estado} />
-            <div className="flex flex-col gap-0.5">
-              <PriceDisplay
-                preco={visao.preco}
-                destaque={destaque}
-                atenuado={!visao.naListaOrganica}
-              />
-              <UnitPrice unitario={visao.unitario} />
+            <div className="flex flex-col gap-1.5">
+              <ProductIdentity identidade={visao.identidade} tituloId={tituloId} destaque />
+              <OfferStatus estado={visao.estado} />
+              <div className="flex flex-col gap-0.5">
+                <PriceDisplay preco={visao.preco} destaque atenuado={!visao.naListaOrganica} />
+                <UnitPrice unitario={visao.unitario} />
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <ProductImage
+              imagem={visao.imagem}
+              categoria={oferta.product.category}
+              tamanho="lista"
+            />
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <ProductIdentity identidade={visao.identidade} tituloId={tituloId} destaque={false} />
+              <OfferStatus estado={visao.estado} />
+              <div className="flex flex-col gap-0.5">
+                <PriceDisplay
+                  preco={visao.preco}
+                  destaque={false}
+                  atenuado={!visao.naListaOrganica}
+                />
+                <UnitPrice unitario={visao.unitario} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Mercado e bairro continuam colados no preço — "quanto custa, e onde" segue sendo uma
             pergunta só. O que mudou é que o preço agora termina a coluna da direita, e estas
@@ -202,7 +232,16 @@ export function ProductCardV2({
 
         <PromotionCondition condicao={visao.condicao} />
 
-        <ProvenanceBlock procedencia={visao.procedencia} sourceType={oferta.source_type} />
+        {/* Procedência é de quem foi observado. Numa linha de exemplo não há fonte, não há data
+            de coleta e não há etiqueta fotografada — desenhar o bloco ali carimbaria observação
+            num número inventado. O que aparece no lugar é o que a linha realmente é. */}
+        {visao.exemploIlustrativo ? (
+          <p className="text-muted-foreground text-xs">
+            Exemplo ilustrativo — este preço não foi observado.
+          </p>
+        ) : (
+          <ProvenanceBlock procedencia={visao.procedencia} sourceType={oferta.source_type} />
+        )}
 
         {avisoParcial !== null ? (
           <p id={avisoId} className="text-muted-foreground flex items-start gap-1.5 text-xs">

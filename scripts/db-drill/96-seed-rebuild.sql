@@ -22,10 +22,16 @@
 -- seed ja duplicou linhas de preco uma vez, quando nao tinha id explicito -- por
 -- isso ele hoje usa `ON CONFLICT DO NOTHING`, e por isso a contagem exata e o
 -- teste que teria pego aquilo.
+--
+-- 7 -> 9 produtos e 22 -> 26 precos na convergencia B2C com o North Star: o
+-- catalogo de demonstracao passou a ter tres cafes comparaveis (Serra Alta,
+-- Montanha Clara, Vale Verde) em vez de um, porque a tela de comparacao precisa
+-- de mais de uma oferta para existir. Os numeros sao atualizados A MAO de
+-- proposito -- deriva-los do proprio seed faria a asserção passar sozinha.
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
-  esperado CONSTANT jsonb := '{"markets": 4, "products": 7, "prices": 22}';
+  esperado CONSTANT jsonb := '{"markets": 4, "products": 9, "prices": 26}';
   tabela text;
   contado bigint;
   alvo bigint;

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Store } from "lucide-react";
 import { ProductImage } from "@/components/card-v2/identity";
+import { isDemoMode } from "@/lib/app-mode";
 import { montarVisaoDoCard } from "@/lib/card-v2";
 import { formatDate, formatPrice, formatProductName } from "@/lib/format";
 import type { ResumoDeBusca } from "@/services/demo-source";
@@ -29,7 +30,10 @@ import type { ResumoDeBusca } from "@/services/demo-source";
 export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: Date }) {
   const { product, imagem, melhor, basePorUnidade, granel, mercados } = resumo;
   const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
-  const visao = melhor === null ? null : montarVisaoDoCard(melhor, now, formatDate);
+  const visao =
+    melhor === null
+      ? null
+      : montarVisaoDoCard(melhor, now, formatDate, { snapshotHistorico: isDemoMode() });
   const embalagensDiferentes = basePorUnidade !== undefined;
 
   return (

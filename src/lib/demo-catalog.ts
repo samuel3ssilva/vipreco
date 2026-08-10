@@ -68,11 +68,13 @@ export const DEMO_FIXTURE_REFERENCE =
   "Planilha Comparativo_Precos_Supermercados_09-08-2026 — encartes, tabloides e fotos de loja, 03–12/08/2026";
 
 /**
- * A frase que diz o que este dado é. Cinco mercados reais, fontes reais, período real —
- * e a palavra "demonstração" na frente, porque é o que isto é (§copy do mandato).
+ * A frase que diz o que este dado é — curta, porque agora ela é a ÚNICA nota por tela
+ * (§17 do mandato de polish): a explicação completa vive em /como-funciona. "Observados em
+ * agosto de 2026" é a moldura de snapshot do §18 — a demo não afirma vigência, afirma
+ * observação com data.
  */
 export const DEMO_NATUREZA_DO_DADO =
-  "Comparação de demonstração: preços coletados em encartes, tabloides e fotos de loja entre 03 e 12/08/2026, em cinco mercados de Piracicaba e região.";
+  "Demonstração com preços observados em agosto de 2026, em cinco mercados de Piracicaba e região.";
 
 // =============================================================================
 // FONTES — cada oferta declara de onde veio, com o rótulo do §15
@@ -467,10 +469,9 @@ export const DEMO_PRODUCTS: readonly Product[] = [
 //   embalagem, publicada pelo mercado, recortada limpa. Nenhuma embalagem foi gerada ou
 //   imitada, e nenhuma imagem foi baixada da internet.
 //
-// Três SKUs ficam SEM imagem de propósito: bisteca bovina (nenhuma imagem IA fornecida
-// corresponde ao corte), Elseve 200 ml e Sanol 7 unidades (o único material fornecido é
-// foto de tabloide impresso, sem qualidade para recorte limpo). Placeholder — porque
-// imagem errada é pior que imagem nenhuma.
+// Dois SKUs ficam SEM imagem de propósito: Elseve 200 ml e Sanol 7 unidades (o único
+// material fornecido é foto de tabloide impresso, sem qualidade para recorte limpo).
+// Placeholder — porque imagem errada é pior que imagem nenhuma.
 
 function ilustracaoIA(arquivo: string, corte: string): ImagemDeProduto {
   return {
@@ -496,6 +497,7 @@ function recorteDeEncarte(arquivo: string, descricao: string): ImagemDeProduto {
 const IMAGEM_POR_PRODUTO: Readonly<Record<string, ImagemDeProduto>> = {
   [PRODUTO_FRANGO_INTEIRO.id]: ilustracaoIA("frango-inteiro.jpg", "frango inteiro"),
   [PRODUTO_BUCHO.id]: ilustracaoIA("bucho-bovino.jpg", "bucho bovino"),
+  [PRODUTO_BISTECA.id]: ilustracaoIA("bisteca-bovina.jpg", "bisteca bovina"),
   [PRODUTO_CEBOLA.id]: ilustracaoIA("cebola.jpg", "cebola"),
   [PRODUTO_OLEO_LIZA.id]: recorteDeEncarte("liza-900.jpg", "Garrafa de óleo de soja Liza 900 ml"),
   [PRODUTO_FAROFA_YOKI.id]: recorteDeEncarte(
@@ -934,6 +936,23 @@ export function ordenarPorCustoUnitario(ofertas: OfertaCardV2[]): OfertaCardV2[]
     if (ub === null) return -1;
     return ua - ub || a.price - b.price || a.id.localeCompare(b.id);
   });
+}
+
+/**
+ * §18 do mandato de polish — a demonstração é um SNAPSHOT HISTÓRICO.
+ *
+ * O critério de entrada da demo é "foi observada e está ativa", e NÃO o `isValidPrice()`
+ * do piloto: os encartes desta coleta venceram em 09 e 12/08/2026, e uma demo que apagasse
+ * as próprias ofertas dias depois da coleta se autodestruiria diante do Founder. O que a
+ * honestidade exige não é sumir com o preço observado — é nunca afirmar vigência: a tela
+ * escreve "valeu até 09/08" quando a validade passou (`validadePassada` na visão do card)
+ * e a nota da demo diz "preços observados em agosto de 2026".
+ *
+ * O piloto não passa por aqui. Lá, preço vencido continua saindo da lista pelo princípio 2
+ * (`isValidPrice()` + RLS), intocados.
+ */
+export function observadaNoSnapshot(oferta: OfertaCardV2, now: Date): boolean {
+  return oferta.is_active && Date.parse(oferta.observed_at) <= now.getTime();
 }
 
 /** Um preço por mercado — o válido mais recente —, como a policy de RLS faria. */

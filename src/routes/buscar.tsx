@@ -8,6 +8,7 @@ import { SearchResultCard } from "@/components/SearchResultCard";
 import { StateMessage } from "@/components/StateMessage";
 import { DemoNote } from "@/components/DemoNote";
 import { appMode } from "@/lib/app-mode";
+import { SHORTCUTS } from "@/lib/atalhos-de-busca";
 import { buscarProdutos, resumirBusca } from "@/services/demo-source";
 
 const searchSchema = z.object({ q: z.string().optional() });
@@ -73,6 +74,38 @@ export const Route = createFileRoute("/buscar")({
   ),
 });
 
+/**
+ * §10 do polish — a página de resultados continua um CATÁLOGO mesmo com um resultado só.
+ *
+ * Com 12 grupos, a maioria das buscas devolve 1–2 cards, e o que sobrava era fundo vazio.
+ * Os mesmos atalhos da Home entram depois da lista como "Continue explorando": composição
+ * intencional em vez de deserto, e nenhum dado novo — cada atalho já é garantido por teste
+ * a devolver resultado. O atalho igual ao termo atual não aparece: oferecê-lo seria um
+ * botão para a página em que a pessoa já está.
+ */
+function AtalhosDeExploracao({ termo }: { termo: string }) {
+  const atalhos = SHORTCUTS.filter((s) => s.toLowerCase() !== termo.toLowerCase());
+  if (atalhos.length === 0) return null;
+  return (
+    <nav aria-label="Continue explorando" className="space-y-2 pt-1">
+      <h3 className="eyebrow">Continue explorando</h3>
+      <ul className="flex flex-wrap gap-2">
+        {atalhos.map((atalho) => (
+          <li key={atalho}>
+            <Link
+              to="/buscar"
+              search={{ q: atalho }}
+              className="btn-base btn-secondary btn-touch-48 rounded-full px-4 text-sm font-semibold"
+            >
+              {atalho}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 function SearchPage() {
   const { termo, resultados } = Route.useLoaderData();
   const now = useMemo(() => new Date(), []);
@@ -111,16 +144,19 @@ function SearchPage() {
             </p>
           </div>
         ) : resultados.length === 0 ? (
-          <StateMessage
-            variant="empty"
-            title={`Nenhum produto encontrado para "${termo}".`}
-            description="Tente outro nome, ou volte para os Achados."
-            action={
-              <Link to="/" className="btn-base btn-secondary btn-touch-48">
-                Ver os Achados
-              </Link>
-            }
-          />
+          <>
+            <StateMessage
+              variant="empty"
+              title={`Nenhum produto encontrado para "${termo}".`}
+              description="Tente outro nome, ou volte para os Achados."
+              action={
+                <Link to="/" className="btn-base btn-secondary btn-touch-48">
+                  Ver os Achados
+                </Link>
+              }
+            />
+            <AtalhosDeExploracao termo={termo} />
+          </>
         ) : (
           <>
             <div>
@@ -142,6 +178,8 @@ function SearchPage() {
                 <SearchResultCard key={resumo.product.id} resumo={resumo} now={now} />
               ))}
             </ul>
+
+            <AtalhosDeExploracao termo={termo} />
 
             <DemoNote />
           </>

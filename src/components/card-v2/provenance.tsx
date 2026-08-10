@@ -29,7 +29,14 @@ import type { SourceType } from "@/types/domain";
  * Nenhuma data é inventada e nenhuma urgência é fabricada: não há contagem regressiva,
  * não há "faltam X horas", não há "últimas unidades".
  */
-export function ValidityLabel({ validoAte }: { validoAte: string | null }) {
+export function ValidityLabel({
+  validoAte,
+  validadePassada = false,
+}: {
+  validoAte: string | null;
+  /** Validade que já passou muda o verbo: "valeu até" — nunca se afirma vigência vencida (§18). */
+  validadePassada?: boolean;
+}) {
   if (validoAte === null) {
     return (
       <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
@@ -41,7 +48,7 @@ export function ValidityLabel({ validoAte }: { validoAte: string | null }) {
   return (
     <span className="text-muted-foreground inline-flex items-center gap-1 text-xs tabular-nums">
       <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
-      válido até {validoAte}
+      {validadePassada ? "valeu até" : "válido até"} {validoAte}
     </span>
   );
 }
@@ -77,7 +84,10 @@ export function ProvenanceBlock({
       {/* O rótulo é o que `montarVisaoDoCard` resolveu — o declarado pela coleta quando há
           um, o do enum quando não há. O nível de evidência continua sendo o do enum. */}
       <SourceBadge source={sourceType} label={procedencia.origem} />
-      <ValidityLabel validoAte={procedencia.validoAte} />
+      <ValidityLabel
+        validoAte={procedencia.validoAte}
+        validadePassada={procedencia.validadePassada}
+      />
       {/* R3.3B tirou o `font-data` desta linha e da validade. "observado em 05/08/2026 · ontem"
           é texto corrido, e a própria regra do design system reserva a monoespaçada a dado
           tabular de fato. Em mono, ela era o elemento que mais fazia o card parecer log de

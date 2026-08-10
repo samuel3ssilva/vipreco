@@ -4,7 +4,6 @@ import { ArrowLeft, CalendarClock, Clock, MapPin, Store } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PesoSelector } from "@/components/PesoSelector";
 import { ProductImage } from "@/components/card-v2/identity";
-import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
 import { ShareAchadoButton } from "@/components/ShareAchadoButton";
 import { WhatsAppGlyph } from "@/components/WhatsAppCta";
@@ -93,7 +92,10 @@ function OfferPage() {
 
   const { product, market } = oferta;
   const granel = oferta.price_unit === "kg";
-  const visao = montarVisaoDoCard(oferta, now, formatDate, granel ? { gramas } : {});
+  const visao = montarVisaoDoCard(oferta, now, formatDate, {
+    ...(granel ? { gramas } : {}),
+    snapshotHistorico: isDemoMode(),
+  });
   const detalhes = [product.variant, product.size_text].filter(Boolean).join(" · ");
   const whatsapp = mensagemDeOferta(oferta.id, product.name);
   const onde = localidade(market.neighborhood);
@@ -212,26 +214,27 @@ function OfferPage() {
           ) : null}
         </section>
 
-        {/* 5. AÇÃO */}
+        {/* 5. AÇÃO — §14: comparar é o núcleo do produto e vem primeiro, sólido; o WhatsApp
+            é o contato contextual, depois, contornado. A ficha tinha os dois invertidos. */}
         <div className="space-y-2">
+          <Link
+            to="/produto/$productId"
+            params={{ productId }}
+            className="btn-base btn-primary btn-touch-48 w-full"
+          >
+            Comparar preços
+          </Link>
           {whatsapp ? (
-            <a href={whatsapp} className="btn-base btn-primary btn-touch-48 w-full">
+            <a href={whatsapp} className="btn-base btn-secondary btn-touch-48 w-full">
               <WhatsAppGlyph />
               Receber achados no WhatsApp
             </a>
           ) : (
-            <Link to="/whatsapp" className="btn-base btn-primary btn-touch-48 w-full">
+            <Link to="/whatsapp" className="btn-base btn-secondary btn-touch-48 w-full">
               <WhatsAppGlyph />
               Receber achados no WhatsApp
             </Link>
           )}
-          <Link
-            to="/produto/$productId"
-            params={{ productId }}
-            className="btn-base btn-secondary btn-touch-48 w-full"
-          >
-            Comparar com os outros mercados
-          </Link>
         </div>
 
         {/* 6. PROCEDÊNCIA */}
@@ -243,6 +246,8 @@ function OfferPage() {
             Confiança da informação
           </h2>
           <dl className="mt-2.5 space-y-2 text-sm">
+            {/* O selo de fonte É a linha — repetir o mesmo rótulo num badge logo abaixo
+                era a mesma string duas vezes dentro de uma caixa de quatro linhas (§14). */}
             <Linha
               icone={<Store aria-hidden="true" className="size-3.5 shrink-0" />}
               rotulo="Fonte"
@@ -260,13 +265,10 @@ function OfferPage() {
               rotulo="Validade"
             >
               {visao.procedencia.validoAte !== null
-                ? `até ${visao.procedencia.validoAte}`
+                ? `${visao.procedencia.validadePassada ? "valeu até" : "até"} ${visao.procedencia.validoAte}`
                 : "não informada"}
             </Linha>
           </dl>
-          <div className="mt-3">
-            <SourceBadge source={oferta.source_type} label={visao.procedencia.origem} />
-          </div>
         </section>
 
         <DemoNote />

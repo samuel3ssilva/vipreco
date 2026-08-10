@@ -71,10 +71,28 @@ export function formatDate(value: string | Date): string {
   }).format(date);
 }
 
-/** Texto relativo simples: "hoje", "ontem", "há 3 dias". */
+/**
+ * O dia CIVIL do instante, no fuso do piloto, como número de dias desde a época.
+ *
+ * É o que permite comparar "que dia era" em vez de "quantas horas se passaram". A conta por
+ * janelas de 24h que existia antes chamava de "hoje" um preço observado ontem à noite —
+ * "observado em 09/08 · hoje" lido no dia 10 é uma contradição impressa, e a regra do
+ * produto é que data e período permanecem verdadeiros.
+ */
+function diaCivil(date: Date): number {
+  const [ano, mes, dia] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  })
+    .format(date)
+    .split("-")
+    .map(Number);
+  return Date.UTC(ano, mes - 1, dia) / 86_400_000;
+}
+
+/** Texto relativo simples: "hoje", "ontem", "há 3 dias" — por dia civil, não por 24 h. */
 export function formatRelativeDay(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === "string" ? new Date(value) : value;
-  const days = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  const days = diaCivil(now) - diaCivil(date);
   if (days <= 0) return "hoje";
   if (days === 1) return "ontem";
   if (days < 30) return `há ${days} dias`;

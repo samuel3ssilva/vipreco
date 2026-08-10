@@ -10,11 +10,11 @@ import {
   PRODUTO_TIXAN,
   construirOfertasDemo,
   grupoDoProduto,
+  observadaNoSnapshot,
   ordenarOfertas,
   ordenarPorCustoUnitario,
   umPrecoPorMercado,
 } from "@/lib/demo-catalog";
-import { isValidPrice } from "@/lib/comparison";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 
 /**
@@ -59,7 +59,8 @@ const GRUPOS_DA_HOME = [
 
 /**
  * A oferta que representa um grupo na vitrine: a vencedora pelo critério do grupo,
- * considerando só as válidas AGORA — a mesma conta da tela de comparação.
+ * considerando o SNAPSHOT observado (§18) — a mesma conta da tela de comparação, para que
+ * o card da Home e o topo da comparação nunca discordem.
  */
 function vencedoraDoGrupo(productId: string, now: Date): OfertaCardV2 | null {
   const grupo = grupoDoProduto(productId);
@@ -67,11 +68,13 @@ function vencedoraDoGrupo(productId: string, now: Date): OfertaCardV2 | null {
     throw new Error(`Achado da Home aponta para grupo inexistente: ${productId}`);
   }
   const ids = new Set(grupo.sementes.map((s) => s.id));
-  const validas = umPrecoPorMercado(
-    construirOfertasDemo().filter((o) => ids.has(o.id) && isValidPrice(o, now)),
+  const observadas = umPrecoPorMercado(
+    construirOfertasDemo().filter((o) => ids.has(o.id) && observadaNoSnapshot(o, now)),
   );
   const ordenadas =
-    grupo.basePorUnidade === undefined ? ordenarOfertas(validas) : ordenarPorCustoUnitario(validas);
+    grupo.basePorUnidade === undefined
+      ? ordenarOfertas(observadas)
+      : ordenarPorCustoUnitario(observadas);
   const vencedora = ordenadas[0];
   if (vencedora === undefined) return null;
   return {

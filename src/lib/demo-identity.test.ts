@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEMO_MARKETS, buildDemoOpportunities } from "./demo-opportunities";
 import { DEMO_PRODUCTS, grupoDoProduto, imagemDoProdutoDemo } from "./demo-catalog";
+import { SHORTCUTS } from "./atalhos-de-busca";
 
 /**
  * O instante canônico dos testes da demo v2: dentro da janela em que TODAS as ofertas da
@@ -179,14 +180,13 @@ describe("a demonstração inteira lê uma coleção só", () => {
 
   it("a imagem de cada Achado é a do mapa do catálogo, e não uma escolhida na Home", () => {
     // É isto que torna impossível a embalagem mudar entre Home, busca, comparação e detalhe:
-    // não existe um segundo lugar onde escolher outra. A bisteca bovina fica SEM imagem de
-    // propósito — nenhuma IA fornecida corresponde ao corte, e o placeholder é a resposta
-    // do §10 ("wrong image is worse than no image"); os demais seis têm a sua.
+    // não existe um segundo lugar onde escolher outra. Desde 10/08/2026 os sete Achados da
+    // Home têm imagem — a bisteca recebeu a foto correta do corte fornecida pelo Founder.
     for (const achado of achados) {
       expect(achado.image).toBe(imagemDoProdutoDemo(achado.product_id));
     }
     const semImagem = achados.filter((a) => a.image == null).map((a) => a.product.name);
-    expect(semImagem).toEqual(["Bisteca bovina"]);
+    expect(semImagem).toEqual([]);
   });
 
   it("nenhum Achado da Home é exemplo ilustrativo", () => {
@@ -239,20 +239,18 @@ describe("os atalhos da busca não levam a lugar nenhum vazio", () => {
    * lê `demo-catalog.ts` e não toca no banco. Ou seja: o teste aprovava o atalho num universo que
    * a demonstração não usa. Enquanto os dois universos eram cópias um do outro isso não aparecia;
    * agora que são ramos diferentes, o furo ficaria visível na primeira demonstração.
+   *
+   * Em 10/08/2026 os atalhos saíram da rota para `@/lib/atalhos-de-busca`, porque a página
+   * de resultados passou a oferecê-los também (§10 do polish) — e o teste passou a importar
+   * a lista de verdade em vez de ler o fonte com regex.
    */
-  const ROTA = readFileSync(join(process.cwd(), "src/routes/index.tsx"), "utf-8");
-  const atalhos = /const SHORTCUTS = \[([^\]]+)\]/
-    .exec(ROTA)?.[1]
-    .split(",")
-    .map((s) => s.trim().replace(/^"|"$/g, ""))
-    .filter(Boolean);
+  const atalhos = SHORTCUTS;
 
-  it("os atalhos foram lidos da rota", () => {
-    expect(atalhos, "não consegui ler SHORTCUTS de index.tsx").toBeDefined();
-    expect(atalhos!.length).toBeGreaterThanOrEqual(3);
+  it("os atalhos existem e são pelo menos três", () => {
+    expect(atalhos.length).toBeGreaterThanOrEqual(3);
   });
 
-  it.each(atalhos ?? [])("o atalho %s tem pelo menos um produto no catálogo", (atalho) => {
+  it.each(atalhos)("o atalho %s tem pelo menos um produto no catálogo", (atalho) => {
     const achatar = (v: string) =>
       v
         .normalize("NFD")

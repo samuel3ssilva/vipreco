@@ -83,12 +83,12 @@ describe("as duas origens de imagem, e a linha entre elas", () => {
   });
 
   it("os SKUs deliberadamente sem imagem continuam sem imagem — placeholder, nunca aproximação", () => {
-    // Bisteca bovina (nenhuma IA fornecida corresponde ao corte), Elseve 200 ml e Sanol
-    // 7 unidades (só existe foto de tabloide impresso, sem qualidade de recorte). Alguém
-    // "completar" um deles com a imagem de outro tamanho seria exatamente a aproximação
-    // que o princípio 11 proíbe.
+    // Elseve 200 ml e Sanol 7 unidades (só existe foto de tabloide impresso, sem qualidade
+    // de recorte). Alguém "completar" um deles com a imagem de outro tamanho seria
+    // exatamente a aproximação que o princípio 11 proíbe. A bisteca saiu desta lista em
+    // 10/08/2026, quando o Founder forneceu a imagem correta do corte.
     const semImagem = ofertas.filter((o) => o.image == null).map((o) => o.product.size_text);
-    expect(new Set(semImagem)).toEqual(new Set([null, "200 ml", "7 unidades"]));
+    expect(new Set(semImagem)).toEqual(new Set(["200 ml", "7 unidades"]));
   });
 });
 

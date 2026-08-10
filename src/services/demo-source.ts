@@ -5,11 +5,11 @@ import {
   construirOfertasDemo,
   grupoDoProduto,
   imagemDoProdutoDemo,
+  observadaNoSnapshot,
   ordenarOfertas,
   ordenarPorCustoUnitario,
   umPrecoPorMercado,
 } from "@/lib/demo-catalog";
-import { isValidPrice } from "@/lib/comparison";
 import { normalizeSearchText } from "@/lib/normalize";
 import type { UnitPriceBasis } from "@/lib/unit-price";
 import type { ImagemDeProduto, OfertaCardV2 } from "@/lib/card-v2";
@@ -96,12 +96,14 @@ export function compararNoCatalogoDemo(
   if (grupo === null) return null;
 
   const idsDoGrupo = new Set(grupo.sementes.map((s) => s.id));
-  const validas = construirOfertasDemo().filter(
-    (o) => idsDoGrupo.has(o.id) && isValidPrice(o, now),
+  // Snapshot histórico (§18): entra o que foi OBSERVADO, não só o que ainda vige — a tela
+  // diz "valeu até" quando a validade passou. O piloto continua no isValidPrice() dele.
+  const observadas = construirOfertasDemo().filter(
+    (o) => idsDoGrupo.has(o.id) && observadaNoSnapshot(o, now),
   );
 
   // Um preço por mercado primeiro; depois o critério do grupo decide a ordem.
-  const porMercado = umPrecoPorMercado(validas);
+  const porMercado = umPrecoPorMercado(observadas);
   const ordenadas =
     grupo.basePorUnidade === undefined
       ? ordenarOfertas(porMercado)
@@ -150,7 +152,7 @@ export function ofertaDemo(
   if (grupo === null) return null;
   if (!grupo.sementes.some((s) => s.id === priceId)) return null;
   const oferta = construirOfertasDemo().find((o) => o.id === priceId);
-  return oferta !== undefined && isValidPrice(oferta, now) ? oferta : null;
+  return oferta !== undefined && observadaNoSnapshot(oferta, now) ? oferta : null;
 }
 
 /** A embalagem do produto, para as telas que recebem `Product` sem a oferta junto. */

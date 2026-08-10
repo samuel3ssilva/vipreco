@@ -467,10 +467,10 @@ describe("anatomia do card oficial de Achado", () => {
  */
 describe("R3.3B — o que a Home passou a mostrar", () => {
   it("cada imagem declara a própria origem — IA no corte, encarte no produto de marca", () => {
-    // Seis imagens para sete Achados: a bisteca fica com o placeholder, porque nenhuma
-    // imagem IA fornecida corresponde ao corte — imagem errada é pior que nenhuma (§10).
+    // Sete imagens para sete Achados: desde 10/08/2026 a bisteca tem a foto correta do
+    // corte, fornecida pelo Founder — nenhum card da Home fica em placeholder.
     const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
-    expect(imgs).toHaveLength(6);
+    expect(imgs).toHaveLength(7);
     for (const img of imgs) {
       const declaraIA = img.includes("gerada por IA") && img.includes("não é a peça vendida");
       const declaraEncarte = img.includes("encarte do mercado");
@@ -481,7 +481,7 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
   it("o destaque carrega o LCP e os da lista não", () => {
     const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
     expect(imgs.filter((i) => i.includes('fetchPriority="high"'))).toHaveLength(1);
-    expect(imgs.filter((i) => i.includes('loading="lazy"'))).toHaveLength(5);
+    expect(imgs.filter((i) => i.includes('loading="lazy"'))).toHaveLength(6);
   });
 
   it("a linha de lista inteira é o link, e leva ao produto", () => {

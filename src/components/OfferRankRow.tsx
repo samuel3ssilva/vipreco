@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, ChevronRight, Clock } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { VisuallyHidden } from "@/components/primitives";
 import { SourceBadge } from "@/components/SourceBadge";
 import { ProductImage } from "@/components/card-v2/identity";
+import { isDemoMode } from "@/lib/app-mode";
 import { montarVisaoDoCard } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -51,6 +52,7 @@ export function OfferRankRow({
   now,
   gramas,
   basePorUnidade,
+  diferenca = null,
 }: {
   entry: OfertaCardV2;
   posicao: number;
@@ -61,8 +63,16 @@ export function OfferRankRow({
   gramas?: number;
   /** Presente quando o grupo compara embalagens diferentes por custo unitário. */
   basePorUnidade?: UnitPriceBasis;
+  /**
+   * A frase do §12 — "R$ 0,50 a menos que o 2º mercado" —, calculada pela tela com
+   * `diferencaParaOSegundo` e desenhada só na primeira linha. É informação, nunca promoção.
+   */
+  diferenca?: string | null;
 }) {
-  const visao = montarVisaoDoCard(entry, now, formatDate, gramas === undefined ? {} : { gramas });
+  const visao = montarVisaoDoCard(entry, now, formatDate, {
+    ...(gramas === undefined ? {} : { gramas }),
+    snapshotHistorico: isDemoMode(),
+  });
   const primeiro = posicao === 1;
   const embalagensDiferentes = basePorUnidade !== undefined;
 
@@ -149,6 +159,13 @@ export function OfferRankRow({
           </p>
         ) : null}
 
+        {/* A diferença do §12 — mesmo produto, mesma quantidade, aritmética de centavos.
+            Frase de fato, sem verbo de promoção, e só onde ela responde à pergunta da tela:
+            "quanto muda se eu for no primeiro?" */}
+        {primeiro && diferenca !== null ? (
+          <p className="text-primary mt-1.5 text-xs font-semibold">{diferenca}</p>
+        ) : null}
+
         {/* Preço de clube/cartão — informação, nunca posição (§8). */}
         {visao.clube !== null ? (
           <p className="bg-secondary text-secondary-foreground mt-2 w-fit max-w-full rounded-md px-2 py-1 text-xs">
@@ -157,18 +174,18 @@ export function OfferRankRow({
           </p>
         ) : null}
 
-        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        {/* §11: o olho lê MERCADO → PREÇO → DIFERENÇA; fonte e data vêm depois, numa faixa
+            só, sem ícones extras — os dois relógios que viviam aqui davam à metadata o mesmo
+            peso visual do preço, que é a inversão que o benchmark não comete. Nada saiu:
+            fonte, observação e validade continuam juntas, com o verbo honesto do §18. */}
+        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
           <SourceBadge source={entry.source_type} label={visao.procedencia.origem} />
-          <span className="inline-flex items-center gap-1 tabular-nums">
-            <Clock aria-hidden="true" className="size-3.5 shrink-0" />
+          <span className="tabular-nums">
             {visao.procedencia.observadoEm} · {visao.procedencia.relativo}
+            {visao.procedencia.validoAte !== null
+              ? ` · ${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${visao.procedencia.validoAte}`
+              : ""}
           </span>
-          {visao.procedencia.validoAte !== null ? (
-            <span className="inline-flex items-center gap-1 tabular-nums">
-              <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
-              válido até {visao.procedencia.validoAte}
-            </span>
-          ) : null}
         </div>
       </div>
 

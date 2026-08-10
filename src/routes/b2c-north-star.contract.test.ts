@@ -190,11 +190,12 @@ describe("o dado da demonstração — planilha como fonte da verdade", () => {
   });
 
   it("o indicador de demonstração existe, é honesto e é o mesmo em todas as telas", () => {
+    // §17/§18 do polish: a nota ficou curta ("Demonstração com preços observados em agosto
+    // de 2026…") — moldura de snapshot, sem afirmar vigência, uma vez por tela.
     const nota = readFileSync(join(process.cwd(), "src/components/DemoNote.tsx"), "utf-8");
     expect(nota).toContain("DEMO_NATUREZA_DO_DADO");
-    expect(DEMO_NATUREZA_DO_DADO).toContain("demonstração");
-    expect(DEMO_NATUREZA_DO_DADO).toContain("encartes");
-    expect(DEMO_NATUREZA_DO_DADO).toContain("03 e 12/08/2026");
+    expect(DEMO_NATUREZA_DO_DADO).toContain("Demonstração");
+    expect(DEMO_NATUREZA_DO_DADO).toContain("observados em agosto de 2026");
     for (const tela of [BUSCA, COMPARACAO, DETALHE, WHATSAPP]) {
       expect(tela).toContain("DemoNote");
     }

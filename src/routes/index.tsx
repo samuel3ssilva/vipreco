@@ -12,10 +12,12 @@ import { StateMessage } from "@/components/StateMessage";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { appMode } from "@/lib/app-mode";
 import { DEMO_NATUREZA_DO_DADO } from "@/lib/demo-catalog";
+import { SHORTCUTS } from "@/lib/atalhos-de-busca";
 import { estadoSemAchados } from "@/lib/home-states";
 import { absoluteAssetUrl, ogImageMeta } from "@/lib/og";
 import { formatProductName } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
+import { observadaNoSnapshot } from "@/lib/demo-catalog";
 
 // Tudo o que a Home mostra de primeira — os Achados — chega pelo loader da rota (mesmo padrão de
 // `/produto/$productId`), não por `useQuery` no cliente: o HTML inicial já vem completo, sem
@@ -52,20 +54,6 @@ export const Route = createFileRoute("/")({
     </AppShell>
   ),
 });
-
-/**
- * Os quatro atalhos da busca, e a única regra que eles têm: **todo atalho precisa devolver
- * resultado**.
- *
- * "Feijão" já esteve aqui sem existir no catálogo — o atalho mais visível da primeira dobra
- * levava a "nenhum produto encontrado". Numa demonstração em que a pessoa recebe o celular
- * na mão, esse é o toque que faz o produto parecer quebrado, e não o que faz parecer novo.
- *
- * Estes quatro cobrem os cantos do catálogo v2: o corte da demo ("Frango"), a seção de
- * açougue inteira ("Carnes"), e as duas categorias que mostram embalagem e normalização
- * ("Limpeza", "Pet"). `src/lib/demo-identity.test.ts` afirma que cada um devolve resultado.
- */
-const SHORTCUTS = ["Frango", "Carnes", "Limpeza", "Pet"];
 
 /**
  * O aviso de confiança da primeira dobra.
@@ -124,7 +112,11 @@ function HomePage() {
   // Referência única de tempo, vinda do servidor: mantém "ontem"/"há 2 dias" idêntico no HTML
   // inicial e depois da hidratação, mesmo se o relógio do aparelho estiver adiantado.
   const renderedAt = new Date(generatedAt);
-  const validOpportunities = opportunities.filter((entry) => isValidPrice(entry, renderedAt));
+  // Demo é SNAPSHOT (§18): o preço observado fica, com "valeu até" na procedência quando a
+  // validade passou. O caminho do piloto continua no `isValidPrice` do princípio 2.
+  const validOpportunities = opportunities.filter((entry) =>
+    source === "demo" ? observadaNoSnapshot(entry, renderedAt) : isValidPrice(entry, renderedAt),
+  );
   // O modo do ambiente decide; a origem do dado é uma trava a mais, para o caso de um dado
   // fictício aparecer num ambiente que se declara piloto.
   const isDemo =
@@ -167,6 +159,7 @@ function HomePage() {
         <HomeAchados
           opportunities={validOpportunities}
           now={renderedAt}
+          snapshotHistorico={source === "demo"}
           shareSlot={
             destaque ? (
               <ShareAchadoButton

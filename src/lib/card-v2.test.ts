@@ -322,6 +322,46 @@ describe("estado da oferta", () => {
     expect(v.naListaOrganica).toBe(false);
   });
 
+  it("no snapshot histórico, o relógio não rotula — mas estado DECLARADO continua rotulando", () => {
+    // §18 do mandato de polish: a demo é um snapshot de preços observados. A validade
+    // vencida vira tempo verbal na procedência ("valeu até"), não rótulo nem exclusão —
+    // e a oferta segue na lista orgânica da demonstração. Um `offer_state` dito pelo DADO
+    // (encerrada, esgotada) continua produzindo rótulo: suprimir dado seria esconder.
+    const snapshot = { snapshotHistorico: true };
+    const vencida = montarVisaoDoCard(
+      oferta({ valid_until: dia(-3), observed_at: dia(-14) }),
+      AGORA,
+      formatarData,
+      snapshot,
+    );
+    expect(vencida.estado).toBeNull();
+    expect(vencida.naListaOrganica).toBe(true);
+    expect(vencida.procedencia.validadePassada).toBe(true);
+
+    const antiga = montarVisaoDoCard(
+      oferta({ valid_until: null, observed_at: dia(-21) }),
+      AGORA,
+      formatarData,
+      snapshot,
+    );
+    expect(antiga.estado).toBeNull();
+    expect(antiga.procedencia.validadePassada).toBe(false);
+
+    const encerrada = montarVisaoDoCard(
+      oferta({ offer_state: "ended" }),
+      AGORA,
+      formatarData,
+      snapshot,
+    );
+    expect(encerrada.estado?.chave).toBe("ended");
+  });
+
+  it("fora do snapshot, `validadePassada` acompanha o relógio e a vigente fica falsa", () => {
+    expect(visao({ valid_until: dia(-1) }).procedencia.validadePassada).toBe(true);
+    expect(visao({ valid_until: dia(5) }).procedencia.validadePassada).toBe(false);
+    expect(visao({ valid_until: null }).procedencia.validadePassada).toBe(false);
+  });
+
   it("todo estado exibido vem escrito — cor nunca é o único canal", () => {
     // WCAG 2.2 SC 1.4.1. Um estado sem palavra seria cor sozinha, e cor sozinha não
     // comunica. A frase explicativa que acompanhava o rótulo saiu em 06/08/2026 — ela

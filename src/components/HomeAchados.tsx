@@ -28,10 +28,12 @@ import type { OfertaCardV2 } from "@/lib/card-v2";
  */
 
 interface HomeAchadosProps {
-  /** Achados já filtrados por validade, na ordem em que devem aparecer. */
+  /** Achados já filtrados pela fonte, na ordem em que devem aparecer. */
   opportunities: OfertaCardV2[];
   /** Instante de referência do servidor. */
   now: Date;
+  /** §18 — em modo demo os cards leem a oferta como snapshot histórico ("valeu até"). */
+  snapshotHistorico?: boolean;
   /** Nota de dados fictícios. */
   seal?: ReactNode;
   /** Estado alternativo quando não há nenhum Achado válido. */
@@ -40,7 +42,14 @@ interface HomeAchadosProps {
   shareSlot?: ReactNode;
 }
 
-export function HomeAchados({ opportunities, now, seal, fallback, shareSlot }: HomeAchadosProps) {
+export function HomeAchados({
+  opportunities,
+  now,
+  snapshotHistorico = false,
+  seal,
+  fallback,
+  shareSlot,
+}: HomeAchadosProps) {
   const [destaque, ...secundarios] = opportunities;
 
   if (!destaque) {
@@ -76,7 +85,13 @@ export function HomeAchados({ opportunities, now, seal, fallback, shareSlot }: H
       {/* O compartilhar entrou PARA DENTRO do card (§4). Solto aqui embaixo, ele era um botão
           contornado flutuando entre o destaque e o rótulo da lista, sem pertencer a nenhum dos
           dois. Dentro, é o que sempre foi: a ação secundária daquele achado. */}
-      <ProductCardV2 oferta={destaque} now={now} variant="destaque" acaoSecundaria={shareSlot} />
+      <ProductCardV2
+        oferta={destaque}
+        now={now}
+        variant="destaque"
+        acaoSecundaria={shareSlot}
+        snapshotHistorico={snapshotHistorico}
+      />
 
       {secundarios.length > 0 ? (
         <>
@@ -84,7 +99,12 @@ export function HomeAchados({ opportunities, now, seal, fallback, shareSlot }: H
           <ul className="grid gap-2.5 lg:grid-cols-2">
             {secundarios.map((entry) => (
               <li key={entry.id} className="flex">
-                <AchadoCompacto oferta={entry} now={now} className="w-full" />
+                <AchadoCompacto
+                  oferta={entry}
+                  now={now}
+                  snapshotHistorico={snapshotHistorico}
+                  className="w-full"
+                />
               </li>
             ))}
           </ul>

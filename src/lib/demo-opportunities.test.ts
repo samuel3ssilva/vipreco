@@ -185,12 +185,22 @@ describe("fixture de demonstração da Home — demo v2", () => {
     expect(primeiro).toEqual(segundo);
   });
 
-  it("fora da janela de validade, os Achados de encarte saem — as validades são as reais", () => {
-    // Em 13/08 os encartes de 09/08 e o tabloide de 12/08 já venceram. Sobram só as ofertas
-    // de balcão (sem validade anunciada): bucho e bisteca. É o produto funcionando — uma
-    // demo que mostrasse encarte vencido como preço vigente estaria mentindo a data.
+  it("depois do vencimento dos encartes a Home continua inteira — snapshot histórico (§18)", () => {
+    // Em 13/08 os encartes de 09/08 e o tabloide de 12/08 já venceram, e a demo NÃO apaga
+    // as ofertas: ela é um snapshot de preços OBSERVADOS em agosto de 2026, e some com uma
+    // oferta seria destruir a demonstração dias depois da coleta. O que a honestidade exige
+    // é o tempo verbal: `validadePassada` fica true nas vencidas e a tela escreve "valeu
+    // até", nunca vigência. O caminho do piloto continua expirando pelo princípio 2.
     const depois = buildDemoOpportunities(new Date("2026-08-13T12:00:00-03:00"));
-    expect(depois.map((o) => o.product.name)).toEqual(["Bucho bovino", "Bisteca bovina"]);
+    expect(depois).toHaveLength(HOME_OPPORTUNITY_COUNT);
+    const vencidas = depois.filter(
+      (o) =>
+        o.valid_until !== null &&
+        Date.parse(o.valid_until) < Date.parse("2026-08-13T12:00:00-03:00"),
+    );
+    expect(vencidas.length).toBeGreaterThan(0);
+    // E a ordem/vencedor por grupo não muda com o relógio: preço não muda ao vencer.
+    expect(depois.map((o) => o.id)).toEqual(buildDemoOpportunities(NOW).map((o) => o.id));
   });
 });
 

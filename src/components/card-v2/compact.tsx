@@ -43,15 +43,24 @@ import { ProductImage } from "./identity";
 export function AchadoCompacto({
   oferta,
   now,
+  snapshotHistorico = false,
   className,
 }: {
   oferta: OfertaCardV2;
   /** Instante de referência do servidor — mantém "ontem" igual antes e depois da hidratação. */
   now: Date;
+  /** §18 — decisão da SUPERFÍCIE: a Home da demo lê a oferta como snapshot histórico. */
+  snapshotHistorico?: boolean;
   className?: string;
 }) {
-  const visao = montarVisaoDoCard(oferta, now, formatDate);
-  const { color } = TEMPORAL_STYLE[visao.temporal];
+  const visao = montarVisaoDoCard(oferta, now, formatDate, { snapshotHistorico });
+  // No snapshot a tarja de urgência derivada do relógio vira neutra: cinco barras vermelhas
+  // numa vitrine de preços observados seriam alarme sem informação — o fato ("valeu até")
+  // já está escrito na linha de procedência. Oferta ainda vigente mantém a cor.
+  const neutralizada =
+    snapshotHistorico &&
+    (visao.temporal === "expirado" || visao.temporal === "sem-validade-antigo");
+  const color = neutralizada ? "var(--border)" : TEMPORAL_STYLE[visao.temporal].color;
 
   // Fonte, atualização e validade continuam inseparáveis (`R3-SCREEN-SPEC.md`) — o que muda é
   // que aqui elas cabem numa linha só. A validade ausente é DITA, nunca omitida: sem isso o
@@ -70,7 +79,11 @@ export function AchadoCompacto({
   const procedencia = [
     visao.procedencia.origem,
     visao.procedencia.relativo,
-    ...(visao.procedencia.validoAte === null ? [] : [`válido até ${visao.procedencia.validoAte}`]),
+    ...(visao.procedencia.validoAte === null
+      ? []
+      : [
+          `${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${visao.procedencia.validoAte}`,
+        ]),
   ].join(" · ");
 
   return (
@@ -126,9 +139,12 @@ export function AchadoCompacto({
           )}
         </p>
         {visao.identidade.quantidade === null ? null : (
-          // Sem truncar. A gramatura é o que separa dois SKUs que de resto são o mesmo.
+          // Sem truncar. A gramatura é o que separa dois SKUs que de resto são o mesmo —
+          // e ela não quebra NO MEIO: "400 g" partido em "400" e "g" (visto na captura da
+          // farofa a 390 px) é a gramatura deixando de ser um dado para virar dois cacos.
           <p className="text-muted-foreground text-xs break-words tabular-nums">
-            {[visao.identidade.variante, visao.identidade.quantidade].filter(Boolean).join(" · ")}
+            {visao.identidade.variante !== null ? <>{visao.identidade.variante} · </> : null}
+            <span className="whitespace-nowrap">{visao.identidade.quantidade}</span>
           </p>
         )}
         {/* Mercado e bairro. O bairro é âncora de proximidade — "é aqui perto" é metade da razão

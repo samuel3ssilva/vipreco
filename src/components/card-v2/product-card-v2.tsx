@@ -90,6 +90,12 @@ interface ProductCardV2Props {
    * sem nada aqui, e nada muda para eles.
    */
   acaoSecundaria?: ReactNode;
+  /**
+   * §18 — a SUPERFÍCIE decide se a oferta é lida como snapshot histórico, nunca o card:
+   * a Home da demo liga; o laboratório e o caminho do piloto ficam no padrão (`false`),
+   * onde validade vencida continua produzindo o rótulo e o CTA de "preços atuais".
+   */
+  snapshotHistorico?: boolean;
   className?: string;
 }
 
@@ -99,13 +105,21 @@ export function ProductCardV2({
   variant = "secundario",
   avisoParcial = null,
   acaoSecundaria = null,
+  snapshotHistorico = false,
   className = "",
 }: ProductCardV2Props) {
   const tituloId = useId();
   const avisoId = useId();
   const destaque = variant === "destaque";
-  const visao = montarVisaoDoCard(oferta, now, formatDate);
-  const { color, height } = TEMPORAL_STYLE[visao.temporal];
+  const visao = montarVisaoDoCard(oferta, now, formatDate, { snapshotHistorico });
+  // A mesma neutralização da tarja que o card compacto faz no snapshot (§18): a urgência
+  // derivada do relógio não pinta o card; o fato fica escrito na procedência.
+  const neutralizada =
+    snapshotHistorico &&
+    (visao.temporal === "expirado" || visao.temporal === "sem-validade-antigo");
+  const { color, height } = neutralizada
+    ? { color: "var(--border)", height: "var(--vp-time-bar-now)" }
+    : TEMPORAL_STYLE[visao.temporal];
 
   return (
     <Surface

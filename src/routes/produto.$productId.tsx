@@ -10,6 +10,7 @@ import { ShareAchadoButton } from "@/components/ShareAchadoButton";
 import { DemoNote } from "@/components/DemoNote";
 import { appMode, isDemoMode } from "@/lib/app-mode";
 import { carregarComparacao, imagemDoProduto } from "@/services/demo-source";
+import { diferencaParaOSegundo } from "@/lib/diferenca-de-preco";
 import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
 import { formatPrice, formatProductName } from "@/lib/format";
@@ -115,6 +116,13 @@ function ProductPage() {
   const basePorUnidade = data.basePorUnidade;
   const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
   const menor = entries[0] as OfertaCardV2 | undefined;
+  // §12: a diferença para o 2º mercado, só onde ela é um fato — mesmo produto, mesma
+  // quantidade. No peso variável ela acompanha o seletor, com a mesma conta de centavos.
+  const diferenca = diferencaParaOSegundo(entries as unknown as OfertaCardV2[], {
+    embalagensDiferentes: basePorUnidade !== undefined,
+    granel,
+    gramas,
+  });
 
   return (
     <AppShell>
@@ -216,6 +224,7 @@ function ProductPage() {
                   posicao={i + 1}
                   productId={product.id}
                   now={now}
+                  diferenca={i === 0 ? diferenca : null}
                   {...(granel ? { gramas } : {})}
                   {...(basePorUnidade === undefined ? {} : { basePorUnidade })}
                 />

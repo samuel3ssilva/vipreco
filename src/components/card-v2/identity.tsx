@@ -127,7 +127,10 @@ const TAMANHO_DA_IMAGEM = {
   // posição, nome de mercado, preço e chevron na mesma linha. A 96 px a imagem espremia o nome
   // do mercado até ele virar "Aç…" — e nome de loja truncado, na tela que existe para comparar
   // lojas, é o pior lugar possível para economizar largura.
-  compacto: "size-[4.5rem] min-[360px]:size-20",
+  // 10/08/2026 (polish §7/§9): 80 px de base e 96 px a partir de 390 — o benchmark de grocery
+  // mostra que o reconhecimento do produto é o que faz a lista escanear. O degrau de 96 só
+  // entra onde a coluna do nome ainda comporta o preço sem truncar (medido a 360: não cabe).
+  compacto: "size-20 min-[390px]:size-24",
   lista: "size-24 min-[360px]:size-28",
   // R3.3C: o destaque escalona por faixa de largura, e o número sai de uma conta, não do gosto.
   // Desde que o PREÇO passou para a coluna ao lado da imagem, os dois disputam a mesma largura:

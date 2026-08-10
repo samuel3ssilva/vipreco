@@ -264,6 +264,12 @@ export interface ProcedenciaExibida {
   relativo: string;
   /** `null` quando o mercado não informou validade. A ausência é dita, nunca inventada. */
   validoAte: string | null;
+  /**
+   * `true` quando a validade informada já passou. O componente troca o verbo — "valeu até"
+   * em vez de "válido até" — porque afirmar vigência depois do vencimento é a mentira que o
+   * §18 do mandato de polish proíbe. A data continua a mesma; só o tempo verbal diz a verdade.
+   */
+  validadePassada: boolean;
 }
 
 export interface CtaExibido {
@@ -527,6 +533,18 @@ export interface OpcoesDaVisao {
    * oferta declara `price_unit: "kg"`. Padrão: `PESO_PADRAO` (500 g).
    */
   gramas?: number;
+  /**
+   * A demonstração é um SNAPSHOT HISTÓRICO (§18 do mandato de polish): preço observado
+   * numa data real não desaparece nem ganha tarja de urgência quando a validade do encarte
+   * passa. Com esta opção, os estados derivados só do RELÓGIO ("Oferta expirada", "Preço
+   * desatualizado") não produzem rótulo — a moldura factual fica na linha de procedência
+   * ("observado em 09/08 · valeu até 09/08") e na nota da demonstração. Um `offer_state`
+   * DECLARADO continua produzindo rótulo: suprimir estado dito pelo dado seria esconder.
+   *
+   * O caminho do piloto nunca liga esta opção: lá o preço vencido continua saindo da lista
+   * pela regra do princípio 2, no `isValidPrice()` e na RLS, que não mudaram.
+   */
+  snapshotHistorico?: boolean;
 }
 
 /**
@@ -594,7 +612,13 @@ export function montarVisaoDoCard(
   opcoes: OpcoesDaVisao = {},
 ): VisaoDoCard {
   const temporal = temporalState(oferta, now);
-  const estado = resolverEstado(oferta, temporal);
+  const derivadoDoRelogio = resolverEstado(oferta, temporal);
+  // No snapshot histórico só o estado DECLARADO rotula; o do relógio vira tempo verbal na
+  // procedência ("valeu até"), nunca supressão da data.
+  const estado =
+    opcoes.snapshotHistorico === true && (oferta.offer_state ?? "active") === "active"
+      ? null
+      : derivadoDoRelogio;
   const quantidade = escreverQuantidade(oferta);
   const { preco, unitario } = resolverPrecos(oferta, opcoes.gramas ?? PESO_PADRAO);
 
@@ -619,6 +643,8 @@ export function montarVisaoDoCard(
       observadoEm: formatarData(oferta.observed_at),
       relativo: formatRelativeDay(oferta.observed_at, now),
       validoAte: oferta.valid_until === null ? null : formatarData(oferta.valid_until),
+      validadePassada:
+        oferta.valid_until !== null && new Date(oferta.valid_until).getTime() < now.getTime(),
     },
     condicao: oferta.special_condition,
     temporal,

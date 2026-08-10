@@ -88,6 +88,19 @@ export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: 
                   </span>
                 ) : null}
               </p>
+              {/* V4.3 §1 — o pack a que o número grande se refere, colado nele: "R$ 45,48"
+                  sem o "pack 12" afirmaria o preço de uma lata. O por-unidade vem abaixo,
+                  secundário — informação do encarte, não um desembolso possível. */}
+              {visao.preco.embalagemMinima !== null ? (
+                <p aria-hidden="true" className="text-muted-foreground text-xs font-bold">
+                  {visao.preco.embalagemMinima}
+                </p>
+              ) : null}
+              {visao.preco.porUnidade !== null ? (
+                <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
+                  {visao.preco.porUnidade}
+                </p>
+              ) : null}
               {visao.simulacao !== null ? (
                 <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
                   {visao.simulacao}

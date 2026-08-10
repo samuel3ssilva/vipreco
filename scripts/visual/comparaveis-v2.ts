@@ -78,6 +78,14 @@ const TELAS = [
     rota: "/produto/33333333-3333-3333-3333-0000000000ce/oferta/demo-v3-original-safra",
     alvo: null,
   },
+  // V4.3 §1 — a comparação da Original entra na evidência: é onde os DOIS desembolsos
+  // (Safra 45,48 no pack de latas · Savegnago 47,88 no pack fechado) ficam lado a lado.
+  {
+    chave: "comparacao-original",
+    titulo: "9 · Comparação — Original (desembolso mínimo: R$ 45,48)",
+    rota: "/produto/33333333-3333-3333-3333-0000000000ce",
+    alvo: null,
+  },
 ] as const;
 
 /** Fora da prancha, mas na evidência: o catálogo completo (V3 §3) na busca sem termo. */
@@ -118,6 +126,13 @@ const CSS = `
   .tela .quadro { height:640px; background:#fff; }
   .tela p { margin:0; font-size:12.5px; font-weight:700; text-align:center; }
 `;
+
+/** O que a V4.3 mudou — Final Micro-Remediation (10/08/2026). */
+const NOTAS_V43 = [
+  "<b>Verdade do preço da Original (V4.3 §1).</b> O encarte do Safra diz 'pack com 12 unid. (venda somente no pack)' e anuncia R$ 3,79 A UNIDADE — confirmado na arte original e na planilha ('preco por unidade, venda so no pack'). O protagonista passou a ser o DESEMBOLSO MÍNIMO REAL: R$ 45,48 (12 × 3,79, arredondamento ao centavo), rotulado 'pack 12', em busca, comparação, ficha e no texto compartilhado. R$ 3,79/lata e R$ 10,83/L continuam, secundários. O preço-fonte (3,79) não mudou; o pack é campo DECLARADO (`pack_obrigatorio`), nunca inferido do texto, e testes de contrato impedem preço e condição de voltarem a se contradizer.",
+  "<b>Original 'cortada' na busca (V4.3 §2) — defeito era da EVIDÊNCIA, não da tela.</b> No app real a lata sempre rendeu inteira (asset 569² quadrado, frame quadrado, object-cover, medido ao vivo em 320–430 px). O corte aparecia só no PNG de evidência: captura de página inteira disparada antes de a imagem lazy abaixo da dobra terminar de decodificar. O pipeline agora força eager e espera decode() de toda imagem antes do screenshot — regra geral, para qualquer tela.",
+  "<b>Corona Extra (V4.3 §3): ASSET SOURCE LIMITATION — ACCEPTED FOR DEMO.</b> Revisada uma última vez em alta resolução: no Savegnago a Extra segue parcialmente atrás da Cero (variante errada, proibida); no Atacadão o selo '-18' carimba o ombro da lata e o balão do título cobre a base. Nenhum recorte legítimo melhora a legibilidade; completar com IA é proibido. O asset atual permanece, declarado.",
+] as const;
 
 /** O que a V4.2 mudou — Last-Mile Consumer Polish (10/08/2026). */
 const NOTAS_V42 = [
@@ -298,10 +313,10 @@ async function principal(): Promise<void> {
     // 3. a prancha final — as seis telas e as notas de honestidade (§20, §23).
     const prancha = `<!doctype html><meta charset="utf-8"><style>${CSS}</style>
       <div class="prancha">
-        <h1>VIPREÇO — DEMO V4.2 · LAST-MILE CONSUMER POLISH</h1>
-        <p class="sub">Demo V4.2 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados
-          — nada de dado mudou; 28/28 SKUs com asset legítimo, zero placeholders, zero
-          repetição de identidade, preço da Original por lata · 390 px, primeira dobra.</p>
+        <h1>VIPREÇO — DEMO V4.3 · FINAL MICRO-REMEDIATION</h1>
+        <p class="sub">Demo V4.3 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados
+          — nada de dado mudou; 28/28 SKUs com asset legítimo, zero placeholders, e o preço
+          da Original diz o desembolso mínimo real (R$ 45,48, pack 12) · 390 px, primeira dobra.</p>
         <div class="fila">
           ${TELAS.map(
             (t) => `<div class="tela">
@@ -311,7 +326,7 @@ async function principal(): Promise<void> {
           ).join("")}
         </div>
         <div class="div"><h2>Como esta demo diz a verdade</h2><ul>
-          ${[...NOTAS_V42, ...NOTAS_V41, ...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
+          ${[...NOTAS_V43, ...NOTAS_V42, ...NOTAS_V41, ...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
         </ul></div>
       </div>`;
     await folha(s, prancha, join(DESTINO, "comparable-products-demo-board.png"), 1700);
@@ -453,6 +468,62 @@ async function principal(): Promise<void> {
       console.log("==> v3-v4-compare-board.png");
     } catch (erro) {
       console.warn(`(!) prancha V3|V4 pulada: ${erro instanceof Error ? erro.message : erro}`);
+    }
+
+    // 6. V4.2 | V4.3 (V4.3 §7): SÓ as telas alteradas, página INTEIRA — a mudança da busca
+    // (o card da Original) mora abaixo da primeira dobra, então dobra não serve aqui. O
+    // "antes" sai do git (commit da V4.2); a comparação da Original não tinha captura na
+    // V4.2 e o quadro diz isso, em vez de fingir um antes.
+    try {
+      const COMMIT_V42 = "7506d65";
+      const ALTERADAS = ["busca", "comparacao-original", "ficha-original"];
+      const tmpV42 = mkdtempSync(join(tmpdir(), "cv2-v42-"));
+      const antesV42 = new Map<string, string>();
+      for (const chave of ALTERADAS) {
+        try {
+          const bytes = execFileSync(
+            "git",
+            ["show", `${COMMIT_V42}:docs/evidence/visual/comparaveis-v2/${chave}-390.png`],
+            { maxBuffer: 64 * 1024 * 1024 },
+          );
+          const destinoV42 = join(tmpV42, `${chave}.png`);
+          writeFileSync(destinoV42, bytes);
+          antesV42.set(chave, destinoV42);
+        } catch {
+          // sem captura na V4.2 — o quadro declara a ausência
+        }
+      }
+      const paginas = new Map<string, string>();
+      for (const chave of ALTERADAS) {
+        const arquivo = join(DESTINO, `${chave}-390.png`);
+        if (existsSync(arquivo)) paginas.set(chave, arquivo);
+      }
+      const compare43 = `<!doctype html><meta charset="utf-8"><style>${CSS}
+          .linha .quadro { height:1500px; align-items:flex-start; }
+        </style>
+        <div class="folha" style="width:1400px">
+          <h1>V4.2 | V4.3 — só as telas alteradas, página inteira</h1>
+          <p class="sub">Mesmos dados, mesmas fontes (commit ${COMMIT_V42} · V4.3). O que muda:
+            o preço da Original vira o desembolso mínimo real (R$ 45,48, pack 12) e a
+            evidência passa a esperar toda imagem decodificar antes do screenshot.</p>
+          ${ALTERADAS.map((chave) => {
+            const antes = antesV42.get(chave);
+            const quadroAntes =
+              antes === undefined
+                ? `<div class="quadro"><p style="font-size:13px;color:#5b6b63;padding:16px">
+                     Sem captura na V4.2 — tela entrou na evidência na V4.3.</p></div>`
+                : `<div class="quadro"><img src="${dataUri(antes)}"></div>`;
+            return `<div class="linha">
+              <div class="col"><span class="rot t">V4.2 — ${chave}</span>${quadroAntes}</div>
+              <div class="col"><span class="rot i">V4.3 — ${chave}</span>
+                <div class="quadro"><img src="${dataUri(paginas.get(chave)!)}"></div></div>
+            </div>`;
+          }).join("")}
+        </div>`;
+      await folha(s, compare43, join(DESTINO, "v42-v43-compare-board.png"), 1400);
+      console.log("==> v42-v43-compare-board.png");
+    } catch (erro) {
+      console.warn(`(!) prancha V4.2|V4.3 pulada: ${erro instanceof Error ? erro.message : erro}`);
     }
   } finally {
     chrome.kill();

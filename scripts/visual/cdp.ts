@@ -150,6 +150,26 @@ const CONGELAR_ANIMACAO = `
 `;
 
 /**
+ * Toda imagem carregada e DECODIFICADA antes do screenshot (V4.3 §2).
+ *
+ * `captureBeyondViewport` pinta o que está abaixo da dobra, mas `loading="lazy"` só carrega
+ * perto do viewport — e a espera fixa não garante a decodificação. O sintoma real: a
+ * evidência da busca da V4.2 mostrou a Original como "lata cortada" (só as primeiras linhas
+ * do JPEG pintadas) enquanto o app de verdade mostrava a lata inteira. Evidência que mente
+ * sobre a tela é pior que nenhuma: aqui todo `<img>` vira eager e o screenshot só sai
+ * depois de `decode()` resolver (ou falhar — imagem quebrada é defeito que a captura DEVE
+ * mostrar, não esconder).
+ */
+const CARREGAR_IMAGENS = `
+  (async () => {
+    const imgs = Array.from(document.images);
+    for (const img of imgs) img.loading = "eager";
+    await Promise.allSettled(imgs.map((img) => img.decode().catch(() => undefined)));
+    return imgs.length;
+  })()
+`;
+
+/**
  * Captura a página inteira num viewport de verdade.
  *
  * `Emulation.setDeviceMetricsOverride` dimensiona o viewport de LAYOUT; é o que o

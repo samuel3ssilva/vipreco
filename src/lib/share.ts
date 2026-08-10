@@ -26,6 +26,12 @@ export interface ShareAchadoPayload {
    * o explicaria.
    */
   unidade?: "kg" | "L" | "un";
+  /**
+   * "pack 12" quando a venda só existe em pack obrigatório (V4.3 §1) e `preco` é o
+   * desembolso mínimo. Sem ela, "R$ 45,48" compartilhado afirmaria o preço de uma
+   * lata — e o texto viaja sem a tela que o explicaria.
+   */
+  embalagem?: string;
   mercado: string;
   validUntil: string | null;
   url: string;
@@ -59,7 +65,7 @@ export function buildShareText(payload: ShareAchadoPayload): string {
 
   linhas.push(payload.produto);
   linhas.push(
-    `${formatPrice(payload.preco)}${payload.unidade === undefined ? "" : `/${payload.unidade}`} — ${payload.mercado} · ${PILOT_LOCALITY}`,
+    `${formatPrice(payload.preco)}${payload.unidade === undefined ? "" : `/${payload.unidade}`}${payload.embalagem === undefined ? "" : ` (${payload.embalagem})`} — ${payload.mercado} · ${PILOT_LOCALITY}`,
   );
   if (payload.validUntil) linhas.push(`Válido até ${formatDate(payload.validUntil)}`);
   linhas.push("", payload.url, "via ViPreço");

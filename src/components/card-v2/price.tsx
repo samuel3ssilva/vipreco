@@ -63,6 +63,20 @@ export function PriceDisplay({
           </span>
         ) : null}
       </p>
+      {/* V4.3 §1 — venda só em pack obrigatório: o número grande é o desembolso mínimo, e
+          estas duas linhas dizem a que pack ele se refere e quanto é o por-unidade
+          anunciado. Coladas no número pela mesma razão do "/kg": separadas, "R$ 45,48"
+          voltaria a poder ser lido como o preço de uma lata. */}
+      {preco.embalagemMinima !== null ? (
+        <p aria-hidden="true" className="text-muted-foreground text-xs font-bold">
+          {preco.embalagemMinima}
+        </p>
+      ) : null}
+      {preco.porUnidade !== null ? (
+        <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
+          {preco.porUnidade}
+        </p>
+      ) : null}
       <VisuallyHidden>{preco.falado}</VisuallyHidden>
     </>
   );

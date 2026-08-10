@@ -790,6 +790,12 @@ interface SementeDeOferta {
   readonly condicaoEspecial?: string;
   /** Unidade de venda anunciada junto do número ("lata") — vira o sufixo "R$ 3,79/lata". */
   readonly unidadeDeVenda?: string;
+  /**
+   * Pack obrigatório declarado pelo encarte junto de `unidadeDeVenda` — "(venda somente
+   * no pack)". O protagonista vira o desembolso mínimo (preço × pack); o por-unidade
+   * continua na tela, secundário (V4.3 §1).
+   */
+  readonly packObrigatorio?: number;
 }
 
 export interface GrupoDemo {
@@ -1199,10 +1205,13 @@ const GRUPOS: readonly GrupoDemo[] = [
         mercado: SAFRA,
         price: 3.79,
         fonte: FONTE.safraTabloide,
-        // V4.2 §4 — "por lata" saiu da frase e virou o sufixo do preço ("R$ 3,79/lata");
-        // a condição fica curta e inequívoca. É a MESMA verdade do encarte, redistribuída.
+        // V4.3 §1 — o encarte do Safra diz "pack com 12 unid. (venda somente no pack)" e
+        // anuncia R$ 3,79 A UNIDADE (de R$ 4,29). O pack declarado faz o protagonista ser
+        // o desembolso mínimo real (12 × 3,79 = R$ 45,48); o por-lata e o R$/L continuam,
+        // secundários. Preço-fonte intacto: 3,79, como na planilha do Founder.
         condicaoEspecial: "Venda somente no pack de 12.",
         unidadeDeVenda: "lata",
+        packObrigatorio: 12,
       },
       {
         id: "demo-v3-original-savegnago",
@@ -1339,6 +1348,7 @@ function construirOferta(semente: SementeDeOferta): OfertaCardV2 {
     quantity_provenance: "confirmed",
     ...(semente.clube === undefined ? {} : { clube: semente.clube }),
     ...(semente.unidadeDeVenda === undefined ? {} : { unidade_de_venda: semente.unidadeDeVenda }),
+    ...(semente.packObrigatorio === undefined ? {} : { pack_obrigatorio: semente.packObrigatorio }),
   };
 }
 

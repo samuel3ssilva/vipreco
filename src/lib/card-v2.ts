@@ -161,6 +161,16 @@ export interface OfertaCardV2 extends Opportunity {
    */
   unidade_de_venda?: string;
   /**
+   * Tamanho do pack OBRIGATÓRIO quando o preço observado é por `unidade_de_venda` mas a
+   * compra mínima é o pack inteiro — o "(venda somente no pack)" do encarte do Safra
+   * (V4.3 §1). Com ele declarado, o número grande passa a ser o DESEMBOLSO MÍNIMO REAL
+   * (preço × pack, arredondado ao centavo): "R$ 3,79" como protagonista afirmaria uma
+   * compra de R$ 3,79 que o mercado não vende. O por-unidade anunciado continua na tela,
+   * secundário. Campo declarado, nunca inferido do texto da condição; sem
+   * `unidade_de_venda` ele é ignorado — um pack de quê?
+   */
+  pack_obrigatorio?: number;
+  /**
    * Como a fonte é dita ao usuário quando o rótulo genérico do enum não descreve a coleta:
    * "Foto em loja", "Painel da loja", "Encarte da loja" (§15 — nome técnico de arquivo
    * nunca vira copy). Ausente, vale `sourceLabel(source_type)`. O `source_type` continua
@@ -228,6 +238,18 @@ export interface PrecoExibido {
    * está na identidade).
    */
   quantidade: string | null;
+  /**
+   * "pack 12" — a embalagem mínima a que o número grande se refere, quando a venda só
+   * existe em pack obrigatório declarado (V4.3 §1). Desenhada colada abaixo do número,
+   * porque "R$ 45,48" sem o pack afirmaria o preço de uma lata. `null` fora do pack.
+   */
+  embalagemMinima: string | null;
+  /**
+   * "R$ 3,79/lata" — o por-unidade anunciado pelo mercado, SECUNDÁRIO quando o pack é
+   * obrigatório: é informação real do encarte, mas não é um desembolso possível. `null`
+   * fora do pack obrigatório.
+   */
+  porUnidade: string | null;
   /** O que o leitor de tela ouve no lugar da composição visual. */
   falado: string;
 }
@@ -557,6 +579,37 @@ export interface OpcoesDaVisao {
   snapshotHistorico?: boolean;
 }
 
+/**
+ * O pack obrigatório declarado, resolvido em desembolso mínimo e rótulo — ou `null`.
+ *
+ * Só existe quando `unidade_de_venda` E `pack_obrigatorio` (inteiro > 1) estão declarados
+ * juntos. O desembolso é preço-fonte × pack com arredondamento monetário determinístico ao
+ * centavo — o preço-fonte nunca muda; o que muda é qual número pode ser protagonista.
+ */
+function packObrigatorio(
+  oferta: OfertaCardV2,
+): { desembolso: number; rotulo: string; unidades: number } | null {
+  const unidades = oferta.pack_obrigatorio;
+  if (oferta.unidade_de_venda === undefined || unidades === undefined) return null;
+  if (!Number.isInteger(unidades) || unidades <= 1) return null;
+  return {
+    desembolso: Math.round(oferta.price * unidades * 100) / 100,
+    rotulo: `pack ${unidades}`,
+    unidades,
+  };
+}
+
+/**
+ * O preço que pode viajar SOZINHO — no texto de compartilhamento, que não leva a tela
+ * junto (V4.3 §1). Com pack obrigatório declarado, é o desembolso mínimo com o rótulo do
+ * pack; sem ele, o preço observado, como sempre foi.
+ */
+export function precoParaCompartilhar(oferta: OfertaCardV2): { preco: number; embalagem?: string } {
+  const pack = packObrigatorio(oferta);
+  if (pack === null) return { preco: oferta.price };
+  return { preco: pack.desembolso, embalagem: pack.rotulo };
+}
+
 /** O sufixo colado no número grande do peso variável: "R$ 7,99" + "/kg". */
 const SUFIXO_POR_UNIDADE: Record<PriceUnit, string> = {
   kg: "/kg",
@@ -582,8 +635,31 @@ function resolverPrecos(
   gramas: number,
 ): { preco: PrecoExibido; simulacao: string | null; unitario: UnitarioExibido | null } {
   if (oferta.price_unit === undefined) {
-    const { currency, amount } = formatPriceParts(oferta.price);
     const unidadeDeVenda = oferta.unidade_de_venda;
+    const pack = packObrigatorio(oferta);
+
+    // V4.3 §1 — venda só no pack: o protagonista é o desembolso mínimo real. "R$ 3,79"
+    // grande com "venda somente no pack de 12" embaixo induzia a crer numa compra de
+    // R$ 3,79 que o mercado não vende; o número grande passa a ser o que sai do bolso.
+    // O por-unidade e o normalizado continuam na tela, secundários — nenhum dado sumiu.
+    if (pack !== null) {
+      const { currency, amount } = formatPriceParts(pack.desembolso);
+      return {
+        preco: {
+          valor: pack.desembolso,
+          simbolo: currency,
+          numero: amount,
+          quantidade: null,
+          embalagemMinima: pack.rotulo,
+          porUnidade: `${formatPrice(oferta.price)}/${unidadeDeVenda}`,
+          falado: `${spokenPrice(pack.desembolso)} o pack de ${pack.unidades} — ${spokenPrice(oferta.price)} por ${unidadeDeVenda}`,
+        },
+        simulacao: null,
+        unitario: calcularUnitario(oferta),
+      };
+    }
+
+    const { currency, amount } = formatPriceParts(oferta.price);
     return {
       preco: {
         valor: oferta.price,
@@ -592,6 +668,8 @@ function resolverPrecos(
         // V4.2 §4 — a unidade de venda anunciada cola no número ("R$ 3,79/lata"),
         // exatamente como o "/kg" do granel: o número nunca afirma mais que a placa.
         quantidade: unidadeDeVenda === undefined ? null : `/${unidadeDeVenda}`,
+        embalagemMinima: null,
+        porUnidade: null,
         falado:
           unidadeDeVenda === undefined
             ? spokenPrice(oferta.price)
@@ -610,6 +688,8 @@ function resolverPrecos(
       simbolo: currency,
       numero: amount,
       quantidade: SUFIXO_POR_UNIDADE[oferta.price_unit],
+      embalagemMinima: null,
+      porUnidade: null,
       falado: `${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]} — ${spokenPrice(calculado)} ${faladoAproximado(gramas)}`,
     },
     // "≈" e não "=": o número não foi observado. `rotuloAproximado` continua sendo a forma

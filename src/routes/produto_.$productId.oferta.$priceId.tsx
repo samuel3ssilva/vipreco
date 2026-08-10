@@ -11,7 +11,7 @@ import { WhatsAppGlyph } from "@/components/WhatsAppCta";
 import { DemoNote } from "@/components/DemoNote";
 import { isDemoMode } from "@/lib/app-mode";
 import { ofertaDemo } from "@/services/demo-source";
-import { montarVisaoDoCard } from "@/lib/card-v2";
+import { montarVisaoDoCard, precoParaCompartilhar } from "@/lib/card-v2";
 import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
 import { formatDate, formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
@@ -118,7 +118,9 @@ function OfferPage() {
           <ShareAchadoButton
             payload={{
               produto: formatProductName(product),
-              preco: oferta.price,
+              // V4.3 §1 — com pack obrigatório, o texto que viaja leva o desembolso
+              // mínimo com o rótulo do pack, nunca o por-unidade solto.
+              ...precoParaCompartilhar(oferta),
               ...(oferta.price_unit === undefined ? {} : { unidade: oferta.price_unit }),
               mercado: market.name,
               validUntil: oferta.valid_until,
@@ -162,6 +164,18 @@ function OfferPage() {
                 </span>
               ) : null}
             </p>
+            {/* V4.3 §1 — o pack a que o desembolso se refere, e o por-unidade anunciado,
+                secundário. O número grande é o que sai do bolso; o resto é informação. */}
+            {visao.preco.embalagemMinima !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-1 text-sm font-bold">
+                {visao.preco.embalagemMinima}
+              </p>
+            ) : null}
+            {visao.preco.porUnidade !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-1 text-sm tabular-nums">
+                {visao.preco.porUnidade}
+              </p>
+            ) : null}
             {visao.simulacao !== null ? (
               <p
                 aria-hidden="true"

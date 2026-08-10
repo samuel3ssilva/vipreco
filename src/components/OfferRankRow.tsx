@@ -152,6 +152,18 @@ export function OfferRankRow({
                 </span>
               ) : null}
             </p>
+            {/* V4.3 §1 — "pack 12" colado no número grande, e o por-unidade abaixo:
+                o desembolso mínimo é o protagonista; o R$ 3,79/lata é informação. */}
+            {visao.preco.embalagemMinima !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground text-xs font-bold">
+                {visao.preco.embalagemMinima}
+              </p>
+            ) : null}
+            {visao.preco.porUnidade !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-1 text-xs tabular-nums">
+                {visao.preco.porUnidade}
+              </p>
+            ) : null}
             {visao.simulacao !== null ? (
               <p aria-hidden="true" className="text-muted-foreground mt-1 text-xs tabular-nums">
                 {visao.simulacao}

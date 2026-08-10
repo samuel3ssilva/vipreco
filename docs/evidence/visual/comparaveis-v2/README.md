@@ -1,31 +1,62 @@
-# Demo V4.2 — Last-Mile Consumer Polish — evidência visual
+# Demo V4.3 — Final Micro-Remediation — evidência visual
 
 Capturas a 390 px CSS (`deviceScaleFactor: 2`, PNG de 780 px) contra o servidor de
 desenvolvimento na branch `feat/demo-comparaveis-v2`, geradas por
 `scripts/visual/comparaveis-v2.ts`. Fonte da verdade dos dados: a planilha
-`Comparativo_Precos_Supermercados_09-08-2026.xlsx` do Founder. **Nem a V4 nem a V4.1
-mudaram um dado sequer** — mesmos 24 grupos, 49 ofertas, 5 mercados, preços, fontes e
+`Comparativo_Precos_Supermercados_09-08-2026.xlsx` do Founder. **Nenhuma rodada desde a
+V4 mudou um dado sequer** — mesmos 24 grupos, 49 ofertas, 5 mercados, preços, fontes e
 datas da V3. A V4 mudou hierarquia, densidade e acabamento; a V4.1 fechou a cobertura de
-imagem (28/28 SKUs, zero placeholders) com as três fotos reais fornecidas pelo Founder.
+imagem (28/28 SKUs, zero placeholders) com as três fotos reais fornecidas pelo Founder;
+a V4.3 fez o preço da Original dizer o desembolso mínimo real.
 
-| Arquivo                              | O quê                                                            |
-| ------------------------------------ | ---------------------------------------------------------------- |
-| `home-390.png` / `home-390-dobra.png`| 1–2 · Home completa e primeira dobra (herói: Frango, R$ 7,99/kg) |
-| `catalogo-390.png` / `-dobra.png`    | 3–4 · /buscar sem termo: o catálogo, 24 por categoria, clicável  |
-| `busca-390.png`                      | Busca (`?q=cerveja` — 3 comparáveis)                             |
-| `comparacao-frango-390.png`          | 5 · Golden flow A — Frango, peso variável, R$/kg protagonista    |
-| `comparacao-dreamies-390.png`        | 6 · Golden flow B — Dreamies, embalagens diferentes              |
-| `detalhe-390.png`                    | 7 · Detalhe — Frango inteiro no Safra                            |
-| `whatsapp-390.png`                   | 8 · WhatsApp / retenção                                          |
-| `comparacao-elseve-390.png`          | V4.1 · Elseve — a foto real do 200 ml na comparação              |
-| `comparacao-sanol-390.png`           | V4.1 · Sanol Dog — a foto real do 7 un na comparação             |
-| `ficha-original-390.png`             | V4.1 · Ficha da Original lata 350 ml com a foto real             |
-| `v3-v4-compare-board.png`            | 9 · V3 \| V4 — primeira dobra de 5 telas, antes e depois         |
-| `north-star-*-compare.png`           | 10 · NORTH STAR \| IMPLEMENTATION (Home, Busca, Comparação, Detalhe) |
-| `comparable-products-demo-board.png` | A prancha final V4, com as notas de honestidade                  |
-| `benchmark-lessons-board.png`        | 11 · Decisões adotadas/rejeitadas de cada benchmark              |
-| `benchmark-diagnosis.md`             | Diagnóstico por dimensão + matriz KEEP/ADAPT/REJECT (V2/V3)      |
-| `*-390-dobra.png`                    | Primeira dobra de cada tela (insumo das pranchas)                |
+| Arquivo                               | O quê                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `home-390.png` / `home-390-dobra.png` | 1–2 · Home completa e primeira dobra (herói: Frango, R$ 7,99/kg)        |
+| `catalogo-390.png` / `-dobra.png`     | 3–4 · /buscar sem termo: o catálogo, 24 por categoria, clicável         |
+| `busca-390.png`                       | Busca (`?q=cerveja` — 3 comparáveis)                                    |
+| `comparacao-frango-390.png`           | 5 · Golden flow A — Frango, peso variável, R$/kg protagonista           |
+| `comparacao-dreamies-390.png`         | 6 · Golden flow B — Dreamies, embalagens diferentes                     |
+| `detalhe-390.png`                     | 7 · Detalhe — Frango inteiro no Safra                                   |
+| `whatsapp-390.png`                    | 8 · WhatsApp / retenção                                                 |
+| `comparacao-elseve-390.png`           | V4.1 · Elseve — a foto real do 200 ml na comparação                     |
+| `comparacao-sanol-390.png`            | V4.1 · Sanol Dog — a foto real do 7 un na comparação                    |
+| `ficha-original-390.png`              | V4.1 · Ficha da Original lata 350 ml com a foto real                    |
+| `comparacao-original-390.png`         | V4.3 · Comparação da Original — R$ 45,48 (pack 12) × R$ 47,88           |
+| `fonte-original-safra-tile.png`       | V4.3 · A FONTE do §1: tile do tabloide Safra, "(venda somente no pack)" |
+| `v42-v43-compare-board.png`           | V4.3 · V4.2 \| V4.3 — só as telas alteradas, página inteira             |
+| `v3-v4-compare-board.png`             | 9 · V3 \| V4 — primeira dobra de 5 telas, antes e depois                |
+| `north-star-*-compare.png`            | 10 · NORTH STAR \| IMPLEMENTATION (Home, Busca, Comparação, Detalhe)    |
+| `comparable-products-demo-board.png`  | A prancha final V4, com as notas de honestidade                         |
+| `benchmark-lessons-board.png`         | 11 · Decisões adotadas/rejeitadas de cada benchmark                     |
+| `benchmark-diagnosis.md`              | Diagnóstico por dimensão + matriz KEEP/ADAPT/REJECT (V2/V3)             |
+| `*-390-dobra.png`                     | Primeira dobra de cada tela (insumo das pranchas)                       |
+
+## O que a V4.3 mudou (10/08/2026 — Final Micro-Remediation)
+
+- **Verdade do preço da Original (§1, P0)** — a fonte foi reverificada na arte: o tabloide
+  do Safra (verso, 06–12/08) anuncia "Cerveja Original lata 350ml pack com 12 unid.
+  **(venda somente no pack)**", de R$ 4,29 por **R$ 3,79 UNID.**, e a planilha registra
+  "preco por unidade, venda so no pack". Cenário B confirmado: não existe compra de uma
+  lata. O protagonista virou o **desembolso mínimo real — R$ 45,48** (12 × 3,79,
+  arredondamento monetário determinístico ao centavo), rotulado "pack 12", em busca,
+  comparação, ficha e no texto de compartilhamento; "R$ 3,79/lata" e "R$ 10,83/L"
+  continuam, secundários. O preço-fonte (3,79) não mudou. O pack é campo **declarado**
+  (`pack_obrigatorio`, ignorado sem `unidade_de_venda`), nunca inferido do texto da
+  condição; testes de contrato garantem que preço e condição não voltam a se contradizer
+  e que o por-lata permanece derivado e secundário.
+- **Original "cortada" na busca (§2)** — o defeito estava na **evidência**, não na tela:
+  no app real a lata sempre rendeu inteira (asset 569² quadrado, frame quadrado,
+  `object-cover`, medido ao vivo de 320 a 430 px). O PNG da V4.2 foi capturado antes de a
+  imagem `loading="lazy"` abaixo da dobra terminar de decodificar — só as primeiras
+  linhas do JPEG (o aro da lata) tinham sido pintadas. O pipeline de captura agora força
+  eager e espera `decode()` de **toda** imagem antes do screenshot (`cdp.ts`), regra
+  geral para qualquer tela.
+- **Corona Extra (§3): ASSET SOURCE LIMITATION — ACCEPTED FOR DEMO** — ver a seção de
+  dependências abaixo.
+- **Sanol e Elseve reconferidos (§4)** — sem mudança: Sanol 1º Atacadão R$ 69,90/30 un
+  (R$ 2,33/un, selo "Melhor custo/un") × 2º Pague Menos R$ 22,99/7 un (R$ 3,28/un);
+  Elseve 1º Savegnago 400 ml R$ 25,90 (R$ 64,75/L, selo "Melhor custo/L") × 2º Safra
+  200 ml R$ 16,99 (R$ 84,95/L). Package price grande, unitário secundário, nas duas.
 
 ## O que a V4.2 mudou (10/08/2026 — Last-Mile Consumer Polish)
 
@@ -45,11 +76,14 @@ imagem (28/28 SKUs, zero placeholders) com as três fotos reais fornecidas pelo 
 
 ### Founder dependencies (declaradas, não escondidas)
 
-- **NEEDS FOUNDER ASSET — Corona Extra lata 350 ml.** Nenhuma fonte legítima contém a
-  lata inteira e limpa: no Savegnago a Extra está parcialmente atrás da Corona **Cero**
-  (variante errada, não pode representá-la); no Atacadão a lata está inteira mas o selo
-  "-18" carimba o topo. Completar com IA é proibido (§13/princípio 11) — o asset atual
-  (meia lata, texto removido na V4.1) permanece até material novo.
+- **Corona Extra lata 350 ml — ASSET SOURCE LIMITATION, ACCEPTED FOR DEMO (V4.3 §3).**
+  Revisada uma última vez em alta resolução: nenhuma fonte legítima contém a lata inteira
+  e limpa — no Savegnago a Extra está parcialmente atrás da Corona **Cero** (variante
+  errada, não pode representá-la); no Atacadão a lata está inteira em largura, mas o selo
+  "-18" carimba o ombro esquerdo (sobre o "C" de "Corona") e o balão do título cobre a
+  base. Completar com IA é proibido (§13/princípio 11) — o asset atual (parcial, texto
+  removido na V4.1) fica aceito para a demo; um asset novo do Founder substitui quando
+  existir.
 - **NEEDS FOUNDER ASSET — Elseve Collagen Lifter 400 ml (tampa).** No único material com
   a garrafa (Savegnago p4), os dígitos do preço impresso cobrem a tampa. O re-recorte da
   V4.2 entrega o máximo que a fonte permite; a tampa só vem com material novo.
@@ -84,11 +118,11 @@ imagem (28/28 SKUs, zero placeholders) com as três fotos reais fornecidas pelo 
 
 ## Image coverage report (V4.1) — 24 grupos, 28 SKUs, **28/28 com asset legítimo**
 
-| Status | Qtde | Itens |
-| ------ | ---- | ----- |
-| **A** — imagem boa, IA fornecida pelo Founder (balcão sem marca, `alt` declara ilustração) | 4 | Frango inteiro, Bucho, Bisteca, Cebola |
-| **A** — imagem boa, recorte do encarte/tabloide publicado pelo próprio mercado | 21 | Liza 900 ml, Farofa Yoki, Dolce Gusto, Lasanha Sadia, Tixan, Elseve 400 ml, Dreamies 80 g, Dreamies 40 g, Sanol 30 un, Linguiça toscana, Abóbora, Chuchu, Melão, Corona, Heineken, Original pack 12, Sempre Livre, Nivea, Rexona, Sanol eliminador 2 L, Pedigree 10,1 kg |
-| **A** — foto real da embalagem fornecida pelo Founder (V4.1 §A; `alt` "— foto do produto") | 3 | Elseve Collagen Lifter 200 ml, Sanol Dog 7 un, Original lata 350 ml (Safra) |
+| Status                                                                                     | Qtde | Itens                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **A** — imagem boa, IA fornecida pelo Founder (balcão sem marca, `alt` declara ilustração) | 4    | Frango inteiro, Bucho, Bisteca, Cebola                                                                                                                                                                                                                                   |
+| **A** — imagem boa, recorte do encarte/tabloide publicado pelo próprio mercado             | 21   | Liza 900 ml, Farofa Yoki, Dolce Gusto, Lasanha Sadia, Tixan, Elseve 400 ml, Dreamies 80 g, Dreamies 40 g, Sanol 30 un, Linguiça toscana, Abóbora, Chuchu, Melão, Corona, Heineken, Original pack 12, Sempre Livre, Nivea, Rexona, Sanol eliminador 2 L, Pedigree 10,1 kg |
+| **A** — foto real da embalagem fornecida pelo Founder (V4.1 §A; `alt` "— foto do produto") | 3    | Elseve Collagen Lifter 200 ml, Sanol Dog 7 un, Original lata 350 ml (Safra)                                                                                                                                                                                              |
 
 **Zero placeholders de produto.** Os três SKUs que seguravam placeholder deliberado desde a
 V2 receberam na V4.1 a fotografia da embalagem real — recortada pelo produto, centrada num

@@ -14,6 +14,7 @@ import { diferencaParaOSegundo } from "@/lib/diferenca-de-preco";
 import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
 import { formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
+import { precoParaCompartilhar } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 import type { UnitPriceBasis } from "@/lib/unit-price";
 
@@ -143,7 +144,9 @@ function ProductPage() {
             <ShareAchadoButton
               payload={{
                 produto: formatProductName(product),
-                preco: menor.price,
+                // V4.3 §1 — com pack obrigatório, o texto que viaja leva o desembolso
+                // mínimo com o rótulo do pack, nunca o por-unidade solto.
+                ...precoParaCompartilhar(menor),
                 ...(menor.price_unit === undefined ? {} : { unidade: menor.price_unit }),
                 mercado: menor.market.name,
                 validUntil: menor.valid_until,

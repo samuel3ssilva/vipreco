@@ -4,7 +4,13 @@ import {
   HOME_OPPORTUNITY_COUNT,
   buildDemoOpportunities,
 } from "@/lib/demo-opportunities";
-import { ACOUGUE_MOTA, custoUnitarioDaOferta, grupoDoProduto } from "@/lib/demo-catalog";
+import {
+  ACOUGUE_MOTA,
+  construirOfertasDemo,
+  custoUnitarioDaOferta,
+  grupoDoProduto,
+} from "@/lib/demo-catalog";
+import { montarVisaoDoCard } from "@/lib/card-v2";
 import { isValidPrice } from "@/lib/comparison";
 import { normalizeSearchText } from "@/lib/normalize";
 import { formatDate, formatRelativeDay } from "@/lib/format";
@@ -223,6 +229,45 @@ describe("fixture de demonstração — GTIN", () => {
     for (const achado of buildDemoOpportunities(NOW)) {
       expect(achado.product.name).toBeTruthy();
       expect(normalizeSearchText(achado.product.name).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("Cerveja Original — a verdade do preço do pack obrigatório (V4.3 §1)", () => {
+  // Fonte: Safra_Tabloide_Verso 06-08 a 12-08 — "Cerveja Original lata 350ml pack com
+  // 12 unid. (venda somente no pack)", R$ 3,79 A UNIDADE. A planilha do Founder registra
+  // a mesma nota: "preco por unidade, venda so no pack". Não é possível comprar uma lata.
+  const ofertas = construirOfertasDemo();
+  const safra = ofertas.find((o) => o.id === "demo-v3-original-safra");
+  if (safra === undefined) throw new Error("oferta demo-v3-original-safra não encontrada");
+
+  it("o preço-fonte segue sendo o da planilha (3,79) e o pack é declarado, não inferido", () => {
+    expect(safra.price).toBe(3.79);
+    expect(safra.unidade_de_venda).toBe("lata");
+    expect(safra.pack_obrigatorio).toBe(12);
+    expect(safra.special_condition).toBe("Venda somente no pack de 12.");
+  });
+
+  it("o protagonista é o desembolso mínimo real: R$ 45,48, rotulado 'pack 12'", () => {
+    const v = montarVisaoDoCard(safra, NOW, formatDate, { snapshotHistorico: true });
+    expect(v.preco.valor).toBe(45.48);
+    expect(v.preco.numero).toBe("45,48");
+    expect(v.preco.embalagemMinima).toBe("pack 12");
+    // Por-lata e R$/L continuam, SECUNDÁRIOS — nada foi escondido, nada foi promovido.
+    expect(v.preco.porUnidade).toMatch(/^R\$\s3,79\/lata$/);
+    expect(v.unitario?.display).toBe(10.83);
+    expect(v.unitario?.basis).toBe("per_l");
+  });
+
+  it("nenhuma oferta demo com condição de pack fica sem o pack declarado — o contrato anti-contradição", () => {
+    // O guard lê o texto que o TESTE pode ler (a exibição nunca infere): se a condição
+    // fala de pack obrigatório, o dado declarado tem de existir — senão o número grande
+    // voltaria a afirmar um desembolso avulso que o mercado não vende.
+    for (const o of ofertas) {
+      if (o.special_condition !== null && /\bpack\b/i.test(o.special_condition)) {
+        expect(o.unidade_de_venda, o.id).toBeDefined();
+        expect(o.pack_obrigatorio, o.id).toBeDefined();
+      }
     }
   });
 });

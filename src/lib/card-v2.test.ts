@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { montarVisaoDoCard } from "@/lib/card-v2";
+import { montarVisaoDoCard, precoParaCompartilhar } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 import type { Market, Product } from "@/types/domain";
 
@@ -429,6 +429,73 @@ describe("preço", () => {
 
   it("sem unidade de venda declarada, nada é inferido: sufixo ausente", () => {
     expect(visao({ price: 3.79 }).preco.quantidade).toBeNull();
+  });
+});
+
+describe("pack obrigatório — o protagonista é o desembolso mínimo real (V4.3 §1)", () => {
+  const original = { price: 3.79, unidade_de_venda: "lata", pack_obrigatorio: 12 };
+
+  it("o número grande é 12 × 3,79 = R$ 45,48, com arredondamento determinístico", () => {
+    // 3.79 * 12 em ponto flutuante dá 45.480000000000004 — o centavo é arredondado
+    // uma única vez, no mesmo lugar, para todo mundo.
+    const v = visao(original);
+    expect(v.preco.valor).toBe(45.48);
+    expect(v.preco.numero).toBe("45,48");
+    expect(v.preco.embalagemMinima).toBe("pack 12");
+    // O sufixo por-unidade sai do número grande: "R$ 45,48/lata" seria mentira.
+    expect(v.preco.quantidade).toBeNull();
+  });
+
+  it("o por-unidade anunciado continua na tela, secundário — informação nunca some", () => {
+    const v = visao(original);
+    expect(v.preco.porUnidade).toMatch(/^R\$\s3,79\/lata$/);
+    expect(v.preco.falado).toBe(
+      "45 reais e 48 centavos o pack de 12 — 3 reais e 79 centavos por lata",
+    );
+  });
+
+  it("preço protagonista e condição de pack nunca se contradizem", () => {
+    // O contrato do §6: se a venda é só no pack, o desembolso mínimo É o protagonista;
+    // o preço por lata nunca volta a ser o número grande.
+    const v = visao({ ...original, special_condition: "Venda somente no pack de 12." });
+    expect(v.preco.valor).toBe(45.48);
+    expect(v.condicao).toBe("Venda somente no pack de 12.");
+  });
+
+  it("sem unidade de venda, pack declarado sozinho é ignorado — um pack de quê?", () => {
+    const v = visao({ price: 3.79, pack_obrigatorio: 12 });
+    expect(v.preco.valor).toBe(3.79);
+    expect(v.preco.embalagemMinima).toBeNull();
+    expect(v.preco.porUnidade).toBeNull();
+  });
+
+  it("pack não inteiro ou ≤ 1 não vira desembolso: dado inválido não inventa preço", () => {
+    expect(visao({ price: 3.79, unidade_de_venda: "lata", pack_obrigatorio: 1 }).preco.valor).toBe(
+      3.79,
+    );
+    expect(
+      visao({ price: 3.79, unidade_de_venda: "lata", pack_obrigatorio: 2.5 }).preco.valor,
+    ).toBe(3.79);
+  });
+
+  it("o preço unitário normalizado (R$/L) permanece derivado e secundário", () => {
+    // A quantidade estruturada da lata (350 ml) segue sendo a base do R$/L — o pack não
+    // muda o denominador da comparação entre embalagens diferentes.
+    const v = visao({
+      ...original,
+      product: produto({ quantity_value: 350, quantity_unit: "ml" }),
+      quantity_provenance: "confirmed",
+    });
+    expect(v.unitario?.display).toBe(10.83);
+    expect(v.unitario?.basis).toBe("per_l");
+  });
+
+  it("o preço que viaja sozinho é o desembolso com o rótulo do pack", () => {
+    expect(precoParaCompartilhar(oferta(original))).toEqual({
+      preco: 45.48,
+      embalagem: "pack 12",
+    });
+    expect(precoParaCompartilhar(oferta({ price: 3.79 }))).toEqual({ preco: 3.79 });
   });
 });
 

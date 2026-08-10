@@ -1,55 +1,75 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, ChevronRight, Clock, Tag } from "lucide-react";
+import { CalendarClock, ChevronRight, Clock } from "lucide-react";
 import type { ReactNode } from "react";
+import { VisuallyHidden } from "@/components/primitives";
 import { SourceBadge } from "@/components/SourceBadge";
-import { formatDate, formatPrice, formatRelativeDay } from "@/lib/format";
+import { ProductImage } from "@/components/card-v2/identity";
+import { montarVisaoDoCard } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
+import { formatDate, formatPrice } from "@/lib/format";
+import type { UnitPriceBasis } from "@/lib/unit-price";
 
 /**
- * Uma linha da comparação — Tela 3 do North Star.
+ * Uma linha da comparação — Tela 3 do North Star, agora com as DUAS histórias do
+ * mandato v2 (§13).
  *
  * =============================================================================
  * A POSIÇÃO É CONSEQUÊNCIA, NUNCA CURADORIA
  * =============================================================================
  *
- * O número 1, 2, 3 vem da ordenação por preço, e de mais nada. É por isso que ele é
- * `aria-hidden` e a posição é dita em texto para quem usa leitor de tela: um numeral solto na
- * frente de um nome de mercado, sem contexto, soa como classificação editorial — que é
- * exatamente o oposto do que o produto faz.
- *
- * **Nada reordena esta lista.** Não há destaque pago, não há parceiro, não há promoção que
- * suba de posição: a ordem é preço de prateleira crescente, e a única razão para o primeiro
- * ser o primeiro é ele custar menos (`CLAUDE.md`, princípio 4). Vale inclusive para a loja da
- * demonstração: o Açougue Mota abre as cinco comparações porque é mais barato nas cinco, e não
- * porque exista um campo que o promova.
+ * O número 1, 2, 3 vem da ordenação, e de mais nada — por isso é `aria-hidden` e a posição
+ * é dita em texto para quem usa leitor de tela. **Nada reordena esta lista**: não há
+ * destaque pago, não há parceiro, e o preço de clube não sobe ninguém de posição — a ordem
+ * é pelo preço cheio de prateleira (`CLAUDE.md`, princípio 4). O Açougue Mota abre a
+ * comparação do bucho porque tem o menor R$/kg, e não porque é a loja da demonstração.
  *
  * =============================================================================
- * DUAS NATUREZAS DE LINHA, E A DIFERENÇA É VISÍVEL SEM LER MIUDINHO (09/08/2026)
+ * EMBALAGEM IGUAL × EMBALAGENS DIFERENTES (§5)
  * =============================================================================
  *
- * **Observada** — procedência, data e link para o detalhe.
+ * **Embalagem igual** (e granel, onde o kg é o mesmo denominador): a linha é mercado →
+ * preço, e o primeiro é o menor desembolso E o melhor custo ao mesmo tempo — não há
+ * ambiguidade a desfazer.
  *
- * **Exemplo ilustrativo** — sem procedência, sem data, moldura tracejada e **sem link**. Não é
- * economia de trabalho: não existe detalhe de uma oferta que ninguém foi ver, e uma seta que
- * abre uma ficha inventada é a forma mais convincente de mentir sobre isto. A linha diz o que é,
- * em texto, dentro dela mesma.
+ * **Embalagens diferentes**: cada linha carrega o PRÓPRIO SKU — imagem, gramatura — e a
+ * ordem é por custo unitário. O desembolso continua sendo o número grande; o custo/kg fica
+ * logo abaixo; e o primeiro ganha o selo "Melhor custo/kg", nunca "mais barato" — porque
+ * R$ 5,95 por 40 g É o menor desembolso da lista de Dreamies e ainda assim o pior custo.
+ * A linha não decide qual dos dois importa para a pessoa: mostra os dois, nomeados.
  */
+
+const SELO_POR_BASE: Record<UnitPriceBasis, string> = {
+  per_kg: "Melhor custo/kg",
+  per_l: "Melhor custo/L",
+  per_un: "Melhor custo/un",
+};
+
 export function OfferRankRow({
   entry,
   posicao,
   productId,
+  now,
+  gramas,
+  basePorUnidade,
 }: {
   entry: OfertaCardV2;
   posicao: number;
+  /** O id do GRUPO — é para a comparação dele que o detalhe volta. */
   productId: string;
+  now: Date;
+  /** Quantidade escolhida no seletor, quando o grupo é de peso variável. */
+  gramas?: number;
+  /** Presente quando o grupo compara embalagens diferentes por custo unitário. */
+  basePorUnidade?: UnitPriceBasis;
 }) {
-  const exemplo = entry.exemplo_ilustrativo === true;
-  const primeiro = posicao === 1 && !exemplo;
+  const visao = montarVisaoDoCard(entry, now, formatDate, gramas === undefined ? {} : { gramas });
+  const primeiro = posicao === 1;
+  const embalagensDiferentes = basePorUnidade !== undefined;
 
   const conteudo = (
     <div className="flex items-start gap-3 p-3.5">
-      {/* O selo de posição. Verde cheio no primeiro observado, neutro nos demais — a
-          diferença visual que a referência usa, e que aqui significa apenas "este é o menor". */}
+      {/* O selo de posição. Verde cheio no primeiro, neutro nos demais — e o que "primeiro"
+          significa está escrito na própria tela: menor preço, ou melhor custo unitário. */}
       <span
         aria-hidden="true"
         className={`font-display mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
@@ -59,110 +79,124 @@ export function OfferRankRow({
         {posicao}
       </span>
 
-      {/* A IMAGEM ENTROU AQUI E SAIU NA MESMA TARDE, E O MOTIVO ESTÁ MEDIDO.
-          A 390 px, o selo de posição, uma imagem de 72, o preço com "/kg" e o chevron deixam
-          ~90 px para o nome do mercado. "Açougue Mota" quebrava em duas linhas e a primeira
-          encostava no "R$". Numa tela cujo propósito é dizer EM QUAL LOJA o preço está, o nome
-          da loja é a última coisa que pode ser espremida.
-          E o produto não fica sem imagem: ele é mostrado uma vez, grande, no topo da tela —
-          que é o desenho desta rota desde o começo. Repeti-lo linha a linha era ganhar pouco e
-          pagar caro. */}
+      {/* A IMAGEM SÓ ENTRA QUANDO CADA LINHA É UM SKU DIFERENTE. No grupo de embalagem
+          igual o produto já está uma vez, grande, no topo da tela — repeti-lo linha a linha
+          espremeria o nome do mercado (medido em 09/08: "Açougue Mota" virava "Aç…"). No
+          grupo de embalagens diferentes a imagem É informação da linha: o pacote de 80 g e
+          o de 40 g precisam parecer diferentes, porque são. */}
+      {embalagensDiferentes ? (
+        <ProductImage imagem={visao.imagem} categoria={entry.product.category} tamanho="compacto" />
+      ) : null}
+
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
-          {/* NOME DE MERCADO NÃO TRUNCA. Ele truncava, e com a imagem na linha virou "Aç…" —
-              na tela cujo propósito é dizer em QUAL loja o preço está. Quebrar em duas linhas
-              custa altura; truncar custa a informação. */}
+          {/* NOME DE MERCADO NÃO TRUNCA. Quebrar em duas linhas custa altura; truncar custa
+              a informação — na tela cujo propósito é dizer EM QUAL loja está o preço. */}
           <div className="min-w-0">
             <p className="text-[0.9375rem] leading-tight font-bold">{entry.market.name}</p>
             {entry.market.neighborhood ? (
               <p className="text-muted-foreground text-xs">{entry.market.neighborhood}</p>
             ) : null}
+            {/* A gramatura do SKU DESTA linha — obrigatória quando as embalagens diferem:
+                sem ela, R$ 5,95 e R$ 7,90 parecem o mesmo produto em promoções diferentes. */}
+            {embalagensDiferentes && visao.identidade.quantidade !== null ? (
+              <p className="mt-0.5 text-sm font-semibold tabular-nums">
+                {visao.identidade.quantidade}
+                {visao.identidade.complemento !== null ? (
+                  <span className="text-muted-foreground font-normal">
+                    {" "}
+                    · {visao.identidade.complemento}
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
           </div>
 
-          {/* O PREÇO É O ELEMENTO PRINCIPAL À DIREITA — a instrução é literal do §4. */}
+          {/* O DESEMBOLSO É O NÚMERO GRANDE (§0). O custo unitário fica embaixo, menor —
+              presente sempre que existe, porque é ele que torna as linhas comparáveis. */}
           <div className="shrink-0 text-right">
             <p
               aria-hidden="true"
               className="font-display text-primary text-[1.375rem] leading-none font-extrabold tabular-nums"
             >
               <span className="text-[64%] font-bold">R$</span>
-              <span className="ml-0.5">{formatPrice(entry.price).replace("R$", "").trim()}</span>
-              {entry.price_unit !== undefined ? (
-                <span className="text-muted-foreground ml-0.5 text-[52%] font-bold">
-                  /{entry.price_unit}
-                </span>
-              ) : null}
+              <span className="ml-0.5">{visao.preco.numero}</span>
             </p>
-            <span className="sr-only">
-              Posição {posicao}: {formatPrice(entry.price)}
-              {entry.price_unit === "kg" ? " por quilo" : ""}
-            </span>
+            {visao.preco.quantidade !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-0.5 text-xs">
+                {visao.preco.quantidade}
+              </p>
+            ) : null}
+            {visao.unitario !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-0.5 text-xs tabular-nums">
+                {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
+              </p>
+            ) : null}
+            <VisuallyHidden>
+              Posição {posicao}: {visao.preco.falado}
+              {visao.unitario !== null && visao.preco.quantidade === null
+                ? `. ${formatPrice(visao.unitario.display)} ${visao.unitario.rotulo}`
+                : ""}
+            </VisuallyHidden>
           </div>
         </div>
 
-        {exemplo ? (
-          <p className="bg-surface text-muted-foreground mt-2 w-fit max-w-full rounded-md px-2 py-1 text-xs">
-            Exemplo ilustrativo — preço não observado
-          </p>
-        ) : (
-          <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <SourceBadge source={entry.source_type} />
-            <span className="inline-flex items-center gap-1 tabular-nums">
-              <Clock aria-hidden="true" className="size-3.5 shrink-0" />
-              {formatDate(entry.observed_at)} · {formatRelativeDay(entry.observed_at)}
-            </span>
-            {entry.valid_until ? (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
-                válido até {formatDate(entry.valid_until)}
-              </span>
-            ) : null}
-          </div>
-        )}
-
-        {entry.special_condition ? (
-          <p className="bg-caution/25 text-caution-foreground mt-2 flex w-fit max-w-full items-start gap-1.5 rounded-md px-2 py-1 text-xs">
-            <Tag aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-            <span>{entry.special_condition}</span>
+        {/* O selo do §5 — só no grupo de embalagens diferentes, só no primeiro, e sempre
+            nomeando a base. "Mais barato" sem denominador não existe aqui. */}
+        {embalagensDiferentes && primeiro ? (
+          <p className="bg-primary/10 text-primary mt-2 inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-bold">
+            {SELO_POR_BASE[basePorUnidade]}
           </p>
         ) : null}
+
+        {/* Preço de clube/cartão — informação, nunca posição (§8). */}
+        {visao.clube !== null ? (
+          <p className="bg-secondary text-secondary-foreground mt-2 w-fit max-w-full rounded-md px-2 py-1 text-xs">
+            <span className="font-bold tabular-nums">R$ {visao.clube.precoTexto}</span>{" "}
+            {visao.clube.condicao}
+          </p>
+        ) : null}
+
+        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <SourceBadge source={entry.source_type} label={visao.procedencia.origem} />
+          <span className="inline-flex items-center gap-1 tabular-nums">
+            <Clock aria-hidden="true" className="size-3.5 shrink-0" />
+            {visao.procedencia.observadoEm} · {visao.procedencia.relativo}
+          </span>
+          {visao.procedencia.validoAte !== null ? (
+            <span className="inline-flex items-center gap-1 tabular-nums">
+              <CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />
+              válido até {visao.procedencia.validoAte}
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {exemplo ? null : (
-        <ChevronRight
-          aria-hidden="true"
-          className="text-muted-foreground group-hover:text-primary mt-1 size-5 shrink-0"
-        />
-      )}
+      <ChevronRight
+        aria-hidden="true"
+        className="text-muted-foreground group-hover:text-primary mt-1 size-5 shrink-0"
+      />
     </div>
   );
 
   const moldura = `block overflow-hidden rounded-xl border ${
-    exemplo
-      ? "border-border border-dashed bg-card/60"
-      : primeiro
-        ? "border-primary/45 shadow-card bg-card"
-        : "border-border bg-card"
+    primeiro ? "border-primary/45 shadow-card bg-card" : "border-border bg-card"
   }`;
 
   return (
     <li>
-      {exemplo ? (
-        <div className={moldura}>{conteudo}</div>
-      ) : (
-        <Envelope
-          className={`group transition-colors hover:bg-surface ${moldura}`}
-          productId={productId}
-          priceId={entry.id}
-        >
-          {conteudo}
-        </Envelope>
-      )}
+      <Envelope
+        className={`group transition-colors hover:bg-surface ${moldura}`}
+        productId={productId}
+        priceId={entry.id}
+      >
+        {conteudo}
+      </Envelope>
     </li>
   );
 }
 
-/** O link para a ficha da oferta. Existe só para a linha observada. */
+/** O link para a ficha da oferta. */
 function Envelope({
   className,
   productId,

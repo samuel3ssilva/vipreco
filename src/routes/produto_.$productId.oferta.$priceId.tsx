@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CalendarClock, Clock, MapPin, Store, Tag } from "lucide-react";
+import { ArrowLeft, CalendarClock, Clock, MapPin, Store } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { PesoSelector } from "@/components/PesoSelector";
 import { ProductImage } from "@/components/card-v2/identity";
 import { SourceBadge } from "@/components/SourceBadge";
 import { StateMessage } from "@/components/StateMessage";
@@ -9,42 +11,27 @@ import { WhatsAppGlyph } from "@/components/WhatsAppCta";
 import { DemoNote } from "@/components/DemoNote";
 import { isDemoMode } from "@/lib/app-mode";
 import { ofertaDemo } from "@/services/demo-source";
-import { sourceLabel } from "@/lib/sources";
+import { montarVisaoDoCard } from "@/lib/card-v2";
+import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
-import { formatDate, formatPrice, formatProductName, formatRelativeDay } from "@/lib/format";
+import { formatDate, formatPrice, formatProductName } from "@/lib/format";
 
 /**
  * =============================================================================
- * TELA 4 DO NORTH STAR — DETALHE DA OFERTA
+ * TELA 4 DO NORTH STAR — DETALHE DA OFERTA (mandato v2 §14)
  * =============================================================================
  *
- * Rota nova. Ela não existia: o produto ia da comparação direto para lugar nenhum, e cada linha
- * da lista era um destino sem página.
- *
- * A hierarquia é a do §5 do mandato, e o DOM segue ela na ordem exata:
+ * A hierarquia continua a mesma, na ordem exata do DOM:
  *
  *   PRODUTO → PREÇO → MERCADO → CONDIÇÃO → AÇÃO → PROCEDÊNCIA
  *
- * "Confiança da informação" fica por último de propósito. Ela precisa existir — é o que separa
- * o ViPreço de um print de grupo de WhatsApp —, e precisa ficar **abaixo da oferta**, porque
- * quem abriu esta tela abriu para ver um preço, não para ler sobre metodologia.
+ * O que o mandato v2 mudou é o PREÇO: o número muito grande é o que o consumidor paga —
+ * o preço da embalagem, ou, no peso variável, o preço calculado para a quantidade
+ * escolhida no seletor ("aprox. 500 g") — e o normalizado (R$/kg, R$/L, R$/un) fica logo
+ * abaixo, menor, como base de comparação. A hierarquia nunca se inverte (§25).
  *
- * =============================================================================
- * O QUE NÃO FOI COPIADO DA REFERÊNCIA, E POR QUÊ
- * =============================================================================
- *
- * **"Preço anterior: ~~R$ 20,49~~"**. O §5 do mandato é explícito ("não usar preço riscado sem
- * contrato legítimo"), e não existe: a decisão P-01 — qual observação anterior conta como
- * "antes" — nunca foi tomada. Um preço riscado é uma afirmação de que houve queda, e sem
- * critério escrito ela é uma afirmação sobre nada.
- *
- * **O logotipo do mercado**. Nenhum mercado autorizou nada, e os desta demonstração são
- * fictícios: um logotipo aqui seria inventar identidade visual de uma empresa que não existe,
- * ao lado de um preço que se apresenta como observado.
- *
- * =============================================================================
- * ESTA ROTA É DE DEMONSTRAÇÃO (§2 e §27)
- * =============================================================================
+ * O preço de clube, quando existe, aparece ao lado do cheio com a condição colada — nunca
+ * no lugar dele (§8). "Preço anterior riscado" continua fora: P-01 nunca foi decidida.
  *
  * `ofertaDemo` devolve `null` fora do modo demo, e a tela responde "oferta não encontrada".
  * Falha fechada: nada aqui promete que o piloto já tem endpoint de oferta individual.
@@ -64,9 +51,24 @@ export const Route = createFileRoute("/produto_/$productId/oferta/$priceId")({
   }),
 });
 
+/**
+ * A localidade do mercado, sem repetição e sem invenção (§16).
+ *
+ * Bairro conhecido vira "bairro · Piracicaba — SP" — a não ser que o bairro JÁ seja a
+ * localidade (Artemis), caso em que ele é dito uma vez. Mercado sem bairro validado não
+ * ganha linha nenhuma: rede de encarte regional não tem "onde" para afirmar, e nenhuma
+ * distância é dita em nenhum caso.
+ */
+function localidade(bairro: string | null): string | null {
+  if (bairro === null || bairro.trim().length === 0) return null;
+  return bairro === "Artemis" ? "Artemis, Piracicaba — SP" : `${bairro} · Piracicaba — SP`;
+}
+
 function OfferPage() {
   const { productId, priceId } = Route.useParams();
   const oferta = ofertaDemo(productId, priceId);
+  const [gramas, setGramas] = useState<PesoSelecionado>(PESO_PADRAO);
+  const now = useMemo(() => new Date(), []);
 
   if (oferta === null) {
     return (
@@ -90,8 +92,11 @@ function OfferPage() {
   }
 
   const { product, market } = oferta;
+  const granel = oferta.price_unit === "kg";
+  const visao = montarVisaoDoCard(oferta, now, formatDate, granel ? { gramas } : {});
   const detalhes = [product.variant, product.size_text].filter(Boolean).join(" · ");
   const whatsapp = mensagemDeOferta(oferta.id, product.name);
+  const onde = localidade(market.neighborhood);
 
   return (
     <AppShell>
@@ -110,6 +115,7 @@ function OfferPage() {
             payload={{
               produto: formatProductName(product),
               preco: oferta.price,
+              ...(oferta.price_unit === undefined ? {} : { unidade: oferta.price_unit }),
               mercado: market.name,
               validUntil: oferta.valid_until,
               url: absoluteAssetUrl(`/produto/${productId}/oferta/${priceId}`),
@@ -130,32 +136,54 @@ function OfferPage() {
             <h1 className="font-display text-[1.5rem] leading-[1.15] font-extrabold sm:text-[1.75rem]">
               {formatProductName(product)}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">{detalhes}</p>
+            {detalhes.length > 0 ? (
+              <p className="text-muted-foreground mt-1 text-sm">{detalhes}</p>
+            ) : null}
 
             <p
               aria-hidden="true"
               className="font-display text-primary mt-3 text-[2.5rem] leading-none font-extrabold tabular-nums min-[430px]:text-[2.75rem]"
             >
               <span className="text-[60%] font-bold">R$</span>
-              <span className="ml-1">{formatPrice(oferta.price).replace("R$", "").trim()}</span>
-              {/* A unidade colada no número, como a placa do balcão escreve. Sem ela, "R$ 20,99"
-                  nesta tela — que é a ficha da oferta, onde alguém decide — seria lido como o
-                  preço de uma peça inteira. */}
-              {oferta.price_unit === undefined ? null : (
-                <span className="text-muted-foreground ml-0.5 text-[40%] font-bold">
-                  /{oferta.price_unit}
-                </span>
-              )}
+              <span className="ml-1">{visao.preco.numero}</span>
             </p>
-            <span className="sr-only">
-              Preço observado: {formatPrice(oferta.price)}
-              {oferta.price_unit === "kg" ? " por quilo" : ""}
-            </span>
+            {/* "aprox. 500 g" logo sob o número — a quantidade a que ele se refere —, e o
+                normalizado abaixo, menor: primeiro quanto se paga, depois como se compara. */}
+            {visao.preco.quantidade !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-1 text-sm font-semibold">
+                {visao.preco.quantidade}
+              </p>
+            ) : null}
+            {visao.unitario !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-0.5 text-sm tabular-nums">
+                {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
+              </p>
+            ) : null}
+            <span className="sr-only">{visao.preco.falado}</span>
+
+            {visao.clube !== null ? (
+              <p className="bg-secondary text-secondary-foreground mt-2 w-fit max-w-full rounded-md px-2 py-1 text-sm">
+                <span className="font-bold tabular-nums">R$ {visao.clube.precoTexto}</span>{" "}
+                {visao.clube.condicao}
+              </p>
+            ) : null}
+
             <p className="text-muted-foreground mt-1.5 text-xs">
-              Preço observado neste mercado, nesta data.
+              {granel
+                ? "Preço por kg observado neste mercado, nesta data."
+                : "Preço observado neste mercado, nesta data."}
             </p>
           </div>
         </div>
+
+        {granel ? (
+          <div className="space-y-1.5">
+            <PesoSelector gramas={gramas} onChange={setGramas} />
+            <p className="text-muted-foreground text-xs">
+              Preço calculado para {rotuloDoPeso(gramas)} — a balança define o valor final.
+            </p>
+          </div>
+        ) : null}
 
         {/* 3. MERCADO */}
         <section
@@ -166,23 +194,16 @@ function OfferPage() {
             <Store aria-hidden="true" className="text-primary size-4 shrink-0" />
             {market.name}
           </p>
-          {/* A LOCALIDADE NÃO SE REPETE. A linha era `bairro · Artemis, Piracicaba — SP`, escrita
-              quando todo mercado do catálogo ficava num bairro DIFERENTE de Artemis. O Açougue
-              Mota fica em Artemis, e a linha saía "Artemis · Artemis, Piracicaba — SP". Quando o
-              bairro já é a localidade, ele é dito uma vez só. */}
-          {market.neighborhood ? (
+          {onde !== null ? (
             <p className="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm">
               <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-              {market.neighborhood === "Artemis"
-                ? "Artemis, Piracicaba — SP"
-                : `${market.neighborhood} · Artemis, Piracicaba — SP`}
+              {onde}
             </p>
           ) : null}
 
           {/* 4. CONDIÇÃO */}
           {oferta.special_condition ? (
             <p className="bg-caution/25 text-caution-foreground mt-3 flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm">
-              <Tag aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
               <span>
                 <strong className="font-semibold">Condição desta oferta.</strong>{" "}
                 {oferta.special_condition}
@@ -226,23 +247,25 @@ function OfferPage() {
               icone={<Store aria-hidden="true" className="size-3.5 shrink-0" />}
               rotulo="Fonte"
             >
-              {sourceLabel(oferta.source_type)}
+              {visao.procedencia.origem}
             </Linha>
             <Linha
               icone={<Clock aria-hidden="true" className="size-3.5 shrink-0" />}
               rotulo="Atualizado em"
             >
-              {formatDate(oferta.observed_at)} · {formatRelativeDay(oferta.observed_at)}
+              {visao.procedencia.observadoEm} · {visao.procedencia.relativo}
             </Linha>
             <Linha
               icone={<CalendarClock aria-hidden="true" className="size-3.5 shrink-0" />}
               rotulo="Validade"
             >
-              {oferta.valid_until ? `até ${formatDate(oferta.valid_until)}` : "não informada"}
+              {visao.procedencia.validoAte !== null
+                ? `até ${visao.procedencia.validoAte}`
+                : "não informada"}
             </Linha>
           </dl>
           <div className="mt-3">
-            <SourceBadge source={oferta.source_type} />
+            <SourceBadge source={oferta.source_type} label={visao.procedencia.origem} />
           </div>
         </section>
 
@@ -274,8 +297,8 @@ function Linha({
 
 /**
  * O CTA de WhatsApp desta tela é **contextual**: sem número configurado ele não vira link
- * quebrado — vira a rota `/whatsapp`, que explica o convite. É a mesma regra de falha fechada
- * de `WhatsAppCta`, com um destino a mais porque aqui existe um.
+ * quebrado — vira a rota `/whatsapp`, que explica o convite. É a mesma regra de falha
+ * fechada de `WhatsAppCta`, com um destino a mais porque aqui existe um.
  */
 function mensagemDeOferta(_priceId: string, _produto: string): string | null {
   // Deliberadamente sem `wa.me` direto: o número do piloto não está configurado, e montar o

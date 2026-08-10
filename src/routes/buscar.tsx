@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Search } from "lucide-react";
 import { z } from "zod";
@@ -74,6 +75,7 @@ export const Route = createFileRoute("/buscar")({
 
 function SearchPage() {
   const { termo, resultados } = Route.useLoaderData();
+  const now = useMemo(() => new Date(), []);
 
   return (
     <AppShell>
@@ -125,18 +127,19 @@ function SearchPage() {
               <h2 className="font-display text-xl leading-tight font-bold">
                 Resultados para “{termo}”
               </h2>
-              {/* UMA LINHA, E ELA CARREGA A TESE. A referência diz "produtos exatos
-                  encontrados"; aqui a frase também explica por que são vários cards e não um. */}
+              {/* UMA LINHA, E ELA CARREGA A TESE — sem afirmar mais do que o catálogo
+                  sustenta: os grupos de embalagens diferentes NÃO são "produtos exatos",
+                  e a frase precisa servir aos dois casos. */}
               <p className="text-muted-foreground mt-0.5 text-sm">
                 {resultados.length === 1
-                  ? "1 produto exato."
-                  : `${resultados.length} produtos exatos. Cada um tem a sua própria comparação.`}
+                  ? "1 produto comparável."
+                  : `${resultados.length} produtos comparáveis. Cada um tem a sua própria comparação.`}
               </p>
             </div>
 
             <ul className="space-y-3">
               {resultados.map((resumo) => (
-                <SearchResultCard key={resumo.product.id} resumo={resumo} />
+                <SearchResultCard key={resumo.product.id} resumo={resumo} now={now} />
               ))}
             </ul>
 

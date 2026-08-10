@@ -1,5 +1,5 @@
 import { VisuallyHidden } from "@/components/primitives";
-import type { PrecoExibido, UnitarioExibido } from "@/lib/card-v2";
+import type { ClubeExibido, PrecoExibido, UnitarioExibido } from "@/lib/card-v2";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -57,16 +57,38 @@ export function PriceDisplay({
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>
         <span className="ml-1">{preco.numero}</span>
-        {/* A UNIDADE COLADA NO NÚMERO, como a placa do balcão escreve.
-            Menor e mais leve de propósito: ela qualifica o preço, não compete com ele. Fora
-            daqui — numa linha própria abaixo — deixaria de ser lida junto e voltaria a ser
-            possível ler "R$ 20,99" como o preço de uma peça. */}
-        {preco.unidade !== null ? (
-          <span className="text-muted-foreground ml-0.5 text-[42%] font-bold">{preco.unidade}</span>
+        {/* A QUANTIDADE COLADA NO NÚMERO, como o mandato v2 §3 desenha: "R$ 12,50 · aprox.
+            500 g". Menor e mais leve de propósito — ela qualifica o preço, não compete com
+            ele. Fora daqui, numa linha própria, deixaria de ser lida junto e voltaria a ser
+            possível ler "R$ 12,50" como o preço de uma peça inteira. */}
+        {preco.quantidade !== null ? (
+          <span className="text-muted-foreground ml-1.5 text-[38%] font-bold whitespace-nowrap">
+            {preco.quantidade}
+          </span>
         ) : null}
       </p>
       <VisuallyHidden>{preco.falado}</VisuallyHidden>
     </>
+  );
+}
+
+/**
+ * O preço de clube/cartão — SEMPRE ao lado do preço cheio, nunca no lugar dele (§8).
+ *
+ * Três informações, inseparáveis: que existe um preço condicionado, quanto ele é, e qual é
+ * a condição. O preço cheio continua sendo o número grande e continua sendo o que ordena a
+ * lista — promoção não reordena nada (`CLAUDE.md`, princípio 4). Substituir o cheio pelo
+ * condicionado em silêncio é exatamente o que este componente existe para impedir.
+ */
+export function ClubPrice({ clube }: { clube: ClubeExibido | null }) {
+  if (clube === null) return null;
+  return (
+    <p className="bg-secondary text-secondary-foreground w-fit max-w-full rounded-md px-2 py-1 text-xs">
+      <span aria-hidden="true">
+        <span className="font-bold tabular-nums">R$ {clube.precoTexto}</span> {clube.condicao}
+      </span>
+      <VisuallyHidden>{clube.falado}</VisuallyHidden>
+    </p>
   );
 }
 
@@ -103,7 +125,11 @@ export function PriceDisplay({
 export function UnitPrice({ unitario }: { unitario: UnitarioExibido | null }) {
   if (unitario === null) return null;
   return (
-    <p className="font-data text-muted-foreground text-sm">
+    // R$ 24,99 por kg é meio número, meio frase — e a regra do design system reserva a mono
+    // a dado tabular DE FATO. Na demo v2 esta linha passou a aparecer em toda a Home, e em
+    // mono ela devolvia ao card o ar de terminal que o mandato §18 manda evitar.
+    // `tabular-nums` preserva o dígito de largura fixa, que é o que importava.
+    <p className="text-muted-foreground text-sm tabular-nums">
       {formatPrice(unitario.display)} {unitario.rotulo}
     </p>
   );

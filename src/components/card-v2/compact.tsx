@@ -2,8 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { VisuallyHidden } from "@/components/primitives";
 import { montarVisaoDoCard, type OfertaCardV2 } from "@/lib/card-v2";
-import { formatDate } from "@/lib/format";
-import { sourceLabel } from "@/lib/sources";
+import { formatDate, formatPrice } from "@/lib/format";
 import { TEMPORAL_STYLE } from "@/lib/temporal";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "./identity";
@@ -69,7 +68,7 @@ export function AchadoCompacto({
    * que é onde alguém decide. Aqui a linha diz o que a linha tem.
    */
   const procedencia = [
-    sourceLabel(oferta.source_type),
+    visao.procedencia.origem,
     visao.procedencia.relativo,
     ...(visao.procedencia.validoAte === null ? [] : [`válido até ${visao.procedencia.validoAte}`]),
   ].join(" · ");
@@ -147,25 +146,38 @@ export function AchadoCompacto({
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-1 min-[360px]:self-start min-[360px]:pt-0.5">
-        <p
-          aria-hidden="true"
-          className={cn(
-            // DEMO FREEZE §4 ("dar mais peso ao preço"): 1.375rem → 1.5rem. Numa linha em que o
-            // nome está em 0.9375rem, o preço a 1.375 era grande sem ser dominante — e o preço é
-            // o que faz alguém parar de rolar. O teto é a coluna: a 320 px sobram ~78 px para o
-            // bloco de preço, e "R$ 26,49" a 1.5rem ocupa ~76. Um degrau acima estouraria.
-            "font-display text-[1.5rem] leading-none font-extrabold tabular-nums",
-            visao.naListaOrganica ? "text-primary" : "text-muted-foreground",
+        <div className="flex flex-col items-end gap-0.5">
+          <p
+            aria-hidden="true"
+            className={cn(
+              // DEMO FREEZE §4 ("dar mais peso ao preço"): 1.375rem → 1.5rem. Numa linha em que
+              // o nome está em 0.9375rem, o preço a 1.375 era grande sem ser dominante — e o
+              // preço é o que faz alguém parar de rolar. O teto é a coluna: a 320 px sobram
+              // ~78 px para o bloco de preço, e "R$ 26,49" a 1.5rem ocupa ~76.
+              "font-display text-[1.5rem] leading-none font-extrabold tabular-nums",
+              visao.naListaOrganica ? "text-primary" : "text-muted-foreground",
+            )}
+          >
+            <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
+            <span className="ml-1">{visao.preco.numero}</span>
+          </p>
+          {/* "aprox. 500 g" sob o número no peso variável; o R$/kg observado desce para a
+              linha secundária logo abaixo. Hierarquia do mandato v2 §0: primeiro quanto se
+              paga, depois a base de comparação. */}
+          {visao.preco.quantidade === null ? null : (
+            <p aria-hidden="true" className="text-muted-foreground text-[0.6875rem] leading-none">
+              {visao.preco.quantidade}
+            </p>
           )}
-        >
-          <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
-          <span className="ml-1">{visao.preco.numero}</span>
-          {visao.preco.unidade === null ? null : (
-            <span className="text-muted-foreground ml-0.5 text-[46%] font-bold">
-              {visao.preco.unidade}
-            </span>
+          {visao.unitario === null ? null : (
+            <p
+              aria-hidden="true"
+              className="text-muted-foreground text-[0.6875rem] leading-none tabular-nums"
+            >
+              {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
+            </p>
           )}
-        </p>
+        </div>
         <VisuallyHidden>{visao.preco.falado}</VisuallyHidden>
         <ChevronRight
           aria-hidden="true"

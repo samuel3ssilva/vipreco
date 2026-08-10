@@ -1,35 +1,36 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Store } from "lucide-react";
 import { ProductImage } from "@/components/card-v2/identity";
-import { formatPrice, formatProductName } from "@/lib/format";
+import { montarVisaoDoCard } from "@/lib/card-v2";
+import { formatDate, formatPrice, formatProductName } from "@/lib/format";
 import type { ResumoDeBusca } from "@/services/demo-source";
 
 /**
- * O card de resultado da busca — Tela 2 do North Star.
+ * O card de resultado da busca — Tela 2 do North Star, com a hierarquia do mandato v2 §12.
  *
  * =============================================================================
- * ELE PRECISA PARECER CATÁLOGO, NÃO TABELA (§3 do mandato)
+ * O NÚMERO GRANDE É O QUE SE PAGA; O NORMALIZADO FICA EMBAIXO (§0)
  * =============================================================================
  *
- * A busca anterior era um painel de sugestões: linha, linha, linha, cada uma com nome e um
- * preço pequeno à direita. Funcionava e parecia um autocomplete de sistema interno — que é
- * exatamente o diagnóstico do Founder, "muito sistema, pouco produto".
+ * Embalado: preço da embalagem grande, gramatura na identidade, R$/kg (ou R$/L, R$/un)
+ * pequeno logo abaixo. Peso variável: preço calculado de "aprox. 500 g" grande, R$/kg
+ * observado abaixo. É a mesma `montarVisaoDoCard` das outras telas — o card de busca não
+ * tem conta própria.
  *
- * A referência resolve com três decisões, e são estas três:
+ * =============================================================================
+ * O RÓTULO DIZ O QUE O NÚMERO É — E MUDA QUANDO O CRITÉRIO MUDA (§5)
+ * =============================================================================
  *
- *  1. **a embalagem ocupa uma coluna inteira** à esquerda, alta o suficiente para o produto
- *     ser reconhecido antes de ser lido;
- *  2. **o preço é verde e grande**, e o rótulo acima dele delimita o que ele é —
- *     "menor preço observado", não "menor preço";
- *  3. **o CTA verde fecha o card**, em largura inteira. Um card de catálogo termina numa ação.
- *
- * O que NÃO entrou da referência: preço unitário. Ele só aparece quando existe quantidade
- * estruturada aprovada, e a fixture não tem — a porta é a mesma de `montarVisaoDoCard`, e
- * mostrar "R$ 34,98/kg" derivado de texto livre seria inventar a conta.
+ * Embalagem igual: "Menor preço observado". Embalagens diferentes: "Melhor custo
+ * observado", com a gramatura da oferta vencedora dita ao lado do mercado — porque nesses
+ * grupos "menor preço" apontaria a embalagem pequena e cara, que é exatamente a confusão
+ * que o produto existe para desfazer.
  */
-export function SearchResultCard({ resumo }: { resumo: ResumoDeBusca }) {
-  const { product, imagem, menorPreco, unidadeDePreco, mercado, mercados } = resumo;
+export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: Date }) {
+  const { product, imagem, melhor, basePorUnidade, granel, mercados } = resumo;
   const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
+  const visao = melhor === null ? null : montarVisaoDoCard(melhor, now, formatDate);
+  const embalagensDiferentes = basePorUnidade !== undefined;
 
   return (
     <li>
@@ -46,46 +47,56 @@ export function SearchResultCard({ resumo }: { resumo: ResumoDeBusca }) {
             <h2 className="font-display line-clamp-2 text-[1.0625rem] leading-tight font-bold sm:text-lg">
               {formatProductName(product)}
             </h2>
-            <p className="text-muted-foreground mt-0.5 text-[0.8125rem] leading-snug">{detalhes}</p>
+            {detalhes.length > 0 ? (
+              <p className="text-muted-foreground mt-0.5 text-[0.8125rem] leading-snug">
+                {detalhes}
+              </p>
+            ) : null}
 
-            {menorPreco === null ? (
+            {visao === null || melhor === null ? (
               <p className="text-muted-foreground mt-2 text-sm">
                 Sem preço válido nos mercados monitorados.
               </p>
             ) : (
               <>
-                {/* O RÓTULO É O ESCOPO. "Menor preço" sozinho é uma afirmação sobre o mundo;
-                    "menor preço observado" é uma afirmação sobre o que este produto viu, que é
+                {/* O RÓTULO É O ESCOPO. "Menor preço" sozinho é uma afirmação sobre o
+                    mundo; com "observado" é uma afirmação sobre o que este produto viu —
                     a única que o piloto sustenta. */}
-                <p className="text-muted-foreground mt-2 text-xs">Menor preço observado</p>
+                <p className="text-muted-foreground mt-2 text-xs">
+                  {embalagensDiferentes ? "Melhor custo observado" : "Menor preço observado"}
+                </p>
                 <p
                   aria-hidden="true"
                   className="font-display text-primary text-[1.75rem] leading-none font-extrabold tabular-nums min-[430px]:text-[2rem]"
                 >
                   <span className="text-[62%] font-bold">R$</span>
-                  <span className="ml-1">{formatPrice(menorPreco).replace("R$", "").trim()}</span>
-                  {/* Sem a unidade, "R$ 20,99" numa lista de cortes de carne é lido como o
-                      preço de uma peça — e o card de busca é onde a comparação começa. */}
-                  {unidadeDePreco === undefined ? null : (
-                    <span className="text-muted-foreground ml-0.5 text-[44%] font-bold">
-                      /{unidadeDePreco}
+                  <span className="ml-1">{visao.preco.numero}</span>
+                  {visao.preco.quantidade !== null ? (
+                    <span className="text-muted-foreground ml-1.5 text-[40%] font-bold whitespace-nowrap">
+                      {visao.preco.quantidade}
                     </span>
-                  )}
+                  ) : null}
                 </p>
-                <span className="sr-only">
-                  Menor preço observado: {formatPrice(menorPreco)}
-                  {unidadeDePreco === "kg" ? " por quilo" : ""}
-                </span>
-
-                {mercado ? (
-                  <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug">
-                    <Store aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                    <span>
-                      {mercado.name}
-                      {mercado.neighborhood ? ` · ${mercado.neighborhood}` : ""}
-                    </span>
+                {/* O normalizado, menor: é ele que torna as ofertas comparáveis, e nunca é
+                    o protagonista (§25). Nos grupos de embalagens diferentes a gramatura da
+                    vencedora vem junto — sem ela o número não identifica nada. */}
+                {visao.unitario !== null ? (
+                  <p className="text-muted-foreground mt-1 text-sm tabular-nums">
+                    {embalagensDiferentes && melhor.product.size_text !== null
+                      ? `${melhor.product.size_text} · `
+                      : ""}
+                    {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
                   </p>
                 ) : null}
+                <span className="sr-only">{visao.preco.falado}</span>
+
+                <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug">
+                  <Store aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    {melhor.market.name}
+                    {melhor.market.neighborhood ? ` · ${melhor.market.neighborhood}` : ""}
+                  </span>
+                </p>
               </>
             )}
           </div>

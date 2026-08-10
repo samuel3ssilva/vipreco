@@ -120,7 +120,14 @@ export function ProductSearch({
   const stats = Object.fromEntries(
     (resumos ?? []).map((r) => [
       r.product.id,
-      { lowest: r.menorPreco, marketCount: r.mercados, lastObservedAt: null },
+      {
+        lowest: r.melhor?.price ?? null,
+        // "/kg" na sugestão quando o preço é por quilo — sem a unidade, o R$/kg de um corte
+        // seria lido como o preço de uma peça.
+        porKg: r.melhor?.price_unit === "kg",
+        marketCount: r.mercados,
+        lastObservedAt: null,
+      },
     ]),
   );
 
@@ -257,18 +264,20 @@ export function ProductSearch({
                         {product.brand ? ` ${product.brand}` : ""}
                         {product.variant ? ` ${product.variant}` : ""}
                       </span>
-                      <span className="meta-text">
-                        {[
-                          product.size_text ?? "tamanho não informado",
-                          product.gtin ? `Código ${product.gtin}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
+                      {/* "tamanho não informado" saiu do fallback: corte de açougue e grupo
+                          de embalagens diferentes não têm UMA gramatura, e anunciar isso
+                          como dado faltante trata ausência legítima como defeito. */}
+                      {product.size_text !== null || product.gtin ? (
+                        <span className="meta-text">
+                          {[product.size_text, product.gtin ? `Código ${product.gtin}` : null]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      ) : null}
                       {stat ? (
                         <span className="meta-text">
                           {stat.marketCount > 0
-                            ? `A partir de ${formatPrice(stat.lowest ?? 0)} · Atualizado em ${stat.marketCount} ${
+                            ? `A partir de ${formatPrice(stat.lowest ?? 0)}${stat.porKg ? "/kg" : ""} · Atualizado em ${stat.marketCount} ${
                                 stat.marketCount === 1 ? "mercado" : "mercados"
                               }`
                             : "Preço em atualização."}

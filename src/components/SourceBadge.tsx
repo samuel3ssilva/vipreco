@@ -21,10 +21,16 @@ const LEVEL_CLASS: Record<EvidenceLevel, string> = {
 
 interface SourceBadgeProps {
   source: SourceType;
+  /**
+   * Rótulo declarado pela coleta, quando o genérico do enum não descreve o que aconteceu:
+   * "Foto em loja", "Painel da loja", "Encarte da loja" (mandato v2 §15 — nome técnico
+   * nunca vira copy). Nível de evidência, ícone e descrição continuam vindo do enum.
+   */
+  label?: string;
   className?: string;
 }
 
-export function SourceBadge({ source, className = "" }: SourceBadgeProps) {
+export function SourceBadge({ source, label, className = "" }: SourceBadgeProps) {
   const descriptor = SOURCE_LABELS[source];
   const Icon = ICONS[source];
   if (!descriptor) return null;
@@ -35,7 +41,7 @@ export function SourceBadge({ source, className = "" }: SourceBadgeProps) {
       title={descriptor.description}
     >
       <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-      <span>{descriptor.label}</span>
+      <span>{label ?? descriptor.label}</span>
       <span className="sr-only">. {descriptor.description}</span>
     </span>
   );

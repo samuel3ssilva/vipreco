@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import { TEMPORAL_STYLE } from "@/lib/temporal";
 import { ProductIdentity, ProductImage } from "./identity";
 import { MarketBadge, NeighborhoodLabel } from "./market";
-import { PriceDisplay, PromotionCondition, UnitPrice } from "./price";
+import { ClubPrice, PriceDisplay, PromotionCondition, UnitPrice } from "./price";
 import { OfferStatus, ProvenanceBlock } from "./provenance";
 
 /**
@@ -195,6 +195,7 @@ export function ProductCardV2({
               <div className="flex flex-col gap-0.5">
                 <PriceDisplay preco={visao.preco} destaque atenuado={!visao.naListaOrganica} />
                 <UnitPrice unitario={visao.unitario} />
+                <ClubPrice clube={visao.clube} />
               </div>
             </div>
           </div>
@@ -216,6 +217,7 @@ export function ProductCardV2({
                   atenuado={!visao.naListaOrganica}
                 />
                 <UnitPrice unitario={visao.unitario} />
+                <ClubPrice clube={visao.clube} />
               </div>
             </div>
           </div>

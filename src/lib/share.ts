@@ -20,6 +20,12 @@ export const DEMO_SHARE_PREFIX = "EXEMPLO FICTÍCIO — demonstração do format
 export interface ShareAchadoPayload {
   produto: string;
   preco: number;
+  /**
+   * `"kg"` quando o preço é por quilo. Sem ela, "Bucho bovino R$ 24,99" compartilhado no
+   * WhatsApp afirmaria o preço de uma peça — e o texto compartilhado viaja sem a tela que
+   * o explicaria.
+   */
+  unidade?: "kg" | "L" | "un";
   mercado: string;
   validUntil: string | null;
   url: string;
@@ -52,7 +58,9 @@ export function buildShareText(payload: ShareAchadoPayload): string {
   if (payload.isDemo) linhas.push(DEMO_SHARE_PREFIX, "");
 
   linhas.push(payload.produto);
-  linhas.push(`${formatPrice(payload.preco)} — ${payload.mercado} · ${PILOT_LOCALITY}`);
+  linhas.push(
+    `${formatPrice(payload.preco)}${payload.unidade === undefined ? "" : `/${payload.unidade}`} — ${payload.mercado} · ${PILOT_LOCALITY}`,
+  );
   if (payload.validUntil) linhas.push(`Válido até ${formatDate(payload.validUntil)}`);
   linhas.push("", payload.url, "via ViPreço");
 

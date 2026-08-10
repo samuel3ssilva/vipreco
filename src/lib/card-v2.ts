@@ -39,6 +39,12 @@
  */
 import { computeUnitPrice } from "@/lib/unit-price";
 import type { UnitPriceBasis } from "@/lib/unit-price";
+import {
+  PESO_PADRAO,
+  faladoAproximado,
+  precoParaGramas,
+  rotuloAproximado,
+} from "@/lib/peso-variavel";
 import { formatPriceParts, formatRelativeDay, spokenPrice } from "@/lib/format";
 import { sourceLabel, SOURCE_LABELS } from "@/lib/sources";
 import type { EvidenceLevel } from "@/lib/sources";
@@ -142,6 +148,23 @@ export interface OfertaCardV2 extends Opportunity {
   /** `"kg"` quando o preço observado é por quilo. Ausente = preço da embalagem. */
   price_unit?: PriceUnit;
   /**
+   * Preço condicionado a cartão, clube, app ou compra casada — **sempre ao lado do preço
+   * cheio, nunca no lugar dele** (mandato v2 §8).
+   *
+   * O preço cheio é o que qualquer pessoa paga sem condição nenhuma; é ele que ordena a
+   * lista (`CLAUDE.md` princípio 4: a ordem é pelo preço de prateleira, nunca pelo preço
+   * efetivo). O de clube aparece como informação adicional, com a condição colada nele —
+   * uma promoção cujo requisito não está escrito é uma promessa que o produto não faz.
+   */
+  clube?: { preco: number; condicao: string };
+  /**
+   * Como a fonte é dita ao usuário quando o rótulo genérico do enum não descreve a coleta:
+   * "Foto em loja", "Painel da loja", "Encarte da loja" (§15 — nome técnico de arquivo
+   * nunca vira copy). Ausente, vale `sourceLabel(source_type)`. O `source_type` continua
+   * sendo o enum do domínio; isto é apresentação, não classificação.
+   */
+  fonte_rotulo?: string;
+  /**
    * Esta oferta **não foi observada**: existe para mostrar como a comparação vai funcionar.
    *
    * A demonstração do açougue tem duas naturezas de linha na mesma lista — preço que eu fui
@@ -195,9 +218,21 @@ export interface PrecoExibido {
   /** `R$` e `26,49` separados — o card compõe os dois em tamanhos diferentes. */
   simbolo: string;
   numero: string;
-  /** `"/kg"` quando a oferta declara unidade. `null` quando o preço é da embalagem. */
-  unidade: string | null;
+  /**
+   * A quantidade a que o número grande se refere, quando ela não é "a embalagem":
+   * `"aprox. 500 g"` num produto de peso variável. O "aprox." é obrigatório — o preço
+   * mostrado é calculado a partir do R$/kg observado, não observado ele próprio.
+   * `null` quando o preço é o da embalagem (a gramatura já está na identidade).
+   */
+  quantidade: string | null;
   /** O que o leitor de tela ouve no lugar da composição visual. */
+  falado: string;
+}
+
+/** O preço de clube/cartão como a tela pode mostrá-lo: número e condição, inseparáveis. */
+export interface ClubeExibido {
+  precoTexto: string;
+  condicao: string;
   falado: string;
 }
 
@@ -242,6 +277,8 @@ export interface VisaoDoCard {
   mercado: { nome: string; bairro: string | null };
   preco: PrecoExibido;
   unitario: UnitarioExibido | null;
+  /** Preço de clube/cartão, quando o mercado anunciou um. Nunca substitui `preco`. */
+  clube: ClubeExibido | null;
   procedencia: ProcedenciaExibida;
   /** Condição da promoção, como o mercado a informou. Nunca separada do preço. */
   condicao: string | null;
@@ -282,6 +319,12 @@ const UNIDADE_FALADA: Record<PriceUnit, string> = {
   kg: "por quilo",
   L: "por litro",
   un: "por unidade",
+};
+
+const BASE_POR_UNIDADE_DE_PRECO: Record<PriceUnit, UnitPriceBasis> = {
+  kg: "per_kg",
+  L: "per_l",
+  un: "per_un",
 };
 
 const ROTULO_DA_BASE: Record<UnitPriceBasis, string> = {
@@ -478,15 +521,82 @@ function resolverCta(oferta: OfertaCardV2, ativa: boolean): CtaExibido {
  * começa a decidir apresentação. Aqui ele recebe a função e usa; o componente passa a do
  * produto, o teste passa a que quiser.
  */
+export interface OpcoesDaVisao {
+  /**
+   * Quantidade escolhida para produtos de peso variável, em gramas. Só é lida quando a
+   * oferta declara `price_unit: "kg"`. Padrão: `PESO_PADRAO` (500 g).
+   */
+  gramas?: number;
+}
+
+/**
+ * O preço principal e o secundário — a hierarquia do §0 do mandato v2.
+ *
+ * **Embalado**: o número grande é o preço da embalagem, como sempre foi; o secundário é o
+ * unitário calculado de quantidade estruturada aprovada (`calcularUnitario`).
+ *
+ * **Peso variável** (`price_unit: "kg"`): o número grande passa a ser o preço CALCULADO
+ * para a quantidade escolhida, rotulado "aprox." — porque é a resposta a "quanto eu pago?"
+ * —, e o R$/kg observado desce para a linha secundária, intacto, como base de comparação.
+ * A hierarquia nunca se inverte (§25). O falado diz os dois: quem ouve não vê tamanhos de
+ * fonte, e um número sem o outro descreveria a oferta pela metade.
+ */
+function resolverPrecos(
+  oferta: OfertaCardV2,
+  gramas: number,
+): { preco: PrecoExibido; unitario: UnitarioExibido | null } {
+  if (oferta.price_unit === undefined) {
+    const { currency, amount } = formatPriceParts(oferta.price);
+    return {
+      preco: {
+        valor: oferta.price,
+        simbolo: currency,
+        numero: amount,
+        quantidade: null,
+        falado: spokenPrice(oferta.price),
+      },
+      unitario: calcularUnitario(oferta),
+    };
+  }
+
+  const calculado = precoParaGramas(oferta.price, gramas);
+  const { currency, amount } = formatPriceParts(calculado);
+  return {
+    preco: {
+      valor: calculado,
+      simbolo: currency,
+      numero: amount,
+      quantidade: rotuloAproximado(gramas),
+      falado: `${spokenPrice(calculado)} ${faladoAproximado(gramas)} — ${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]}`,
+    },
+    // O secundário É o preço observado: a placa diz R$/kg, e é ele que compara mercados.
+    unitario: {
+      display: oferta.price,
+      basis: BASE_POR_UNIDADE_DE_PRECO[oferta.price_unit],
+      rotulo: ROTULO_DA_BASE[BASE_POR_UNIDADE_DE_PRECO[oferta.price_unit]],
+    },
+  };
+}
+
+function resolverClube(oferta: OfertaCardV2): ClubeExibido | null {
+  if (oferta.clube === undefined) return null;
+  return {
+    precoTexto: formatPriceParts(oferta.clube.preco).amount,
+    condicao: oferta.clube.condicao,
+    falado: `${spokenPrice(oferta.clube.preco)} ${oferta.clube.condicao}`,
+  };
+}
+
 export function montarVisaoDoCard(
   oferta: OfertaCardV2,
   now: Date,
   formatarData: (valor: string) => string,
+  opcoes: OpcoesDaVisao = {},
 ): VisaoDoCard {
   const temporal = temporalState(oferta, now);
   const estado = resolverEstado(oferta, temporal);
   const quantidade = escreverQuantidade(oferta);
-  const { currency, amount } = formatPriceParts(oferta.price);
+  const { preco, unitario } = resolverPrecos(oferta, opcoes.gramas ?? PESO_PADRAO);
 
   return {
     identidade: {
@@ -499,21 +609,12 @@ export function montarVisaoDoCard(
       embalagem: escreverEmbalagem(oferta.product.package_type ?? null, oferta.product.variant),
     },
     mercado: { nome: oferta.market.name, bairro: oferta.market.neighborhood },
-    preco: {
-      valor: oferta.price,
-      simbolo: currency,
-      numero: amount,
-      unidade: oferta.price_unit === undefined ? null : `/${oferta.price_unit}`,
-      // O falado ganha a unidade por extenso: "20 reais e 99 centavos por quilo". Quem ouve
-      // não vê a barra, e "vinte reais e noventa e nove" sozinho descreveria o preço errado.
-      falado:
-        oferta.price_unit === undefined
-          ? spokenPrice(oferta.price)
-          : `${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]}`,
-    },
-    unitario: calcularUnitario(oferta),
+    preco,
+    unitario,
+    clube: resolverClube(oferta),
     procedencia: {
-      origem: sourceLabel(oferta.source_type),
+      // O rótulo declarado pela coleta manda; o do enum é o fallback (§15).
+      origem: oferta.fonte_rotulo ?? sourceLabel(oferta.source_type),
       nivel: SOURCE_LABELS[oferta.source_type].level,
       observadoEm: formatarData(oferta.observed_at),
       relativo: formatRelativeDay(oferta.observed_at, now),

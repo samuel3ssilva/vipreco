@@ -1,22 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEMO_FIXTURE_REFERENCE,
   DEMO_MARKETS,
   HOME_OPPORTUNITY_COUNT,
   buildDemoOpportunities,
 } from "@/lib/demo-opportunities";
-import { ACOUGUE_MOTA } from "@/lib/demo-catalog";
+import { ACOUGUE_MOTA, custoUnitarioDaOferta, grupoDoProduto } from "@/lib/demo-catalog";
 import { isValidPrice } from "@/lib/comparison";
-import { isGtinWellFormed } from "@/lib/gtin";
 import { normalizeSearchText } from "@/lib/normalize";
 import { formatDate, formatRelativeDay } from "@/lib/format";
 
-const NOW = new Date("2026-07-31T02:30:00.000Z"); // 30/07 23:30 em America/Sao_Paulo
+/**
+ * Dentro da janela real da coleta: tudo observado (08–09/08), nada vencido (encartes valem
+ * até 23:59 de 09/08; tabloide Safra até 12/08). As datas do catálogo são as REAIS — fora
+ * da janela, as ofertas de encarte expiram como o produto manda, e há teste para isso.
+ */
+const NOW = new Date("2026-08-09T18:00:00-03:00");
 
-describe("fixture de demonstração da Home", () => {
-  it("entrega exatamente cinco Achados — o destaque e os outros quatro", () => {
+describe("fixture de demonstração da Home — demo v2", () => {
+  it("entrega exatamente sete Achados — o herói e a vitrine do §9", () => {
     expect(buildDemoOpportunities(NOW)).toHaveLength(HOME_OPPORTUNITY_COUNT);
-    expect(HOME_OPPORTUNITY_COUNT).toBe(5);
+    expect(HOME_OPPORTUNITY_COUNT).toBe(7);
   });
 
   it("marca preço, produto e mercado como demonstração", () => {
@@ -24,49 +27,34 @@ describe("fixture de demonstração da Home", () => {
       expect(entry.is_demo).toBe(true);
       expect(entry.product.is_demo).toBe(true);
       expect(entry.market.is_demo).toBe(true);
-      expect(entry.source_reference).toBe(DEMO_FIXTURE_REFERENCE);
-      // O prefixo mudou de `demo-fixture-` para `demo-price-` quando a Home deixou de ter
-      // fixture próprio e passou a SELECIONAR do catálogo único (`@/lib/demo-catalog`). O
-      // que a asserção protege é o mesmo: nenhum id daqui pode se passar por id de banco.
-      expect(entry.id).toMatch(/^demo-price-/);
+      // Cada oferta declara a coleta de onde veio — encarte, tabloide, foto ou painel. Um
+      // texto único para todas seria mais simples e menos verdadeiro: as coletas foram
+      // quatro, em dias e materiais diferentes.
+      expect(entry.source_reference, entry.id).toBeTruthy();
+      // Nenhum id daqui pode se passar por id de banco.
+      expect(entry.id).toMatch(/^demo-v2-/);
     }
   });
 
   /**
-   * A REGRA VIROU DO AVESSO EM 09/08/2026, POR DECISÃO DO FOUNDER.
+   * A REGRA DOS NOMES REAIS VIROU DO AVESSO DUAS VEZES, E AGORA TEM A SUA FORMA FINAL.
    *
-   * Ela dizia "nenhum mercado real como participante", e o padrão `Mercado local N` era a forma
-   * de garantir isso. A demonstração agora existe para o dono do Açougue Mota ver a **própria
-   * loja** na tela, com os preços que eu fui ler no balcão dele — sem nome real, ela não prova
-   * nada e não interessa a ninguém.
-   *
-   * O que continua proibido é o que sempre esteve por trás da regra: **nomear rede de
-   * supermercado que existe**. Uma coisa é a loja que participou da coleta; outra é pendurar o
-   * nome de uma rede num preço que ela nunca informou. A asserção passa a medir isso, que é a
-   * proibição de verdade, em vez do formato do nome.
+   * Primeiro era "nenhum mercado real" (mercearia fictícia). Depois, "a loja da coleta pode
+   * ter nome real" (Açougue Mota). Com a planilha do Founder, os CINCO mercados são reais —
+   * e o que a regra sempre protegeu fica explícito: **nenhum mercado é nomeado sem que o
+   * preço tenha vindo de material dele** (encarte publicado, tabloide, placa fotografada).
+   * Pendurar preço em rede que nunca o anunciou continua proibido — e agora é testável:
+   * toda oferta declara a coleta de origem.
    */
-  it("nenhuma rede de supermercado real é nomeada", () => {
-    const REDES = ["Assaí", "Carrefour", "Pão de Açúcar", "Extra", "Atacadão", "Dia", "Tenda"];
+  it("todo mercado nomeado tem oferta vinda de material dele próprio", () => {
     for (const entry of buildDemoOpportunities(NOW)) {
-      for (const rede of REDES) {
-        expect(entry.market.name, `${entry.id} cita ${rede}`).not.toContain(rede);
-      }
-    }
-  });
-
-  it("todo Achado da Home veio da loja que foi visitada", () => {
-    // A Home anuncia observação. Enquanto só existe uma loja coletada, todo Achado é dela — e a
-    // linha do Mercado 2, que é exemplo, não pode se infiltrar aqui.
-    for (const entry of buildDemoOpportunities(NOW)) {
-      expect(entry.market.id, entry.id).toBe(ACOUGUE_MOTA.id);
-      expect(entry.exemplo_ilustrativo, entry.id).toBeUndefined();
+      expect(entry.source_reference, `${entry.market.name} sem coleta declarada`).toMatch(
+        /Encarte|Tabloide|Foto|Painel|Cartaz/i,
+      );
     }
   });
 
   it("não carrega segredo, telefone nem dado pessoal", () => {
-    // Os campos livres são onde um dado pessoal poderia entrar sem querer. Identificadores
-    // (GTIN, UUID) ficam de fora de propósito: são sequências de dígitos legítimas e disparariam
-    // qualquer heurística de telefone.
     const camposLivres = buildDemoOpportunities(NOW)
       .flatMap((entry) => [
         entry.market.name,
@@ -92,52 +80,94 @@ describe("fixture de demonstração da Home", () => {
 
   it("produz apenas preços válidos pela regra de domínio", () => {
     for (const entry of buildDemoOpportunities(NOW)) {
-      expect(isValidPrice(entry, NOW)).toBe(true);
+      expect(isValidPrice(entry, NOW), entry.id).toBe(true);
     }
   });
 
-  it("mantém a data exibida coerente com o texto relativo", () => {
-    // A COLETA FOI UMA SÓ, NUM DIA SÓ — então as cinco datas são a mesma, e é isso que se
-    // verifica. Escalonar as observações em dias diferentes seria simular um histórico de
-    // monitoramento que não existe: eu fui ao balcão uma vez.
+  it("as datas exibidas são as reais da coleta, e o relativo bate com elas", () => {
+    // Mota foi fotografado em 08/08; encartes e loja do Safra são de 09/08. Nada de datas
+    // escalonadas para simular histórico: a coleta foi a que foi.
     for (const entry of buildDemoOpportunities(NOW)) {
-      expect(formatRelativeDay(entry.observed_at, NOW), entry.id).toBe("ontem");
-      expect(formatDate(entry.observed_at), entry.id).toBe("29/07/2026");
+      const data = formatDate(entry.observed_at);
+      expect(["08/08/2026", "09/08/2026"], entry.id).toContain(data);
+      expect(formatRelativeDay(entry.observed_at, NOW), entry.id).toBe(
+        data === "08/08/2026" ? "ontem" : "hoje",
+      );
+      if (entry.market.id === ACOUGUE_MOTA.id) {
+        expect(data, `${entry.id}: a foto do balcão do Mota é de 08/08`).toBe("08/08/2026");
+      }
     }
   });
 
-  it("o destaque é o filé de peito, porque é por ele que a conversa começa", () => {
+  it("o herói é o bucho bovino do Açougue Mota — porque o Mota tem o menor R$/kg dele", () => {
     const [primeiro] = buildDemoOpportunities(NOW);
-    expect(primeiro.product.name).toBe("Filé de peito de frango");
-    expect(primeiro.price).toBe(20.99);
+    expect(primeiro.product.name).toBe("Bucho bovino");
+    expect(primeiro.market.id).toBe(ACOUGUE_MOTA.id);
+    expect(primeiro.price).toBe(24.99);
+    expect(primeiro.price_unit).toBe("kg");
+    // A escolha do GRUPO é curadoria do Founder (§9); a escolha do MERCADO não é de
+    // ninguém: 24,99 < 25,99. Se o Safra baixar o preço, o herói mostra o Safra.
+    const grupo = grupoDoProduto(primeiro.product_id)!;
+    const menor = Math.min(...grupo.sementes.map((s) => s.price));
+    expect(primeiro.price).toBe(menor);
+  });
+
+  it("a vitrine é a do §9: bisteca, óleo, lasanha, dreamies, tixan e farofa — e não os 12", () => {
+    const nomes = buildDemoOpportunities(NOW).map((o) => o.product.name);
+    expect(nomes).toEqual([
+      "Bucho bovino",
+      "Bisteca bovina",
+      "Óleo de soja",
+      "Lasanha",
+      "Petisco para gatos",
+      "Lava-roupas em pó",
+      "Farofa pronta",
+    ]);
+  });
+
+  it("o representante do grupo de embalagens diferentes é o de melhor custo unitário", () => {
+    // Dreamies na vitrine: o card mostra o Atacadão de 80 g (R$ 98,75/kg), e não o menor
+    // desembolso (R$ 5,95 por 40 g) — porque o critério declarado do grupo é custo/kg, e o
+    // card da vitrine não pode contar uma história diferente da tela de comparação.
+    const dreamies = buildDemoOpportunities(NOW).find((o) => o.product.brand === "Dreamies");
+    expect(dreamies).toBeDefined();
+    expect(dreamies!.product.size_text).toBe("80 g");
+    expect(dreamies!.price).toBe(7.9);
+    expect(custoUnitarioDaOferta(dreamies!)).toBe(98.75);
   });
 
   it("nenhum Achado carrega preço anterior — o campo saiu em R3.3", () => {
-    // Ele existia, e um item do fixture o usava. Saiu junto com o que o exibia: sem P-01
-    // decidida (MVP-DOCS-02), não há critério escrito para QUAL observação anterior conta.
-    // Deixar o número no dado mantém vivo o componente que o mostra — é adiar, não decidir.
     for (const entry of buildDemoOpportunities(NOW)) {
       expect(entry).not.toHaveProperty("previous_price");
       expect(entry).not.toHaveProperty("previous_observed_at");
     }
   });
 
-  it("oferece dois mercados: a loja visitada e o exemplo", () => {
-    expect(DEMO_MARKETS.map((market) => market.name)).toEqual(["Açougue Mota", "Mercado 2"]);
+  it("oferece os cinco mercados da planilha, e só eles", () => {
+    expect(DEMO_MARKETS.map((market) => market.name)).toEqual([
+      "Açougue Mota",
+      "Safra",
+      "Savegnago",
+      "Atacadão",
+      "Pague Menos",
+    ]);
     for (const market of DEMO_MARKETS) {
       expect(market.is_demo).toBe(true);
       expect(market.is_active).toBe(true);
     }
   });
 
-  it("o mercado de exemplo não afirma endereço, bairro nem mapa", () => {
-    // Cada campo vazio aqui é uma afirmação que a tela não vai poder fazer sobre um lugar que
-    // não existe. Preenchê-los "para ficar completo" seria inventar uma loja.
-    const exemplo = DEMO_MARKETS.find((m) => m.name === "Mercado 2");
-    expect(exemplo).toBeDefined();
-    expect(exemplo!.neighborhood).toBeNull();
-    expect(exemplo!.address).toBeNull();
-    expect(exemplo!.maps_url).toBeNull();
+  it("bairro só existe onde a planilha valida um — e distância não existe em lugar nenhum", () => {
+    // Mota é de Artemis; Safra é loja única com endereço no Leia-me da planilha. Os outros
+    // três são preços de rede/tabloide regional: bairro nulo, porque afirmar um seria
+    // inventar proximidade (§16).
+    const porNome = new Map(DEMO_MARKETS.map((m) => [m.name, m]));
+    expect(porNome.get("Açougue Mota")!.neighborhood).toBe("Artemis");
+    expect(porNome.get("Safra")!.neighborhood).toBe("Mário Dedini");
+    for (const nome of ["Savegnago", "Atacadão", "Pague Menos"]) {
+      expect(porNome.get(nome)!.neighborhood, nome).toBeNull();
+      expect(porNome.get(nome)!.address, nome).toBeNull();
+    }
   });
 
   it("todo mercado de um Achado também está no seletor", () => {
@@ -154,28 +184,27 @@ describe("fixture de demonstração da Home", () => {
     expect(primeiro[0]).not.toBe(segundo[0]);
     expect(primeiro).toEqual(segundo);
   });
+
+  it("fora da janela de validade, os Achados de encarte saem — as validades são as reais", () => {
+    // Em 13/08 os encartes de 09/08 e o tabloide de 12/08 já venceram. Sobram só as ofertas
+    // de balcão (sem validade anunciada): bucho e bisteca. É o produto funcionando — uma
+    // demo que mostrasse encarte vencido como preço vigente estaria mentindo a data.
+    const depois = buildDemoOpportunities(new Date("2026-08-13T12:00:00-03:00"));
+    expect(depois.map((o) => o.product.name)).toEqual(["Bucho bovino", "Bisteca bovina"]);
+  });
 });
 
 describe("fixture de demonstração — GTIN", () => {
-  it("nenhum GTIN do fixture reprova no dígito verificador", () => {
-    // O fixture espelha o seed. Um código inválido aqui é o mesmo defeito adiado: no dia
-    // em que a validação existir, o dado de demonstração deixa de passar.
-    for (const achado of buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"))) {
-      const gtin = achado.product.gtin;
-      if (gtin === null) continue;
-      expect(isGtinWellFormed(gtin), `GTIN ${gtin} reprova a validação GS1`).toBe(true);
+  it("nenhum produto da demonstração tem GTIN", () => {
+    // Nenhum código de barras foi coletado nas fontes; inventar um seria afirmação falsa
+    // sobre um identificador global, e emprestar um real colide com um produto de alguém.
+    for (const achado of buildDemoOpportunities(NOW)) {
+      expect(achado.product.gtin, achado.product.name).toBeNull();
     }
   });
 
-  it("produto sem GTIN continua sendo um produto normal, não um produto quebrado", () => {
-    const achados = buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"));
-    const semGtin = achados.filter((achado) => achado.product.gtin === null);
-    expect(semGtin.length).toBeGreaterThan(0);
-    for (const achado of semGtin) {
-      // CORTE DE AÇOUGUE NÃO TEM GTIN, NÃO TEM MARCA E NÃO TEM GRAMATURA — e mesmo assim é um
-      // produto inteiro. O que ele precisa ter é NOME, porque é por texto que a pessoa chega
-      // nele. Exigir marca e `size_text`, como esta asserção fazia quando o catálogo era
-      // mercearia embalada, obrigaria a preencher os dois com invenção.
+  it("produto sem GTIN continua sendo um produto normal, encontrável por texto", () => {
+    for (const achado of buildDemoOpportunities(NOW)) {
       expect(achado.product.name).toBeTruthy();
       expect(normalizeSearchText(achado.product.name).length).toBeGreaterThan(0);
     }

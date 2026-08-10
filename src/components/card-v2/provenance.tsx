@@ -74,7 +74,9 @@ export function ProvenanceBlock({
     // `items-center` num `flex-wrap`, a largura estreita quebra sozinha, e nas larguras em que
     // cabe lado a lado ela economiza a linha em vez de gastá-la por precaução.
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <SourceBadge source={sourceType} />
+      {/* O rótulo é o que `montarVisaoDoCard` resolveu — o declarado pela coleta quando há
+          um, o do enum quando não há. O nível de evidência continua sendo o do enum. */}
+      <SourceBadge source={sourceType} label={procedencia.origem} />
       <ValidityLabel validoAte={procedencia.validoAte} />
       {/* R3.3B tirou o `font-data` desta linha e da validade. "observado em 05/08/2026 · ontem"
           é texto corrido, e a própria regra do design system reserva a monoespaçada a dado

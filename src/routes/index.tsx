@@ -57,13 +57,15 @@ export const Route = createFileRoute("/")({
  * Os quatro atalhos da busca, e a única regra que eles têm: **todo atalho precisa devolver
  * resultado**.
  *
- * "Feijão" estava aqui e o catálogo não tem feijão nenhum — o atalho mais visível da primeira
- * dobra levava a "nenhum produto encontrado". Numa demonstração em que a pessoa recebe o celular
+ * "Feijão" já esteve aqui sem existir no catálogo — o atalho mais visível da primeira dobra
+ * levava a "nenhum produto encontrado". Numa demonstração em que a pessoa recebe o celular
  * na mão, esse é o toque que faz o produto parecer quebrado, e não o que faz parecer novo.
  *
- * `src/lib/demo-identity.test.ts` afirma que cada atalho corresponde a um produto do catálogo.
+ * Estes quatro cobrem os cantos do catálogo v2: o corte da demo ("Frango"), a seção de
+ * açougue inteira ("Carnes"), e as duas categorias que mostram embalagem e normalização
+ * ("Limpeza", "Pet"). `src/lib/demo-identity.test.ts` afirma que cada um devolve resultado.
  */
-const SHORTCUTS = ["Frango", "Linguiça", "Patinho", "Acém"];
+const SHORTCUTS = ["Frango", "Carnes", "Limpeza", "Pet"];
 
 /**
  * O aviso de confiança da primeira dobra.
@@ -171,6 +173,7 @@ function HomePage() {
                 payload={{
                   produto: formatProductName(destaque.product),
                   preco: destaque.price,
+                  ...(destaque.price_unit === undefined ? {} : { unidade: destaque.price_unit }),
                   mercado: destaque.market.name,
                   validUntil: destaque.valid_until,
                   url: absoluteAssetUrl(`/produto/${destaque.product.id}`),

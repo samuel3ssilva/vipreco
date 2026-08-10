@@ -1,55 +1,91 @@
-import { DEMO_FIXTURE_REFERENCE, DEMO_MARKETS, construirOfertasDemo } from "@/lib/demo-catalog";
+import {
+  DEMO_FIXTURE_REFERENCE,
+  DEMO_MARKETS,
+  PRODUTO_BISTECA,
+  PRODUTO_BUCHO,
+  PRODUTO_DREAMIES,
+  PRODUTO_FAROFA_YOKI,
+  PRODUTO_LASANHA_SADIA,
+  PRODUTO_OLEO_LIZA,
+  PRODUTO_TIXAN,
+  construirOfertasDemo,
+  grupoDoProduto,
+  ordenarOfertas,
+  ordenarPorCustoUnitario,
+  umPrecoPorMercado,
+} from "@/lib/demo-catalog";
+import { isValidPrice } from "@/lib/comparison";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 
 /**
- * Os Achados da Home — TRÊS ofertas escolhidas do catálogo único da demonstração.
+ * Os Achados da Home — o herói e a vitrine, escolhidos do catálogo único da demonstração.
  *
  * =============================================================================
- * ESTE ARQUIVO DEIXOU DE SER UMA SEGUNDA VERDADE (§8)
+ * A ORDEM É A DO MANDATO §9, E ELA É CURADORIA DECLARADA
  * =============================================================================
  *
- * Ele carregava os seus próprios produtos, mercados e imagens. Descreviam o mesmo item que o
- * banco — `demo-identity.test.ts` garantia campo a campo —, mas eram outra lista, e "outra lista
- * que por enquanto concorda" é a definição de divergência esperando acontecer. Foi assim que a
- * Home mostrou "Ouro do Campo" enquanto a página do produto mostrava a marca antiga.
+ * O card principal é o **Bucho bovino do Açougue Mota** e a vitrine traz seis dos doze
+ * grupos — Bisteca, Óleo Liza, Lasanha Sadia, Dreamies, Tixan e Farofa Yoki. Foi o Founder
+ * quem escolheu, e a escolha está ESCRITA AQUI, à vista, como toda curadoria precisa estar:
+ * os Achados são a seção de descoberta — rotulada, separada —, e curadoria nela não toca a
+ * comparação orgânica, que continua ordenada só por preço (`CLAUDE.md`, princípio 4).
  *
- * Agora ele SELECIONA do `@/lib/demo-catalog`, que é a coleção que a busca, a comparação e o
- * detalhe também leem. A Home não pode mais discordar delas: não há de onde discordar.
+ * **O que a curadoria não pode fazer**: escolher QUAL mercado representa cada grupo. O
+ * card de cada Achado mostra a oferta vencedora PELO CRITÉRIO DO GRUPO — menor preço de
+ * prateleira na embalagem igual, melhor custo unitário nas embalagens diferentes. O bucho
+ * abre a Home mostrando o Mota porque o Mota é o mais barato do grupo, e há teste para o
+ * dia em que deixar de ser.
  *
- * A ORDEM É O GOLDEN PATH. O filé de peito é o primeiro — logo, o destaque —, porque é por ele
- * que a demonstração começa. Nenhum critério editorial escolhe destaque; o que existe é uma
- * ordem fixa de fixture, e ela está escrita aqui, à vista.
- *
- * **Só entram ofertas observadas.** As cinco linhas do Mercado 2 existem no catálogo para a
- * tela de comparação mostrar como a comparação vai funcionar; colocá-las entre os Achados da
- * Home seria anunciar como achado um preço que ninguém foi ver.
+ * NÃO são os doze na Home (§9, "Não colocar os 12 na Home"): vitrine é convite, não
+ * inventário. Os outros seis continuam alcançáveis pela busca.
  */
 export { DEMO_FIXTURE_REFERENCE, DEMO_MARKETS };
 
 export type DemoOpportunity = OfertaCardV2;
 
-/** Quantos Achados a Home pede à fonte — o destaque mais quatro. */
-export const HOME_OPPORTUNITY_COUNT = 5;
+/** Quantos Achados a Home pede à fonte — o herói mais seis. */
+export const HOME_OPPORTUNITY_COUNT = 7;
 
-/** Os cinco Achados da Home, na ordem em que aparecem. */
-const ACHADOS_DA_HOME = [
-  "demo-price-mota-file-de-peito",
-  "demo-price-mota-linguica-caseira",
-  "demo-price-mota-coxa-sobrecoxa",
-  "demo-price-mota-patinho",
-  "demo-price-mota-acem",
+/** Os grupos da Home, na ordem do §9 do mandato: herói primeiro. */
+const GRUPOS_DA_HOME = [
+  PRODUTO_BUCHO,
+  PRODUTO_BISTECA,
+  PRODUTO_OLEO_LIZA,
+  PRODUTO_LASANHA_SADIA,
+  PRODUTO_DREAMIES,
+  PRODUTO_TIXAN,
+  PRODUTO_FAROFA_YOKI,
 ] as const;
 
+/**
+ * A oferta que representa um grupo na vitrine: a vencedora pelo critério do grupo,
+ * considerando só as válidas AGORA — a mesma conta da tela de comparação.
+ */
+function vencedoraDoGrupo(productId: string, now: Date): OfertaCardV2 | null {
+  const grupo = grupoDoProduto(productId);
+  if (grupo === null) {
+    throw new Error(`Achado da Home aponta para grupo inexistente: ${productId}`);
+  }
+  const ids = new Set(grupo.sementes.map((s) => s.id));
+  const validas = umPrecoPorMercado(
+    construirOfertasDemo().filter((o) => ids.has(o.id) && isValidPrice(o, now)),
+  );
+  const ordenadas =
+    grupo.basePorUnidade === undefined ? ordenarOfertas(validas) : ordenarPorCustoUnitario(validas);
+  const vencedora = ordenadas[0];
+  if (vencedora === undefined) return null;
+  return {
+    ...vencedora,
+    // O CTA diz "Comparar em N mercados" com a contagem MEDIDA do grupo, nunca escrita.
+    // O `product` continua sendo o SKU — é ele que carrega a gramatura que o card precisa
+    // dizer ("80 g"); o link do card abre a comparação do grupo porque `grupoDoProduto`
+    // também resolve por id de SKU.
+    markets_with_valid_price: ordenadas.length,
+  };
+}
+
 export function buildDemoOpportunities(now: Date = new Date()): DemoOpportunity[] {
-  const todas = construirOfertasDemo(now);
-  return ACHADOS_DA_HOME.map((oferta) => {
-    const encontrada = todas.find((o) => o.id === oferta);
-    if (encontrada === undefined) {
-      // Falha ALTA e cedo. Um Achado da Home apontando para uma oferta que não existe mais no
-      // catálogo é o defeito que este arquivo inteiro existe para impedir; devolver a lista
-      // menor em silêncio esconderia exatamente isso.
-      throw new Error(`Achado da Home aponta para oferta inexistente: ${oferta}`);
-    }
-    return encontrada;
-  });
+  return GRUPOS_DA_HOME.map((produto) => vencedoraDoGrupo(produto.id, now)).filter(
+    (o): o is DemoOpportunity => o !== null,
+  );
 }

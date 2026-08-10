@@ -2,7 +2,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEMO_MARKETS, buildDemoOpportunities } from "./demo-opportunities";
-import { DEMO_PRODUCTS, imagemDoProdutoDemo } from "./demo-catalog";
+import { DEMO_PRODUCTS, grupoDoProduto, imagemDoProdutoDemo } from "./demo-catalog";
+
+/**
+ * O instante canônico dos testes da demo v2: dentro da janela em que TODAS as ofertas da
+ * planilha estão observadas e válidas — depois da coleta de 09/08/2026 e antes de os
+ * encartes de 09/08 vencerem à meia-noite. Fora dessa janela o catálogo expira de verdade,
+ * porque as validades são as reais (§15 do mandato).
+ */
+const AGORA = new Date("2026-08-09T18:00:00-03:00");
 
 /**
  * A IDENTIDADE EXATA NÃO PODE DIVERGIR ENTRE AS TELAS — E A PERGUNTA MUDOU DUAS VEZES.
@@ -129,18 +137,35 @@ describe("o seed de demonstração é legível, e tem o que dizemos que tem", ()
 });
 
 describe("a demonstração inteira lê uma coleção só", () => {
-  const achados = buildDemoOpportunities(new Date("2026-08-08T12:00:00.000Z"));
+  const achados = buildDemoOpportunities(AGORA);
 
-  it("todo Achado da Home aponta para um produto do catálogo, e não para uma segunda lista", () => {
+  it("todo Achado da Home aponta para um SKU do catálogo, e não para uma segunda lista", () => {
     expect(achados.length).toBeGreaterThan(0);
-    const doCatalogo = new Map(DEMO_PRODUCTS.map((p) => [p.id, p]));
     for (const achado of achados) {
-      const noCatalogo = doCatalogo.get(achado.product_id);
-      expect(noCatalogo, `${achado.product_id} não está no catálogo`).toBeDefined();
-      // Identidade **por referência**, não campo a campo. Comparar campo a campo só faz sentido
-      // entre duas listas; aqui a exigência é mais forte — tem de ser o mesmo objeto, porque só
-      // existe um lugar de onde ele pode vir.
-      expect(achado.product).toBe(noCatalogo);
+      // O produto do Achado é o SKU da oferta vencedora — nos grupos de embalagens
+      // diferentes ele NÃO é o produto-grupo, e é isso que carrega a gramatura ("80 g")
+      // que o card precisa dizer. A pergunta continua a mesma de sempre: este objeto veio
+      // da coleção única, ou de uma segunda lista?
+      const grupo = grupoDoProduto(achado.product_id);
+      expect(grupo, `${achado.product_id} não pertence a nenhum grupo do catálogo`).not.toBeNull();
+      const semente = grupo!.sementes.find((s) => s.sku.id === achado.product_id);
+      expect(semente).toBeDefined();
+      // Identidade **por referência**, não campo a campo: tem de ser o mesmo objeto, porque
+      // só existe um lugar de onde ele pode vir.
+      expect(achado.product).toBe(semente!.sku);
+    }
+  });
+
+  it("o Achado de um grupo é a oferta vencedora PELO CRITÉRIO do grupo, nunca uma escolhida", () => {
+    // A curadoria da Home escolhe QUAIS grupos aparecem (§9 do mandato); ela não pode
+    // escolher QUAL mercado representa cada grupo. Verificação: nenhum outro mercado do
+    // mesmo grupo pode ter oferta melhor pelo critério do grupo.
+    for (const achado of achados) {
+      const grupo = grupoDoProduto(achado.product_id)!;
+      if (grupo.basePorUnidade === undefined) {
+        const menor = Math.min(...grupo.sementes.map((s) => s.price));
+        expect(achado.price, grupo.produto.name).toBe(menor);
+      }
     }
   });
 
@@ -154,11 +179,14 @@ describe("a demonstração inteira lê uma coleção só", () => {
 
   it("a imagem de cada Achado é a do mapa do catálogo, e não uma escolhida na Home", () => {
     // É isto que torna impossível a embalagem mudar entre Home, busca, comparação e detalhe:
-    // não existe um segundo lugar onde escolher outra.
+    // não existe um segundo lugar onde escolher outra. A bisteca bovina fica SEM imagem de
+    // propósito — nenhuma IA fornecida corresponde ao corte, e o placeholder é a resposta
+    // do §10 ("wrong image is worse than no image"); os demais seis têm a sua.
     for (const achado of achados) {
       expect(achado.image).toBe(imagemDoProdutoDemo(achado.product_id));
-      expect(achado.image, `${achado.product.name} sem imagem`).not.toBeNull();
     }
+    const semImagem = achados.filter((a) => a.image == null).map((a) => a.product.name);
+    expect(semImagem).toEqual(["Bisteca bovina"]);
   });
 
   it("nenhum Achado da Home é exemplo ilustrativo", () => {
@@ -231,10 +259,14 @@ describe("os atalhos da busca não levam a lugar nenhum vazio", () => {
         .replace(/\p{Diacritic}/gu, "")
         .toLowerCase();
     const normalizado = achatar(atalho);
+    // Os MESMOS campos que `buscarNoCatalogoDemo` consulta — categoria inclusive, porque é
+    // por ela que os atalhos de seção ("Carnes", "Pet") encontram alguma coisa. Conferir
+    // menos campos que a busca real reprovaria atalho que funciona; conferir mais aprovaria
+    // atalho que não funciona.
     const casam = DEMO_PRODUCTS.filter((p) =>
-      achatar([p.name, p.brand, p.variant, p.size_text].filter(Boolean).join(" ")).includes(
-        normalizado,
-      ),
+      achatar(
+        [p.name, p.brand, p.variant, p.size_text, p.category].filter(Boolean).join(" "),
+      ).includes(normalizado),
     );
     expect(
       casam.length,

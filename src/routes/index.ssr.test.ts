@@ -72,16 +72,16 @@ function tamanhosDePreco(pagina: string): number[] {
 }
 
 describe("HTML inicial da Home (SSR)", () => {
-  it("contém os sete produtos e mercados do fixture antes da hidratação", () => {
+  it("contém os dez produtos e mercados do fixture antes da hidratação", () => {
     const fixture = buildDemoOpportunities();
-    expect(fixture).toHaveLength(7);
+    expect(fixture).toHaveLength(10);
     for (const entry of fixture) {
       expect(html).toContain(entry.product.name);
       expect(html).toContain(entry.market.name);
     }
   });
 
-  it("contém os sete preços do fixture antes da hidratação — na hierarquia do §0", () => {
+  it("contém os dez preços do fixture antes da hidratação — na hierarquia do §0", () => {
     for (const entry of buildDemoOpportunities() as OfertaCardV2[]) {
       if (entry.price_unit === "kg") {
         // Peso variável: o número protagonista é o CALCULADO de aprox. 500 g, e o R$/kg
@@ -216,15 +216,15 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     // O destaque é o único preço no tamanho de destaque; os secundários usam o tamanho de lista.
     expect(html).toContain("Outros Achados");
     const [destaque, ...lista] = tamanhosDePreco(html);
-    expect(lista).toHaveLength(6);
+    expect(lista).toHaveLength(9);
     for (const tamanho of lista) expect(tamanho).toBe(lista[0]);
     expect(destaque).toBeGreaterThan(lista[0]);
     // E as duas composições saem do mesmo domínio: nenhum card sem procedência. A contagem
-    // é pelos rótulos de coleta do §15 — um por card, sete no total, somados entre as
+    // é pelos rótulos de coleta do §15 — um por card, dez no total, somados entre as
     // quatro origens reais em vez de uma origem única inventada para todas.
     const selos = (html.match(/Foto em loja|Encarte da loja|Painel da loja|Cartaz na loja/g) ?? [])
       .length;
-    expect(selos).toBe(7);
+    expect(selos).toBe(10);
   });
 
   it("segue a ordem completa: contexto, busca, Achados, procedência, piloto", () => {
@@ -363,7 +363,10 @@ describe("anatomia do card oficial de Achado", () => {
       ["Lasanha", "Sadia", "600 g"],
       ["Petisco para gatos", "Dreamies", "80 g"],
       ["Lava-roupas em pó", "Tixan Ypê", "2,2 kg"],
-      ["Farofa pronta", "Yoki", "400 g"],
+      // A linha compacta mostra a quantidade ESTRUTURADA ("350 ml"), não o texto livre da
+      // embalagem ("lata 350 ml") — é a estruturada que alimenta o R$/L ao lado.
+      ["Cerveja", "Corona Extra", "350 ml"],
+      ["Desodorante aerossol", "Nivea", "200 ml"],
     ]) {
       expect(lista, nome).toContain(nome);
       expect(lista, nome).toContain(marca);
@@ -466,11 +469,12 @@ describe("anatomia do card oficial de Achado", () => {
  * um guarda que não dependa de alguém olhar de novo.
  */
 describe("R3.3B — o que a Home passou a mostrar", () => {
-  it("cada imagem declara a própria origem — IA no corte, encarte no produto de marca", () => {
-    // Sete imagens para sete Achados: desde 10/08/2026 a bisteca tem a foto correta do
-    // corte, fornecida pelo Founder — nenhum card da Home fica em placeholder.
-    const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
-    expect(imgs).toHaveLength(7);
+  it("cada imagem de PRODUTO declara a própria origem — IA no corte, encarte no de marca", () => {
+    // Dez imagens para dez Achados — nenhum card da Home fica em placeholder. Os logos de
+    // mercado (V3) vivem em `/img/demo/mercados/` e ficam FORA desta régua: são identidade
+    // da loja, decorativos (`alt` vazio, nome escrito ao lado), não retrato de produto.
+    const imgs = html.match(/<img[^>]*src="\/img\/demo\/comparaveis\/[^"]*"[^>]*>/g) ?? [];
+    expect(imgs).toHaveLength(10);
     for (const img of imgs) {
       const declaraIA = img.includes("gerada por IA") && img.includes("não é a peça vendida");
       const declaraEncarte = img.includes("encarte do mercado");
@@ -479,9 +483,9 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
   });
 
   it("o destaque carrega o LCP e os da lista não", () => {
-    const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
+    const imgs = html.match(/<img[^>]*src="\/img\/demo\/comparaveis\/[^"]*"[^>]*>/g) ?? [];
     expect(imgs.filter((i) => i.includes('fetchPriority="high"'))).toHaveLength(1);
-    expect(imgs.filter((i) => i.includes('loading="lazy"'))).toHaveLength(6);
+    expect(imgs.filter((i) => i.includes('loading="lazy"'))).toHaveLength(9);
   });
 
   it("a linha de lista inteira é o link, e leva ao produto", () => {
@@ -536,17 +540,17 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
       secao.indexOf("/>", secao.indexOf("<img")),
       secao.indexOf("</article>"),
     );
-    const nome = card.indexOf(">Bucho bovino<");
-    const preco = card.indexOf("12,50");
+    const nome = card.indexOf(">Frango inteiro<");
+    const preco = card.indexOf("4,00");
     expect(nome).toBeGreaterThan(-1);
     expect(preco).toBeGreaterThan(nome);
   });
 
   it("a hierarquia visual do preço é uma só por composição", () => {
-    // Um preço em tamanho de destaque, seis em tamanho de lista, e o de destaque é o maior.
+    // Um preço em tamanho de destaque, nove em tamanho de lista, e o de destaque é o maior.
     // Se todos empatarem, não há hierarquia — que foi exatamente o diagnóstico do §8.
     const tamanhos = tamanhosDePreco(html);
-    expect(tamanhos).toHaveLength(7);
+    expect(tamanhos).toHaveLength(10);
     const [destaque, ...lista] = tamanhos;
     expect(new Set(lista).size, "os preços de lista têm de ter o mesmo peso").toBe(1);
     expect(destaque).toBeGreaterThan(lista[0]);

@@ -242,7 +242,7 @@ export function ProductCardV2({
             duas linhas vêm logo abaixo dela em largura inteira, onde o nome do mercado cabe sem
             disputar espaço com a imagem. */}
         <div className="flex flex-col gap-0.5">
-          <MarketBadge nome={visao.mercado.nome} destaque={destaque} />
+          <MarketBadge nome={visao.mercado.nome} destaque={destaque} market={oferta.market} />
           <NeighborhoodLabel bairro={visao.mercado.bairro} />
         </div>
 

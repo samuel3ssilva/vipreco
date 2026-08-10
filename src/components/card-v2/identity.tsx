@@ -131,6 +131,10 @@ const TAMANHO_DA_IMAGEM = {
   // mostra que o reconhecimento do produto é o que faz a lista escanear. O degrau de 96 só
   // entra onde a coluna do nome ainda comporta o preço sem truncar (medido a 360: não cabe).
   compacto: "size-20 min-[390px]:size-24",
+  // V3: a linha da comparação ganhou o avatar do mercado, e a conta de largura mudou — a
+  // 320 px, avatar (40) + imagem + nome + preço só fecham sem colisão com a imagem em 64.
+  // O degrau para 80 entra a partir de 390, onde a coluna do nome volta a sobrar.
+  rank: "size-16 min-[390px]:size-20",
   lista: "size-24 min-[360px]:size-28",
   // R3.3C: o destaque escalona por faixa de largura, e o número sai de uma conta, não do gosto.
   // Desde que o PREÇO passou para a coluna ao lado da imagem, os dois disputam a mesma largura:

@@ -11,7 +11,7 @@ import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { StateMessage } from "@/components/StateMessage";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { appMode } from "@/lib/app-mode";
-import { DEMO_NATUREZA_DO_DADO } from "@/lib/demo-catalog";
+import { DEMO_NATUREZA_DO_DADO, DEMO_PRODUCTS } from "@/lib/demo-catalog";
 import { SHORTCUTS } from "@/lib/atalhos-de-busca";
 import { estadoSemAchados } from "@/lib/home-states";
 import { absoluteAssetUrl, ogImageMeta } from "@/lib/og";
@@ -199,6 +199,14 @@ function HomePage() {
             />
           }
         />
+
+        {/* V3 §3/§6 — a vitrine é convite; a porta do catálogo inteiro fica logo abaixo
+            dela, com a contagem real. É o que transforma "6 exemplos" em "um catálogo". */}
+        {source === "demo" ? (
+          <Link to="/buscar" className="btn-base btn-secondary btn-touch-48 w-full">
+            Ver o catálogo completo — {DEMO_PRODUCTS.length} produtos comparados
+          </Link>
+        ) : null}
 
         <AvisoDePreco />
 

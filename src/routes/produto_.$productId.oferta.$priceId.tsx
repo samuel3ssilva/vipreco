@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CalendarClock, Clock, MapPin, Store } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { MarketAvatar } from "@/components/MarketAvatar";
 import { PesoSelector } from "@/components/PesoSelector";
 import { ProductImage } from "@/components/card-v2/identity";
 import { StateMessage } from "@/components/StateMessage";
@@ -192,16 +193,20 @@ function OfferPage() {
           aria-label="Mercado"
           className="border-border bg-card shadow-card rounded-xl border p-4"
         >
-          <p className="flex items-center gap-2 text-base font-bold">
-            <Store aria-hidden="true" className="text-primary size-4 shrink-0" />
-            {market.name}
-          </p>
-          {onde !== null ? (
-            <p className="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm">
-              <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-              {onde}
-            </p>
-          ) : null}
+          {/* V3: o avatar do mercado no lugar do ícone genérico de loja — a ficha é a tela
+              em que a pessoa decide, e reconhecer O mercado vale mais que saber que é UM. */}
+          <div className="flex items-center gap-3">
+            <MarketAvatar market={market} />
+            <div className="min-w-0">
+              <p className="text-base font-bold">{market.name}</p>
+              {onde !== null ? (
+                <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-sm">
+                  <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+                  {onde}
+                </p>
+              ) : null}
+            </div>
+          </div>
 
           {/* 4. CONDIÇÃO */}
           {oferta.special_condition ? (

@@ -17,9 +17,9 @@ import { formatDate, formatRelativeDay } from "@/lib/format";
 const NOW = new Date("2026-08-09T18:00:00-03:00");
 
 describe("fixture de demonstração da Home — demo v2", () => {
-  it("entrega exatamente sete Achados — o herói e a vitrine do §9", () => {
+  it("entrega exatamente dez Achados — o herói e a vitrine da V3", () => {
     expect(buildDemoOpportunities(NOW)).toHaveLength(HOME_OPPORTUNITY_COUNT);
-    expect(HOME_OPPORTUNITY_COUNT).toBe(7);
+    expect(HOME_OPPORTUNITY_COUNT).toBe(10);
   });
 
   it("marca preço, produto e mercado como demonstração", () => {
@@ -32,7 +32,7 @@ describe("fixture de demonstração da Home — demo v2", () => {
       // quatro, em dias e materiais diferentes.
       expect(entry.source_reference, entry.id).toBeTruthy();
       // Nenhum id daqui pode se passar por id de banco.
-      expect(entry.id).toMatch(/^demo-v2-/);
+      expect(entry.id).toMatch(/^demo-v[23]-/);
     }
   });
 
@@ -99,30 +99,36 @@ describe("fixture de demonstração da Home — demo v2", () => {
     }
   });
 
-  it("o herói é o bucho bovino do Açougue Mota — porque o Mota tem o menor R$/kg dele", () => {
+  it("o herói da V3 é o frango inteiro do Safra — porque o Safra tem o menor R$/kg dele", () => {
     const [primeiro] = buildDemoOpportunities(NOW);
-    expect(primeiro.product.name).toBe("Bucho bovino");
-    expect(primeiro.market.id).toBe(ACOUGUE_MOTA.id);
-    expect(primeiro.price).toBe(24.99);
+    expect(primeiro.product.name).toBe("Frango inteiro");
+    expect(primeiro.price).toBe(7.99);
     expect(primeiro.price_unit).toBe("kg");
-    // A escolha do GRUPO é curadoria do Founder (§9); a escolha do MERCADO não é de
-    // ninguém: 24,99 < 25,99. Se o Safra baixar o preço, o herói mostra o Safra.
+    // A escolha do GRUPO é curadoria editorial declarada (V3 §4: universal, comparação de
+    // 25%, imagem clara); a escolha do MERCADO não é de ninguém: 7,99 < 9,99. Se o Mota
+    // baixar o preço, o herói mostra o Mota.
     const grupo = grupoDoProduto(primeiro.product_id)!;
     const menor = Math.min(...grupo.sementes.map((s) => s.price));
     expect(primeiro.price).toBe(menor);
   });
 
-  it("a vitrine é a do §9: bisteca, óleo, lasanha, dreamies, tixan e farofa — e não os 12", () => {
+  it("a vitrine da V3: dez grupos, oito categorias, com o bucho revisado ainda dentro", () => {
     const nomes = buildDemoOpportunities(NOW).map((o) => o.product.name);
     expect(nomes).toEqual([
-      "Bucho bovino",
+      "Frango inteiro",
       "Bisteca bovina",
-      "Óleo de soja",
+      "Bucho bovino",
+      "Cebola",
+      "Cerveja",
       "Lasanha",
+      "Óleo de soja",
+      "Desodorante aerossol",
       "Petisco para gatos",
       "Lava-roupas em pó",
-      "Farofa pronta",
     ]);
+    // O bucho continua na vitrine (V3 §5 — revisado, com a foto correta), mostrando o Mota.
+    const bucho = buildDemoOpportunities(NOW).find((o) => o.product.name === "Bucho bovino");
+    expect(bucho!.market.id).toBe(ACOUGUE_MOTA.id);
   });
 
   it("o representante do grupo de embalagens diferentes é o de melhor custo unitário", () => {

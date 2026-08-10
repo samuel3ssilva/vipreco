@@ -9,6 +9,7 @@ import {
   PRODUTO_BUCHO,
   PRODUTO_DREAMIES,
   PRODUTO_ELSEVE,
+  PRODUTO_FRANGO_INTEIRO,
   PRODUTO_SANOL,
   SAFRA,
   construirOfertasDemo,
@@ -147,8 +148,11 @@ describe("§16 — localização mostrada só onde é validada", () => {
 });
 
 describe("o dado da demonstração — planilha como fonte da verdade", () => {
-  it("são 12 grupos comparáveis, todo produto com GTIN nulo e `is_demo`", () => {
-    expect(DEMO_PRODUCTS).toHaveLength(12);
+  it("são 24 grupos comparáveis (todos os 'Igual/Alta' da planilha), GTIN nulo e `is_demo`", () => {
+    // V3 §3: os 24 grupos que a planilha classifica como Tipo "Igual" com confiança Alta.
+    // Os dois "Igual" que ficaram fora (sachês Dog Chow e Friskies) estão documentados no
+    // cabeçalho do demo-catalog: gramatura do sachê não confirmada nos dois mercados.
+    expect(DEMO_PRODUCTS).toHaveLength(24);
     for (const p of DEMO_PRODUCTS) {
       expect(p.gtin, `${p.name} tem GTIN`).toBeNull();
       expect(p.is_demo, `${p.name} não é demo`).toBe(true);
@@ -180,7 +184,7 @@ describe("o dado da demonstração — planilha como fonte da verdade", () => {
 
   it("toda oferta é demo nas três entidades, e nenhuma é 'exemplo ilustrativo'", () => {
     const ofertas = construirOfertasDemo();
-    expect(ofertas).toHaveLength(25);
+    expect(ofertas).toHaveLength(49);
     for (const o of ofertas) {
       expect(o.is_demo && o.product.is_demo && o.market.is_demo, o.id).toBe(true);
       // O Mercado 2 morreu com a demo anterior: aqui TODO preço foi coletado de material
@@ -246,8 +250,33 @@ describe("§0 — os números são os da planilha, sem inventar nem arredondar",
       ["demo-v2-dreamies-paguemenos", 5.99],
       ["demo-v2-sanol-atacadao", 69.9],
       ["demo-v2-sanol-paguemenos", 22.99],
+      // V3 — os 12 grupos novos, coluna 'Preço cheio' do Detalhe por item.
+      ["demo-v3-linguica-savegnago", 16.9],
+      ["demo-v3-linguica-safra", 17.99],
+      ["demo-v3-abobora-safra", 2.79],
+      ["demo-v3-abobora-savegnago", 2.95],
+      ["demo-v3-chuchu-safra", 1.99],
+      ["demo-v3-chuchu-savegnago", 2.95],
+      ["demo-v3-melao-safra", 3.99],
+      ["demo-v3-melao-savegnago", 4.98],
+      ["demo-v3-corona-savegnago", 4.99],
+      ["demo-v3-corona-atacadao", 6.35],
+      ["demo-v3-heineken-atacadao", 6.19],
+      ["demo-v3-heineken-savegnago", 6.39],
+      ["demo-v3-original-safra", 3.79],
+      ["demo-v3-original-savegnago", 47.88],
+      ["demo-v3-semprelivre-savegnago", 29.95],
+      ["demo-v3-semprelivre-paguemenos", 34.99],
+      ["demo-v3-nivea-atacadao", 12.9],
+      ["demo-v3-nivea-paguemenos", 14.99],
+      ["demo-v3-rexona-safra", 14.99],
+      ["demo-v3-rexona-atacadao", 18.9],
+      ["demo-v3-sanolodor-atacadao", 11.9],
+      ["demo-v3-sanolodor-paguemenos", 21.99],
+      ["demo-v3-pedigree-atacadao", 74.9],
+      ["demo-v3-pedigree-paguemenos", 99.99],
     ];
-    expect(esperados).toHaveLength(25);
+    expect(esperados).toHaveLength(49);
     for (const [id, preco] of esperados) {
       expect(oferta(id).price, id).toBe(preco);
     }
@@ -281,6 +310,26 @@ describe("§0 — os números são os da planilha, sem inventar nem arredondar",
       ["demo-v2-dreamies-paguemenos", 149.75],
       ["demo-v2-sanol-atacadao", 2.33],
       ["demo-v2-sanol-paguemenos", 3.28],
+      // V3 — normalizados dos grupos novos, coluna 'Normalizado (cheio)' da planilha.
+      ["demo-v3-corona-savegnago", 14.26],
+      ["demo-v3-corona-atacadao", 18.14],
+      ["demo-v3-heineken-atacadao", 18.76],
+      ["demo-v3-heineken-savegnago", 19.36],
+      ["demo-v3-original-safra", 10.83],
+      ["demo-v3-original-savegnago", 11.4],
+      ["demo-v3-semprelivre-savegnago", 0.94],
+      ["demo-v3-semprelivre-paguemenos", 1.09],
+      ["demo-v3-nivea-atacadao", 64.5],
+      ["demo-v3-nivea-paguemenos", 74.95],
+      ["demo-v3-rexona-safra", 99.93],
+      ["demo-v3-rexona-atacadao", 126],
+      ["demo-v3-sanolodor-atacadao", 5.95],
+      // SEGUNDO EMPATE DE MEIO CENTAVO, mesmo caso da farofa: 21,99 ÷ 2 L = 10,995. O
+      // arredondamento comercial determinístico do produto dá 11,00; a planilha exibiu
+      // 10,99. Preço cheio (R$ 21,99) e volume (2 L) são exatamente os dela.
+      ["demo-v3-sanolodor-paguemenos", 11],
+      ["demo-v3-pedigree-atacadao", 7.42],
+      ["demo-v3-pedigree-paguemenos", 9.9],
     ];
     for (const [id, unitario] of esperados) {
       expect(custoUnitarioDaOferta(oferta(id)), id).toBe(unitario);
@@ -423,10 +472,14 @@ describe("§13 — golden flow B: Dreamies, embalagens diferentes", () => {
 });
 
 describe("o golden path continua navegável de ponta a ponta", () => {
-  it("1. a Home abre pelo bucho do Açougue Mota", () => {
+  it("1. a Home abre pelo frango inteiro do Safra — o herói editorial da V3", () => {
     const [primeiro] = buildDemoOpportunities(AGORA);
-    expect(primeiro.product_id).toBe(PRODUTO_BUCHO.id);
-    expect(primeiro.market_id).toBe(ACOUGUE_MOTA.id);
+    expect(primeiro.product_id).toBe(PRODUTO_FRANGO_INTEIRO.id);
+    expect(primeiro.price).toBe(7.99);
+    // O bucho revisado (V3 §5) continua na vitrine, pelo Mota — que segue sendo o menor
+    // R$/kg do grupo dele.
+    const bucho = buildDemoOpportunities(AGORA).find((o) => o.product_id === PRODUTO_BUCHO.id);
+    expect(bucho!.market_id).toBe(ACOUGUE_MOTA.id);
   });
 
   it("2. buscar 'frango' devolve o frango inteiro, e nada de bovino", () => {

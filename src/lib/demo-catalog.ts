@@ -15,10 +15,14 @@ import type { ImagemDeProduto, OfertaCardV2 } from "@/lib/card-v2";
  * fonte e período vêm todos de lá, e os testes conferem os normalizados contra os valores
  * que a própria planilha calculou.
  *
- * São **12 grupos comparáveis** em **5 mercados reais** — Açougue Mota, Safra, Savegnago,
- * Atacadão e Pague Menos —, escolhidos pelo Founder (§2 do mandato) para mostrar cada caso
- * que o produto precisa saber contar: mesmo corte por kg, mesma embalagem, embalagens
- * diferentes, granel, unitário, promoção de clube.
+ * São **24 grupos comparáveis** em **5 mercados reais** — Açougue Mota, Safra, Savegnago,
+ * Atacadão e Pague Menos. A V3 trouxe TODOS os grupos que a planilha classifica como
+ * **Tipo "Igual" com confiança Alta** — o único tipo que o princípio 1 autoriza na
+ * comparação exata ("Similar" nunca entra, em nenhuma fase). Dois grupos "Igual" ficaram
+ * fora, de propósito e documentados: os sachês Dog Chow e Friskies, porque a gramatura do
+ * sachê não está confirmada nos dois mercados (o anúncio do Atacadão cobre "85 g/100 g" e o
+ * do Savegnago não declara tamanho) — e comparar por unidade sem saber se a unidade é a
+ * mesma é exatamente o que a identidade exata proíbe.
  *
  * =============================================================================
  * AS DUAS NATUREZAS DE PREÇO, E ONDE CADA UMA MORA (§0)
@@ -143,6 +147,13 @@ const FONTE = {
     validoAte: FIM_09_08,
     referencia: "Encartes Atacadão, ofertas 03–09/08/2026",
   },
+  atacadaoDiaDosPais: {
+    rotulo: "Encarte da loja",
+    tipo: "store_list",
+    observadoEm: OBS_ENCARTE,
+    validoAte: FIM_09_08,
+    referencia: "Encarte Atacadão Especial Dia dos Pais, ofertas 07–09/08/2026",
+  },
   pagueMenosEncarte: {
     rotulo: "Encarte da loja",
     tipo: "store_list",
@@ -218,6 +229,31 @@ export const DEMO_MARKETS: readonly Market[] = [
   ATACADAO,
   PAGUE_MENOS,
 ];
+
+// =============================================================================
+// LOGOS DOS MERCADOS — identificação, nunca parceria (V3)
+// =============================================================================
+//
+// O logo existe para a pessoa reconhecer o mercado mais rápido numa lista — o mesmo papel
+// que ele cumpre na porta da loja. Regras que mantêm a neutralidade do princípio 4:
+// tamanho uniforme para todos, sempre ao lado do nome (nunca no lugar dele), nenhuma
+// posição decidida por logo, e a nota de demonstração da tela continua dizendo o que este
+// ambiente é. O Açougue Mota não tem logo fornecido — o componente desenha o monograma,
+// que é solução, não punição: mercado de bairro sem marca gráfica é a realidade do piloto.
+//
+// O `alt` é vazio de propósito: o nome do mercado está escrito ao lado, e um leitor de
+// tela que ouvisse "logo do Savegnago, Savegnago" ouviria duas vezes a mesma coisa.
+
+const LOGO_POR_MERCADO: Readonly<Record<string, string>> = {
+  [SAFRA.id]: "/img/demo/mercados/safra.png",
+  [SAVEGNAGO.id]: "/img/demo/mercados/savegnago.png",
+  [ATACADAO.id]: "/img/demo/mercados/atacadao.png",
+  [PAGUE_MENOS.id]: "/img/demo/mercados/pague-menos.png",
+};
+
+export function logoDoMercadoDemo(marketId: string): string | null {
+  return LOGO_POR_MERCADO[marketId] ?? null;
+}
 
 // =============================================================================
 // PRODUTOS
@@ -300,6 +336,35 @@ export const PRODUTO_CEBOLA = granel(
   "Hortifruti",
 );
 
+/**
+ * Granel COM marca: a linguiça toscana é vendida a peso, mas o encarte declara a marca —
+ * e a identidade exata exige carregá-la (Sadia ≠ caseira). O Savegnago anuncia "Sadia ou
+ * Perdigão Nabrasa" pelo mesmo preço por quilo; o registro aqui é o da Sadia, que é o
+ * produto que os dois mercados têm em comum.
+ */
+export const PRODUTO_LINGUICA_TOSCANA: Product = {
+  ...granel("33333333-3333-3333-3333-0000000000c3", "Linguiça toscana", "Carnes e Aves"),
+  brand: "Sadia",
+};
+
+export const PRODUTO_ABOBORA = granel(
+  "33333333-3333-3333-3333-0000000000c4",
+  "Abóbora cabotiá",
+  "Hortifruti",
+);
+
+export const PRODUTO_CHUCHU = granel(
+  "33333333-3333-3333-3333-0000000000c5",
+  "Chuchu",
+  "Hortifruti",
+);
+
+export const PRODUTO_MELAO = granel(
+  "33333333-3333-3333-3333-0000000000c6",
+  "Melão amarelo",
+  "Hortifruti",
+);
+
 // ---------- embalados de embalagem igual — a comparação exata clássica ----------
 
 export const PRODUTO_OLEO_LIZA = embalado({
@@ -346,6 +411,69 @@ export const PRODUTO_TIXAN = embalado({
   sizeText: "2,2 kg",
   quantidade: { value: 2.2, unit: "kg" },
   category: "Limpeza",
+});
+
+export const PRODUTO_CORONA = embalado({
+  id: "33333333-3333-3333-3333-0000000000c7",
+  name: "Cerveja",
+  brand: "Corona Extra",
+  sizeText: "lata 350 ml",
+  quantidade: { value: 350, unit: "ml" },
+  category: "Bebidas Alcoólicas",
+});
+
+export const PRODUTO_HEINEKEN = embalado({
+  id: "33333333-3333-3333-3333-0000000000c8",
+  name: "Cerveja",
+  brand: "Heineken",
+  sizeText: "long neck 330 ml",
+  quantidade: { value: 330, unit: "ml" },
+  category: "Bebidas Alcoólicas",
+});
+
+export const PRODUTO_SEMPRE_LIVRE = embalado({
+  id: "33333333-3333-3333-3333-0000000000c9",
+  name: "Absorvente com abas",
+  brand: "Sempre Livre",
+  sizeText: "32 unidades",
+  quantidade: { value: 32, unit: "un" },
+  category: "Higiene e Beleza",
+});
+
+export const PRODUTO_NIVEA = embalado({
+  id: "33333333-3333-3333-3333-0000000000ca",
+  name: "Desodorante aerossol",
+  brand: "Nivea",
+  sizeText: "200 ml",
+  quantidade: { value: 200, unit: "ml" },
+  category: "Higiene e Beleza",
+});
+
+export const PRODUTO_REXONA = embalado({
+  id: "33333333-3333-3333-3333-0000000000cb",
+  name: "Desodorante aerossol",
+  brand: "Rexona",
+  sizeText: "150 ml",
+  quantidade: { value: 150, unit: "ml" },
+  category: "Higiene e Beleza",
+});
+
+export const PRODUTO_SANOL_ODOR = embalado({
+  id: "33333333-3333-3333-3333-0000000000cc",
+  name: "Eliminador de odores",
+  brand: "Sanol",
+  sizeText: "2 L",
+  quantidade: { value: 2, unit: "l" },
+  category: "Pet",
+});
+
+export const PRODUTO_PEDIGREE = embalado({
+  id: "33333333-3333-3333-3333-0000000000cd",
+  name: "Ração para cães",
+  brand: "Pedigree",
+  sizeText: "10,1 kg",
+  quantidade: { value: 10.1, unit: "kg" },
+  category: "Pet",
 });
 
 // ---------- grupos de embalagens diferentes — cada oferta carrega o SEU SKU ----------
@@ -440,20 +568,64 @@ export const SKU_SANOL_7 = embalado({
   category: "Pet",
 });
 
-/** Os 12 grupos que a busca enxerga e as rotas de produto abrem. */
+/**
+ * A MESMA lata, vendida de dois jeitos: o Safra anuncia o preço da lata (R$ 3,79, venda só
+ * no pack de 12) e o Savegnago anuncia o pack fechado (R$ 47,88). O desembolso de cada
+ * mercado é o que o próprio mercado publicou — inventar "12 × 3,79" seria criar um preço
+ * que não está no encarte —, e a comparação honesta entre as duas formas de venda é por
+ * litro, como em todo grupo de embalagens diferentes.
+ */
+export const PRODUTO_ORIGINAL = grupoDeMarca(
+  "33333333-3333-3333-3333-0000000000ce",
+  "Cerveja",
+  "Original",
+  "Bebidas Alcoólicas",
+);
+
+export const SKU_ORIGINAL_LATA = embalado({
+  id: "33333333-3333-3333-3333-0000000000cf",
+  name: "Cerveja",
+  brand: "Original",
+  sizeText: "lata 350 ml",
+  quantidade: { value: 350, unit: "ml" },
+  category: "Bebidas Alcoólicas",
+});
+
+export const SKU_ORIGINAL_PACK = embalado({
+  id: "33333333-3333-3333-3333-0000000000d0",
+  name: "Cerveja",
+  brand: "Original",
+  sizeText: "pack 12 latas 350 ml",
+  quantidade: { value: 4.2, unit: "l" },
+  category: "Bebidas Alcoólicas",
+});
+
+/** Os 24 grupos que a busca enxerga e as rotas de produto abrem. */
 export const DEMO_PRODUCTS: readonly Product[] = [
   PRODUTO_FRANGO_INTEIRO,
   PRODUTO_BUCHO,
   PRODUTO_BISTECA,
+  PRODUTO_LINGUICA_TOSCANA,
   PRODUTO_CEBOLA,
+  PRODUTO_ABOBORA,
+  PRODUTO_CHUCHU,
+  PRODUTO_MELAO,
   PRODUTO_OLEO_LIZA,
   PRODUTO_FAROFA_YOKI,
   PRODUTO_DOLCE_GUSTO,
   PRODUTO_LASANHA_SADIA,
+  PRODUTO_CORONA,
+  PRODUTO_HEINEKEN,
+  PRODUTO_ORIGINAL,
   PRODUTO_TIXAN,
+  PRODUTO_SEMPRE_LIVRE,
+  PRODUTO_NIVEA,
+  PRODUTO_REXONA,
   PRODUTO_ELSEVE,
   PRODUTO_DREAMIES,
   PRODUTO_SANOL,
+  PRODUTO_SANOL_ODOR,
+  PRODUTO_PEDIGREE,
 ];
 
 // =============================================================================
@@ -469,9 +641,10 @@ export const DEMO_PRODUCTS: readonly Product[] = [
 //   embalagem, publicada pelo mercado, recortada limpa. Nenhuma embalagem foi gerada ou
 //   imitada, e nenhuma imagem foi baixada da internet.
 //
-// Dois SKUs ficam SEM imagem de propósito: Elseve 200 ml e Sanol 7 unidades (o único
-// material fornecido é foto de tabloide impresso, sem qualidade para recorte limpo).
-// Placeholder — porque imagem errada é pior que imagem nenhuma.
+// Três SKUs ficam SEM imagem de propósito: Elseve 200 ml, Sanol 7 unidades e a lata avulsa
+// de Original do Safra (o único material fornecido é foto de tabloide impresso, sem
+// qualidade para recorte limpo). Placeholder — porque imagem errada é pior que imagem
+// nenhuma. Nenhum deles ocupa posição nobre.
 
 function ilustracaoIA(arquivo: string, corte: string): ImagemDeProduto {
   return {
@@ -526,6 +699,36 @@ const IMAGEM_POR_PRODUTO: Readonly<Record<string, ImagemDeProduto>> = {
     "sanol-30.jpg",
     "Pacotes de tapete higiênico Sanol Dog com 30 unidades",
   ),
+  [PRODUTO_LINGUICA_TOSCANA.id]: recorteDeEncarte(
+    "linguica-toscana.jpg",
+    "Linguiça toscana em bandeja",
+  ),
+  [PRODUTO_ABOBORA.id]: recorteDeEncarte("abobora.jpg", "Abóbora cabotiá"),
+  [PRODUTO_CHUCHU.id]: recorteDeEncarte("chuchu.jpg", "Chuchu"),
+  [PRODUTO_MELAO.id]: recorteDeEncarte("melao.jpg", "Melão amarelo"),
+  [PRODUTO_CORONA.id]: recorteDeEncarte("corona.jpg", "Lata de cerveja Corona Extra 350 ml"),
+  [PRODUTO_HEINEKEN.id]: recorteDeEncarte(
+    "heineken.jpg",
+    "Garrafa long neck de cerveja Heineken 330 ml",
+  ),
+  [SKU_ORIGINAL_PACK.id]: recorteDeEncarte(
+    "original-pack.jpg",
+    "Pack de 12 latas de cerveja Original 350 ml",
+  ),
+  [PRODUTO_SEMPRE_LIVRE.id]: recorteDeEncarte(
+    "sempre-livre.jpg",
+    "Pacote de absorvente Sempre Livre com abas, 32 unidades",
+  ),
+  [PRODUTO_NIVEA.id]: recorteDeEncarte("nivea.jpg", "Desodorante aerossol Nivea 200 ml"),
+  [PRODUTO_REXONA.id]: recorteDeEncarte("rexona.jpg", "Desodorante aerossol Rexona 150 ml"),
+  [PRODUTO_SANOL_ODOR.id]: recorteDeEncarte(
+    "sanol-odor.jpg",
+    "Frasco de eliminador de odores Sanol 2 L",
+  ),
+  [PRODUTO_PEDIGREE.id]: recorteDeEncarte(
+    "pedigree.jpg",
+    "Saco de ração para cães Pedigree 10,1 kg",
+  ),
   // Os produtos-GRUPO dos conjuntos de embalagens diferentes NÃO têm entrada aqui, de
   // propósito: o grupo não tem uma embalagem, então nenhuma foto o representa sem eleger
   // um dos tamanhos como "o verdadeiro". O topo da comparação desses grupos desenha o
@@ -557,6 +760,8 @@ interface SementeDeOferta {
   readonly clube?: PrecoDeClube;
   /** "kg" quando o preço observado é por quilo (granel). */
   readonly porKg?: true;
+  /** Condição declarada pelo mercado junto do preço — ex.: "venda só no pack de 12". */
+  readonly condicaoEspecial?: string;
 }
 
 export interface GrupoDemo {
@@ -826,6 +1031,252 @@ const GRUPOS: readonly GrupoDemo[] = [
       },
     ],
   },
+
+  // ---------- os 12 grupos que a V3 trouxe da planilha (Tipo "Igual", confiança Alta) ----------
+
+  {
+    produto: PRODUTO_LINGUICA_TOSCANA,
+    granel: true,
+    sementes: [
+      {
+        id: "demo-v3-linguica-savegnago",
+        sku: PRODUTO_LINGUICA_TOSCANA,
+        mercado: SAVEGNAGO,
+        price: 16.9,
+        fonte: FONTE.savegnagoEncarte,
+        porKg: true,
+      },
+      {
+        id: "demo-v3-linguica-safra",
+        sku: PRODUTO_LINGUICA_TOSCANA,
+        mercado: SAFRA,
+        price: 17.99,
+        fonte: FONTE.safraCartaz,
+        porKg: true,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_ABOBORA,
+    granel: true,
+    sementes: [
+      {
+        id: "demo-v3-abobora-safra",
+        sku: PRODUTO_ABOBORA,
+        mercado: SAFRA,
+        price: 2.79,
+        fonte: FONTE.safraTabloide,
+        porKg: true,
+      },
+      {
+        id: "demo-v3-abobora-savegnago",
+        sku: PRODUTO_ABOBORA,
+        mercado: SAVEGNAGO,
+        price: 2.95,
+        fonte: FONTE.savegnagoEncarte,
+        porKg: true,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_CHUCHU,
+    granel: true,
+    sementes: [
+      {
+        id: "demo-v3-chuchu-safra",
+        sku: PRODUTO_CHUCHU,
+        mercado: SAFRA,
+        price: 1.99,
+        fonte: FONTE.safraTabloide,
+        porKg: true,
+      },
+      {
+        id: "demo-v3-chuchu-savegnago",
+        sku: PRODUTO_CHUCHU,
+        mercado: SAVEGNAGO,
+        price: 2.95,
+        fonte: FONTE.savegnagoEncarte,
+        porKg: true,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_MELAO,
+    granel: true,
+    sementes: [
+      {
+        id: "demo-v3-melao-safra",
+        sku: PRODUTO_MELAO,
+        mercado: SAFRA,
+        price: 3.99,
+        fonte: FONTE.safraTabloide,
+        porKg: true,
+      },
+      {
+        id: "demo-v3-melao-savegnago",
+        sku: PRODUTO_MELAO,
+        mercado: SAVEGNAGO,
+        price: 4.98,
+        fonte: FONTE.savegnagoEncarte,
+        porKg: true,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_CORONA,
+    sementes: [
+      {
+        id: "demo-v3-corona-savegnago",
+        sku: PRODUTO_CORONA,
+        mercado: SAVEGNAGO,
+        price: 4.99,
+        fonte: FONTE.savegnagoEncarte,
+      },
+      {
+        id: "demo-v3-corona-atacadao",
+        sku: PRODUTO_CORONA,
+        mercado: ATACADAO,
+        price: 6.35,
+        fonte: FONTE.atacadaoDiaDosPais,
+        clube: { preco: 5.71, condicao: "cada, levando 10 latas" },
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_HEINEKEN,
+    sementes: [
+      {
+        id: "demo-v3-heineken-atacadao",
+        sku: PRODUTO_HEINEKEN,
+        mercado: ATACADAO,
+        price: 6.19,
+        fonte: FONTE.atacadaoDiaDosPais,
+      },
+      {
+        id: "demo-v3-heineken-savegnago",
+        sku: PRODUTO_HEINEKEN,
+        mercado: SAVEGNAGO,
+        price: 6.39,
+        fonte: FONTE.savegnagoEncarte,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_ORIGINAL,
+    basePorUnidade: "per_l",
+    sementes: [
+      {
+        id: "demo-v3-original-safra",
+        sku: SKU_ORIGINAL_LATA,
+        mercado: SAFRA,
+        price: 3.79,
+        fonte: FONTE.safraTabloide,
+        condicaoEspecial: "preço por lata, venda só no pack de 12",
+      },
+      {
+        id: "demo-v3-original-savegnago",
+        sku: SKU_ORIGINAL_PACK,
+        mercado: SAVEGNAGO,
+        price: 47.88,
+        fonte: FONTE.savegnagoEncarte,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_SEMPRE_LIVRE,
+    sementes: [
+      {
+        id: "demo-v3-semprelivre-savegnago",
+        sku: PRODUTO_SEMPRE_LIVRE,
+        mercado: SAVEGNAGO,
+        price: 29.95,
+        fonte: FONTE.savegnagoEncarte,
+      },
+      {
+        id: "demo-v3-semprelivre-paguemenos",
+        sku: PRODUTO_SEMPRE_LIVRE,
+        mercado: PAGUE_MENOS,
+        price: 34.99,
+        fonte: FONTE.pagueMenosEncarte,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_NIVEA,
+    sementes: [
+      {
+        id: "demo-v3-nivea-atacadao",
+        sku: PRODUTO_NIVEA,
+        mercado: ATACADAO,
+        price: 12.9,
+        fonte: FONTE.atacadaoEncarte,
+      },
+      {
+        id: "demo-v3-nivea-paguemenos",
+        sku: PRODUTO_NIVEA,
+        mercado: PAGUE_MENOS,
+        price: 14.99,
+        fonte: FONTE.pagueMenosEncarte,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_REXONA,
+    sementes: [
+      {
+        id: "demo-v3-rexona-safra",
+        sku: PRODUTO_REXONA,
+        mercado: SAFRA,
+        price: 14.99,
+        fonte: FONTE.safraTabloide,
+      },
+      {
+        id: "demo-v3-rexona-atacadao",
+        sku: PRODUTO_REXONA,
+        mercado: ATACADAO,
+        price: 18.9,
+        fonte: FONTE.atacadaoEncarte,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_SANOL_ODOR,
+    sementes: [
+      {
+        id: "demo-v3-sanolodor-atacadao",
+        sku: PRODUTO_SANOL_ODOR,
+        mercado: ATACADAO,
+        price: 11.9,
+        fonte: FONTE.atacadaoEncarte,
+      },
+      {
+        id: "demo-v3-sanolodor-paguemenos",
+        sku: PRODUTO_SANOL_ODOR,
+        mercado: PAGUE_MENOS,
+        price: 21.99,
+        fonte: FONTE.pagueMenosEncarte,
+      },
+    ],
+  },
+  {
+    produto: PRODUTO_PEDIGREE,
+    sementes: [
+      {
+        id: "demo-v3-pedigree-atacadao",
+        sku: PRODUTO_PEDIGREE,
+        mercado: ATACADAO,
+        price: 74.9,
+        fonte: FONTE.atacadaoEncarte,
+      },
+      {
+        id: "demo-v3-pedigree-paguemenos",
+        sku: PRODUTO_PEDIGREE,
+        mercado: PAGUE_MENOS,
+        price: 99.99,
+        fonte: FONTE.pagueMenosEncarte,
+      },
+    ],
+  },
 ];
 
 // =============================================================================
@@ -843,7 +1294,7 @@ function construirOferta(semente: SementeDeOferta): OfertaCardV2 {
     fonte_rotulo: semente.fonte.rotulo,
     observed_at: semente.fonte.observadoEm,
     valid_until: semente.fonte.validoAte,
-    special_condition: null,
+    special_condition: semente.condicaoEspecial ?? null,
     source_reference: semente.fonte.referencia,
     is_featured: true,
     is_active: true,

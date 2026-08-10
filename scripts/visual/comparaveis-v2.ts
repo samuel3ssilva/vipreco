@@ -29,16 +29,21 @@ const RECORTES = [
   { chave: "detalhe", x: 862, y: 200, w: 265, h: 700 },
 ] as const;
 
-const GRUPO_BUCHO = "33333333-3333-3333-3333-0000000000b2";
+const GRUPO_FRANGO = "33333333-3333-3333-3333-0000000000b1";
 const GRUPO_DREAMIES = "33333333-3333-3333-3333-0000000000bd";
 
 const TELAS = [
-  { chave: "home", titulo: "1 · Home / Achados", rota: "/", alvo: "home" },
-  { chave: "busca", titulo: "2 · Busca (frango)", rota: "/buscar?q=frango", alvo: "busca" },
+  { chave: "home", titulo: "1 · Home / Achados (herói: frango)", rota: "/", alvo: "home" },
   {
-    chave: "comparacao-mota",
-    titulo: "3a · Comparação — Bucho bovino (peso variável)",
-    rota: `/produto/${GRUPO_BUCHO}`,
+    chave: "busca",
+    titulo: "2 · Busca (cerveja — 3 comparáveis)",
+    rota: "/buscar?q=cerveja",
+    alvo: "busca",
+  },
+  {
+    chave: "comparacao-frango",
+    titulo: "3a · Comparação — Frango inteiro (peso variável, logos)",
+    rota: `/produto/${GRUPO_FRANGO}`,
     alvo: "comparacao",
   },
   {
@@ -49,12 +54,15 @@ const TELAS = [
   },
   {
     chave: "detalhe",
-    titulo: "4 · Detalhe — Bucho no Açougue Mota",
-    rota: `/produto/${GRUPO_BUCHO}/oferta/demo-v2-bucho-mota`,
+    titulo: "4 · Detalhe — Frango inteiro no Safra",
+    rota: `/produto/${GRUPO_FRANGO}/oferta/demo-v2-frango-safra`,
     alvo: "detalhe",
   },
   { chave: "whatsapp", titulo: "5 · WhatsApp / retenção", rota: "/whatsapp", alvo: null },
 ] as const;
+
+/** Fora da prancha, mas na evidência: o catálogo completo (V3 §3) na busca sem termo. */
+const TELA_CATALOGO = { chave: "catalogo", rota: "/buscar" } as const;
 
 const CSS = `
   * { box-sizing: border-box; }
@@ -85,9 +93,17 @@ const CSS = `
 `;
 
 /** As decisões de honestidade da demo v2 — na prancha, onde o Founder decide. */
+const NOTAS_V3 = [
+  "<b>Volume real (V3 §3).</b> 24 grupos comparáveis — TODOS os que a planilha classifica como Tipo 'Igual' com confiança Alta. Os dois 'Igual' que ficaram fora estão documentados: sachês Dog Chow e Friskies, gramatura do sachê não confirmada nos dois mercados (princípio 1). 'Similar' continua nunca entrando na comparação exata. A busca sem termo vira o catálogo completo, por categoria.",
+  "<b>Logos dos mercados (V3 §2).</b> Fornecidos pelo Founder, aplicados como identificação — tamanho uniforme, sempre ao lado do nome, selo de posição no canto do avatar, monograma para o Açougue Mota. Nenhuma posição vem do logo; a ordem continua sendo só o preço.",
+  "<b>Zero sobreposição (V3 §1).</b> O bug 'Pague Menos × R$ 149,75' foi corrigido na estrutura: a linha nome × preço quebra com o preço descendo alinhado à direita, e o QA mede colisão por retângulo de TEXTO em 320/360/390/430 — 44 combinações, zero overflow, zero colisão.",
+  "<b>Herói editorial (V3 §4).</b> Frango inteiro no lugar do bucho: universal, comparação real de 25% (R$ 7,99 × 9,99/kg), imagem clara. O bucho foi revisado (§5) e segue na vitrine com a foto correta, pelo Mota.",
+  "<b>Condição na linha.</b> 'Preço por lata, venda só no pack de 12' aparece na própria linha da comparação da Original — não só na ficha: sem ela o R$ 3,79 contaria uma história que o encarte não conta.",
+];
+
 const NOTAS_POLISH = [
   "<b>Snapshot histórico (§18 do polish).</b> Nenhuma data foi reancorada: os encartes venceram em 09 e 12/08 e as ofertas CONTINUAM na demo, com a validade em tempo verbal honesto — 'valeu até 09/08/2026' — e a nota única 'preços observados em agosto de 2026'. Vigência nunca é afirmada depois do vencimento; o caminho do piloto continua expirando pelo princípio 2.",
-  "<b>Imagens novas do Founder.</b> Bucho bovino trocado pela foto correta (prato) em todo o fluxo; bisteca bovina saiu do placeholder e entrou na Home. Elseve 200 ml e Sanol 7 un continuam com placeholder deliberado, fora de posição nobre.",
+  "<b>Imagens novas do Founder.</b> Bucho bovino trocado pela foto correta (prato) em todo o fluxo; bisteca bovina saiu do placeholder e entrou na Home. Elseve 200 ml, Sanol 7 un e a lata avulsa de Original continuam com placeholder deliberado, fora de posição nobre.",
   "<b>Diferença de preço (§12).</b> 'R$ 0,50 a menos que o 2º mercado em 500 g' — só em grupo de mesmo produto e mesma quantidade, aritmética determinística de centavos, acompanhando o seletor de peso. Nunca 'economize'.",
   "<b>Banner de ambiente virou pill (§16).</b> A mesma informação, sem competir com o conteúdo; noindex técnico intacto.",
 ];
@@ -187,6 +203,17 @@ async function principal(): Promise<void> {
       dobras.set(tela.chave, arquivoDobra);
     }
 
+    // 1b. o catálogo completo (V3 §3) — página inteira, fora da prancha.
+    {
+      const png = await capturarPagina(s, {
+        url: `${BASE}${TELA_CATALOGO.rota}`,
+        largura: 390,
+        movel: true,
+      });
+      writeFileSync(join(DESTINO, "catalogo-390.png"), png);
+      console.log("==> catalogo-390.png");
+    }
+
     const alvos = recortar();
 
     // 2. NORTH STAR | IMPLEMENTATION — Home, Busca, Comparação e Detalhe (§20).
@@ -211,10 +238,10 @@ async function principal(): Promise<void> {
     // 3. a prancha final — as seis telas e as notas de honestidade (§20, §23).
     const prancha = `<!doctype html><meta charset="utf-8"><style>${CSS}</style>
       <div class="prancha">
-        <h1>VIPREÇO — COMPARABLE PRODUCTS DEMO</h1>
-        <p class="sub">Demo v2 + Final Visual Polish (10/08/2026) · dados comparáveis reais da
-          planilha de 09/08/2026 · cinco mercados de Piracicaba e região · 390 px, primeira
-          dobra de cada tela.</p>
+        <h1>VIPREÇO — COMPARABLE PRODUCTS DEMO V3</h1>
+        <p class="sub">Demo V3 — Final Productization Pass (10/08/2026) · 24 grupos comparáveis
+          reais da planilha de 09/08/2026 · cinco mercados de Piracicaba e região, com logos ·
+          390 px, primeira dobra de cada tela.</p>
         <div class="fila">
           ${TELAS.map(
             (t) => `<div class="tela">
@@ -224,7 +251,7 @@ async function principal(): Promise<void> {
           ).join("")}
         </div>
         <div class="div"><h2>Como esta demo diz a verdade</h2><ul>
-          ${[...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
+          ${[...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
         </ul></div>
       </div>`;
     await folha(s, prancha, join(DESTINO, "comparable-products-demo-board.png"), 1700);
@@ -267,11 +294,11 @@ async function principal(): Promise<void> {
         ],
       },
       {
-        titulo: "ViPreço Final",
+        titulo: "ViPreço Final (V3)",
         itens: [
           "Package price protagonista; R$/kg·L·un secundário e derivado",
-          "Snapshot histórico honesto: 'valeu até', sem reancorar datas",
-          "Neutralidade intacta: nada pago, nada reordenado, distância nunca dita",
+          "Logos de mercado como identificação: avatar uniforme + selo de posição, monograma para quem não tem marca",
+          "24 comparáveis reais; snapshot histórico honesto; neutralidade intacta — nada pago, nada reordenado",
         ],
       },
     ];

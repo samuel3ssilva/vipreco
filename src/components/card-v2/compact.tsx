@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { MarketAvatar } from "@/components/MarketAvatar";
 import { VisuallyHidden } from "@/components/primitives";
 import { montarVisaoDoCard, type OfertaCardV2 } from "@/lib/card-v2";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -155,7 +156,12 @@ export function AchadoCompacto({
             desta composição a quebra caía sempre depois do separador: "Mercado local 2 ·" numa
             linha e "Jardim Novo" na outra. Um separador pendurado no fim da linha é ruído que
             ninguém escolheu — e como a quebra já acontecia, separar não custa altura nenhuma. */}
-        <p className="mt-0.5 text-sm leading-tight font-semibold">{visao.mercado.nome}</p>
+        {/* V3: o logo (ou monograma) entra do lado do nome — reconhecimento em lista é o
+            que o benchmark de varejo ensina, e o nome continua sendo a informação. */}
+        <p className="mt-0.5 flex items-center gap-1.5 text-sm leading-tight font-semibold">
+          <MarketAvatar market={oferta.market} tamanho="sm" />
+          <span className="min-w-0">{visao.mercado.nome}</span>
+        </p>
         {visao.mercado.bairro === null || visao.mercado.bairro.trim().length === 0 ? null : (
           <p className="text-muted-foreground text-xs leading-tight">{visao.mercado.bairro}</p>
         )}

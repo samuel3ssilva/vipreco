@@ -30,7 +30,9 @@ export function diferencaParaOSegundo(
     // Centavos inteiros: os dois lados já saíram arredondados de precoParaGramas.
     const centavos = Math.round(diferenca * 100);
     if (centavos <= 0) return null;
-    return `${formatPrice(centavos / 100)} a menos que o 2º mercado em ${rotuloDoPeso(opcoes.gramas)}`;
+    // NBSP entre número e unidade: "500 g" é UM dado, e a quebra de linha não pode deixar
+    // o "g" órfão na linha de baixo (visto a 390 px na comparação do frango).
+    return `${formatPrice(centavos / 100)} a menos que o 2º mercado em ${rotuloDoPeso(opcoes.gramas).replace(" ", " ")}`;
   }
 
   const centavos = Math.round((segunda.price - primeira.price) * 100);

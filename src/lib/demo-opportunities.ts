@@ -3,9 +3,12 @@ import {
   DEMO_MARKETS,
   PRODUTO_BISTECA,
   PRODUTO_BUCHO,
+  PRODUTO_CEBOLA,
+  PRODUTO_CORONA,
   PRODUTO_DREAMIES,
-  PRODUTO_FAROFA_YOKI,
+  PRODUTO_FRANGO_INTEIRO,
   PRODUTO_LASANHA_SADIA,
+  PRODUTO_NIVEA,
   PRODUTO_OLEO_LIZA,
   PRODUTO_TIXAN,
   construirOfertasDemo,
@@ -21,40 +24,53 @@ import type { OfertaCardV2 } from "@/lib/card-v2";
  * Os Achados da Home — o herói e a vitrine, escolhidos do catálogo único da demonstração.
  *
  * =============================================================================
- * A ORDEM É A DO MANDATO §9, E ELA É CURADORIA DECLARADA
+ * A ORDEM É CURADORIA DECLARADA, E O HERÓI DA V3 É O FRANGO INTEIRO
  * =============================================================================
  *
- * O card principal é o **Bucho bovino do Açougue Mota** e a vitrine traz seis dos doze
- * grupos — Bisteca, Óleo Liza, Lasanha Sadia, Dreamies, Tixan e Farofa Yoki. Foi o Founder
- * quem escolheu, e a escolha está ESCRITA AQUI, à vista, como toda curadoria precisa estar:
- * os Achados são a seção de descoberta — rotulada, separada —, e curadoria nela não toca a
- * comparação orgânica, que continua ordenada só por preço (`CLAUDE.md`, princípio 4).
+ * A decisão editorial do herói (mandato V3 §4) foi julgada por quatro critérios, e o
+ * frango inteiro venceu em três:
+ *
+ * - **universalidade** — é a proteína mais comum da mesa; bucho é corte de nicho e
+ *   bisteca a R$ 39,90/kg é compra de ocasião;
+ * - **a comparação tem história** — R$ 7,99 × R$ 9,99 por kg é uma diferença de 25%,
+ *   visível e honesta; a da bisteca é de nove centavos, e herói com comparação irrisória
+ *   ensina que comparar não vale a pena;
+ * - **imagem** — a foto do frango (IA do Founder) é clara a 96 px;
+ * - **representa o produto** — peso variável + seletor de quantidade é o caso que mais
+ *   diferencia o ViPreço de uma lista de encarte.
+ *
+ * O bucho foi revisado (§5) e CONTINUA na vitrine com a foto correta — só não abre mais a
+ * primeira impressão. A vitrine cobre 8 das 9 categorias do catálogo, porque "sensação de
+ * catálogo" é o §6 pedindo variedade, não repetição de açougue.
  *
  * **O que a curadoria não pode fazer**: escolher QUAL mercado representa cada grupo. O
  * card de cada Achado mostra a oferta vencedora PELO CRITÉRIO DO GRUPO — menor preço de
- * prateleira na embalagem igual, melhor custo unitário nas embalagens diferentes. O bucho
- * abre a Home mostrando o Mota porque o Mota é o mais barato do grupo, e há teste para o
- * dia em que deixar de ser.
+ * prateleira na embalagem igual, melhor custo unitário nas embalagens diferentes. O frango
+ * abre a Home mostrando o Safra porque o Safra tem o menor R$/kg do grupo, e há teste para
+ * o dia em que deixar de ser.
  *
- * NÃO são os doze na Home (§9, "Não colocar os 12 na Home"): vitrine é convite, não
- * inventário. Os outros seis continuam alcançáveis pela busca.
+ * NÃO são os 24 na Home: vitrine é convite, não inventário. O catálogo completo vive em
+ * /buscar, que a Home aponta logo abaixo da vitrine.
  */
 export { DEMO_FIXTURE_REFERENCE, DEMO_MARKETS };
 
 export type DemoOpportunity = OfertaCardV2;
 
-/** Quantos Achados a Home pede à fonte — o herói mais seis. */
-export const HOME_OPPORTUNITY_COUNT = 7;
+/** Quantos Achados a Home pede à fonte — o herói mais nove. */
+export const HOME_OPPORTUNITY_COUNT = 10;
 
-/** Os grupos da Home, na ordem do §9 do mandato: herói primeiro. */
+/** Os grupos da Home, em ordem editorial: herói primeiro, categorias variadas depois. */
 const GRUPOS_DA_HOME = [
-  PRODUTO_BUCHO,
+  PRODUTO_FRANGO_INTEIRO,
   PRODUTO_BISTECA,
-  PRODUTO_OLEO_LIZA,
+  PRODUTO_BUCHO,
+  PRODUTO_CEBOLA,
+  PRODUTO_CORONA,
   PRODUTO_LASANHA_SADIA,
+  PRODUTO_OLEO_LIZA,
+  PRODUTO_NIVEA,
   PRODUTO_DREAMIES,
   PRODUTO_TIXAN,
-  PRODUTO_FAROFA_YOKI,
 ] as const;
 
 /**

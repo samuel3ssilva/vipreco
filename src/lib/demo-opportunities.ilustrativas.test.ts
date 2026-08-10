@@ -83,12 +83,17 @@ describe("as duas origens de imagem, e a linha entre elas", () => {
   });
 
   it("os SKUs deliberadamente sem imagem continuam sem imagem — placeholder, nunca aproximação", () => {
-    // Elseve 200 ml e Sanol 7 unidades (só existe foto de tabloide impresso, sem qualidade
-    // de recorte). Alguém "completar" um deles com a imagem de outro tamanho seria
-    // exatamente a aproximação que o princípio 11 proíbe. A bisteca saiu desta lista em
-    // 10/08/2026, quando o Founder forneceu a imagem correta do corte.
-    const semImagem = ofertas.filter((o) => o.image == null).map((o) => o.product.size_text);
-    expect(new Set(semImagem)).toEqual(new Set(["200 ml", "7 unidades"]));
+    // Elseve 200 ml, Sanol 7 unidades e a lata avulsa de Original do Safra (só existe foto
+    // de tabloide impresso, sem qualidade de recorte). Alguém "completar" um deles com a
+    // imagem de outro tamanho — a lata com a foto do pack, por exemplo — seria exatamente a
+    // aproximação que o princípio 11 proíbe. A bisteca saiu desta lista em 10/08/2026,
+    // quando o Founder forneceu a imagem correta do corte.
+    const semImagem = ofertas
+      .filter((o) => o.image == null)
+      .map((o) => `${o.product.brand ?? ""} ${o.product.size_text ?? ""}`.trim());
+    expect(new Set(semImagem)).toEqual(
+      new Set(["Elseve 200 ml", "Sanol Dog 7 unidades", "Original lata 350 ml"]),
+    );
   });
 });
 

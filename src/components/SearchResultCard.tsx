@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Store } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { MarketAvatar } from "@/components/MarketAvatar";
 import { ProductImage } from "@/components/card-v2/identity";
 import { isDemoMode } from "@/lib/app-mode";
 import { montarVisaoDoCard } from "@/lib/card-v2";
@@ -94,9 +95,11 @@ export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: 
                 ) : null}
                 <span className="sr-only">{visao.preco.falado}</span>
 
-                <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug">
-                  <Store aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                  <span>
+                {/* V3: avatar do mercado no lugar do ícone genérico — mesmo papel, mais
+                    reconhecimento, nome sempre por extenso ao lado. */}
+                <p className="text-muted-foreground mt-1.5 flex items-center gap-1.5 text-[0.8125rem] leading-snug">
+                  <MarketAvatar market={melhor.market} tamanho="sm" />
+                  <span className="min-w-0">
                     {melhor.market.name}
                     {melhor.market.neighborhood ? ` · ${melhor.market.neighborhood}` : ""}
                   </span>

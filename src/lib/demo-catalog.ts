@@ -632,19 +632,22 @@ export const DEMO_PRODUCTS: readonly Product[] = [
 // IMAGENS — corretas ou ausentes, nunca aproximadas (§10)
 // =============================================================================
 //
-// Duas origens, as duas autorizadas pelo mandato:
+// Três origens, as três autorizadas por mandato:
 //
 // - **IA fornecida pelo Founder** para os itens de balcão (frango, bucho, cebola) —
 //   ilustrativas, com `alt` que diz as duas coisas que quem usa leitor de tela não tem
 //   como conferir: que a imagem é ilustrativa e que foi gerada por IA;
 // - **recorte do encarte/tabloide fornecido** para produtos de marca — a arte da própria
 //   embalagem, publicada pelo mercado, recortada limpa. Nenhuma embalagem foi gerada ou
-//   imitada, e nenhuma imagem foi baixada da internet.
+//   imitada, e nenhuma imagem foi baixada da internet;
+// - **foto de produto fornecida pelo Founder** (V4.1) para os três SKUs que o material de
+//   encarte não cobria com qualidade: Elseve 200 ml, Sanol 7 unidades e a lata avulsa de
+//   Original. Fotografia da embalagem real comercializada, entregue como asset da missão —
+//   nada gerado, nada imitado, nada baixado por conta própria.
 //
-// Três SKUs ficam SEM imagem de propósito: Elseve 200 ml, Sanol 7 unidades e a lata avulsa
-// de Original do Safra (o único material fornecido é foto de tabloide impresso, sem
-// qualidade para recorte limpo). Placeholder — porque imagem errada é pior que imagem
-// nenhuma. Nenhum deles ocupa posição nobre.
+// Com isso os 28 SKUs têm imagem legítima e nenhuma oferta desenha placeholder. O
+// placeholder continua existindo — e continua sendo a regra — para o produto-GRUPO das
+// comparações de embalagens diferentes (ver o comentário no fim do mapa).
 
 function ilustracaoIA(arquivo: string, corte: string): ImagemDeProduto {
   return {
@@ -661,6 +664,17 @@ function recorteDeEncarte(arquivo: string, descricao: string): ImagemDeProduto {
   return {
     src: `/img/demo/comparaveis/${arquivo}`,
     alt: `${descricao} — imagem do encarte do mercado`,
+    review_status: "approved",
+    variant_match: "exact",
+    formato: "foto",
+  };
+}
+
+/** Fotografia da embalagem real, fornecida como asset pelo Founder (V4.1 §A). */
+function fotoDeProduto(arquivo: string, descricao: string): ImagemDeProduto {
+  return {
+    src: `/img/demo/comparaveis/${arquivo}`,
+    alt: `${descricao} — foto do produto`,
     review_status: "approved",
     variant_match: "exact",
     formato: "foto",
@@ -687,6 +701,10 @@ const IMAGEM_POR_PRODUTO: Readonly<Record<string, ImagemDeProduto>> = {
   ),
   [PRODUTO_TIXAN.id]: recorteDeEncarte("tixan.jpg", "Caixa de lava-roupas em pó Tixan Ypê 2,2 kg"),
   [SKU_ELSEVE_400.id]: recorteDeEncarte("elseve-400.jpg", "Frasco de shampoo Elseve 400 ml"),
+  [SKU_ELSEVE_200.id]: fotoDeProduto(
+    "elseve-200.jpg",
+    "Frasco de shampoo Elseve Collagen Lifter 200 ml",
+  ),
   [SKU_DREAMIES_80.id]: recorteDeEncarte(
     "dreamies-80.jpg",
     "Pacotes de petisco Dreamies 80 g para gatos",
@@ -698,6 +716,10 @@ const IMAGEM_POR_PRODUTO: Readonly<Record<string, ImagemDeProduto>> = {
   [SKU_SANOL_30.id]: recorteDeEncarte(
     "sanol-30.jpg",
     "Pacotes de tapete higiênico Sanol Dog com 30 unidades",
+  ),
+  [SKU_SANOL_7.id]: fotoDeProduto(
+    "sanol-7.jpg",
+    "Pacote de tapete higiênico Sanol Dog com 7 unidades",
   ),
   [PRODUTO_LINGUICA_TOSCANA.id]: recorteDeEncarte(
     "linguica-toscana.jpg",
@@ -714,6 +736,10 @@ const IMAGEM_POR_PRODUTO: Readonly<Record<string, ImagemDeProduto>> = {
   [SKU_ORIGINAL_PACK.id]: recorteDeEncarte(
     "original-pack.jpg",
     "Pack de 12 latas de cerveja Original 350 ml",
+  ),
+  [SKU_ORIGINAL_LATA.id]: fotoDeProduto(
+    "original-lata.jpg",
+    "Lata de cerveja Antarctica Original 350 ml",
   ),
   [PRODUTO_SEMPRE_LIVRE.id]: recorteDeEncarte(
     "sempre-livre.jpg",

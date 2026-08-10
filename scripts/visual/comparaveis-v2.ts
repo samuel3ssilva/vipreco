@@ -59,6 +59,25 @@ const TELAS = [
     alvo: "detalhe",
   },
   { chave: "whatsapp", titulo: "5 · WhatsApp / retenção", rota: "/whatsapp", alvo: null },
+  // V4.1 §I — os três contextos que ganharam a foto real fornecida pelo Founder.
+  {
+    chave: "comparacao-elseve",
+    titulo: "6 · Comparação — Elseve (foto real do 200 ml)",
+    rota: "/produto/33333333-3333-3333-3333-0000000000ba",
+    alvo: null,
+  },
+  {
+    chave: "comparacao-sanol",
+    titulo: "7 · Comparação — Sanol Dog (foto real do 7 un)",
+    rota: "/produto/33333333-3333-3333-3333-0000000000c0",
+    alvo: null,
+  },
+  {
+    chave: "ficha-original",
+    titulo: "8 · Ficha — Original lata 350 ml (foto real)",
+    rota: "/produto/33333333-3333-3333-3333-0000000000ce/oferta/demo-v3-original-safra",
+    alvo: null,
+  },
 ] as const;
 
 /** Fora da prancha, mas na evidência: o catálogo completo (V3 §3) na busca sem termo. */
@@ -100,6 +119,13 @@ const CSS = `
   .tela p { margin:0; font-size:12.5px; font-weight:700; text-align:center; }
 `;
 
+/** O que a V4.1 mudou — App-First Polish + Real Product Assets (10/08/2026). */
+const NOTAS_V41 = [
+  "<b>28/28 SKUs com imagem legítima (V4.1 §A).</b> Os três últimos placeholders saíram: Elseve Collagen Lifter 200 ml, Sanol Dog 7 unidades e a lata avulsa de Original receberam a FOTO REAL da embalagem fornecida pelo Founder — nada gerado, nada aproximado. Recorte pelo produto, fundo próprio, respiro uniforme, mesmo frame dos demais.",
+  "<b>Recorte da Corona limpo (V4.1 §E-1).</b> O resto de texto do encarte ('KŞ') que aparecia sobre o recorte foi removido e a lata foi recentrada — mesma arte, mesma origem, zero mudança de dado.",
+  "<b>QA no app real.</b> 56 combinações (14 rotas × 320/360/390/430), zero overflow e zero colisão — incluindo as três comparações e a ficha que ganharam as fotos novas.",
+];
+
 /** O que a V4 mudou — Final Visual Simplification & Premium Polish (10/08/2026). */
 const NOTAS_V4 = [
   "<b>Peso variável correto (V4 §4).</b> O número grande passou a ser o R$/kg OBSERVADO ('R$ 7,99/kg'), com a conta da quantidade escolhida como SIMULAÇÃO nomeada e secundária ('500 g ≈ R$ 4,00', seletor rotulado 'Simulação de quantidade'). 'R$ 4,00 · aprox. 500 g' grande podia ser lido como 'um frango inteiro pesa 500 g' — leitura que a V4 elimina.",
@@ -120,7 +146,7 @@ const NOTAS_V3 = [
 
 const NOTAS_POLISH = [
   "<b>Snapshot histórico (§18 do polish).</b> Nenhuma data foi reancorada: os encartes venceram em 09 e 12/08 e as ofertas CONTINUAM na demo, com a validade em tempo verbal honesto — 'valeu até 09/08/2026' — e a nota única 'preços observados em agosto de 2026'. Vigência nunca é afirmada depois do vencimento; o caminho do piloto continua expirando pelo princípio 2.",
-  "<b>Imagens novas do Founder.</b> Bucho bovino trocado pela foto correta (prato) em todo o fluxo; bisteca bovina saiu do placeholder e entrou na Home. Elseve 200 ml, Sanol 7 un e a lata avulsa de Original continuam com placeholder deliberado, fora de posição nobre.",
+  "<b>Imagens novas do Founder.</b> Bucho bovino trocado pela foto correta (prato) em todo o fluxo; bisteca bovina saiu do placeholder e entrou na Home. Elseve 200 ml, Sanol 7 un e a lata avulsa de Original seguraram placeholder deliberado até a V4.1, quando receberam a foto real fornecida.",
   "<b>Diferença de preço (§12).</b> 'R$ 0,50 a menos que o 2º mercado em 500 g' — só em grupo de mesmo produto e mesma quantidade, aritmética determinística de centavos, acompanhando o seletor de peso. Nunca 'economize'.",
   "<b>Banner de ambiente virou pill (§16).</b> A mesma informação, sem competir com o conteúdo; noindex técnico intacto.",
 ];
@@ -130,7 +156,7 @@ const NOTAS = [
   "<b>O número grande é o que a placa diz (§0, corrigido pela V4 §4).</b> No embalado, o preço da embalagem, com o normalizado menor logo abaixo. No peso variável, o R$/kg observado com a unidade colada no número — e a conta de 250 g / 500 g / 1 kg como simulação nomeada, nunca no lugar do observado.",
   "<b>Embalagens diferentes comparam por custo unitário (§5, §6, §7).</b> Dreamies, Elseve e Sanol ordenam pelo normalizado, com o selo 'Melhor custo/kg·L·un' e a gramatura de cada SKU na linha. 'Mais barato' sem denominador não aparece em tela nenhuma.",
   "<b>Preço de clube separado (§8).</b> Cartão Savegnago e 'levando 3' aparecem ao lado do preço cheio, com a condição — nunca no lugar dele, e nunca reordenando a lista.",
-  "<b>Imagens: IA só nos cortes sem marca; produto de marca é recorte do encarte do próprio mercado (§10).</b> Elseve 200 ml e Sanol 7 un ficam com placeholder: não há material com qualidade de recorte, e imagem errada é pior que nenhuma.",
+  "<b>Imagens: IA só nos cortes sem marca; produto de marca é recorte do encarte ou foto real fornecida (§10, V4.1 §A).</b> Nenhuma embalagem foi gerada nem imitada — enquanto não havia material com qualidade, o SKU ficou com placeholder, porque imagem errada é pior que nenhuma.",
   "<b>Datas e validades reais (§15).</b> Encartes valeram até 09/08 ou 12/08/2026 — as datas são as reais e nenhuma foi reancorada; o que a demo faz com o vencimento está na nota de snapshot acima.",
   "<b>Localização só onde é validada (§16).</b> Mota é de Artemis; Safra é loja única com endereço da planilha; Savegnago, Atacadão e Pague Menos são preços de rede/tabloide regional e não afirmam bairro. Nenhuma distância é dita.",
 ];
@@ -264,10 +290,10 @@ async function principal(): Promise<void> {
     // 3. a prancha final — as seis telas e as notas de honestidade (§20, §23).
     const prancha = `<!doctype html><meta charset="utf-8"><style>${CSS}</style>
       <div class="prancha">
-        <h1>VIPREÇO — DEMO V4 · FINAL VISUAL SIMPLIFICATION &amp; PREMIUM POLISH</h1>
-        <p class="sub">Demo V4 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados da V3
-          — nada de dado mudou; o que mudou é hierarquia, densidade e acabamento ·
-          390 px, primeira dobra de cada tela.</p>
+        <h1>VIPREÇO — DEMO V4.1 · APP-FIRST POLISH + REAL PRODUCT ASSETS</h1>
+        <p class="sub">Demo V4.1 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados
+          — nada de dado mudou; a V4.1 fecha a cobertura de imagem: 28/28 SKUs com asset
+          legítimo, zero placeholders · 390 px, primeira dobra de cada tela.</p>
         <div class="fila">
           ${TELAS.map(
             (t) => `<div class="tela">
@@ -277,7 +303,7 @@ async function principal(): Promise<void> {
           ).join("")}
         </div>
         <div class="div"><h2>Como esta demo diz a verdade</h2><ul>
-          ${[...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
+          ${[...NOTAS_V41, ...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
         </ul></div>
       </div>`;
     await folha(s, prancha, join(DESTINO, "comparable-products-demo-board.png"), 1700);

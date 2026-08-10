@@ -1,11 +1,12 @@
-# Demo V4 — Final Visual Simplification & Premium Polish — evidência visual
+# Demo V4.1 — App-First Polish + Real Product Assets — evidência visual
 
 Capturas a 390 px CSS (`deviceScaleFactor: 2`, PNG de 780 px) contra o servidor de
 desenvolvimento na branch `feat/demo-comparaveis-v2`, geradas por
 `scripts/visual/comparaveis-v2.ts`. Fonte da verdade dos dados: a planilha
-`Comparativo_Precos_Supermercados_09-08-2026.xlsx` do Founder. **A V4 não mudou um dado
-sequer** — mesmos 24 grupos, 49 ofertas, 5 mercados, preços, fontes e datas da V3; o que
-mudou é hierarquia, densidade e acabamento.
+`Comparativo_Precos_Supermercados_09-08-2026.xlsx` do Founder. **Nem a V4 nem a V4.1
+mudaram um dado sequer** — mesmos 24 grupos, 49 ofertas, 5 mercados, preços, fontes e
+datas da V3. A V4 mudou hierarquia, densidade e acabamento; a V4.1 fechou a cobertura de
+imagem (28/28 SKUs, zero placeholders) com as três fotos reais fornecidas pelo Founder.
 
 | Arquivo                              | O quê                                                            |
 | ------------------------------------ | ---------------------------------------------------------------- |
@@ -16,6 +17,9 @@ mudou é hierarquia, densidade e acabamento.
 | `comparacao-dreamies-390.png`        | 6 · Golden flow B — Dreamies, embalagens diferentes              |
 | `detalhe-390.png`                    | 7 · Detalhe — Frango inteiro no Safra                            |
 | `whatsapp-390.png`                   | 8 · WhatsApp / retenção                                          |
+| `comparacao-elseve-390.png`          | V4.1 · Elseve — a foto real do 200 ml na comparação              |
+| `comparacao-sanol-390.png`           | V4.1 · Sanol Dog — a foto real do 7 un na comparação             |
+| `ficha-original-390.png`             | V4.1 · Ficha da Original lata 350 ml com a foto real             |
 | `v3-v4-compare-board.png`            | 9 · V3 \| V4 — primeira dobra de 5 telas, antes e depois         |
 | `north-star-*-compare.png`           | 10 · NORTH STAR \| IMPLEMENTATION (Home, Busca, Comparação, Detalhe) |
 | `comparable-products-demo-board.png` | A prancha final V4, com as notas de honestidade                  |
@@ -51,17 +55,22 @@ mudou é hierarquia, densidade e acabamento.
 - **Frame único de imagem (§15)** — todo recorte/foto/placeholder compartilha raio, borda
   sutil e superfície; o placeholder usa o mesmo frame (§14) e segue fora de posição nobre.
 
-## Image coverage report (§33) — 24 grupos, 28 SKUs
+## Image coverage report (V4.1) — 24 grupos, 28 SKUs, **28/28 com asset legítimo**
 
 | Status | Qtde | Itens |
 | ------ | ---- | ----- |
 | **A** — imagem boa, IA fornecida pelo Founder (balcão sem marca, `alt` declara ilustração) | 4 | Frango inteiro, Bucho, Bisteca, Cebola |
 | **A** — imagem boa, recorte do encarte/tabloide publicado pelo próprio mercado | 21 | Liza 900 ml, Farofa Yoki, Dolce Gusto, Lasanha Sadia, Tixan, Elseve 400 ml, Dreamies 80 g, Dreamies 40 g, Sanol 30 un, Linguiça toscana, Abóbora, Chuchu, Melão, Corona, Heineken, Original pack 12, Sempre Livre, Nivea, Rexona, Sanol eliminador 2 L, Pedigree 10,1 kg |
-| **C** — placeholder deliberado (produto DE MARCA sem asset confiável; §13 proíbe gerar embalagem de marca) | 3 | Elseve 200 ml, Sanol 7 un, Original lata avulsa (Safra) |
+| **A** — foto real da embalagem fornecida pelo Founder (V4.1 §A; `alt` "— foto do produto") | 3 | Elseve Collagen Lifter 200 ml, Sanol Dog 7 un, Original lata 350 ml (Safra) |
 
-Nenhum B (precisa crop), D (ruim) ou E (incorreta) restante: os crops problemáticos da V3
-(Dreamies 40/80, linguiça, heineken, hortifruti) já haviam sido recortados de novo. Os 3
-placeholders não ocupam hero, vitrine da Home nem primeira posição de comparação.
+**Zero placeholders de produto.** Os três SKUs que seguravam placeholder deliberado desde a
+V2 receberam na V4.1 a fotografia da embalagem real — recortada pelo produto, centrada num
+quadrado com o próprio fundo (#f9f9f9) e ~8% de respiro, no mesmo frame dos demais. Nada
+foi gerado por IA, nada foi aproximado, nada foi baixado por conta própria. Na mesma rodada
+o recorte da Corona perdeu o resto de texto do encarte ("KŞ") e foi recentrado — mesma
+arte, mesma origem. O placeholder continua existindo apenas para o produto-GRUPO das
+comparações de embalagens diferentes (um grupo não tem uma embalagem), e nunca em posição
+nobre — no catálogo e na busca o card do grupo herda a foto da oferta mais barata.
 
 ## A hierarquia do §2, medida nas telas
 

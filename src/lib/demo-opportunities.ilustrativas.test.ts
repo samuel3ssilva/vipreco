@@ -53,16 +53,24 @@ describe("as duas origens de imagem, e a linha entre elas", () => {
     }
   });
 
-  it("a imagem de produto de marca declara que veio do encarte do mercado", () => {
-    // Não é foto nossa, não é estúdio nosso: é a arte que o mercado publicou. Dizer a
-    // origem é o que separa "usamos o material da loja" de "fabricamos uma embalagem".
+  it("a imagem de produto de marca declara a origem: encarte do mercado ou foto do produto", () => {
+    // Não é arte nossa, não é estúdio nosso: ou é a arte que o mercado publicou, ou é a
+    // fotografia da embalagem real fornecida como asset (V4.1 §A). Dizer a origem é o que
+    // separa "usamos material legítimo" de "fabricamos uma embalagem".
     let recortes = 0;
+    let fotos = 0;
     for (const oferta of ofertas) {
       if (oferta.image == null || oferta.image.ilustrativa === true) continue;
-      recortes += 1;
-      expect(oferta.image.alt, oferta.id).toContain("encarte do mercado");
+      if (oferta.image.alt.includes("encarte do mercado")) {
+        recortes += 1;
+      } else {
+        expect(oferta.image.alt, oferta.id).toContain("foto do produto");
+        fotos += 1;
+      }
     }
     expect(recortes).toBeGreaterThan(0);
+    // As três fotos fornecidas na V4.1: Elseve 200 ml, Sanol 7 unidades, Original lata.
+    expect(fotos).toBe(3);
   });
 
   it("toda oferta com imagem ilustrativa é `is_demo`, nas três entidades", () => {
@@ -82,18 +90,17 @@ describe("as duas origens de imagem, e a linha entre elas", () => {
     }
   });
 
-  it("os SKUs deliberadamente sem imagem continuam sem imagem — placeholder, nunca aproximação", () => {
-    // Elseve 200 ml, Sanol 7 unidades e a lata avulsa de Original do Safra (só existe foto
-    // de tabloide impresso, sem qualidade de recorte). Alguém "completar" um deles com a
-    // imagem de outro tamanho — a lata com a foto do pack, por exemplo — seria exatamente a
-    // aproximação que o princípio 11 proíbe. A bisteca saiu desta lista em 10/08/2026,
-    // quando o Founder forneceu a imagem correta do corte.
+  it("nenhuma oferta fica sem imagem — 28/28 SKUs com asset legítimo (V4.1)", () => {
+    // A lista de placeholders deliberados chegou a zero em 10/08/2026, quando o Founder
+    // forneceu as fotos dos três últimos SKUs (Elseve 200 ml, Sanol 7 unidades, Original
+    // lata). O teste continua sendo a mesma guarda de sempre, no estado final: se um SKU
+    // novo entrar sem asset, ele DEVE aparecer aqui como decisão consciente — nunca ser
+    // "completado" com a imagem de outro tamanho, que é a aproximação que o princípio 11
+    // proíbe.
     const semImagem = ofertas
       .filter((o) => o.image == null)
       .map((o) => `${o.product.brand ?? ""} ${o.product.size_text ?? ""}`.trim());
-    expect(new Set(semImagem)).toEqual(
-      new Set(["Elseve 200 ml", "Sanol Dog 7 unidades", "Original lata 350 ml"]),
-    );
+    expect(new Set(semImagem)).toEqual(new Set());
   });
 });
 

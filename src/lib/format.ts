@@ -72,6 +72,23 @@ export function formatDate(value: string | Date): string {
 }
 
 /**
+ * Data curta — "09/08", sem o ano — para as LINHAS de lista (V4 §9/§22).
+ *
+ * A forma completa continua em `formatDate` e continua sendo a da ficha, onde se decide.
+ * Numa linha de comparação o ano repetido em cada item é ruído: todos os preços da
+ * demonstração (e do piloto) são do ciclo corrente, e a ficha, a um toque, tem a data
+ * inteira. Mesmo fuso fixado, pelo mesmo motivo de `formatDate`.
+ */
+export function formatDiaMes(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
+/**
  * O dia CIVIL do instante, no fuso do piloto, como número de dias desde a época.
  *
  * É o que permite comparar "que dia era" em vez de "quantas horas se passaram". A conta por

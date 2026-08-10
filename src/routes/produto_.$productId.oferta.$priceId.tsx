@@ -143,18 +143,30 @@ function OfferPage() {
               <p className="text-muted-foreground mt-1 text-sm">{detalhes}</p>
             ) : null}
 
+            {/* V4 §4/§11 — no peso variável o número grande é o R$/kg observado, com a
+                unidade colada; a simulação vem abaixo, menor. No embalado, o preço da
+                embalagem com o normalizado abaixo, como sempre. */}
+            {/* Escala por faixa: a coluna divide a largura com a imagem `ficha`, e com o
+                sufixo "/kg" o teto de cada faixa mudou — 2rem é o que cabe a 320 px
+                ("R$ 39,90/kg", pior caso), medido pelo QA de larguras. */}
             <p
               aria-hidden="true"
-              className="font-display text-primary mt-3 text-[2.5rem] leading-none font-extrabold tabular-nums min-[430px]:text-[2.75rem]"
+              className="font-display text-primary mt-3 text-[2rem] leading-none font-extrabold tabular-nums min-[360px]:text-[2.25rem] min-[390px]:text-[2.5rem] min-[430px]:text-[2.75rem]"
             >
               <span className="text-[60%] font-bold">R$</span>
               <span className="ml-1">{visao.preco.numero}</span>
+              {visao.preco.quantidade !== null ? (
+                <span className="text-muted-foreground ml-0.5 text-[45%] font-bold">
+                  {visao.preco.quantidade}
+                </span>
+              ) : null}
             </p>
-            {/* "aprox. 500 g" logo sob o número — a quantidade a que ele se refere —, e o
-                normalizado abaixo, menor: primeiro quanto se paga, depois como se compara. */}
-            {visao.preco.quantidade !== null ? (
-              <p aria-hidden="true" className="text-muted-foreground mt-1 text-sm font-semibold">
-                {visao.preco.quantidade}
+            {visao.simulacao !== null ? (
+              <p
+                aria-hidden="true"
+                className="text-muted-foreground mt-1 text-sm font-semibold tabular-nums"
+              >
+                {visao.simulacao}
               </p>
             ) : null}
             {visao.unitario !== null ? (
@@ -181,9 +193,11 @@ function OfferPage() {
 
         {granel ? (
           <div className="space-y-1.5">
+            {/* V4 §4 — o seletor é SIMULAÇÃO de quantidade, nomeada, nunca embalagem. */}
+            <p className="eyebrow">Simulação de quantidade</p>
             <PesoSelector gramas={gramas} onChange={setGramas} />
             <p className="text-muted-foreground text-xs">
-              Preço calculado para {rotuloDoPeso(gramas)} — a balança define o valor final.
+              Estimativa para {rotuloDoPeso(gramas)}. O valor final depende do peso.
             </p>
           </div>
         ) : null}

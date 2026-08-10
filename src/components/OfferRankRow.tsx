@@ -8,12 +8,11 @@ import { ProductImage } from "@/components/card-v2/identity";
 import { isDemoMode } from "@/lib/app-mode";
 import { montarVisaoDoCard } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
-import { formatDate, formatPrice } from "@/lib/format";
+import { formatDate, formatDiaMes, formatPrice } from "@/lib/format";
 import type { UnitPriceBasis } from "@/lib/unit-price";
 
 /**
- * Uma linha da comparação — Tela 3 do North Star, agora com as DUAS histórias do
- * mandato v2 (§13).
+ * Uma linha da comparação — Tela 3 do North Star, simplificada pela V4 §9.
  *
  * =============================================================================
  * A POSIÇÃO É CONSEQUÊNCIA, NUNCA CURADORIA
@@ -22,22 +21,30 @@ import type { UnitPriceBasis } from "@/lib/unit-price";
  * O número 1, 2, 3 vem da ordenação, e de mais nada — por isso é `aria-hidden` e a posição
  * é dita em texto para quem usa leitor de tela. **Nada reordena esta lista**: não há
  * destaque pago, não há parceiro, e o preço de clube não sobe ninguém de posição — a ordem
- * é pelo preço cheio de prateleira (`CLAUDE.md`, princípio 4). O Açougue Mota abre a
- * comparação do bucho porque tem o menor R$/kg, e não porque é a loja da demonstração.
+ * é pelo preço cheio de prateleira (`CLAUDE.md`, princípio 4). A V4 §8 tirou o número do
+ * canto do AVATAR: ranking não é parte da marca de nenhum mercado, então ele mora numa
+ * coluna própria, antes do logo — `1 [logo] Safra`.
+ *
+ * =============================================================================
+ * TRÊS CAMADAS DE INFORMAÇÃO, EM TRÊS PESOS (V4 §9)
+ * =============================================================================
+ *
+ * Primária: mercado, preço (R$/kg no granel — V4 §4), quantidade, normalizado.
+ * Secundária: a simulação e a diferença para o 2º.
+ * Terciária: fonte e data, numa linha curta ("Cartaz na loja · 09/08") — a forma longa,
+ * com relativo e ano, continua na ficha da oferta, que é onde se decide.
  *
  * =============================================================================
  * EMBALAGEM IGUAL × EMBALAGENS DIFERENTES (§5)
  * =============================================================================
  *
  * **Embalagem igual** (e granel, onde o kg é o mesmo denominador): a linha é mercado →
- * preço, e o primeiro é o menor desembolso E o melhor custo ao mesmo tempo — não há
- * ambiguidade a desfazer.
+ * preço, e o primeiro é o menor desembolso E o melhor custo ao mesmo tempo.
  *
  * **Embalagens diferentes**: cada linha carrega o PRÓPRIO SKU — imagem, gramatura — e a
  * ordem é por custo unitário. O desembolso continua sendo o número grande; o custo/kg fica
  * logo abaixo; e o primeiro ganha o selo "Melhor custo/kg", nunca "mais barato" — porque
  * R$ 5,95 por 40 g É o menor desembolso da lista de Dreamies e ainda assim o pior custo.
- * A linha não decide qual dos dois importa para a pessoa: mostra os dois, nomeados.
  */
 
 const SELO_POR_BASE: Record<UnitPriceBasis, string> = {
@@ -65,7 +72,7 @@ export function OfferRankRow({
   /** Presente quando o grupo compara embalagens diferentes por custo unitário. */
   basePorUnidade?: UnitPriceBasis;
   /**
-   * A frase do §12 — "R$ 0,50 a menos que o 2º mercado" —, calculada pela tela com
+   * A frase do §12 — "R$ 1,00 a menos em 500 g" —, calculada pela tela com
    * `diferencaParaOSegundo` e desenhada só na primeira linha. É informação, nunca promoção.
    */
   diferenca?: string | null;
@@ -78,26 +85,32 @@ export function OfferRankRow({
   const embalagensDiferentes = basePorUnidade !== undefined;
 
   const conteudo = (
-    <div className="flex items-start gap-3 p-3.5">
-      {/* V3: o selo de posição mora no canto do AVATAR do mercado — mesma informação da
-          ordenação, sem gastar uma coluna própria. O que "primeiro" significa continua
-          escrito na própria tela: menor preço, ou melhor custo unitário. */}
-      <MarketAvatar market={entry.market} posicao={posicao} className="mt-0.5" />
+    <div className="flex items-start gap-2.5 p-3.5">
+      {/* V4 §8 — a posição numa coluna própria, ANTES do avatar: mesma largura em todas as
+          linhas, primeiro em verde, demais neutros. Nunca sobre o logo. */}
+      <span
+        aria-hidden="true"
+        className={`font-display mt-3 w-4 shrink-0 text-center text-sm leading-none font-bold ${
+          primeiro ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {posicao}
+      </span>
+
+      <MarketAvatar market={entry.market} className="mt-0.5" />
 
       {/* A IMAGEM SÓ ENTRA QUANDO CADA LINHA É UM SKU DIFERENTE. No grupo de embalagem
-          igual o produto já está uma vez, grande, no topo da tela — repeti-lo linha a linha
-          espremeria o nome do mercado (medido em 09/08: "Açougue Mota" virava "Aç…"). No
-          grupo de embalagens diferentes a imagem É informação da linha: o pacote de 80 g e
-          o de 40 g precisam parecer diferentes, porque são. `rank` (64→80 px) e não
-          `compacto`: esta linha agora carrega avatar + nome + preço, e a conta de 320 px
-          manda (V3 §1 — zero sobreposição). */}
+          igual o produto já está uma vez no topo da tela — repeti-lo linha a linha
+          espremeria o nome do mercado. No grupo de embalagens diferentes a imagem É
+          informação da linha: o pacote de 80 g e o de 40 g precisam parecer diferentes,
+          porque são. */}
       {embalagensDiferentes ? (
         <ProductImage imagem={visao.imagem} categoria={entry.product.category} tamanho="rank" />
       ) : null}
 
       <div className="min-w-0 flex-1">
         {/* `flex-wrap` + `ml-auto` no preço: quando "Savegnago" (uma palavra, que NÃO
-            quebra) e "R$ 47,88" não cabem lado a lado, o preço desce uma linha e continua
+            quebra) e o preço não cabem lado a lado, o preço desce uma linha e continua
             à direita — em vez de os dois se sobreporem, que foi o bug da V2. Nome de
             mercado segue sem truncar, em qualquer largura. */}
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
@@ -123,11 +136,9 @@ export function OfferRankRow({
             ) : null}
           </div>
 
-          {/* O DESEMBOLSO É O NÚMERO GRANDE (§0). O custo unitário fica embaixo, menor —
-              presente sempre que existe, porque é ele que torna as linhas comparáveis.
-              Nesta linha o rótulo é a forma curta de balcão ("R$ 98,75/kg"): a coluna do
-              preço disputa largura com o nome do mercado, e foi exatamente esse encontro
-              que sobrepôs "Pague Menos" a "R$ 149,75 por kg" na V2 (V3 §1). */}
+          {/* O NÚMERO GRANDE: no granel é o R$/kg OBSERVADO, com a unidade colada (V4 §4);
+              no embalado, o desembolso. A simulação ("500 g ≈ R$ 4,00") e o custo unitário
+              ficam embaixo, menores — são eles que tornam as linhas comparáveis. */}
           <div className="ml-auto shrink-0 text-right">
             <p
               aria-hidden="true"
@@ -135,14 +146,19 @@ export function OfferRankRow({
             >
               <span className="text-[64%] font-bold">R$</span>
               <span className="ml-0.5">{visao.preco.numero}</span>
+              {visao.preco.quantidade !== null ? (
+                <span className="text-muted-foreground ml-0.5 text-[55%] font-bold">
+                  {visao.preco.quantidade}
+                </span>
+              ) : null}
             </p>
-            {visao.preco.quantidade !== null ? (
-              <p aria-hidden="true" className="text-muted-foreground mt-0.5 text-xs">
-                {visao.preco.quantidade}
+            {visao.simulacao !== null ? (
+              <p aria-hidden="true" className="text-muted-foreground mt-1 text-xs tabular-nums">
+                {visao.simulacao}
               </p>
             ) : null}
             {visao.unitario !== null ? (
-              <p aria-hidden="true" className="text-muted-foreground mt-0.5 text-xs tabular-nums">
+              <p aria-hidden="true" className="text-muted-foreground mt-1 text-xs tabular-nums">
                 {formatPrice(visao.unitario.display)}
                 {visao.unitario.rotulo.replace(/^por /, "/")}
               </p>
@@ -188,16 +204,16 @@ export function OfferRankRow({
           </p>
         ) : null}
 
-        {/* §11: o olho lê MERCADO → PREÇO → DIFERENÇA; fonte e data vêm depois, numa faixa
-            só, sem ícones extras — os dois relógios que viviam aqui davam à metadata o mesmo
-            peso visual do preço, que é a inversão que o benchmark não comete. Nada saiu:
-            fonte, observação e validade continuam juntas, com o verbo honesto do §18. */}
-        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+        {/* Terciária (V4 §9): fonte + data curta. A V3 escrevia "09/08/2026 · ontem ·
+            valeu até 09/08/2026" — a mesma data duas vezes por linha. A forma completa,
+            com relativo e ano, continua na ficha da oferta ("Confiança da informação"),
+            e nada saiu do produto: só desta densidade de linha. */}
+        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <SourceBadge source={entry.source_type} label={visao.procedencia.origem} />
           <span className="tabular-nums">
-            {visao.procedencia.observadoEm} · {visao.procedencia.relativo}
-            {visao.procedencia.validoAte !== null
-              ? ` · ${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${visao.procedencia.validoAte}`
+            {formatDiaMes(entry.observed_at)}
+            {entry.valid_until !== null
+              ? ` · ${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${formatDiaMes(entry.valid_until)}`
               : ""}
           </span>
         </div>

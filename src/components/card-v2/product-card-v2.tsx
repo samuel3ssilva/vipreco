@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import { TEMPORAL_STYLE } from "@/lib/temporal";
 import { ProductIdentity, ProductImage } from "./identity";
 import { MarketBadge, NeighborhoodLabel } from "./market";
-import { ClubPrice, PriceDisplay, PromotionCondition, UnitPrice } from "./price";
+import { ClubPrice, PriceDisplay, PromotionCondition, SimulacaoDePeso, UnitPrice } from "./price";
 import { OfferStatus, ProvenanceBlock } from "./provenance";
 
 /**
@@ -180,62 +180,46 @@ export function ProductCardV2({
             cresce, imagem e preço crescem junto — nunca antes. Foi assim que R3.3B descobriu o
             estouro a 320: medindo a captura, não lendo o código. */}
         {/* =====================================================================
-            09/08/2026 — NO DESTAQUE A IMAGEM SAIU DA LINHA E VIROU A PRIMEIRA COISA DA TELA
+            V4 §3 — A FOTO VOLTOU PARA O LADO DO TEXTO, E A PRIMEIRA DOBRA É O MOTIVO
             =====================================================================
 
-            Enquanto o produto era embalagem desenhada em SVG, uma arte de 128 px ao lado do
-            texto funcionava: a silhueta do pacote é reconhecível pequena. Foto de alimento não
-            é — a 128 px, um corte de carne vira uma mancha vermelha, e o card volta a se
-            sustentar só na tipografia.
+            A composição de 09/08 (foto 5:3 em largura inteira) era bonita e cara: a 390 px a
+            foto sozinha consumia ~230 px de altura, e produto, preço, mercado e CTA — as
+            quatro coisas que a primeira dobra existe para dizer — só apareciam na segunda
+            tela. O Founder mediu exatamente isso ("foto não pode consumir quase toda a
+            primeira tela") e a referência estrutural do V4 §3 desenha o hero como o benchmark
+            de grocery desenha: foto ao lado, identidade + preço + mercado na coluna, CTA
+            embaixo. A ordem do DOM não muda — imagem, nome, preço, mercado —, então o leitor
+            de tela ouve a mesma sequência de sempre. */}
+        <div className={`flex items-start ${destaque ? "gap-3.5" : "gap-3"}`}>
+          <ProductImage
+            imagem={visao.imagem}
+            categoria={oferta.product.category}
+            tamanho={destaque ? "destaque" : "lista"}
+            prioridade={destaque}
+          />
 
-            Agora o destaque empilha: foto em largura inteira, 5:3, e a identidade abaixo dela.
-            É a composição da referência, e é o que responde ao pedido de "imagens maiores, mais
-            bonitas e mais centrais". A ordem do DOM não muda — imagem, nome, preço, mercado —,
-            então o leitor de tela ouve exatamente a mesma sequência de antes.
-
-            Fora do destaque a imagem continua ao lado: numa lista de cinco linhas, cinco fotos
-            de largura inteira viram cinco telas de rolagem. */}
-        {destaque ? (
-          <div className="flex flex-col gap-3">
-            <ProductImage
-              imagem={visao.imagem}
-              categoria={oferta.product.category}
-              tamanho="heroi"
-              prioridade
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <ProductIdentity
+              identidade={visao.identidade}
+              tituloId={tituloId}
+              destaque={destaque}
             />
-            <div className="flex flex-col gap-1.5">
-              <ProductIdentity identidade={visao.identidade} tituloId={tituloId} destaque />
-              <OfferStatus estado={visao.estado} />
-              <div className="flex flex-col gap-0.5">
-                <PriceDisplay preco={visao.preco} destaque atenuado={!visao.naListaOrganica} />
-                <UnitPrice unitario={visao.unitario} />
-                <ClubPrice clube={visao.clube} />
-              </div>
+            <OfferStatus estado={visao.estado} />
+            <div className="flex flex-col gap-0.5">
+              <PriceDisplay
+                preco={visao.preco}
+                destaque={destaque}
+                atenuado={!visao.naListaOrganica}
+              />
+              {/* V4 §4 — no peso variável o número grande é o R$/kg observado; a conta para a
+                  quantidade de referência é SIMULAÇÃO, nomeada pelo "≈", nunca o protagonista. */}
+              <SimulacaoDePeso simulacao={visao.simulacao} />
+              <UnitPrice unitario={visao.unitario} />
+              <ClubPrice clube={visao.clube} />
             </div>
           </div>
-        ) : (
-          <div className="flex items-start gap-3">
-            <ProductImage
-              imagem={visao.imagem}
-              categoria={oferta.product.category}
-              tamanho="lista"
-            />
-
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <ProductIdentity identidade={visao.identidade} tituloId={tituloId} destaque={false} />
-              <OfferStatus estado={visao.estado} />
-              <div className="flex flex-col gap-0.5">
-                <PriceDisplay
-                  preco={visao.preco}
-                  destaque={false}
-                  atenuado={!visao.naListaOrganica}
-                />
-                <UnitPrice unitario={visao.unitario} />
-                <ClubPrice clube={visao.clube} />
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Mercado e bairro continuam colados no preço — "quanto custa, e onde" segue sendo uma
             pergunta só. O que mudou é que o preço agora termina a coluna da direita, e estas

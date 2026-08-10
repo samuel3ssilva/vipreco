@@ -42,33 +42,51 @@ export function PriceDisplay({
         className={cn(
           "font-display leading-none tabular-nums",
           atenuado ? "text-muted-foreground font-bold" : "text-primary font-extrabold",
-          // R3.3B §8: no destaque o preço passou de 2rem para 2.625rem. A hierarquia pedida é
-          // PRODUTO → PREÇO → MERCADO, e a 2rem o preço empatava com o nome do produto e com o
-          // nome do mercado logo abaixo — três linhas com o mesmo peso não são hierarquia.
-          // R3.3C §14 ("preço maior") levou o destaque até 3rem, POR FAIXA DE LARGURA. Ele
-          // divide a coluna com a imagem desde que subiu para o lado dela, então o teto de cada
-          // faixa é o que a coluna comporta: 144 px a 320, 184 a 360, 238 a 430. Um único
-          // `text-[3rem]` caberia no desktop e estouraria no aparelho mais estreito que o
-          // produto atende — e é o estreito que manda.
+          // O destaque escalona POR FAIXA DE LARGURA: ele divide a coluna com a imagem, e o
+          // teto de cada faixa é o que a coluna comporta. V4 §4 acrescentou o sufixo "/kg" ao
+          // número — ~30 px a mais na pior linha —, então a escala desceu meio degrau em cada
+          // faixa (2 → 2.25 → 2.5 → 2.75rem). Um único `text-[3rem]` caberia no desktop e
+          // estouraria no aparelho mais estreito que o produto atende — e é o estreito que manda.
           destaque
-            ? "text-[2.25rem] min-[360px]:text-[2.5rem] min-[430px]:text-[2.75rem] sm:text-[3rem]"
+            ? "text-[2rem] min-[360px]:text-[2.25rem] min-[430px]:text-[2.5rem] sm:text-[2.75rem]"
             : "text-[1.625rem]",
         )}
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>
         <span className="ml-1">{preco.numero}</span>
-        {/* A QUANTIDADE COLADA NO NÚMERO, como o mandato v2 §3 desenha: "R$ 12,50 · aprox.
-            500 g". Menor e mais leve de propósito — ela qualifica o preço, não compete com
-            ele. Fora daqui, numa linha própria, deixaria de ser lida junto e voltaria a ser
-            possível ler "R$ 12,50" como o preço de uma peça inteira. */}
+        {/* A UNIDADE COLADA NO NÚMERO (V4 §4): "R$ 7,99" + "/kg". Menor e mais leve — ela
+            qualifica o preço, não compete com ele. Solta numa linha própria, deixaria de ser
+            lida junto e "R$ 7,99" voltaria a poder ser lido como o preço de uma peça. */}
         {preco.quantidade !== null ? (
-          <span className="text-muted-foreground ml-1.5 text-[38%] font-bold whitespace-nowrap">
+          <span className="text-muted-foreground ml-0.5 text-[45%] font-bold whitespace-nowrap">
             {preco.quantidade}
           </span>
         ) : null}
       </p>
       <VisuallyHidden>{preco.falado}</VisuallyHidden>
     </>
+  );
+}
+
+/**
+ * A simulação de quantidade do peso variável — "500 g ≈ R$ 4,00" (V4 §4).
+ *
+ * Sempre SECUNDÁRIA, nunca o número grande: o que foi observado é o R$/kg, e é ele o
+ * protagonista. O "≈" carrega a ressalva da balança sem gastar uma frase. `aria-hidden`
+ * porque o leitor de tela já ouve o cálculo por extenso dentro de `preco.falado`.
+ */
+export function SimulacaoDePeso({
+  simulacao,
+  className = "text-muted-foreground text-sm tabular-nums",
+}: {
+  simulacao: string | null;
+  className?: string;
+}) {
+  if (simulacao === null) return null;
+  return (
+    <p aria-hidden="true" className={className}>
+      {simulacao}
+    </p>
   );
 }
 

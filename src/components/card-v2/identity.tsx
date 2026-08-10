@@ -136,23 +136,16 @@ const TAMANHO_DA_IMAGEM = {
   // O degrau para 80 entra a partir de 390, onde a coluna do nome volta a sobrar.
   rank: "size-16 min-[390px]:size-20",
   lista: "size-24 min-[360px]:size-28",
-  // R3.3C: o destaque escalona por faixa de largura, e o número sai de uma conta, não do gosto.
-  // Desde que o PREÇO passou para a coluna ao lado da imagem, os dois disputam a mesma largura:
-  // a 320 px sobram 144 px para a coluna com a imagem em 96, e "R$ 26,49" a 2.25rem ocupa ~130
-  // deles. Cada degrau de imagem só entra na largura em que a coluna já comporta o preço maior.
-  destaque: "size-32 min-[360px]:size-36 min-[430px]:size-40 sm:size-44",
-  // A ficha da oferta (tela 4) é a única em que o produto não divide a largura com uma lista:
-  // ela pode dar à imagem o tamanho que a referência dá, e é isso que faz a tela parecer ficha
-  // comercial em vez de linha de resultado.
-  ficha: "size-36 min-[360px]:size-40 min-[430px]:size-44 sm:size-48",
-  /**
-   * O herói da Home — a imagem sozinha, em largura inteira, acima da identidade.
-   *
-   * Nenhum outro tamanho serve aqui, porque este não divide a linha com texto. É a resposta ao
-   * pedido de "imagens maiores, mais bonitas e mais centrais": num card de largura inteira a
-   * foto vira a primeira coisa que a pessoa vê, e não um selo de 96 px ao lado de um parágrafo.
-   */
-  heroi: "aspect-[5/3] h-auto w-full",
+  // V4 §3: o destaque voltou a dividir a linha com o preço, e o preço agora pode carregar o
+  // sufixo "/kg" — a conta da coluna mudou. A 320 px (card p-4): 320−32−112−14 = 162 px para a
+  // coluna, e "R$ 39,90" + "/kg" a 2rem ocupa ~140. Cada degrau de imagem só entra na largura
+  // em que a coluna já comporta o preço do degrau correspondente.
+  destaque: "size-28 min-[360px]:size-32 min-[430px]:size-36 sm:size-40",
+  // A ficha da oferta (tela 4) é a única em que o produto não divide a largura com uma lista —
+  // mas desde a V4 §4 o preço dela pode carregar "/kg", e a 320 px "R$ 24,99/kg" ao lado de uma
+  // imagem de 144 estourava a página (medido pelo QA de larguras, ficha do bucho). O primeiro
+  // degrau desceu para 128; a coluna do preço passa a ter 144 px, que comporta 2rem + sufixo.
+  ficha: "size-32 min-[360px]:size-36 min-[430px]:size-44 sm:size-48",
 } as const;
 
 export type TamanhoDaImagem = keyof typeof TAMANHO_DA_IMAGEM;
@@ -170,14 +163,10 @@ export function ProductImage({
   prioridade?: boolean;
 }) {
   const classe = TAMANHO_DA_IMAGEM[tamanho];
-  const heroi = tamanho === "heroi";
 
   if (imagem === null) {
     return (
-      <ImagePlaceholder
-        categoria={categoria ?? undefined}
-        className={cn(classe, heroi ? undefined : "shrink-0")}
-      />
+      <ImagePlaceholder categoria={categoria ?? undefined} className={cn(classe, "shrink-0")} />
     );
   }
 
@@ -195,14 +184,15 @@ export function ProductImage({
       // Curto e factual. Repetir o card inteiro no `alt` faz o leitor de tela ouvir o
       // produto duas vezes — uma na imagem, outra no título logo abaixo.
       alt={imagem.alt}
-      width={heroi ? 720 : 160}
-      height={heroi ? 432 : 160}
+      width={160}
+      height={160}
       loading={prioridade ? "eager" : "lazy"}
       fetchPriority={prioridade ? "high" : "auto"}
       className={cn(
         classe,
-        heroi ? undefined : "shrink-0",
-        heroi ? "rounded-2xl" : "rounded-xl",
+        // V4 §15 — o frame é UM: mesmo raio, mesma borda sutil em toda superfície. É a
+        // moldura comum que faz 24 recortes de fontes diferentes parecerem um catálogo só.
+        "border-border/60 shrink-0 rounded-xl border",
         foto ? "object-cover" : "bg-surface/70 object-contain p-1",
       )}
     />

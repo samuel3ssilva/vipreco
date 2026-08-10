@@ -39,13 +39,8 @@
  */
 import { computeUnitPrice } from "@/lib/unit-price";
 import type { UnitPriceBasis } from "@/lib/unit-price";
-import {
-  PESO_PADRAO,
-  faladoAproximado,
-  precoParaGramas,
-  rotuloAproximado,
-} from "@/lib/peso-variavel";
-import { formatPriceParts, formatRelativeDay, spokenPrice } from "@/lib/format";
+import { PESO_PADRAO, faladoAproximado, precoParaGramas, rotuloDoPeso } from "@/lib/peso-variavel";
+import { formatPrice, formatPriceParts, formatRelativeDay, spokenPrice } from "@/lib/format";
 import { sourceLabel, SOURCE_LABELS } from "@/lib/sources";
 import type { EvidenceLevel } from "@/lib/sources";
 import { temporalState } from "@/lib/temporal";
@@ -219,10 +214,10 @@ export interface PrecoExibido {
   simbolo: string;
   numero: string;
   /**
-   * A quantidade a que o número grande se refere, quando ela não é "a embalagem":
-   * `"aprox. 500 g"` num produto de peso variável. O "aprox." é obrigatório — o preço
-   * mostrado é calculado a partir do R$/kg observado, não observado ele próprio.
-   * `null` quando o preço é o da embalagem (a gramatura já está na identidade).
+   * A unidade a que o número grande se refere, quando ela não é "a embalagem": `"/kg"`
+   * num produto de peso variável — colada no número, porque `R$ 7,99` sem o `/kg` afirmaria
+   * o preço de uma peça (V4 §4). `null` quando o preço é o da embalagem (a gramatura já
+   * está na identidade).
    */
   quantidade: string | null;
   /** O que o leitor de tela ouve no lugar da composição visual. */
@@ -282,6 +277,13 @@ export interface VisaoDoCard {
   identidade: IdentidadeExibida;
   mercado: { nome: string; bairro: string | null };
   preco: PrecoExibido;
+  /**
+   * A SIMULAÇÃO de quantidade do peso variável — "500 g ≈ R$ 4,00" —, sempre secundária
+   * (V4 §4). O "≈" é a ressalva: o valor não foi observado, foi calculado do R$/kg pela
+   * mesma `precoParaGramas` de sempre, e a balança define o final. `null` fora do peso
+   * variável. O leitor de tela já ouve o cálculo dentro de `preco.falado`.
+   */
+  simulacao: string | null;
   unitario: UnitarioExibido | null;
   /** Preço de clube/cartão, quando o mercado anunciou um. Nunca substitui `preco`. */
   clube: ClubeExibido | null;
@@ -547,22 +549,30 @@ export interface OpcoesDaVisao {
   snapshotHistorico?: boolean;
 }
 
+/** O sufixo colado no número grande do peso variável: "R$ 7,99" + "/kg". */
+const SUFIXO_POR_UNIDADE: Record<PriceUnit, string> = {
+  kg: "/kg",
+  L: "/L",
+  un: "/un",
+};
+
 /**
- * O preço principal e o secundário — a hierarquia do §0 do mandato v2.
+ * O preço principal e o secundário — §0 do mandato v2, corrigido pela V4 §4.
  *
  * **Embalado**: o número grande é o preço da embalagem, como sempre foi; o secundário é o
  * unitário calculado de quantidade estruturada aprovada (`calcularUnitario`).
  *
- * **Peso variável** (`price_unit: "kg"`): o número grande passa a ser o preço CALCULADO
- * para a quantidade escolhida, rotulado "aprox." — porque é a resposta a "quanto eu pago?"
- * —, e o R$/kg observado desce para a linha secundária, intacto, como base de comparação.
- * A hierarquia nunca se inverte (§25). O falado diz os dois: quem ouve não vê tamanhos de
- * fonte, e um número sem o outro descreveria a oferta pela metade.
+ * **Peso variável** (`price_unit: "kg"`): o número grande é o PREÇO OBSERVADO — R$ 7,99/kg,
+ * com a unidade colada no número —, porque é ele que a placa do balcão diz e ele que compara
+ * mercados. O preço calculado para a quantidade escolhida vira SIMULAÇÃO, nomeada e
+ * secundária: "500 g ≈ R$ 4,00". A V3 invertia isso ("R$ 4,00 · aprox. 500 g" grande), e a
+ * leitura errada possível — "um frango inteiro custa R$ 4,00 e pesa 500 g" — é exatamente a
+ * que a V4 §4 manda impedir. O falado diz os dois, na mesma ordem do visual.
  */
 function resolverPrecos(
   oferta: OfertaCardV2,
   gramas: number,
-): { preco: PrecoExibido; unitario: UnitarioExibido | null } {
+): { preco: PrecoExibido; simulacao: string | null; unitario: UnitarioExibido | null } {
   if (oferta.price_unit === undefined) {
     const { currency, amount } = formatPriceParts(oferta.price);
     return {
@@ -573,26 +583,26 @@ function resolverPrecos(
         quantidade: null,
         falado: spokenPrice(oferta.price),
       },
+      simulacao: null,
       unitario: calcularUnitario(oferta),
     };
   }
 
   const calculado = precoParaGramas(oferta.price, gramas);
-  const { currency, amount } = formatPriceParts(calculado);
+  const { currency, amount } = formatPriceParts(oferta.price);
   return {
     preco: {
-      valor: calculado,
+      valor: oferta.price,
       simbolo: currency,
       numero: amount,
-      quantidade: rotuloAproximado(gramas),
-      falado: `${spokenPrice(calculado)} ${faladoAproximado(gramas)} — ${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]}`,
+      quantidade: SUFIXO_POR_UNIDADE[oferta.price_unit],
+      falado: `${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]} — ${spokenPrice(calculado)} ${faladoAproximado(gramas)}`,
     },
-    // O secundário É o preço observado: a placa diz R$/kg, e é ele que compara mercados.
-    unitario: {
-      display: oferta.price,
-      basis: BASE_POR_UNIDADE_DE_PRECO[oferta.price_unit],
-      rotulo: ROTULO_DA_BASE[BASE_POR_UNIDADE_DE_PRECO[oferta.price_unit]],
-    },
+    // "≈" e não "=": o número não foi observado. `rotuloAproximado` continua sendo a forma
+    // falada/da ficha; aqui o rótulo curto é o do benchmark ("500 g ≈ R$ 4,00").
+    simulacao: `${rotuloDoPeso(gramas)} ≈ ${formatPrice(calculado)}`,
+    // O normalizado não repete: o número grande JÁ É o R$/kg.
+    unitario: null,
   };
 }
 
@@ -620,7 +630,7 @@ export function montarVisaoDoCard(
       ? null
       : derivadoDoRelogio;
   const quantidade = escreverQuantidade(oferta);
-  const { preco, unitario } = resolverPrecos(oferta, opcoes.gramas ?? PESO_PADRAO);
+  const { preco, simulacao, unitario } = resolverPrecos(oferta, opcoes.gramas ?? PESO_PADRAO);
 
   return {
     identidade: {
@@ -634,6 +644,7 @@ export function montarVisaoDoCard(
     },
     mercado: { nome: oferta.market.name, bairro: oferta.market.neighborhood },
     preco,
+    simulacao,
     unitario,
     clube: resolverClube(oferta),
     procedencia: {

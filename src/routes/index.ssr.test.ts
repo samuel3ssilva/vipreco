@@ -84,8 +84,8 @@ describe("HTML inicial da Home (SSR)", () => {
   it("contém os dez preços do fixture antes da hidratação — na hierarquia do §0", () => {
     for (const entry of buildDemoOpportunities() as OfertaCardV2[]) {
       if (entry.price_unit === "kg") {
-        // Peso variável: o número protagonista é o CALCULADO de aprox. 500 g, e o R$/kg
-        // observado aparece como preço secundário — os dois no HTML, nenhum no lugar do outro.
+        // Peso variável (V4 §4): o número protagonista é o R$/kg OBSERVADO, e o calculado
+        // aparece como simulação ("500 g ≈ …") — os dois no HTML, nenhum no lugar do outro.
         expect(html).toContain(precoParaGramas(entry.price, 500).toFixed(2).replace(".", ","));
         expect(html).toContain(entry.price.toFixed(2).replace(".", ","));
       } else {
@@ -107,10 +107,12 @@ describe("HTML inicial da Home (SSR)", () => {
     expect(html).not.toContain("Não conseguimos carregar a lista de mercados");
   });
 
-  it("abre com a faixa de ambiente, antes de qualquer outro conteúdo", () => {
-    expect(html).toContain("AMBIENTE DE TESTE");
+  it("abre com a identificação de ambiente, antes de qualquer outro conteúdo", () => {
+    // V4 §16: a faixa virou a pill "DEMO" no header. A frase completa continua no HTML
+    // (title + sr-only) — visualmente menor, semanticamente igual.
+    expect(html).toContain(">DEMO<");
     expect(html).toContain("não é a versão pública");
-    expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(html.indexOf("Achados em Artemis"));
+    expect(html.indexOf(">DEMO<")).toBeLessThan(html.indexOf("Achados em Artemis"));
   });
 
   /**
@@ -374,14 +376,13 @@ describe("anatomia do card oficial de Achado", () => {
     }
   });
 
-  it("compõe o preço com o símbolo menor que o valor — e o protagonista do granel é o calculado", () => {
+  it("compõe o preço com o símbolo menor que o valor — e o protagonista do granel é o R$/kg observado", () => {
     expect(html).toContain(">R$</span>");
-    // O herói é o bucho: R$ 24,99/kg observado → R$ 12,50 calculados para aprox. 500 g.
-    expect(html).toContain(">12,50</span>");
-    expect(html).toContain("aprox. 500 g");
-    // O /kg não sumiu: desceu para a linha secundária, como o §0 manda.
-    expect(html).toContain("24,99");
-    expect(html).toContain("por kg");
+    // V4 §4 — o bucho: o número grande é o OBSERVADO 24,99, com a unidade colada nele.
+    expect(html).toContain(">24,99</span>");
+    expect(html).toContain(">/kg</span>");
+    // O calculado não sumiu: virou simulação nomeada, secundária ("500 g ≈ R$ 12,50").
+    expect(html).toContain("500 g \u2248 R$\u00a012,50");
   });
 
   it("oferece o preço por extenso a quem usa leitor de tela — com as duas metades", () => {

@@ -24,9 +24,10 @@ const DEFAULT_TITLE = "Comparar produto — ViPreço";
  * TELA 3 DO NORTH STAR — COMPARAÇÃO, COM AS DUAS HISTÓRIAS DO MANDATO V2 (§13)
  * =============================================================================
  *
- * **Golden flow A — granel.** Bucho bovino: seletor de 250 g / 500 g / 1 kg (padrão
- * 500 g), preço calculado grande em cada linha, R$/kg observado logo abaixo. A ordem é
- * pelo R$/kg — que, com denominador igual, é a mesma ordem do desembolso.
+ * **Golden flow A — granel.** Frango inteiro: o número grande de cada linha é o R$/kg
+ * OBSERVADO (V4 §4), com a simulação da quantidade escolhida logo abaixo ("500 g ≈
+ * R$ 4,00", seletor de 250 g / 500 g / 1 kg, padrão 500 g). A ordem é pelo R$/kg — que é
+ * exatamente o número grande, então a tela ordena pelo que mostra.
  *
  * **Golden flow B — embalagens diferentes.** Dreamies 80 g × 40 g: cada linha carrega o
  * próprio SKU, a ordem é por custo unitário e o primeiro leva o selo "Melhor custo/kg".
@@ -159,12 +160,15 @@ function ProductPage() {
             o grupo não tem uma embalagem, e as fotos vivem nas linhas, cada uma ao lado da
             própria gramatura. Um placeholder aqui só anunciaria uma ausência que não é
             defeito. Nos demais grupos a imagem (ou o placeholder legítimo) continua. */}
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3.5">
           {basePorUnidade === undefined ? (
+            // `lista`, não `destaque`: o produto é dito UMA vez, e a tela é da comparação —
+            // a 390 px a imagem grande empurrava a primeira linha de preço para fora da
+            // primeira dobra (V4 §26: comparação legível em 3 segundos).
             <ProductImage
               imagem={imagemDoProduto(product.id)}
               categoria={product.category}
-              tamanho="destaque"
+              tamanho="lista"
               prioridade
             />
           ) : null}
@@ -198,9 +202,12 @@ function ProductPage() {
           <>
             {granel ? (
               <div className="space-y-1.5">
+                {/* V4 §4 — o seletor é SIMULAÇÃO, e o rótulo diz isso antes dos botões:
+                    250 g / 500 g / 1 kg não são embalagens, são quantidades de referência. */}
+                <p className="eyebrow">Simulação de quantidade</p>
                 <PesoSelector gramas={gramas} onChange={setGramas} />
                 <p className="text-muted-foreground text-xs">
-                  Preço calculado para {rotuloDoPeso(gramas)} — a balança define o valor final.
+                  Estimativa para {rotuloDoPeso(gramas)}. O valor final depende do peso.
                 </p>
               </div>
             ) : null}

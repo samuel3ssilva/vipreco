@@ -128,26 +128,27 @@ function HomePage() {
 
   return (
     <AppShell>
-      <div className="space-y-7">
+      {/* V4 §18 — space-y-5, não 7: a primeira dobra precisa entregar produto, preço,
+          mercado e CTA (§3/§26), e cada 8 px de folga entre blocos empurra o preço para
+          baixo. O respiro DENTRO dos blocos não mudou. */}
+      <div className="space-y-5">
         <HomeContexto />
 
         {/* A BUSCA NA PRIMEIRA DOBRA. Sem `autoFocus`: abrir o teclado do celular por conta
-            própria cobre metade da tela antes de a pessoa decidir o que quer fazer.
-
-            R3.3B TIROU O CABEÇALHO DE SEÇÃO. Ele dizia "Procurando um produto específico?" com
-            uma linha de apoio abaixo — duas frases explicando um campo de busca que já tem
-            lupa, `placeholder` e quatro atalhos com nomes de produto. A seção continua nomeada
-            para quem navega por regiões, via `aria-label`; o que saiu foi o desenho de duas
-            frases que ninguém precisa ler para saber o que fazer ali. */}
+            própria cobre metade da tela antes de a pessoa decidir o que quer fazer. */}
         <section aria-label="Busca de produto" className="space-y-2.5">
           <ProductSearch destaque label="Busque um produto exato" />
-          <ul className="flex flex-wrap gap-2">
+          {/* V4 §19 — os chips numa LINHA só, rolável: cinco categorias em duas linhas
+              custavam ~56 px da primeira dobra. O quinto chip aparece cortado na borda,
+              que é o próprio convite a rolar. `-mx-*` sangra a linha até a borda da
+              página, como o benchmark de grocery faz com carrosséis. */}
+          <ul className="sem-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             {SHORTCUTS.map((shortcut) => (
-              <li key={shortcut}>
+              <li key={shortcut} className="shrink-0">
                 <Link
                   to="/buscar"
                   search={{ q: shortcut }}
-                  className="btn-base btn-secondary btn-touch-48 rounded-full px-4 text-sm font-semibold"
+                  className="btn-base btn-secondary btn-touch-48 rounded-full px-4 text-sm font-semibold whitespace-nowrap"
                 >
                   {shortcut}
                 </Link>

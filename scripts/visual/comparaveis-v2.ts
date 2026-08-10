@@ -64,6 +64,14 @@ const TELAS = [
 /** Fora da prancha, mas na evidência: o catálogo completo (V3 §3) na busca sem termo. */
 const TELA_CATALOGO = { chave: "catalogo", rota: "/buscar" } as const;
 
+/**
+ * O commit da V3 — a régua do "TESTE PREMIUM" (V4 §29): a prancha V3 | V4 compara a primeira
+ * dobra de cada tela ANTES e DEPOIS, e as imagens de antes vêm do próprio git, nunca de uma
+ * cópia manual. Se o commit não existir no clone (shallow), a prancha é pulada com aviso.
+ */
+const COMMIT_V3 = "7bd57f7";
+const DOBRAS_V3 = ["home", "catalogo", "comparacao-frango", "comparacao-dreamies", "detalhe"];
+
 const CSS = `
   * { box-sizing: border-box; }
   body { margin:0; background:#fbf7ec; color:#10231c;
@@ -92,6 +100,15 @@ const CSS = `
   .tela p { margin:0; font-size:12.5px; font-weight:700; text-align:center; }
 `;
 
+/** O que a V4 mudou — Final Visual Simplification & Premium Polish (10/08/2026). */
+const NOTAS_V4 = [
+  "<b>Peso variável correto (V4 §4).</b> O número grande passou a ser o R$/kg OBSERVADO ('R$ 7,99/kg'), com a conta da quantidade escolhida como SIMULAÇÃO nomeada e secundária ('500 g ≈ R$ 4,00', seletor rotulado 'Simulação de quantidade'). 'R$ 4,00 · aprox. 500 g' grande podia ser lido como 'um frango inteiro pesa 500 g' — leitura que a V4 elimina.",
+  "<b>Primeira dobra da Home (V4 §3).</b> O hero voltou a compor foto AO LADO do texto: a 390 px a primeira dobra agora entrega marca, busca, chips (uma linha rolável), produto, preço/kg, simulação, mercado, procedência e o CTA inteiro — antes, a foto 5:3 consumia a tela e o preço só aparecia na segunda dobra.",
+  "<b>Catálogo clicável (V4 §5/§6).</b> No catálogo e na busca o card INTEIRO é o link, com chevron — o botão verde repetido 24 vezes saiu; o CTA sólido ficou reservado ao hero e à ficha. ~3 produtos por dobra em vez de ~1,5.",
+  "<b>Posição fora do logo (V4 §8) e avatar 44 px (§7).</b> O 1/2/3 saiu do canto do avatar para uma coluna própria ('1 [logo] Safra'); o quadro do logo subiu para 44 px com padding normalizado, e o monograma do Mota virou 'M' (a palavra distintiva), nunca 'A' do tipo de loja.",
+  "<b>Menos ruído, mesma verdade (V4 §9/§16/§22).</b> Nas linhas de lista a procedência encurtou ('Cartaz na loja · 09/08' — a forma longa continua na ficha), a diferença virou 'R$ 1,00 a menos em 500 g', e a faixa 'AMBIENTE DE TESTE' virou a pill 'DEMO' no header, com a frase completa no acessível e o noindex intacto.",
+];
+
 /** As decisões de honestidade da demo v2 — na prancha, onde o Founder decide. */
 const NOTAS_V3 = [
   "<b>Volume real (V3 §3).</b> 24 grupos comparáveis — TODOS os que a planilha classifica como Tipo 'Igual' com confiança Alta. Os dois 'Igual' que ficaram fora estão documentados: sachês Dog Chow e Friskies, gramatura do sachê não confirmada nos dois mercados (princípio 1). 'Similar' continua nunca entrando na comparação exata. A busca sem termo vira o catálogo completo, por categoria.",
@@ -110,7 +127,7 @@ const NOTAS_POLISH = [
 
 const NOTAS = [
   "<b>Fonte da verdade: a planilha.</b> Preço cheio, preço de clube, gramatura, condição, fonte e período vêm de Comparativo_Precos_Supermercados_09-08-2026.xlsx. Nenhum valor foi inventado; os normalizados são derivados da quantidade estruturada e conferidos ao centavo contra a planilha (única exceção: farofa no Safra, 12,48 × 12,47 — empate de meio centavo, arredondamento).",
-  "<b>Package price protagonista (§0).</b> O número grande é sempre o que o consumidor paga — a embalagem, ou o calculado de aprox. 250 g / 500 g / 1 kg no peso variável. O R$/kg, R$/L e R$/un ficam logo abaixo, menores, como base de comparação.",
+  "<b>O número grande é o que a placa diz (§0, corrigido pela V4 §4).</b> No embalado, o preço da embalagem, com o normalizado menor logo abaixo. No peso variável, o R$/kg observado com a unidade colada no número — e a conta de 250 g / 500 g / 1 kg como simulação nomeada, nunca no lugar do observado.",
   "<b>Embalagens diferentes comparam por custo unitário (§5, §6, §7).</b> Dreamies, Elseve e Sanol ordenam pelo normalizado, com o selo 'Melhor custo/kg·L·un' e a gramatura de cada SKU na linha. 'Mais barato' sem denominador não aparece em tela nenhuma.",
   "<b>Preço de clube separado (§8).</b> Cartão Savegnago e 'levando 3' aparecem ao lado do preço cheio, com a condição — nunca no lugar dele, e nunca reordenando a lista.",
   "<b>Imagens: IA só nos cortes sem marca; produto de marca é recorte do encarte do próprio mercado (§10).</b> Elseve 200 ml e Sanol 7 un ficam com placeholder: não há material com qualidade de recorte, e imagem errada é pior que nenhuma.",
@@ -203,7 +220,7 @@ async function principal(): Promise<void> {
       dobras.set(tela.chave, arquivoDobra);
     }
 
-    // 1b. o catálogo completo (V3 §3) — página inteira, fora da prancha.
+    // 1b. o catálogo completo (V3 §3) — página inteira E primeira dobra (V4 §32.4).
     {
       const png = await capturarPagina(s, {
         url: `${BASE}${TELA_CATALOGO.rota}`,
@@ -211,7 +228,16 @@ async function principal(): Promise<void> {
         movel: true,
       });
       writeFileSync(join(DESTINO, "catalogo-390.png"), png);
-      console.log("==> catalogo-390.png");
+      const dobra = await capturarPagina(s, {
+        url: `${BASE}${TELA_CATALOGO.rota}`,
+        largura: 390,
+        movel: true,
+        clip: { x: 0, y: 0, width: 390, height: 844, scale: 2 },
+      });
+      const arquivoDobra = join(DESTINO, "catalogo-390-dobra.png");
+      writeFileSync(arquivoDobra, dobra);
+      dobras.set("catalogo", arquivoDobra);
+      console.log("==> catalogo-390.png (+ dobra)");
     }
 
     const alvos = recortar();
@@ -238,9 +264,9 @@ async function principal(): Promise<void> {
     // 3. a prancha final — as seis telas e as notas de honestidade (§20, §23).
     const prancha = `<!doctype html><meta charset="utf-8"><style>${CSS}</style>
       <div class="prancha">
-        <h1>VIPREÇO — COMPARABLE PRODUCTS DEMO V3</h1>
-        <p class="sub">Demo V3 — Final Productization Pass (10/08/2026) · 24 grupos comparáveis
-          reais da planilha de 09/08/2026 · cinco mercados de Piracicaba e região, com logos ·
+        <h1>VIPREÇO — DEMO V4 · FINAL VISUAL SIMPLIFICATION &amp; PREMIUM POLISH</h1>
+        <p class="sub">Demo V4 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados da V3
+          — nada de dado mudou; o que mudou é hierarquia, densidade e acabamento ·
           390 px, primeira dobra de cada tela.</p>
         <div class="fila">
           ${TELAS.map(
@@ -251,7 +277,7 @@ async function principal(): Promise<void> {
           ).join("")}
         </div>
         <div class="div"><h2>Como esta demo diz a verdade</h2><ul>
-          ${[...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
+          ${[...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
         </ul></div>
       </div>`;
     await folha(s, prancha, join(DESTINO, "comparable-products-demo-board.png"), 1700);
@@ -294,10 +320,10 @@ async function principal(): Promise<void> {
         ],
       },
       {
-        titulo: "ViPreço Final (V3)",
+        titulo: "ViPreço Final (V4)",
         itens: [
-          "Package price protagonista; R$/kg·L·un secundário e derivado",
-          "Logos de mercado como identificação: avatar uniforme + selo de posição, monograma para quem não tem marca",
+          "O número grande é o que a placa diz: embalagem no embalado, R$/kg no peso variável; simulação '500 g ≈ R$ 4,00' nomeada",
+          "Card inteiro clicável no catálogo; CTA verde só no hero e na ficha; posição fora do logo; avatar 44 px, monograma 'M'",
           "24 comparáveis reais; snapshot histórico honesto; neutralidade intacta — nada pago, nada reordenado",
         ],
       },
@@ -329,15 +355,71 @@ async function principal(): Promise<void> {
         </div>
         <div class="final">
           <img src="${dataUri(dobras.get("home")!)}">
-          <p><b>O resultado na Home.</b> Foto forte do produto (as duas imagens novas do
-            Founder incluídas), preço da embalagem como número grande, R$/kg logo abaixo,
-            mercado nomeado, um CTA — e a procedência numa linha discreta com o tempo verbal
-            certo. A pergunta do §29 — "parece um aplicativo de supermercado moderno?" — é
-            respondida por esta composição, não por qualquer elemento copiado.</p>
+          <p><b>O resultado na Home.</b> Na primeira dobra: marca com a pill DEMO, busca,
+            chips numa linha, e o hero completo — foto ao lado do texto, "R$ 7,99/kg" como
+            número grande, "500 g ≈ R$ 4,00" como simulação, mercado nomeado com o avatar,
+            procedência discreta e o CTA inteiro. A pergunta do §28 — "uma pessoa que nunca
+            viu entende e confia?" — é respondida por esta composição, não por qualquer
+            elemento copiado.</p>
         </div>
       </div>`;
     await folha(s, lessons, join(DESTINO, "benchmark-lessons-board.png"), 1500);
     console.log("==> benchmark-lessons-board.png");
+
+    // 5. V3 | V4 (V4 §29, "teste premium"): a primeira dobra de cada tela, antes e depois.
+    // O "antes" sai do git — do commit da V3 —, nunca de uma cópia manual que poderia estar
+    // desatualizada. `catalogo` não tinha dobra na V3: o antes usa a página inteira.
+    try {
+      const tmpV3 = mkdtempSync(join(tmpdir(), "cv2-v3-"));
+      const antes = new Map<string, string>();
+      for (const chave of DOBRAS_V3) {
+        const nomes = [`${chave}-390-dobra.png`, `${chave}-390.png`];
+        for (const nome of nomes) {
+          try {
+            const bytes = execFileSync(
+              "git",
+              ["show", `${COMMIT_V3}:docs/evidence/visual/comparaveis-v2/${nome}`],
+              { maxBuffer: 64 * 1024 * 1024 },
+            );
+            const destinoV3 = join(tmpV3, `${chave}.png`);
+            writeFileSync(destinoV3, bytes);
+            antes.set(chave, destinoV3);
+            break;
+          } catch {
+            // tenta o próximo nome
+          }
+        }
+      }
+      const linhas = DOBRAS_V3.filter((c) => antes.has(c) && dobras.has(c));
+      if (linhas.length === 0) throw new Error("nenhuma dobra V3 recuperada do git");
+      const compare = `<!doctype html><meta charset="utf-8"><style>${CSS}
+          .par { display:grid; grid-template-columns: repeat(${linhas.length}, 1fr); gap:14px; }
+          .par .tela .quadro { height:560px; }
+        </style>
+        <div class="folha" style="width:1700px">
+          <h1>V3 | V4 — a mesma demo, antes e depois do polish</h1>
+          <p class="sub">Mesmos 24 grupos, mesmos preços, mesmas fontes (commit ${COMMIT_V3} ·
+            V4). Primeira dobra a 390 px. O que muda é hierarquia, densidade e acabamento.</p>
+          <div class="par">${linhas
+            .map(
+              (c) => `<div class="tela"><span class="rot t" style="text-align:center">V3</span>
+                <div class="quadro"><img src="${dataUri(antes.get(c)!)}"></div>
+                <p>${c}</p></div>`,
+            )
+            .join("")}</div>
+          <div class="par" style="margin-top:16px">${linhas
+            .map(
+              (c) => `<div class="tela"><span class="rot i" style="text-align:center">V4</span>
+                <div class="quadro"><img src="${dataUri(dobras.get(c)!)}"></div>
+                <p>${c}</p></div>`,
+            )
+            .join("")}</div>
+        </div>`;
+      await folha(s, compare, join(DESTINO, "v3-v4-compare-board.png"), 1700);
+      console.log("==> v3-v4-compare-board.png");
+    } catch (erro) {
+      console.warn(`(!) prancha V3|V4 pulada: ${erro instanceof Error ? erro.message : erro}`);
+    }
   } finally {
     chrome.kill();
   }

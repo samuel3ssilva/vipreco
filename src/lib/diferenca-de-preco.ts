@@ -30,9 +30,11 @@ export function diferencaParaOSegundo(
     // Centavos inteiros: os dois lados já saíram arredondados de precoParaGramas.
     const centavos = Math.round(diferenca * 100);
     if (centavos <= 0) return null;
-    // NBSP entre número e unidade: "500 g" é UM dado, e a quebra de linha não pode deixar
-    // o "g" órfão na linha de baixo (visto a 390 px na comparação do frango).
-    return `${formatPrice(centavos / 100)} a menos que o 2º mercado em ${rotuloDoPeso(opcoes.gramas).replace(" ", " ")}`;
+    // V4 §9/§23 — a forma curta do benchmark: "R$ 1,00 a menos em 500 g". O referente
+    // ("que o 2º mercado") é a própria lista, ordenada logo abaixo da frase que explica a
+    // ordem; repeti-lo fazia a frase quebrar em duas linhas. NBSP entre número e unidade:
+    // "500 g" é UM dado, e a quebra não pode deixar o "g" órfão na linha de baixo.
+    return `${formatPrice(centavos / 100)} a menos em ${rotuloDoPeso(opcoes.gramas).replace(" ", " ")}`;
   }
 
   const centavos = Math.round((segunda.price - primeira.price) * 100);

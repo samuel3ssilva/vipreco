@@ -560,6 +560,15 @@
   color: var(--color-muted-foreground);
 }
 
+/* Linha rolável sem barra desenhada (chips de categoria — V4 §19). O conteúdo continua
+   rolável por toque e por teclado; só a barra, que em mobile não existe mesmo, some. */
+@utility sem-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

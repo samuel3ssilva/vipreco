@@ -182,13 +182,21 @@ export function AchadoCompacto({
           >
             <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
             <span className="ml-1">{visao.preco.numero}</span>
+            {/* V4 §4: a unidade colada no número — "R$ 39,90/kg". Sem ela, o R$/kg de um
+                corte leria como o preço de uma peça. */}
+            {visao.preco.quantidade === null ? null : (
+              <span className="text-muted-foreground ml-0.5 text-[45%] font-bold">
+                {visao.preco.quantidade}
+              </span>
+            )}
           </p>
-          {/* "aprox. 500 g" sob o número no peso variável; o R$/kg observado desce para a
-              linha secundária logo abaixo. Hierarquia do mandato v2 §0: primeiro quanto se
-              paga, depois a base de comparação. */}
-          {visao.preco.quantidade === null ? null : (
-            <p aria-hidden="true" className="text-muted-foreground text-[0.6875rem] leading-none">
-              {visao.preco.quantidade}
+          {/* A simulação — "500 g ≈ R$ 4,00" — sob o número, secundária (V4 §4). */}
+          {visao.simulacao === null ? null : (
+            <p
+              aria-hidden="true"
+              className="text-muted-foreground text-[0.6875rem] leading-none tabular-nums"
+            >
+              {visao.simulacao}
             </p>
           )}
           {visao.unitario === null ? null : (

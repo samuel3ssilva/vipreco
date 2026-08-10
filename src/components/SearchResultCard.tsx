@@ -4,7 +4,7 @@ import { MarketAvatar } from "@/components/MarketAvatar";
 import { ProductImage } from "@/components/card-v2/identity";
 import { isDemoMode } from "@/lib/app-mode";
 import { montarVisaoDoCard } from "@/lib/card-v2";
-import { formatDate, formatPrice, formatProductName } from "@/lib/format";
+import { formatDate, formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
 import type { ResumoDeBusca } from "@/services/demo-source";
 
 /**
@@ -40,7 +40,8 @@ import type { ResumoDeBusca } from "@/services/demo-source";
  */
 export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: Date }) {
   const { product, imagem, melhor, basePorUnidade, mercados } = resumo;
-  const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
+  // V4.2 §5 — a linha de apoio só diz o que o título ainda não disse.
+  const detalhes = formatProductDetails(product);
   const visao =
     melhor === null
       ? null

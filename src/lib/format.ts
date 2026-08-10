@@ -56,6 +56,26 @@ export function formatProductName(
 }
 
 /**
+ * A linha de apoio do título — SÓ com o que o título ainda não disse (V4.2 §5).
+ *
+ * "Cerveja Original lata 350 ml" seguido de "lata 350 ml" é a mesma informação duas vezes,
+ * e repetição é o que faz uma tela parecer dump de banco. A regra é VISUAL e genérica:
+ * marca, variante ou tamanho só entram aqui se não estiverem escritos no título — os DADOS
+ * não mudam, só a decisão do que exibir. Informação que o título não carrega continua
+ * aparecendo, sempre.
+ */
+export function formatProductDetails(
+  product: Pick<Product, "name" | "brand" | "variant" | "size_text">,
+  titulo: string = formatProductName(product),
+): string {
+  const t = titulo.toLowerCase();
+  return [product.brand, product.variant, product.size_text]
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .filter((v) => !t.includes(v.toLowerCase()))
+    .join(" · ");
+}
+
+/**
  * Data no fuso do piloto (Artemis/Piracicaba-SP), não no fuso do dispositivo.
  *
  * O fuso é fixado de propósito: as datas passaram a ser renderizadas no servidor (Worker, em

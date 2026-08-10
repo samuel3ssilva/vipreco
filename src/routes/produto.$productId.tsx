@@ -13,7 +13,7 @@ import { carregarComparacao, imagemDoProduto } from "@/services/demo-source";
 import { diferencaParaOSegundo } from "@/lib/diferenca-de-preco";
 import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
-import { formatPrice, formatProductName } from "@/lib/format";
+import { formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 import type { UnitPriceBasis } from "@/lib/unit-price";
 
@@ -115,7 +115,8 @@ function ProductPage() {
   const { product, entries } = data;
   const granel = data.granel === true;
   const basePorUnidade = data.basePorUnidade;
-  const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
+  // V4.2 §5 — a linha de apoio só diz o que o título ainda não disse.
+  const detalhes = formatProductDetails(product);
   const menor = entries[0] as OfertaCardV2 | undefined;
   // §12: a diferença para o 2º mercado, só onde ela é um fato — mesmo produto, mesma
   // quantidade. No peso variável ela acompanha o seletor, com a mesma conta de centavos.

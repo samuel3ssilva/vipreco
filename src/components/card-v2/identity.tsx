@@ -30,29 +30,22 @@ export function ProductIdentity({
   tituloId: string;
   destaque: boolean;
 }) {
-  const detalhes = [identidade.marca, identidade.variante].filter(
-    (v): v is string => typeof v === "string" && v.length > 0,
-  );
-
   /**
-   * O TÍTULO DO DESTAQUE É A IDENTIDADE INTEIRA — e é uma correção de coerência, não de gosto.
-   *
-   * Até aqui ele mostrava só `nome`. Numa Home cujo primeiro card diz **"Café"** e cuja busca,
-   * comparação e detalhe dizem **"Café Serra Alta Tradicional 500 g"**, a mesma coisa tem dois
-   * nomes em quatro telas — que é exatamente o que o §8 do mandato proíbe.
-   *
-   * A referência faz igual: o título é "Café Pilão Tradicional" e a linha abaixo repete
-   * "Pilão • Tradicional • 500 g". A repetição não é desperdício — o título identifica o
-   * produto de longe, e a linha abaixo separa os três campos para quem for comparar.
-   *
-   * Na variante de lista o título continua sendo só o nome: ali a embalagem tem 80 px e o card
-   * inteiro tem três linhas, e a identidade completa transformaria cada item num parágrafo.
+   * O TÍTULO DO DESTAQUE É A IDENTIDADE INTEIRA (V4 §8) — e, desde a V4.2 §5, o que o
+   * título já disse NÃO se repete na linha de apoio: no destaque as linhas de apoio
+   * somem; na lista o título é só o nome, e marca/variante/gramatura continuam. Regra
+   * visual e genérica — os dados não mudam, só a decisão do que exibir.
    */
   const titulo = destaque
     ? [identidade.nome, identidade.marca, identidade.variante, identidade.quantidade]
         .filter((v): v is string => typeof v === "string" && v.length > 0)
         .join(" ")
     : identidade.nome;
+  const jaNoTitulo = (v: string) => titulo.toLowerCase().includes(v.toLowerCase());
+
+  const detalhes = [identidade.marca, identidade.variante].filter(
+    (v): v is string => typeof v === "string" && v.length > 0 && !jaNoTitulo(v),
+  );
 
   return (
     <div className="min-w-0">
@@ -71,7 +64,7 @@ export function ProductIdentity({
         <p className="text-muted-foreground mt-0.5 text-sm leading-snug">{detalhes.join(" · ")}</p>
       ) : null}
 
-      {identidade.quantidade !== null ? (
+      {identidade.quantidade !== null && !jaNoTitulo(identidade.quantidade) ? (
         // Sem `truncate` e sem `line-clamp`, de propósito: a gramatura é o que separa dois
         // produtos que de resto são o mesmo. Cortá-la para caber é apagar a comparação.
         //

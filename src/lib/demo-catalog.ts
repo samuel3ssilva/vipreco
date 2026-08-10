@@ -786,8 +786,10 @@ interface SementeDeOferta {
   readonly clube?: PrecoDeClube;
   /** "kg" quando o preço observado é por quilo (granel). */
   readonly porKg?: true;
-  /** Condição declarada pelo mercado junto do preço — ex.: "venda só no pack de 12". */
+  /** Condição declarada pelo mercado junto do preço — ex.: "Venda somente no pack de 12." */
   readonly condicaoEspecial?: string;
+  /** Unidade de venda anunciada junto do número ("lata") — vira o sufixo "R$ 3,79/lata". */
+  readonly unidadeDeVenda?: string;
 }
 
 export interface GrupoDemo {
@@ -1197,7 +1199,10 @@ const GRUPOS: readonly GrupoDemo[] = [
         mercado: SAFRA,
         price: 3.79,
         fonte: FONTE.safraTabloide,
-        condicaoEspecial: "preço por lata, venda só no pack de 12",
+        // V4.2 §4 — "por lata" saiu da frase e virou o sufixo do preço ("R$ 3,79/lata");
+        // a condição fica curta e inequívoca. É a MESMA verdade do encarte, redistribuída.
+        condicaoEspecial: "Venda somente no pack de 12.",
+        unidadeDeVenda: "lata",
       },
       {
         id: "demo-v3-original-savegnago",
@@ -1333,6 +1338,7 @@ function construirOferta(semente: SementeDeOferta): OfertaCardV2 {
     // encarte original ("Conferência 2 fontes") — é o que `confirmed` significa aqui.
     quantity_provenance: "confirmed",
     ...(semente.clube === undefined ? {} : { clube: semente.clube }),
+    ...(semente.unidadeDeVenda === undefined ? {} : { unidade_de_venda: semente.unidadeDeVenda }),
   };
 }
 

@@ -537,7 +537,9 @@ describe("o detalhe não copia o que a referência não pode sustentar", () => {
       "<h1",
       "observado neste mercado",
       'aria-label="Mercado"',
-      "Condição desta oferta",
+      // V4.2 §4: o prefixo "Condição desta oferta." saiu da copy; o bloco continua no
+      // mesmo lugar da hierarquia e a âncora passa a ser o próprio campo renderizado.
+      "oferta.special_condition",
       "Receber achados no WhatsApp",
       "Confiança da informação",
     ];

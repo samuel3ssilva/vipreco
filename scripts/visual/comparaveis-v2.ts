@@ -119,6 +119,14 @@ const CSS = `
   .tela p { margin:0; font-size:12.5px; font-weight:700; text-align:center; }
 `;
 
+/** O que a V4.2 mudou — Last-Mile Consumer Polish (10/08/2026). */
+const NOTAS_V42 = [
+  "<b>Preço da Original inequívoco (V4.2 §4).</b> O número grande diz 'R$ 3,79/lata' em toda superfície, a condição encurtou para 'Venda somente no pack de 12.' e o R$/L segue como normalização secundária. Mesma verdade do encarte, redistribuída — nenhum dado mudou.",
+  "<b>Zero repetição de identidade (V4.2 §5).</b> Regra visual genérica: o que o título já disse não se repete na linha de apoio ('Cerveja Original lata 350 ml' + 'lata 350 ml' era dado duplicado). Informação que o título não carrega continua aparecendo, sempre.",
+  "<b>Metadata sem quebra feia (V4.2 §6).</b> Cada fato de data é um segmento indivisível — a quebra acontece entre '09/08' e 'valeu até 09/08', nunca no meio da frase.",
+  "<b>Presença óptica dos assets (V4.2 §1).</b> Os 3 assets reais recompostos com respiro menor (8%→4% por lado) e o Elseve 400 re-recortado do PDF original em alta resolução: garrafa completa em largura e fundo ('400 ml' legível) — a tampa fica sob o preço impresso no encarte de origem, e só material novo resolve. Corona segue como está: nenhuma fonte legítima contém a lata Extra inteira e limpa (Savegnago: atrás da Cero; Atacadão: selo -18 sobre a lata). NEEDS FOUNDER ASSET: Corona Extra lata; Elseve 400 (tampa).",
+];
+
 /** O que a V4.1 mudou — App-First Polish + Real Product Assets (10/08/2026). */
 const NOTAS_V41 = [
   "<b>28/28 SKUs com imagem legítima (V4.1 §A).</b> Os três últimos placeholders saíram: Elseve Collagen Lifter 200 ml, Sanol Dog 7 unidades e a lata avulsa de Original receberam a FOTO REAL da embalagem fornecida pelo Founder — nada gerado, nada aproximado. Recorte pelo produto, fundo próprio, respiro uniforme, mesmo frame dos demais.",
@@ -290,10 +298,10 @@ async function principal(): Promise<void> {
     // 3. a prancha final — as seis telas e as notas de honestidade (§20, §23).
     const prancha = `<!doctype html><meta charset="utf-8"><style>${CSS}</style>
       <div class="prancha">
-        <h1>VIPREÇO — DEMO V4.1 · APP-FIRST POLISH + REAL PRODUCT ASSETS</h1>
-        <p class="sub">Demo V4.1 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados
-          — nada de dado mudou; a V4.1 fecha a cobertura de imagem: 28/28 SKUs com asset
-          legítimo, zero placeholders · 390 px, primeira dobra de cada tela.</p>
+        <h1>VIPREÇO — DEMO V4.2 · LAST-MILE CONSUMER POLISH</h1>
+        <p class="sub">Demo V4.2 (10/08/2026) · os MESMOS 24 grupos, 49 ofertas e 5 mercados
+          — nada de dado mudou; 28/28 SKUs com asset legítimo, zero placeholders, zero
+          repetição de identidade, preço da Original por lata · 390 px, primeira dobra.</p>
         <div class="fila">
           ${TELAS.map(
             (t) => `<div class="tela">
@@ -303,7 +311,7 @@ async function principal(): Promise<void> {
           ).join("")}
         </div>
         <div class="div"><h2>Como esta demo diz a verdade</h2><ul>
-          ${[...NOTAS_V41, ...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
+          ${[...NOTAS_V42, ...NOTAS_V41, ...NOTAS_V4, ...NOTAS_V3, ...NOTAS_POLISH, ...NOTAS].map((n) => `<li>${n}</li>`).join("")}
         </ul></div>
       </div>`;
     await folha(s, prancha, join(DESTINO, "comparable-products-demo-board.png"), 1700);

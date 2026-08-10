@@ -3,6 +3,7 @@ import {
   formatDate,
   formatPrice,
   formatPriceParts,
+  formatProductDetails,
   formatProductName,
   formatRelativeDay,
   spokenPrice,
@@ -44,6 +45,24 @@ describe("formatPrice e formatProductName", () => {
     expect(
       formatProductName({ name: "Arroz", brand: "Camil", variant: "Tipo 1", size_text: "5 kg" }),
     ).toBe("Arroz Camil Tipo 1 5 kg");
+  });
+});
+
+describe("formatProductDetails — a linha de apoio não repete o título (V4.2 §5)", () => {
+  const produto = { name: "Cerveja", brand: "Original", variant: null, size_text: "lata 350 ml" };
+
+  it("tudo que o título completo já disse some da linha de apoio", () => {
+    // Título "Cerveja Original lata 350 ml" seguido de "lata 350 ml" era dado duplicado.
+    expect(formatProductDetails(produto)).toBe("");
+  });
+
+  it("o que o título NÃO disse continua aparecendo — informação nunca é escondida", () => {
+    expect(formatProductDetails(produto, "Cerveja Original")).toBe("lata 350 ml");
+    expect(formatProductDetails(produto, "Cerveja")).toBe("Original · lata 350 ml");
+  });
+
+  it("a comparação é sem caixa: 'Lata' no título cobre 'lata' no tamanho", () => {
+    expect(formatProductDetails(produto, "Cerveja Original LATA 350 ML")).toBe("");
   });
 });
 

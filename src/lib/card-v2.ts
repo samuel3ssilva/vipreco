@@ -153,6 +153,14 @@ export interface OfertaCardV2 extends Opportunity {
    */
   clube?: { preco: number; condicao: string };
   /**
+   * A unidade de VENDA que o mercado anunciou junto do número, quando o preço não é o da
+   * embalagem comprável isolada — "lata" no "R$ 3,79 por lata, venda só no pack de 12" do
+   * Safra (V4.2 §4). Vira o sufixo colado no número grande ("R$ 3,79/lata"): sem ele, o
+   * preço afirmaria um desembolso avulso que o encarte não oferece. Campo declarado,
+   * nunca inferido do texto da condição — inferência em apresentação erra em silêncio.
+   */
+  unidade_de_venda?: string;
+  /**
    * Como a fonte é dita ao usuário quando o rótulo genérico do enum não descreve a coleta:
    * "Foto em loja", "Painel da loja", "Encarte da loja" (§15 — nome técnico de arquivo
    * nunca vira copy). Ausente, vale `sourceLabel(source_type)`. O `source_type` continua
@@ -575,13 +583,19 @@ function resolverPrecos(
 ): { preco: PrecoExibido; simulacao: string | null; unitario: UnitarioExibido | null } {
   if (oferta.price_unit === undefined) {
     const { currency, amount } = formatPriceParts(oferta.price);
+    const unidadeDeVenda = oferta.unidade_de_venda;
     return {
       preco: {
         valor: oferta.price,
         simbolo: currency,
         numero: amount,
-        quantidade: null,
-        falado: spokenPrice(oferta.price),
+        // V4.2 §4 — a unidade de venda anunciada cola no número ("R$ 3,79/lata"),
+        // exatamente como o "/kg" do granel: o número nunca afirma mais que a placa.
+        quantidade: unidadeDeVenda === undefined ? null : `/${unidadeDeVenda}`,
+        falado:
+          unidadeDeVenda === undefined
+            ? spokenPrice(oferta.price)
+            : `${spokenPrice(oferta.price)} por ${unidadeDeVenda}`,
       },
       simulacao: null,
       unitario: calcularUnitario(oferta),

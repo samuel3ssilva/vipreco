@@ -419,6 +419,17 @@ describe("preço", () => {
     expect(v.preco.numero).toBe("26,49");
     expect(v.preco.falado).toBe("26 reais e 49 centavos");
   });
+
+  it("a unidade de venda declarada cola no número — 'R$ 3,79/lata' (V4.2 §4)", () => {
+    // Sem o sufixo, o número afirmaria um desembolso avulso que o encarte não oferece.
+    const v = visao({ price: 3.79, unidade_de_venda: "lata" });
+    expect(v.preco.quantidade).toBe("/lata");
+    expect(v.preco.falado).toBe("3 reais e 79 centavos por lata");
+  });
+
+  it("sem unidade de venda declarada, nada é inferido: sufixo ausente", () => {
+    expect(visao({ price: 3.79 }).preco.quantidade).toBeNull();
+  });
 });
 
 describe("condição de promoção", () => {

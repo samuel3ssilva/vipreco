@@ -1,4 +1,4 @@
-# Demo V4.1 — App-First Polish + Real Product Assets — evidência visual
+# Demo V4.2 — Last-Mile Consumer Polish — evidência visual
 
 Capturas a 390 px CSS (`deviceScaleFactor: 2`, PNG de 780 px) contra o servidor de
 desenvolvimento na branch `feat/demo-comparaveis-v2`, geradas por
@@ -26,6 +26,33 @@ imagem (28/28 SKUs, zero placeholders) com as três fotos reais fornecidas pelo 
 | `benchmark-lessons-board.png`        | 11 · Decisões adotadas/rejeitadas de cada benchmark              |
 | `benchmark-diagnosis.md`             | Diagnóstico por dimensão + matriz KEEP/ADAPT/REJECT (V2/V3)      |
 | `*-390-dobra.png`                    | Primeira dobra de cada tela (insumo das pranchas)                |
+
+## O que a V4.2 mudou (10/08/2026 — Last-Mile Consumer Polish)
+
+- **Preço da Original inequívoco (§4)** — "R$ 3,79**/lata**" em toda superfície (busca,
+  comparação, ficha), via campo declarado `unidade_de_venda` (nunca inferido); a condição
+  encurtou para "Venda somente no pack de 12." e o prefixo "Condição desta oferta." saiu.
+  R$ 10,83/L segue como normalização secundária. Nenhum dado mudou de valor.
+- **Zero repetição de identidade (§5)** — regra visual genérica (`formatProductDetails` +
+  o mesmo princípio no Card v2): o que o título já disse não aparece na linha de apoio.
+  "Cerveja Original lata 350 ml" + "lata 350 ml" acabou; informação que o título não
+  carrega continua aparecendo.
+- **Metadata sem quebra feia (§6)** — "09/08" e "· valeu até 09/08" são segmentos
+  indivisíveis; a quebra só acontece no separador.
+- **Presença óptica (§1)** — os 3 assets reais recompostos com respiro 8%→4% por lado;
+  **Elseve 400 re-recortado do PDF original em alta resolução** (garrafa completa em
+  largura e fundo, "400 ml" legível — antes o crop cortava topo E fundo em 354 px).
+
+### Founder dependencies (declaradas, não escondidas)
+
+- **NEEDS FOUNDER ASSET — Corona Extra lata 350 ml.** Nenhuma fonte legítima contém a
+  lata inteira e limpa: no Savegnago a Extra está parcialmente atrás da Corona **Cero**
+  (variante errada, não pode representá-la); no Atacadão a lata está inteira mas o selo
+  "-18" carimba o topo. Completar com IA é proibido (§13/princípio 11) — o asset atual
+  (meia lata, texto removido na V4.1) permanece até material novo.
+- **NEEDS FOUNDER ASSET — Elseve Collagen Lifter 400 ml (tampa).** No único material com
+  a garrafa (Savegnago p4), os dígitos do preço impresso cobrem a tampa. O re-recorte da
+  V4.2 entrega o máximo que a fonte permite; a tampa só vem com material novo.
 
 ## O que a V4 mudou (10/08/2026 — Final Visual Simplification & Premium Polish)
 

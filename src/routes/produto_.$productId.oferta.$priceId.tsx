@@ -14,7 +14,7 @@ import { ofertaDemo } from "@/services/demo-source";
 import { montarVisaoDoCard } from "@/lib/card-v2";
 import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
-import { formatDate, formatPrice, formatProductName } from "@/lib/format";
+import { formatDate, formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
 
 /**
  * =============================================================================
@@ -97,7 +97,8 @@ function OfferPage() {
     ...(granel ? { gramas } : {}),
     snapshotHistorico: isDemoMode(),
   });
-  const detalhes = [product.variant, product.size_text].filter(Boolean).join(" · ");
+  // V4.2 §5 — a linha de apoio só diz o que o título ainda não disse.
+  const detalhes = formatProductDetails(product);
   const whatsapp = mensagemDeOferta(oferta.id, product.name);
   const onde = localidade(market.neighborhood);
 
@@ -222,13 +223,12 @@ function OfferPage() {
             </div>
           </div>
 
-          {/* 4. CONDIÇÃO */}
+          {/* 4. CONDIÇÃO — só a frase, curta e inequívoca (V4.2 §4). O prefixo "Condição
+              desta oferta." dobrava a hierarquia sem acrescentar nada: a caixa de atenção
+              já diz que isto é uma condição. */}
           {oferta.special_condition ? (
-            <p className="bg-caution/25 text-caution-foreground mt-3 flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm">
-              <span>
-                <strong className="font-semibold">Condição desta oferta.</strong>{" "}
-                {oferta.special_condition}
-              </span>
+            <p className="bg-caution/25 text-caution-foreground mt-3 rounded-lg px-3 py-2.5 text-sm font-semibold">
+              {oferta.special_condition}
             </p>
           ) : null}
         </section>

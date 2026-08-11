@@ -165,10 +165,12 @@ function OfferPage() {
               ) : null}
             </p>
             {/* V4.3 §1 — o pack a que o desembolso se refere, e o por-unidade anunciado,
-                secundário. O número grande é o que sai do bolso; o resto é informação. */}
+                secundário. O número grande é o que sai do bolso; o resto é informação.
+                Aqui a forma completa ("pack 12 × 350 ml"): o título diz "lata 350 ml", e
+                sem o × a ficha lia como uma lata a preço de doze (Fable review). */}
             {visao.preco.embalagemMinima !== null ? (
               <p aria-hidden="true" className="text-muted-foreground mt-1 text-sm font-bold">
-                {visao.preco.embalagemMinima}
+                {visao.identidade.quantidade ?? visao.preco.embalagemMinima}
               </p>
             ) : null}
             {visao.preco.porUnidade !== null ? (
@@ -184,9 +186,12 @@ function OfferPage() {
                 {visao.simulacao}
               </p>
             ) : null}
+            {/* Mesma compactação da comparação ("/L", não "por L"): duas linhas acima está
+                "R$ 3,79/lata", e as duas convenções na mesma coluna liam como descuido. */}
             {visao.unitario !== null ? (
               <p aria-hidden="true" className="text-muted-foreground mt-0.5 text-sm tabular-nums">
-                {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
+                {formatPrice(visao.unitario.display)}
+                {visao.unitario.rotulo.replace(/^por /, "/")}
               </p>
             ) : null}
             <span className="sr-only">{visao.preco.falado}</span>

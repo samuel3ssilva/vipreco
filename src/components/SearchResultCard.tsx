@@ -58,7 +58,10 @@ export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: 
         <ProductImage imagem={imagem} categoria={product.category} tamanho="lista" />
 
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h2 className="font-display line-clamp-2 text-base leading-tight font-bold">
+          {/* Três linhas, não duas: com duas, "…Dolce Gusto…" e "…Sempre Livre 32…" cortavam
+              exatamente a variante/contagem que identifica o SKU — num catálogo cuja tese é
+              identidade exata, o nome truncado derrota o card (Fable review). */}
+          <h2 className="font-display line-clamp-3 text-base leading-tight font-bold">
             {formatProductName(product)}
           </h2>
           {detalhes.length > 0 ? (

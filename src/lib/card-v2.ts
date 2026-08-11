@@ -724,6 +724,13 @@ export function montarVisaoDoCard(
       ? null
       : derivadoDoRelogio;
   const quantidade = escreverQuantidade(oferta);
+  // Com pack obrigatório, a quantidade exibida é o que se COMPRA, não só o que se bebe:
+  // "350 ml" ao lado de R$ 45,48 lia como uma lata a preço de doze (Fable review §1).
+  const pack = packObrigatorio(oferta);
+  const quantidadeExibida =
+    pack !== null && quantidade.texto !== null
+      ? `${pack.rotulo} × ${quantidade.texto}`
+      : quantidade.texto;
   const { preco, simulacao, unitario } = resolverPrecos(oferta, opcoes.gramas ?? PESO_PADRAO);
 
   return {
@@ -731,7 +738,7 @@ export function montarVisaoDoCard(
       nome: oferta.product.name,
       marca: oferta.product.brand,
       variante: oferta.product.variant,
-      quantidade: quantidade.texto,
+      quantidade: quantidadeExibida,
       complemento: quantidade.complemento,
       quantidadeEstruturada: quantidade.estruturada,
       embalagem: escreverEmbalagem(oferta.product.package_type ?? null, oferta.product.variant),

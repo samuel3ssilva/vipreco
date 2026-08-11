@@ -164,7 +164,13 @@ const CARREGAR_IMAGENS = `
   (async () => {
     const imgs = Array.from(document.images);
     for (const img of imgs) img.loading = "eager";
-    await Promise.allSettled(imgs.map((img) => img.decode().catch(() => undefined)));
+    // Corrida com teto de 8 s: decode() de uma imagem cujo fetch estagnou nunca resolve,
+    // e um awaitPromise pendurado congelava a captura inteira — pior que uma imagem a
+    // menos na foto. No caso normal a decodificação termina muito antes do teto.
+    await Promise.race([
+      Promise.allSettled(imgs.map((img) => img.decode().catch(() => undefined))),
+      new Promise((r) => setTimeout(r, 8000)),
+    ]);
     return imgs.length;
   })()
 `;
@@ -190,7 +196,33 @@ export async function capturarPagina(
   await esperar(opcoes.espera ?? 2500);
   // Depois da espera, não antes: a folha precisa sobreviver à hidratação, que troca a árvore.
   await s.enviar("Runtime.evaluate", { expression: CONGELAR_ANIMACAO, returnByValue: true });
+  // Toda imagem eager e decodificada ANTES de fotografar — sem isto a evidência mentia
+  // duas vezes: lazy abaixo da dobra saía como tile branco, e JPEG semi-decodificado
+  // saía como produto "fatiado" (a lata cortada da V4.2).
+  await s.enviar("Runtime.evaluate", {
+    expression: CARREGAR_IMAGENS,
+    awaitPromise: true,
+    returnByValue: true,
+  });
   await esperar(120);
+  // O viewport cresce até a altura REAL do documento antes do screenshot: com
+  // `captureBeyondViewport` sozinho, header e bottom-nav `fixed` pintavam na posição do
+  // viewport curto — uma barra atravessando o meio da página, decapitando cards. Com o
+  // viewport na altura da página, `fixed` top pinta no topo e `fixed` bottom no rodapé,
+  // exatamente como o leitor veria cada extremo.
+  const altura = await medir<number>(
+    s,
+    "Math.ceil(Math.max(document.documentElement.scrollHeight, document.body.scrollHeight))",
+  );
+  if (opcoes.clip === undefined && altura > 900) {
+    await s.enviar("Emulation.setDeviceMetricsOverride", {
+      width: opcoes.largura,
+      height: altura,
+      deviceScaleFactor: 2,
+      mobile: opcoes.movel,
+    });
+    await esperar(350);
+  }
   const { data } = await s.enviar<{ data: string }>("Page.captureScreenshot", {
     format: "png",
     captureBeyondViewport: true,

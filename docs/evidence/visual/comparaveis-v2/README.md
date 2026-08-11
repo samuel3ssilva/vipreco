@@ -1,4 +1,4 @@
-# Demo V4.3 — Final Micro-Remediation — evidência visual
+# Demo V4.3 — Final Self-Review + Live Staging Release — evidência visual
 
 Capturas a 390 px CSS (`deviceScaleFactor: 2`, PNG de 780 px) contra o servidor de
 desenvolvimento na branch `feat/demo-comparaveis-v2`, geradas por
@@ -30,6 +30,47 @@ a V4.3 fez o preço da Original dizer o desembolso mínimo real.
 | `benchmark-lessons-board.png`         | 11 · Decisões adotadas/rejeitadas de cada benchmark                     |
 | `benchmark-diagnosis.md`              | Diagnóstico por dimensão + matriz KEEP/ADAPT/REJECT (V2/V3)             |
 | `*-390-dobra.png`                     | Primeira dobra de cada tela (insumo das pranchas)                       |
+
+## O que o Final Self-Review mudou (10/08/2026 — antes do release em staging)
+
+Três revisores independentes (sem o contexto da implementação) revisaram as 12 telas
+renderizadas do head contra o North Star e as lições de benchmark; cada achado foi
+verificado no DOM/app real antes de virar correção, e um quarto revisor confirmou cada
+correção na tela recapturada (7/7 PASSOU, 0 FALHOU).
+
+- **Pack obrigatório na identidade (P0)** — o card rank 1 da Original dizia "350 ml" ao
+  lado de R$ 45,48 (uma lata a preço de doze); agora a quantidade exibida diz o que se
+  COMPRA: **"pack 12 × 350 ml"**, na comparação e na ficha (`card-v2.ts`, com teste de
+  contrato). O rank 2 segue "4,2 L" — cada linha carrega o próprio SKU.
+- **Formato unitário unificado na ficha (P1)** — "R$ 3,79/lata" e "R$ 10,83 **por** L" a
+  duas linhas de distância viraram o mesmo formato compacto ("/L"), o da comparação.
+- **Separador de data sem linha órfã (P1)** — quando a linha de procedência quebra, o "·"
+  fecha a primeira linha ("09/08 ·") em vez de abrir a segunda.
+- **Títulos do catálogo em até 3 linhas (P1)** — "…Dolce Gusto…" e "…Sempre Livre 32…"
+  truncavam exatamente a variante/contagem que identifica o SKU; agora aparecem inteiros.
+- **Sete fundos de asset clareados para branco (P1)** — pack Original (teal), Elseve 400
+  (azul), Corona e Heineken (teal), Liza (amarelo), Lasanha (rosa), Tixan (roxo): flood
+  fill a partir das bordas, produto intocado, unificando os tiles dentro de cada lista.
+- **Pipeline de evidência consertado de verdade (P1)** — `CARREGAR_IMAGENS` existia mas
+  nunca era chamada; agora toda captura espera o decode (com teto de 8 s) e o viewport
+  cresce até a altura real da página antes do screenshot — header/nav `fixed` pintam no
+  topo/rodapé em vez de fatiar o meio da página, e imagens lazy não saem como tile branco.
+- **Falsos positivos derrubados com evidência** — "R$ 19.95 com ponto" (o DOM mostra
+  vírgula), "R$4,99 colado" (há espaço em todo preço), "12 tiles brancos no catálogo"
+  (artefato da captura; o app real renderiza as 24 imagens).
+- **Por design, não defeito** — ofertas "valeu até 09/08" ranqueadas: é o snapshot
+  histórico declarado (§18; banner "Importante" + nota de demonstração em toda
+  comparação); falsificar `valid_until` é proibido. Mercados reais com logos: decisão do
+  Founder (a planilha é a coleta real dele; DL-040). Montagens multi-unidade do encarte
+  (Dreamies, Heineken, Sanol 30, Nivea/Rexona variedades, Eliminador Sanol fragrâncias):
+  arte da própria fonte com o SKU/oferta correto — isolar uma unidade exigiria edição
+  que a política proíbe.
+- **P2 residual documentado** — fundos de encarte remanescentes em 3 tiles do catálogo
+  (Sempre Livre azul-degradê, Linguiça creme, Farofa bege — o clareamento comeria o
+  produto) e o trio hortifruti em verde (conjunto intencional); numeral de ranking sem
+  badge circular; "Menor preço observado" × "Melhor custo observado" (semânticas
+  distintas e deliberadas); três rótulos de CTA de WhatsApp; datas com verbosidade
+  diferente por superfície (curta na comparação, completa na ficha — deliberado).
 
 ## O que a V4.3 mudou (10/08/2026 — Final Micro-Remediation)
 

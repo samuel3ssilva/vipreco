@@ -223,12 +223,16 @@ export function OfferRankRow({
         <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <SourceBadge source={entry.source_type} label={visao.procedencia.origem} />
           {/* V4.2 §6 — cada fato de data é um segmento indivisível: quando falta largura,
-              a quebra acontece ENTRE "09/08" e "valeu até 09/08", nunca no meio da frase
-              ("09/08 · valeu até / 09/08" parecia acidente de layout). */}
-          <span className="tabular-nums whitespace-nowrap">{formatDiaMes(entry.observed_at)}</span>
+              a quebra acontece ENTRE "09/08 ·" e "valeu até 09/08", nunca no meio da frase.
+              O "·" fica no FIM do primeiro segmento: separador fechando linha é vírgula;
+              separador ABRINDO linha parecia acidente de tipografia (Fable review). */}
+          <span className="tabular-nums whitespace-nowrap">
+            {formatDiaMes(entry.observed_at)}
+            {entry.valid_until !== null ? " ·" : ""}
+          </span>
           {entry.valid_until !== null ? (
             <span className="tabular-nums whitespace-nowrap">
-              {`· ${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${formatDiaMes(entry.valid_until)}`}
+              {`${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${formatDiaMes(entry.valid_until)}`}
             </span>
           ) : null}
         </div>

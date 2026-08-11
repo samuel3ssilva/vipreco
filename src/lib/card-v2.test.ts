@@ -497,6 +497,25 @@ describe("pack obrigatório — o protagonista é o desembolso mínimo real (V4.
     });
     expect(precoParaCompartilhar(oferta({ price: 3.79 }))).toEqual({ preco: 3.79 });
   });
+
+  it("a quantidade de identidade diz o que se COMPRA: pack 12 × 350 ml, nunca 350 ml solto", () => {
+    // "350 ml" ao lado de R$ 45,48 lia como uma lata a preço de doze (Fable review):
+    // ao lado do desembolso do pack, a identidade carrega o pack junto.
+    const v = visao({
+      ...original,
+      product: produto({ quantity_value: 350, quantity_unit: "ml" }),
+      quantity_provenance: "confirmed",
+    });
+    expect(v.identidade.quantidade).toBe("pack 12 × 350 ml");
+    // Sem pack declarado, a quantidade continua a de sempre.
+    expect(
+      visao({
+        price: 3.79,
+        product: produto({ quantity_value: 350, quantity_unit: "ml" }),
+        quantity_provenance: "confirmed",
+      }).identidade.quantidade,
+    ).toBe("350 ml");
+  });
 });
 
 describe("condição de promoção", () => {

@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import { TEMPORAL_STYLE } from "@/lib/temporal";
 import { ProductIdentity, ProductImage } from "./identity";
 import { MarketBadge, NeighborhoodLabel } from "./market";
-import { PriceDisplay, PromotionCondition, UnitPrice } from "./price";
+import { ClubPrice, PriceDisplay, PromotionCondition, SimulacaoDePeso, UnitPrice } from "./price";
 import { OfferStatus, ProvenanceBlock } from "./provenance";
 
 /**
@@ -90,6 +90,12 @@ interface ProductCardV2Props {
    * sem nada aqui, e nada muda para eles.
    */
   acaoSecundaria?: ReactNode;
+  /**
+   * §18 — a SUPERFÍCIE decide se a oferta é lida como snapshot histórico, nunca o card:
+   * a Home da demo liga; o laboratório e o caminho do piloto ficam no padrão (`false`),
+   * onde validade vencida continua produzindo o rótulo e o CTA de "preços atuais".
+   */
+  snapshotHistorico?: boolean;
   className?: string;
 }
 
@@ -99,13 +105,21 @@ export function ProductCardV2({
   variant = "secundario",
   avisoParcial = null,
   acaoSecundaria = null,
+  snapshotHistorico = false,
   className = "",
 }: ProductCardV2Props) {
   const tituloId = useId();
   const avisoId = useId();
   const destaque = variant === "destaque";
-  const visao = montarVisaoDoCard(oferta, now, formatDate);
-  const { color, height } = TEMPORAL_STYLE[visao.temporal];
+  const visao = montarVisaoDoCard(oferta, now, formatDate, { snapshotHistorico });
+  // A mesma neutralização da tarja que o card compacto faz no snapshot (§18): a urgência
+  // derivada do relógio não pinta o card; o fato fica escrito na procedência.
+  const neutralizada =
+    snapshotHistorico &&
+    (visao.temporal === "expirado" || visao.temporal === "sem-validade-antigo");
+  const { color, height } = neutralizada
+    ? { color: "var(--border)", height: "var(--vp-time-bar-now)" }
+    : TEMPORAL_STYLE[visao.temporal];
 
   return (
     <Surface
@@ -165,7 +179,19 @@ export function ProductCardV2({
             da imagem de 96; "R$ 26,49" a 2.25rem ocupa ~130. A cada faixa em que a coluna
             cresce, imagem e preço crescem junto — nunca antes. Foi assim que R3.3B descobriu o
             estouro a 320: medindo a captura, não lendo o código. */}
-        <div className={`flex items-start ${destaque ? "gap-4 sm:gap-5" : "gap-3"}`}>
+        {/* =====================================================================
+            V4 §3 — A FOTO VOLTOU PARA O LADO DO TEXTO, E A PRIMEIRA DOBRA É O MOTIVO
+            =====================================================================
+
+            A composição de 09/08 (foto 5:3 em largura inteira) era bonita e cara: a 390 px a
+            foto sozinha consumia ~230 px de altura, e produto, preço, mercado e CTA — as
+            quatro coisas que a primeira dobra existe para dizer — só apareciam na segunda
+            tela. O Founder mediu exatamente isso ("foto não pode consumir quase toda a
+            primeira tela") e a referência estrutural do V4 §3 desenha o hero como o benchmark
+            de grocery desenha: foto ao lado, identidade + preço + mercado na coluna, CTA
+            embaixo. A ordem do DOM não muda — imagem, nome, preço, mercado —, então o leitor
+            de tela ouve a mesma sequência de sempre. */}
+        <div className={`flex items-start ${destaque ? "gap-3.5" : "gap-3"}`}>
           <ProductImage
             imagem={visao.imagem}
             categoria={oferta.product.category}
@@ -186,7 +212,11 @@ export function ProductCardV2({
                 destaque={destaque}
                 atenuado={!visao.naListaOrganica}
               />
+              {/* V4 §4 — no peso variável o número grande é o R$/kg observado; a conta para a
+                  quantidade de referência é SIMULAÇÃO, nomeada pelo "≈", nunca o protagonista. */}
+              <SimulacaoDePeso simulacao={visao.simulacao} />
               <UnitPrice unitario={visao.unitario} />
+              <ClubPrice clube={visao.clube} />
             </div>
           </div>
         </div>
@@ -196,13 +226,22 @@ export function ProductCardV2({
             duas linhas vêm logo abaixo dela em largura inteira, onde o nome do mercado cabe sem
             disputar espaço com a imagem. */}
         <div className="flex flex-col gap-0.5">
-          <MarketBadge nome={visao.mercado.nome} destaque={destaque} />
+          <MarketBadge nome={visao.mercado.nome} destaque={destaque} market={oferta.market} />
           <NeighborhoodLabel bairro={visao.mercado.bairro} />
         </div>
 
         <PromotionCondition condicao={visao.condicao} />
 
-        <ProvenanceBlock procedencia={visao.procedencia} sourceType={oferta.source_type} />
+        {/* Procedência é de quem foi observado. Numa linha de exemplo não há fonte, não há data
+            de coleta e não há etiqueta fotografada — desenhar o bloco ali carimbaria observação
+            num número inventado. O que aparece no lugar é o que a linha realmente é. */}
+        {visao.exemploIlustrativo ? (
+          <p className="text-muted-foreground text-xs">
+            Exemplo ilustrativo — este preço não foi observado.
+          </p>
+        ) : (
+          <ProvenanceBlock procedencia={visao.procedencia} sourceType={oferta.source_type} />
+        )}
 
         {avisoParcial !== null ? (
           <p id={avisoId} className="text-muted-foreground flex items-start gap-1.5 text-xs">

@@ -11,10 +11,13 @@ import { WhatsAppCta } from "@/components/WhatsAppCta";
 import { StateMessage } from "@/components/StateMessage";
 import { loadHomeOpportunities } from "@/services/home-opportunities";
 import { appMode } from "@/lib/app-mode";
+import { DEMO_NATUREZA_DO_DADO, DEMO_PRODUCTS } from "@/lib/demo-catalog";
+import { SHORTCUTS } from "@/lib/atalhos-de-busca";
 import { estadoSemAchados } from "@/lib/home-states";
 import { absoluteAssetUrl, ogImageMeta } from "@/lib/og";
 import { formatProductName } from "@/lib/format";
 import { isValidPrice } from "@/lib/comparison";
+import { observadaNoSnapshot } from "@/lib/demo-catalog";
 
 // Tudo o que a Home mostra de primeira — os Achados — chega pelo loader da rota (mesmo padrão de
 // `/produto/$productId`), não por `useQuery` no cliente: o HTML inicial já vem completo, sem
@@ -51,18 +54,6 @@ export const Route = createFileRoute("/")({
     </AppShell>
   ),
 });
-
-/**
- * Os quatro atalhos da busca, e a única regra que eles têm: **todo atalho precisa devolver
- * resultado**.
- *
- * "Feijão" estava aqui e o catálogo não tem feijão nenhum — o atalho mais visível da primeira
- * dobra levava a "nenhum produto encontrado". Numa demonstração em que a pessoa recebe o celular
- * na mão, esse é o toque que faz o produto parecer quebrado, e não o que faz parecer novo.
- *
- * `src/lib/demo-identity.test.ts` afirma que cada atalho corresponde a um produto do catálogo.
- */
-const SHORTCUTS = ["Café", "Arroz", "Óleo", "Leite"];
 
 /**
  * O aviso de confiança da primeira dobra.
@@ -121,7 +112,11 @@ function HomePage() {
   // Referência única de tempo, vinda do servidor: mantém "ontem"/"há 2 dias" idêntico no HTML
   // inicial e depois da hidratação, mesmo se o relógio do aparelho estiver adiantado.
   const renderedAt = new Date(generatedAt);
-  const validOpportunities = opportunities.filter((entry) => isValidPrice(entry, renderedAt));
+  // Demo é SNAPSHOT (§18): o preço observado fica, com "valeu até" na procedência quando a
+  // validade passou. O caminho do piloto continua no `isValidPrice` do princípio 2.
+  const validOpportunities = opportunities.filter((entry) =>
+    source === "demo" ? observadaNoSnapshot(entry, renderedAt) : isValidPrice(entry, renderedAt),
+  );
   // O modo do ambiente decide; a origem do dado é uma trava a mais, para o caso de um dado
   // fictício aparecer num ambiente que se declara piloto.
   const isDemo =
@@ -133,26 +128,27 @@ function HomePage() {
 
   return (
     <AppShell>
-      <div className="space-y-7">
+      {/* V4 §18 — space-y-5, não 7: a primeira dobra precisa entregar produto, preço,
+          mercado e CTA (§3/§26), e cada 8 px de folga entre blocos empurra o preço para
+          baixo. O respiro DENTRO dos blocos não mudou. */}
+      <div className="space-y-5">
         <HomeContexto />
 
         {/* A BUSCA NA PRIMEIRA DOBRA. Sem `autoFocus`: abrir o teclado do celular por conta
-            própria cobre metade da tela antes de a pessoa decidir o que quer fazer.
-
-            R3.3B TIROU O CABEÇALHO DE SEÇÃO. Ele dizia "Procurando um produto específico?" com
-            uma linha de apoio abaixo — duas frases explicando um campo de busca que já tem
-            lupa, `placeholder` e quatro atalhos com nomes de produto. A seção continua nomeada
-            para quem navega por regiões, via `aria-label`; o que saiu foi o desenho de duas
-            frases que ninguém precisa ler para saber o que fazer ali. */}
+            própria cobre metade da tela antes de a pessoa decidir o que quer fazer. */}
         <section aria-label="Busca de produto" className="space-y-2.5">
           <ProductSearch destaque label="Busque um produto exato" />
-          <ul className="flex flex-wrap gap-2">
+          {/* V4 §19 — os chips numa LINHA só, rolável: cinco categorias em duas linhas
+              custavam ~56 px da primeira dobra. O quinto chip aparece cortado na borda,
+              que é o próprio convite a rolar. `-mx-*` sangra a linha até a borda da
+              página, como o benchmark de grocery faz com carrosséis. */}
+          <ul className="sem-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             {SHORTCUTS.map((shortcut) => (
-              <li key={shortcut}>
+              <li key={shortcut} className="shrink-0">
                 <Link
                   to="/buscar"
                   search={{ q: shortcut }}
-                  className="btn-base btn-secondary btn-touch-48 rounded-full px-4 text-sm font-semibold"
+                  className="btn-base btn-secondary btn-touch-48 rounded-full px-4 text-sm font-semibold whitespace-nowrap"
                 >
                   {shortcut}
                 </Link>
@@ -164,12 +160,14 @@ function HomePage() {
         <HomeAchados
           opportunities={validOpportunities}
           now={renderedAt}
+          snapshotHistorico={source === "demo"}
           shareSlot={
             destaque ? (
               <ShareAchadoButton
                 payload={{
                   produto: formatProductName(destaque.product),
                   preco: destaque.price,
+                  ...(destaque.price_unit === undefined ? {} : { unidade: destaque.price_unit }),
                   mercado: destaque.market.name,
                   validUntil: destaque.valid_until,
                   url: absoluteAssetUrl(`/produto/${destaque.product.id}`),
@@ -180,14 +178,11 @@ function HomePage() {
           }
           seal={
             isDemo ? (
-              // R3.3B §7 tirou a moldura, não a frase. Era um retângulo tracejado, em
-              // monoespaçada, com um glifo "◌" — o desenho exato de um rótulo de fixture, e o
-              // elemento que mais fazia a tela parecer laboratório. A honestidade sobre o dado
-              // ser fictício não depende de o aviso ser feio: ela depende de ele estar escrito,
-              // e continua — aqui, na faixa de ambiente no topo e no bloco de procedência.
-              <p className="text-muted-foreground pt-1 text-xs">
-                dados fictícios · exemplos para demonstrar o formato
-              </p>
+              // R3.3B §7 tirou a moldura, não a frase, e 09/08/2026 trocou a frase porque ela
+              // ficou falsa. Ela dizia "dados fictícios · exemplos para demonstrar o formato",
+              // e estes cinco preços não são fictícios: foram lidos nas placas de um balcão.
+              // O texto vem de `demo-catalog`, junto do dado que descreve.
+              <p className="text-muted-foreground pt-1 text-xs">{DEMO_NATUREZA_DO_DADO}</p>
             ) : null
           }
           fallback={
@@ -206,6 +201,14 @@ function HomePage() {
           }
         />
 
+        {/* V3 §3/§6 — a vitrine é convite; a porta do catálogo inteiro fica logo abaixo
+            dela, com a contagem real. É o que transforma "6 exemplos" em "um catálogo". */}
+        {source === "demo" ? (
+          <Link to="/buscar" className="btn-base btn-secondary btn-touch-48 w-full">
+            Ver o catálogo completo — {DEMO_PRODUCTS.length} produtos comparados
+          </Link>
+        ) : null}
+
         <AvisoDePreco />
 
         {/* O WHATSAPP É SECUNDÁRIO, e a posição diz isso. Ele vem depois do que o produto
@@ -213,7 +216,7 @@ function HomePage() {
             demais. Nenhuma promessa de frequência — o texto do CTA não diz "todo dia". */}
         <WhatsAppCta />
 
-        <TrustSection isDemo={isDemo} />
+        <TrustSection />
 
         <LocalStory />
       </div>

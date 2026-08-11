@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { MarketAvatar } from "@/components/MarketAvatar";
 import { VisuallyHidden } from "@/components/primitives";
 import { montarVisaoDoCard, type OfertaCardV2 } from "@/lib/card-v2";
-import { formatDate } from "@/lib/format";
-import { sourceLabel } from "@/lib/sources";
+import { formatDate, formatPrice } from "@/lib/format";
 import { TEMPORAL_STYLE } from "@/lib/temporal";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "./identity";
@@ -44,25 +44,47 @@ import { ProductImage } from "./identity";
 export function AchadoCompacto({
   oferta,
   now,
+  snapshotHistorico = false,
   className,
 }: {
   oferta: OfertaCardV2;
   /** Instante de referência do servidor — mantém "ontem" igual antes e depois da hidratação. */
   now: Date;
+  /** §18 — decisão da SUPERFÍCIE: a Home da demo lê a oferta como snapshot histórico. */
+  snapshotHistorico?: boolean;
   className?: string;
 }) {
-  const visao = montarVisaoDoCard(oferta, now, formatDate);
-  const { color } = TEMPORAL_STYLE[visao.temporal];
+  const visao = montarVisaoDoCard(oferta, now, formatDate, { snapshotHistorico });
+  // No snapshot a tarja de urgência derivada do relógio vira neutra: cinco barras vermelhas
+  // numa vitrine de preços observados seriam alarme sem informação — o fato ("valeu até")
+  // já está escrito na linha de procedência. Oferta ainda vigente mantém a cor.
+  const neutralizada =
+    snapshotHistorico &&
+    (visao.temporal === "expirado" || visao.temporal === "sem-validade-antigo");
+  const color = neutralizada ? "var(--border)" : TEMPORAL_STYLE[visao.temporal].color;
 
   // Fonte, atualização e validade continuam inseparáveis (`R3-SCREEN-SPEC.md`) — o que muda é
   // que aqui elas cabem numa linha só. A validade ausente é DITA, nunca omitida: sem isso o
   // leitor supõe que o preço vale indefinidamente, que é a suposição que o produto não induz.
+  /**
+   * A AUSÊNCIA DE VALIDADE VOLTOU A SER SILÊNCIO NESTA COMPOSIÇÃO — 09/08/2026.
+   *
+   * "Validade não informada" existe para impedir que o leitor suponha um prazo. Numa lista em
+   * que NENHUMA oferta tem validade — que é o caso de balcão de açougue, onde ninguém anuncia
+   * prazo —, a frase se repete linha a linha e passa a ocupar a metade direita de cada card sem
+   * distinguir card nenhum. Repetição idêntica não informa: vira textura.
+   *
+   * Ela continua **inteira** onde tem consequência: no card de destaque e na ficha da oferta,
+   * que é onde alguém decide. Aqui a linha diz o que a linha tem.
+   */
   const procedencia = [
-    sourceLabel(oferta.source_type),
+    visao.procedencia.origem,
     visao.procedencia.relativo,
-    visao.procedencia.validoAte === null
-      ? "validade não informada"
-      : `válido até ${visao.procedencia.validoAte}`,
+    ...(visao.procedencia.validoAte === null
+      ? []
+      : [
+          `${visao.procedencia.validadePassada ? "valeu até" : "válido até"} ${visao.procedencia.validoAte}`,
+        ]),
   ].join(" · ");
 
   return (
@@ -107,16 +129,23 @@ export function AchadoCompacto({
       </div>
 
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="font-display line-clamp-2 text-[0.9375rem] leading-tight font-bold">
+        {/* TRÊS LINHAS, E NÃO DUAS. "Coxa e sobrecoxa de frango" saía como "Coxa e
+            sobrecoxa…" na coluna estreita — e o nome do corte é a identidade inteira deste
+            produto, que não tem marca nem gramatura para desempatar. Cortá-lo é apagar a única
+            coisa que distingue esta linha da de baixo. */}
+        <p className="font-display line-clamp-3 text-[0.9375rem] leading-tight font-bold">
           {visao.identidade.nome}
           {visao.identidade.marca === null ? null : (
             <span className="font-normal"> {visao.identidade.marca}</span>
           )}
         </p>
         {visao.identidade.quantidade === null ? null : (
-          // Sem truncar. A gramatura é o que separa dois SKUs que de resto são o mesmo.
+          // Sem truncar. A gramatura é o que separa dois SKUs que de resto são o mesmo —
+          // e ela não quebra NO MEIO: "400 g" partido em "400" e "g" (visto na captura da
+          // farofa a 390 px) é a gramatura deixando de ser um dado para virar dois cacos.
           <p className="text-muted-foreground text-xs break-words tabular-nums">
-            {[visao.identidade.variante, visao.identidade.quantidade].filter(Boolean).join(" · ")}
+            {visao.identidade.variante !== null ? <>{visao.identidade.variante} · </> : null}
+            <span className="whitespace-nowrap">{visao.identidade.quantidade}</span>
           </p>
         )}
         {/* Mercado e bairro. O bairro é âncora de proximidade — "é aqui perto" é metade da razão
@@ -127,27 +156,58 @@ export function AchadoCompacto({
             desta composição a quebra caía sempre depois do separador: "Mercado local 2 ·" numa
             linha e "Jardim Novo" na outra. Um separador pendurado no fim da linha é ruído que
             ninguém escolheu — e como a quebra já acontecia, separar não custa altura nenhuma. */}
-        <p className="mt-0.5 text-sm leading-tight font-semibold">{visao.mercado.nome}</p>
+        {/* V3: o logo (ou monograma) entra do lado do nome — reconhecimento em lista é o
+            que o benchmark de varejo ensina, e o nome continua sendo a informação. */}
+        <p className="mt-0.5 flex items-center gap-1.5 text-sm leading-tight font-semibold">
+          <MarketAvatar market={oferta.market} tamanho="sm" />
+          <span className="min-w-0">{visao.mercado.nome}</span>
+        </p>
         {visao.mercado.bairro === null || visao.mercado.bairro.trim().length === 0 ? null : (
           <p className="text-muted-foreground text-xs leading-tight">{visao.mercado.bairro}</p>
         )}
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-1 min-[360px]:self-start min-[360px]:pt-0.5">
-        <p
-          aria-hidden="true"
-          className={cn(
-            // DEMO FREEZE §4 ("dar mais peso ao preço"): 1.375rem → 1.5rem. Numa linha em que o
-            // nome está em 0.9375rem, o preço a 1.375 era grande sem ser dominante — e o preço é
-            // o que faz alguém parar de rolar. O teto é a coluna: a 320 px sobram ~78 px para o
-            // bloco de preço, e "R$ 26,49" a 1.5rem ocupa ~76. Um degrau acima estouraria.
-            "font-display text-[1.5rem] leading-none font-extrabold tabular-nums",
-            visao.naListaOrganica ? "text-primary" : "text-muted-foreground",
+        <div className="flex flex-col items-end gap-0.5">
+          <p
+            aria-hidden="true"
+            className={cn(
+              // DEMO FREEZE §4 ("dar mais peso ao preço"): 1.375rem → 1.5rem. Numa linha em que
+              // o nome está em 0.9375rem, o preço a 1.375 era grande sem ser dominante — e o
+              // preço é o que faz alguém parar de rolar. O teto é a coluna: a 320 px sobram
+              // ~78 px para o bloco de preço, e "R$ 26,49" a 1.5rem ocupa ~76.
+              "font-display text-[1.5rem] leading-none font-extrabold tabular-nums",
+              visao.naListaOrganica ? "text-primary" : "text-muted-foreground",
+            )}
+          >
+            <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
+            <span className="ml-1">{visao.preco.numero}</span>
+            {/* V4 §4: a unidade colada no número — "R$ 39,90/kg". Sem ela, o R$/kg de um
+                corte leria como o preço de uma peça. */}
+            {visao.preco.quantidade === null ? null : (
+              <span className="text-muted-foreground ml-0.5 text-[45%] font-bold">
+                {visao.preco.quantidade}
+              </span>
+            )}
+          </p>
+          {/* A simulação — "500 g ≈ R$ 4,00" — sob o número, secundária (V4 §4). */}
+          {visao.simulacao === null ? null : (
+            <p
+              aria-hidden="true"
+              className="text-muted-foreground text-[0.6875rem] leading-none tabular-nums"
+            >
+              {visao.simulacao}
+            </p>
           )}
-        >
-          <span className="text-[62%] font-bold">{visao.preco.simbolo}</span>
-          <span className="ml-1">{visao.preco.numero}</span>
-        </p>
+          {visao.unitario === null ? null : (
+            <p
+              aria-hidden="true"
+              className="text-muted-foreground text-[0.6875rem] leading-none tabular-nums"
+            >
+              {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
+            </p>
+          )}
+        </div>
         <VisuallyHidden>{visao.preco.falado}</VisuallyHidden>
         <ChevronRight
           aria-hidden="true"

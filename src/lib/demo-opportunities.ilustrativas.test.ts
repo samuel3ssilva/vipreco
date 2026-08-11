@@ -2,32 +2,79 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildDemoOpportunities } from "@/lib/demo-opportunities";
+import { construirOfertasDemo } from "@/lib/demo-catalog";
+
+const NOW = new Date("2026-08-09T18:00:00-03:00");
 
 /**
- * R3.3B §5 — a fronteira das ilustrações genéricas, medida.
+ * A fronteira das imagens da demonstração, medida — versão da demo v2 (mandato §10).
  *
  * =============================================================================
- * A AUTORIZAÇÃO E A PROIBIÇÃO VIERAM NO MESMO PARÁGRAFO
+ * DUAS ORIGENS DE IMAGEM, DUAS REGRAS, E A LINHA ENTRE ELAS É TESTADA
  * =============================================================================
  *
- * O mandato liberou criar assets visuais "GENÉRICOS e claramente fictícios que representem
- * categorias de supermercado, sem copiar embalagem real, marca real, logotipo real ou trade
- * dress de terceiros" — e fechou com "não tratar imagem ilustrativa como correspondência real
- * de SKU".
+ * **IA ilustrativa** — só para item de balcão SEM MARCA (frango, bucho, cebola). O `alt`
+ * declara as duas coisas que um leitor de tela não tem como conferir: que a imagem é
+ * ilustrativa e que foi gerada por IA.
  *
- * As duas frases juntas descrevem um risco preciso, e ele não é o de hoje: é o de amanhã, quando
- * existir foto de verdade e alguém precisar decidir o que pode ser publicado ao lado de um preço
- * de piloto. Uma ilustração de categoria colada num SKU real é exatamente a "imagem aproximada"
- * que o princípio 11 e o `IMAGE-POLICY.md` proíbem.
+ * **Recorte de encarte** — só para produto DE MARCA, e só da arte que o próprio mercado
+ * publicou no material fornecido pelo Founder. O `alt` declara a origem.
  *
- * Este arquivo transforma a proibição em portão. Ele não confia no comentário nem na intenção de
- * quem escreveu o fixture: interroga o dado.
+ * O cruzamento proibido é o que o §10 escreve com todas as letras: **"NÃO gerar embalagem
+ * falsa imitando marca."** Uma imagem gerada por IA num produto com `brand` preenchida
+ * seria exatamente isso — e é o caso que este arquivo reprova, para sempre, não importa
+ * quem edite o fixture.
  */
-describe("ilustração genérica só existe em dado de demonstração", () => {
-  const achados = buildDemoOpportunities();
+describe("as duas origens de imagem, e a linha entre elas", () => {
+  const ofertas = construirOfertasDemo();
+
+  it("imagem gerada por IA nunca aparece em produto de marca", () => {
+    let iaVistas = 0;
+    for (const oferta of ofertas) {
+      if (oferta.image?.ilustrativa !== true) continue;
+      iaVistas += 1;
+      expect(
+        oferta.product.brand,
+        `${oferta.product.name}: embalagem gerada por IA em produto de marca é embalagem falsa (§10)`,
+      ).toBeNull();
+    }
+    expect(
+      iaVistas,
+      "nenhuma imagem IA no catálogo; a fronteira não foi exercitada",
+    ).toBeGreaterThan(0);
+  });
+
+  it("o alt da imagem IA declara o que ela é, e o que ela não é", () => {
+    for (const oferta of ofertas) {
+      if (oferta.image?.ilustrativa !== true) continue;
+      expect(oferta.image.alt, oferta.id).toContain("ilustrativa");
+      expect(oferta.image.alt, oferta.id).toContain("gerada por IA");
+      expect(oferta.image.alt, oferta.id).toContain("não é a peça vendida");
+    }
+  });
+
+  it("a imagem de produto de marca declara a origem: encarte do mercado ou foto do produto", () => {
+    // Não é arte nossa, não é estúdio nosso: ou é a arte que o mercado publicou, ou é a
+    // fotografia da embalagem real fornecida como asset (V4.1 §A). Dizer a origem é o que
+    // separa "usamos material legítimo" de "fabricamos uma embalagem".
+    let recortes = 0;
+    let fotos = 0;
+    for (const oferta of ofertas) {
+      if (oferta.image == null || oferta.image.ilustrativa === true) continue;
+      if (oferta.image.alt.includes("encarte do mercado")) {
+        recortes += 1;
+      } else {
+        expect(oferta.image.alt, oferta.id).toContain("foto do produto");
+        fotos += 1;
+      }
+    }
+    expect(recortes).toBeGreaterThan(0);
+    // As três fotos fornecidas na V4.1: Elseve 200 ml, Sanol 7 unidades, Original lata.
+    expect(fotos).toBe(3);
+  });
 
   it("toda oferta com imagem ilustrativa é `is_demo`, nas três entidades", () => {
-    const comIlustracao = achados.filter((a) => a.image?.ilustrativa === true);
+    const comIlustracao = ofertas.filter((a) => a.image?.ilustrativa === true);
     expect(comIlustracao.length).toBeGreaterThan(0);
     for (const achado of comIlustracao) {
       expect(achado.is_demo, achado.id).toBe(true);
@@ -36,98 +83,68 @@ describe("ilustração genérica só existe em dado de demonstração", () => {
     }
   });
 
-  it("toda ilustração vive em `/img/demo/`, e o caminho diz o que ela é", () => {
-    // A pasta é parte da garantia: um asset de produção não chega aqui por engano de import,
-    // e uma revisão que veja `/img/demo/` num registro de piloto sabe na hora que está errado.
-    for (const achado of achados) {
-      if (achado.image === null || achado.image === undefined) continue;
+  it("toda imagem vive em `/img/demo/`, e o caminho diz o que ela é", () => {
+    for (const achado of ofertas) {
+      if (achado.image == null) continue;
       expect(achado.image.src, achado.id).toMatch(/^\/img\/demo\//);
     }
   });
 
-  it("o texto alternativo declara que é ilustração, e não foto do produto", () => {
-    // Quem usa leitor de tela é justamente quem não pode conferir olhando que aquilo é um
-    // desenho. Chamar de "foto" seria a afirmação que o princípio 11 proíbe.
-    for (const achado of achados) {
-      const alt = achado.image?.alt ?? "";
-      // "Ilustração" continua obrigatório; o que mudou foi o resto da frase, junto com o
-      // desenho. Antes o alt dizia "não é a embalagem do produto" porque o desenho era um
-      // pictograma de categoria. Agora ele É uma embalagem — fictícia —, e a afirmação que
-      // precisa continuar sendo feita é a outra: não é FOTO. É essa a que o princípio 11
-      // protege, e é a única que um leitor de tela não tem como conferir olhando.
-      expect(alt, achado.id).toContain("Ilustração");
-      expect(alt, achado.id).toContain("não é foto do produto");
-      expect(alt, achado.id).toContain("fictícia");
-    }
-  });
-
-  it("nenhuma marca real aparece no fixture", () => {
-    // O assessment da North Star V2 já tinha rejeitado marcas reais nas telas. R3.3B fechou a
-    // ponta do dado: um desenho genérico ao lado do nome de uma marca existente representa a
-    // embalagem daquela marca, por mais genérico que seja o traço.
-    const reais = ["Camil", "Pilão", "Italac", "Tio João", "Melitta", "3 Corações", "Ypê"];
-    for (const achado of achados) {
-      for (const marca of reais) {
-        expect(achado.product.brand ?? "", `${achado.id} cita "${marca}"`).not.toContain(marca);
-      }
-    }
+  it("nenhuma oferta fica sem imagem — 28/28 SKUs com asset legítimo (V4.1)", () => {
+    // A lista de placeholders deliberados chegou a zero em 10/08/2026, quando o Founder
+    // forneceu as fotos dos três últimos SKUs (Elseve 200 ml, Sanol 7 unidades, Original
+    // lata). O teste continua sendo a mesma guarda de sempre, no estado final: se um SKU
+    // novo entrar sem asset, ele DEVE aparecer aqui como decisão consciente — nunca ser
+    // "completado" com a imagem de outro tamanho, que é a aproximação que o princípio 11
+    // proíbe.
+    const semImagem = ofertas
+      .filter((o) => o.image == null)
+      .map((o) => `${o.product.brand ?? ""} ${o.product.size_text ?? ""}`.trim());
+    expect(new Set(semImagem)).toEqual(new Set());
   });
 });
 
-describe("os arquivos das ilustrações", () => {
+describe("os arquivos das imagens", () => {
   const PASTA = join(process.cwd(), "public", "img", "demo");
-  const todos = readdirSync(PASTA).filter((n) => n.endsWith(".svg"));
 
-  /**
-   * `cafe.svg` é o pictograma antigo, e ele continua no repositório por uma razão de escopo:
-   * `/para-mercados` o referencia, e o Founder CONGELOU a experiência B2B nesta rodada. Apagá-lo
-   * teria sido "aproveitar a rodada para alinhar o B2B", que o §19 proíbe com todas as letras.
-   *
-   * Ele fica fora das asserções de EMBALAGEM — que descrevem a coleção nova do B2C — e continua
-   * dentro das asserções que valem para qualquer asset: nada de marca real, nada de recurso
-   * externo. É a fronteira certa: o que muda é a direção visual do B2C, não a política.
-   */
-  const LEGADO_B2B = new Set(["cafe.svg"]);
-  const arquivos = todos.filter((n) => !LEGADO_B2B.has(n));
+  it("as imagens do catálogo B2C existem em disco, na pasta da demo v2", () => {
+    const daPasta = readdirSync(join(PASTA, "comparaveis"));
+    let conferidas = 0;
+    for (const achado of buildDemoOpportunities(NOW)) {
+      // A bisteca fica com o placeholder por decisão (§10) — os demais precisam apontar
+      // para um arquivo que exista de verdade na pasta da demo v2.
+      if (achado.image == null) continue;
+      const src = achado.image.src;
+      expect(src, achado.id).toMatch(/^\/img\/demo\/comparaveis\//);
+      const nome = src.replace("/img/demo/comparaveis/", "");
+      expect(daPasta, `${achado.id} aponta para um arquivo que não existe`).toContain(nome);
+      conferidas += 1;
+    }
+    // Anti-vacuidade: uma Home que devolvesse zero imagens não teria conferido nada.
+    expect(conferidas).toBeGreaterThan(4);
+  });
 
-  it("existem, e todos são SVG versionado", () => {
-    expect(arquivos.length).toBeGreaterThan(0);
-    for (const achado of buildDemoOpportunities()) {
-      const nome = achado.image?.src.replace("/img/demo/", "") ?? "";
-      expect(arquivos, `${achado.id} aponta para um arquivo que não existe`).toContain(nome);
+  it("nenhum arquivo referenciado pelo catálogo ficou órfão em disco", () => {
+    // O inverso do teste acima: asset em disco que nenhuma oferta referencia é peso morto
+    // no deploy — e, pior, um convite a ser "aproveitado" para um SKU que não corresponde.
+    const referenciados = new Set(
+      construirOfertasDemo()
+        .map((o) => o.image?.src.replace("/img/demo/comparaveis/", ""))
+        .filter((s): s is string => s !== undefined),
+    );
+    for (const arquivo of readdirSync(join(PASTA, "comparaveis"))) {
+      expect(referenciados.has(arquivo), `${arquivo} não é usado por nenhuma oferta`).toBe(true);
     }
   });
 
-  it("cada um se declara embalagem fictícia no próprio arquivo", () => {
-    // O comentário no SVG não é decoração: quem abre o arquivo solto, fora do repositório,
-    // precisa saber o que ele é e o que ele não é.
-    for (const nome of arquivos) {
-      const svg = readFileSync(join(PASTA, nome), "utf-8");
-      expect(svg, nome).toContain("FICTÍCIA");
-      expect(svg, nome).toMatch(/sem logotipo, sem trade dress|sem logotipo, sem trade dress/);
-    }
-  });
-
   /**
-   * =============================================================================
-   * A REGRA MUDOU, E O QUE ELA PROTEGE NÃO MUDOU
-   * =============================================================================
-   *
-   * Até 08/08/2026 esta asserção era **"nenhum SVG carrega `<text>`"**, com a justificativa de
-   * que "sem texto, o asset não tem como afirmar nada sobre produto nenhum". Era uma boa
-   * aproximação enquanto os desenhos eram pictogramas de categoria.
-   *
-   * O Founder reprovou aqueles desenhos e mandou o contrário: embalagem fictícia com rótulo,
-   * qualidade de catálogo, "sem logo real, sem trade dress copiado". Uma embalagem sem rótulo
-   * não é uma embalagem — é um pictograma —, então a proibição de `<text>` passou a proibir a
-   * própria coisa pedida.
-   *
-   * **Proibir texto nunca foi o objetivo; proibir MARCA REAL era.** A asserção agora mede
-   * isso diretamente: lê cada string desenhada e exige que nenhuma nomeie uma marca que
-   * existe. É uma verificação mais forte que a anterior, porque a anterior nem sequer olhava
-   * para o conteúdo — um SVG com o logotipo da Pilão em `<path>` passava por ela.
+   * O legado SVG (`cafe.svg` e as embalagens de mercearia do laboratório) continua no
+   * repositório: `/para-mercados` está CONGELADO e o laboratório visual ainda os exercita.
+   * As garantias que valem para qualquer asset continuam medidas sobre eles.
    */
-  it("nenhum texto desenhado nomeia marca real", () => {
+  const todosSvg = readdirSync(PASTA).filter((n) => n.endsWith(".svg"));
+
+  it("nenhum texto desenhado nos SVGs legados nomeia marca real", () => {
     const REAIS = [
       "Camil",
       "Pilão",
@@ -148,10 +165,8 @@ describe("os arquivos das ilustrações", () => {
       "Prato Fino",
     ];
     let textosLidos = 0;
-    for (const nome of todos) {
+    for (const nome of todosSvg) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
-      // só o conteúdo desenhado; o comentário de cabeçalho cita marca nenhuma, mas o que
-      // importa aqui é o que aparece NA TELA.
       for (const m of svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)) {
         textosLidos += 1;
         for (const marca of REAIS) {
@@ -159,15 +174,13 @@ describe("os arquivos das ilustrações", () => {
         }
       }
     }
-    // Anti-vacuidade: sem isto, um SVG sem `<text>` nenhum faria o laço não rodar e o teste
-    // passar sem ter comparado coisa alguma — que é exatamente o defeito da regra anterior.
     expect(textosLidos, "nenhum texto foi lido; a verificação não comparou nada").toBeGreaterThan(
       10,
     );
   });
 
-  it("nenhum busca recurso de fora", () => {
-    for (const nome of todos) {
+  it("nenhum SVG busca recurso de fora", () => {
+    for (const nome of todosSvg) {
       const svg = readFileSync(join(PASTA, nome), "utf-8");
       expect(svg, nome).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
       expect(svg, nome).not.toContain("<script");

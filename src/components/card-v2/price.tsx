@@ -1,5 +1,5 @@
 import { VisuallyHidden } from "@/components/primitives";
-import type { PrecoExibido, UnitarioExibido } from "@/lib/card-v2";
+import type { ClubeExibido, PrecoExibido, UnitarioExibido } from "@/lib/card-v2";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -42,24 +42,85 @@ export function PriceDisplay({
         className={cn(
           "font-display leading-none tabular-nums",
           atenuado ? "text-muted-foreground font-bold" : "text-primary font-extrabold",
-          // R3.3B §8: no destaque o preço passou de 2rem para 2.625rem. A hierarquia pedida é
-          // PRODUTO → PREÇO → MERCADO, e a 2rem o preço empatava com o nome do produto e com o
-          // nome do mercado logo abaixo — três linhas com o mesmo peso não são hierarquia.
-          // R3.3C §14 ("preço maior") levou o destaque até 3rem, POR FAIXA DE LARGURA. Ele
-          // divide a coluna com a imagem desde que subiu para o lado dela, então o teto de cada
-          // faixa é o que a coluna comporta: 144 px a 320, 184 a 360, 238 a 430. Um único
-          // `text-[3rem]` caberia no desktop e estouraria no aparelho mais estreito que o
-          // produto atende — e é o estreito que manda.
+          // O destaque escalona POR FAIXA DE LARGURA: ele divide a coluna com a imagem, e o
+          // teto de cada faixa é o que a coluna comporta. V4 §4 acrescentou o sufixo "/kg" ao
+          // número — ~30 px a mais na pior linha —, então a escala desceu meio degrau em cada
+          // faixa (2 → 2.25 → 2.5 → 2.75rem). Um único `text-[3rem]` caberia no desktop e
+          // estouraria no aparelho mais estreito que o produto atende — e é o estreito que manda.
           destaque
-            ? "text-[2.25rem] min-[360px]:text-[2.5rem] min-[430px]:text-[2.75rem] sm:text-[3rem]"
+            ? "text-[2rem] min-[360px]:text-[2.25rem] min-[430px]:text-[2.5rem] sm:text-[2.75rem]"
             : "text-[1.625rem]",
         )}
       >
         <span className="text-[62%] font-bold">{preco.simbolo}</span>
         <span className="ml-1">{preco.numero}</span>
+        {/* A UNIDADE COLADA NO NÚMERO (V4 §4): "R$ 7,99" + "/kg". Menor e mais leve — ela
+            qualifica o preço, não compete com ele. Solta numa linha própria, deixaria de ser
+            lida junto e "R$ 7,99" voltaria a poder ser lido como o preço de uma peça. */}
+        {preco.quantidade !== null ? (
+          <span className="text-muted-foreground ml-0.5 text-[45%] font-bold whitespace-nowrap">
+            {preco.quantidade}
+          </span>
+        ) : null}
       </p>
+      {/* V4.3 §1 — venda só em pack obrigatório: o número grande é o desembolso mínimo, e
+          estas duas linhas dizem a que pack ele se refere e quanto é o por-unidade
+          anunciado. Coladas no número pela mesma razão do "/kg": separadas, "R$ 45,48"
+          voltaria a poder ser lido como o preço de uma lata. */}
+      {preco.embalagemMinima !== null ? (
+        <p aria-hidden="true" className="text-muted-foreground text-xs font-bold">
+          {preco.embalagemMinima}
+        </p>
+      ) : null}
+      {preco.porUnidade !== null ? (
+        <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
+          {preco.porUnidade}
+        </p>
+      ) : null}
       <VisuallyHidden>{preco.falado}</VisuallyHidden>
     </>
+  );
+}
+
+/**
+ * A simulação de quantidade do peso variável — "500 g ≈ R$ 4,00" (V4 §4).
+ *
+ * Sempre SECUNDÁRIA, nunca o número grande: o que foi observado é o R$/kg, e é ele o
+ * protagonista. O "≈" carrega a ressalva da balança sem gastar uma frase. `aria-hidden`
+ * porque o leitor de tela já ouve o cálculo por extenso dentro de `preco.falado`.
+ */
+export function SimulacaoDePeso({
+  simulacao,
+  className = "text-muted-foreground text-sm tabular-nums",
+}: {
+  simulacao: string | null;
+  className?: string;
+}) {
+  if (simulacao === null) return null;
+  return (
+    <p aria-hidden="true" className={className}>
+      {simulacao}
+    </p>
+  );
+}
+
+/**
+ * O preço de clube/cartão — SEMPRE ao lado do preço cheio, nunca no lugar dele (§8).
+ *
+ * Três informações, inseparáveis: que existe um preço condicionado, quanto ele é, e qual é
+ * a condição. O preço cheio continua sendo o número grande e continua sendo o que ordena a
+ * lista — promoção não reordena nada (`CLAUDE.md`, princípio 4). Substituir o cheio pelo
+ * condicionado em silêncio é exatamente o que este componente existe para impedir.
+ */
+export function ClubPrice({ clube }: { clube: ClubeExibido | null }) {
+  if (clube === null) return null;
+  return (
+    <p className="bg-secondary text-secondary-foreground w-fit max-w-full rounded-md px-2 py-1 text-xs">
+      <span aria-hidden="true">
+        <span className="font-bold tabular-nums">R$ {clube.precoTexto}</span> {clube.condicao}
+      </span>
+      <VisuallyHidden>{clube.falado}</VisuallyHidden>
+    </p>
   );
 }
 
@@ -96,7 +157,11 @@ export function PriceDisplay({
 export function UnitPrice({ unitario }: { unitario: UnitarioExibido | null }) {
   if (unitario === null) return null;
   return (
-    <p className="font-data text-muted-foreground text-sm">
+    // R$ 24,99 por kg é meio número, meio frase — e a regra do design system reserva a mono
+    // a dado tabular DE FATO. Na demo v2 esta linha passou a aparecer em toda a Home, e em
+    // mono ela devolvia ao card o ar de terminal que o mandato §18 manda evitar.
+    // `tabular-nums` preserva o dígito de largura fixa, que é o que importava.
+    <p className="text-muted-foreground text-sm tabular-nums">
       {formatPrice(unitario.display)} {unitario.rotulo}
     </p>
   );

@@ -146,8 +146,13 @@ describe("resolveExactIdentity — compatibilidade com o modelo legado", () => {
 
   it("o fixture demo continua válido e continua sem identidade exata", () => {
     // Nenhum campo novo é obrigatório: o fixture não muda e não quebra.
+    //
+    // A EXIGÊNCIA DE `size_text` SAIU EM 09/08/2026. Ela media o fixture de mercearia, onde todo
+    // produto tinha gramatura impressa. O catálogo virou cortes de açougue vendidos a quilo, que
+    // **não têm** gramatura — e um teste que exigisse o campo forçaria a inventar um. O que este
+    // caso protege é o outro lado, e ele não mudou: sem os campos de E1, a identidade exata
+    // continua `incomplete`, e nada aqui a completa por dedução.
     for (const achado of buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"))) {
-      expect(achado.product.size_text).toBeTruthy();
       expect(resolveExactIdentity(achado.product).status).toBe("incomplete");
     }
   });

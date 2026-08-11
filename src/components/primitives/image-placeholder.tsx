@@ -61,10 +61,13 @@ export function ImagePlaceholder({
       : GENERICA;
 
   return (
+    // V4 §14/§15 — o placeholder usa o MESMO frame das fotos (raio, borda sutil, superfície
+    // clara): numa lista mista ele lê como "item sem foto ainda", não como buraco. O traço
+    // menor e mais claro tira dele qualquer chance de competir com produto e preço.
     <div
       aria-hidden="true"
       className={cn(
-        "bg-muted text-muted-foreground flex items-center justify-center rounded-md",
+        "border-border/60 bg-surface/70 text-muted-foreground flex items-center justify-center rounded-xl border",
         className ?? "aspect-square w-full",
       )}
     >
@@ -75,7 +78,7 @@ export function ImagePlaceholder({
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="h-1/2 w-1/2 opacity-60"
+        className="h-2/5 w-2/5 opacity-50"
         focusable="false"
       >
         <path d={traco} />

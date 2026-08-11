@@ -1,49 +1,50 @@
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Info } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { OfferRankRow } from "@/components/OfferRankRow";
+import { PesoSelector } from "@/components/PesoSelector";
 import { ProductImage } from "@/components/card-v2/identity";
 import { StateMessage } from "@/components/StateMessage";
 import { ShareAchadoButton } from "@/components/ShareAchadoButton";
 import { DemoNote } from "@/components/DemoNote";
 import { appMode, isDemoMode } from "@/lib/app-mode";
 import { carregarComparacao, imagemDoProduto } from "@/services/demo-source";
+import { diferencaParaOSegundo } from "@/lib/diferenca-de-preco";
+import { PESO_PADRAO, rotuloDoPeso, type PesoSelecionado } from "@/lib/peso-variavel";
 import { absoluteAssetUrl } from "@/lib/og";
-import { formatPrice, formatProductName } from "@/lib/format";
+import { formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
+import { precoParaCompartilhar } from "@/lib/card-v2";
+import type { OfertaCardV2 } from "@/lib/card-v2";
+import type { UnitPriceBasis } from "@/lib/unit-price";
 
 const DEFAULT_TITLE = "Comparar produto — ViPreço";
 
 /**
  * =============================================================================
- * TELA 3 DO NORTH STAR — COMPARAÇÃO DO PRODUTO
+ * TELA 3 DO NORTH STAR — COMPARAÇÃO, COM AS DUAS HISTÓRIAS DO MANDATO V2 (§13)
  * =============================================================================
  *
- * O que esta tela era: um cabeçalho com categoria e nome, um bloco "Melhor preço encontrado"
- * com quatro linhas de metadados, um seletor de mercado habitual, uma lista de `PriceCard` com
- * diferença em reais e percentual, e um aviso. Sete blocos, cada um com a sua moldura.
+ * **Golden flow A — granel.** Frango inteiro: o número grande de cada linha é o R$/kg
+ * OBSERVADO (V4 §4), com a simulação da quantidade escolhida logo abaixo ("500 g ≈
+ * R$ 4,00", seletor de 250 g / 500 g / 1 kg, padrão 500 g). A ordem é pelo R$/kg — que é
+ * exatamente o número grande, então a tela ordena pelo que mostra.
  *
- * O que a referência mostra: uma seta, um título, o produto identificado uma vez, e uma lista
- * numerada onde cada linha é **mercado, bairro, preço, procedência**. Nada mais.
+ * **Golden flow B — embalagens diferentes.** Dreamies 80 g × 40 g: cada linha carrega o
+ * próprio SKU, a ordem é por custo unitário e o primeiro leva o selo "Melhor custo/kg".
+ * A tela DIZ que compara por custo, porque entre tamanhos diferentes "mais barato" sem
+ * denominador é a ambiguidade que o §5 proíbe.
  *
- * As três decisões desta reconstrução:
- *
- *  1. **O produto é dito UMA vez**, no topo, com a embalagem ao lado e o selo "Produto exato".
- *     O bloco de resumo que repetia preço, mercado, data e fonte saiu: ele dizia de novo, em
- *     formato de ficha, o que a primeira linha da lista já diz.
- *  2. **A contagem é medida, nunca escrita à mão** (§4: "não inventar"). "Comparação em 3
- *     mercados" é `entries.length`, e some quando há um só.
- *  3. **O seletor de mercado habitual saiu desta tela.** Ele é personalização, e o §11 do
- *     mandato anterior já tinha tirado da Home pelo mesmo motivo — na demonstração ele é um
- *     controle a mais entre a pessoa e a comparação. A preferência continua no produto; o que
- *     saiu foi o controle desta tela.
+ * A contagem é sempre medida (`entries.length`), o produto é dito uma vez no topo, e nada
+ * reordena a lista além do critério declarado — princípio 4.
  */
 export const Route = createFileRoute("/produto/$productId")({
   loader: ({ params }) => carregarComparacao(params.productId, appMode()),
   head: ({ loaderData }) => {
-    const menor = loaderData?.entries[0];
+    const menor = loaderData?.entries[0] as OfertaCardV2 | undefined;
     const title = loaderData ? `${formatProductName(loaderData.product)} — ViPreço` : DEFAULT_TITLE;
     const description = menor
-      ? `A partir de ${formatPrice(menor.price)} no ${menor.market.name}. Preço observado em cada mercado, com fonte, data e validade.`
+      ? `A partir de ${formatPrice(menor.price)}${menor.price_unit === "kg" ? " por kg" : ""} no ${menor.market.name}. Preço observado em cada mercado, com fonte, data e validade.`
       : "Compare o preço observado do mesmo produto em cada mercado monitorado, com fonte, data e validade.";
 
     return {
@@ -75,8 +76,25 @@ export const Route = createFileRoute("/produto/$productId")({
   ),
 });
 
+/** A frase que explica a ordem — o critério nunca fica implícito. */
+function explicacaoDaOrdem(basePorUnidade: UnitPriceBasis | undefined, granel: boolean): string {
+  if (basePorUnidade !== undefined) {
+    const base =
+      basePorUnidade === "per_kg" ? "quilo" : basePorUnidade === "per_l" ? "litro" : "unidade";
+    return `Embalagens diferentes: a ordem é pelo custo por ${base}. O preço grande é o de cada embalagem.`;
+  }
+  if (granel) {
+    return "Do menor para o maior preço por quilo. Um preço por mercado, o mais recente.";
+  }
+  return "Do menor para o maior. Um preço por mercado, o mais recente.";
+}
+
 function ProductPage() {
   const data = Route.useLoaderData();
+  // O seletor de quantidade (§3) — só existe nos grupos de peso variável, padrão 500 g.
+  // Ele muda o preço CALCULADO exibido; o R$/kg observado e a ordem não se movem.
+  const [gramas, setGramas] = useState<PesoSelecionado>(PESO_PADRAO);
+  const now = useMemo(() => new Date(), []);
 
   if (!data) {
     return (
@@ -96,8 +114,18 @@ function ProductPage() {
   }
 
   const { product, entries } = data;
-  const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
-  const menor = entries[0];
+  const granel = data.granel === true;
+  const basePorUnidade = data.basePorUnidade;
+  // V4.2 §5 — a linha de apoio só diz o que o título ainda não disse.
+  const detalhes = formatProductDetails(product);
+  const menor = entries[0] as OfertaCardV2 | undefined;
+  // §12: a diferença para o 2º mercado, só onde ela é um fato — mesmo produto, mesma
+  // quantidade. No peso variável ela acompanha o seletor, com a mesma conta de centavos.
+  const diferenca = diferencaParaOSegundo(entries as unknown as OfertaCardV2[], {
+    embalagensDiferentes: basePorUnidade !== undefined,
+    granel,
+    gramas,
+  });
 
   return (
     <AppShell>
@@ -116,7 +144,10 @@ function ProductPage() {
             <ShareAchadoButton
               payload={{
                 produto: formatProductName(product),
-                preco: menor.price,
+                // V4.3 §1 — com pack obrigatório, o texto que viaja leva o desembolso
+                // mínimo com o rótulo do pack, nunca o por-unidade solto.
+                ...precoParaCompartilhar(menor),
+                ...(menor.price_unit === undefined ? {} : { unidade: menor.price_unit }),
                 mercado: menor.market.name,
                 validUntil: menor.valid_until,
                 url: absoluteAssetUrl(`/produto/${product.id}`),
@@ -128,23 +159,39 @@ function ProductPage() {
           )}
         </div>
 
-        {/* O PRODUTO, UMA VEZ. */}
-        <div className="flex items-start gap-4">
-          <ProductImage
-            imagem={imagemDoProduto(product.id)}
-            categoria={product.category}
-            tamanho="destaque"
-            prioridade
-          />
+        {/* O PRODUTO, UMA VEZ.
+            No grupo de EMBALAGENS DIFERENTES não há imagem de cabeçalho — nem placeholder:
+            o grupo não tem uma embalagem, e as fotos vivem nas linhas, cada uma ao lado da
+            própria gramatura. Um placeholder aqui só anunciaria uma ausência que não é
+            defeito. Nos demais grupos a imagem (ou o placeholder legítimo) continua. */}
+        <div className="flex items-start gap-3.5">
+          {basePorUnidade === undefined ? (
+            // `lista`, não `destaque`: o produto é dito UMA vez, e a tela é da comparação —
+            // a 390 px a imagem grande empurrava a primeira linha de preço para fora da
+            // primeira dobra (V4 §26: comparação legível em 3 segundos).
+            <ProductImage
+              imagem={imagemDoProduto(product.id)}
+              categoria={product.category}
+              tamanho="lista"
+              prioridade
+            />
+          ) : null}
           <div className="min-w-0 flex-1">
             <h2 className="font-display text-xl leading-tight font-bold sm:text-2xl">
               {formatProductName(product)}
             </h2>
-            <p className="text-muted-foreground mt-1 text-sm">{detalhes}</p>
-            {/* "Produto exato" é o selo da referência, e aqui ele é literal: a comparação usa
-                um único `product_id`, e nada de tamanho ou marca diferente entra nela. */}
+            {detalhes.length > 0 ? (
+              <p className="text-muted-foreground mt-1 text-sm">{detalhes}</p>
+            ) : null}
+            {/* O selo diz O QUE a comparação é — e nos grupos de embalagens diferentes ele
+                NÃO pode dizer "produto exato": 80 g e 40 g não são o mesmo SKU. O que os
+                torna comparáveis é o custo unitário, e é isso que o selo afirma. */}
             <p className="bg-secondary text-secondary-foreground mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold">
-              Produto exato
+              {basePorUnidade !== undefined
+                ? "Mesma marca · embalagens diferentes"
+                : granel
+                  ? "Mesmo corte · preço por kg"
+                  : "Produto exato"}
             </p>
           </div>
         </div>
@@ -157,6 +204,18 @@ function ProductPage() {
           />
         ) : (
           <>
+            {granel ? (
+              <div className="space-y-1.5">
+                {/* V4 §4 — o seletor é SIMULAÇÃO, e o rótulo diz isso antes dos botões:
+                    250 g / 500 g / 1 kg não são embalagens, são quantidades de referência. */}
+                <p className="eyebrow">Simulação de quantidade</p>
+                <PesoSelector gramas={gramas} onChange={setGramas} />
+                <p className="text-muted-foreground text-xs">
+                  Estimativa para {rotuloDoPeso(gramas)}. O valor final depende do peso.
+                </p>
+              </div>
+            ) : null}
+
             <div>
               <h3 className="font-display text-base leading-tight font-bold">
                 {entries.length === 1
@@ -164,13 +223,22 @@ function ProductPage() {
                   : `Comparação em ${entries.length} mercados`}
               </h3>
               <p className="text-muted-foreground mt-0.5 text-sm">
-                Do menor para o maior. Um preço por mercado, o mais recente.
+                {explicacaoDaOrdem(basePorUnidade, granel)}
               </p>
             </div>
 
             <ul className="space-y-2.5">
               {entries.map((entry, i) => (
-                <OfferRankRow key={entry.id} entry={entry} posicao={i + 1} productId={product.id} />
+                <OfferRankRow
+                  key={entry.id}
+                  entry={entry as OfertaCardV2}
+                  posicao={i + 1}
+                  productId={product.id}
+                  now={now}
+                  diferenca={i === 0 ? diferenca : null}
+                  {...(granel ? { gramas } : {})}
+                  {...(basePorUnidade === undefined ? {} : { basePorUnidade })}
+                />
               ))}
             </ul>
 

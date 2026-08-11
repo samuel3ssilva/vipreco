@@ -5,10 +5,13 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { QueryClient } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { routeTree } from "@/routeTree.gen";
 import { buildDemoOpportunities } from "@/lib/demo-opportunities";
+import { DEMO_NATUREZA_DO_DADO } from "@/lib/demo-catalog";
+import { precoParaGramas } from "@/lib/peso-variavel";
 import { formatDate } from "@/lib/format";
+import type { OfertaCardV2 } from "@/lib/card-v2";
 
 async function renderRoute(path: string): Promise<string> {
   const router = createRouter({
@@ -22,8 +25,22 @@ async function renderRoute(path: string): Promise<string> {
 
 let html = "";
 
+/**
+ * O RELÓGIO É PINADO DENTRO DA JANELA REAL DA COLETA (09/08/2026, fim de tarde).
+ *
+ * O loader da Home usa `new Date()`, e o catálogo da demo v2 carrega as validades REAIS dos
+ * encartes (§15 do mandato): depois de 09/08 as ofertas de encarte expiram e a vitrine
+ * encolhe — comportamento correto do produto, testado em `demo-opportunities.test.ts`. Um
+ * teste de SSR que dependesse do relógio da máquina passaria hoje e reprovaria na segunda;
+ * pinar o instante é o que o torna determinístico sem falsificar nenhuma data do dado.
+ */
 beforeAll(async () => {
+  vi.useFakeTimers({ now: new Date("2026-08-09T18:00:00-03:00"), toFake: ["Date"] });
   html = await renderRoute("/");
+});
+
+afterAll(() => {
+  vi.useRealTimers();
 });
 
 /**
@@ -55,18 +72,25 @@ function tamanhosDePreco(pagina: string): number[] {
 }
 
 describe("HTML inicial da Home (SSR)", () => {
-  it("contém os três produtos e mercados do fixture antes da hidratação", () => {
+  it("contém os dez produtos e mercados do fixture antes da hidratação", () => {
     const fixture = buildDemoOpportunities();
-    expect(fixture).toHaveLength(3);
+    expect(fixture).toHaveLength(10);
     for (const entry of fixture) {
       expect(html).toContain(entry.product.name);
       expect(html).toContain(entry.market.name);
     }
   });
 
-  it("contém os três preços do fixture antes da hidratação", () => {
-    for (const entry of buildDemoOpportunities()) {
-      expect(html).toContain(entry.price.toFixed(2).replace(".", ","));
+  it("contém os dez preços do fixture antes da hidratação — na hierarquia do §0", () => {
+    for (const entry of buildDemoOpportunities() as OfertaCardV2[]) {
+      if (entry.price_unit === "kg") {
+        // Peso variável (V4 §4): o número protagonista é o R$/kg OBSERVADO, e o calculado
+        // aparece como simulação ("500 g ≈ …") — os dois no HTML, nenhum no lugar do outro.
+        expect(html).toContain(precoParaGramas(entry.price, 500).toFixed(2).replace(".", ","));
+        expect(html).toContain(entry.price.toFixed(2).replace(".", ","));
+      } else {
+        expect(html).toContain(entry.price.toFixed(2).replace(".", ","));
+      }
     }
   });
 
@@ -83,15 +107,28 @@ describe("HTML inicial da Home (SSR)", () => {
     expect(html).not.toContain("Não conseguimos carregar a lista de mercados");
   });
 
-  it("abre com a faixa de ambiente, antes de qualquer outro conteúdo", () => {
-    expect(html).toContain("AMBIENTE DE TESTE");
+  it("abre com a identificação de ambiente, antes de qualquer outro conteúdo", () => {
+    // V4 §16: a faixa virou a pill "DEMO" no header. A frase completa continua no HTML
+    // (title + sr-only) — visualmente menor, semanticamente igual.
+    expect(html).toContain(">DEMO<");
     expect(html).toContain("não é a versão pública");
-    expect(html.indexOf("AMBIENTE DE TESTE")).toBeLessThan(html.indexOf("Achados em Artemis"));
+    expect(html.indexOf(">DEMO<")).toBeLessThan(html.indexOf("Achados em Artemis"));
   });
 
-  it("marca os Achados com o selo de dados fictícios", () => {
-    expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
-    expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
+  /**
+   * A FRASE MUDOU EM 09/08/2026 PORQUE ELA FICOU FALSA.
+   *
+   * Ela dizia "dados fictícios · exemplos para demonstrar o formato", e era verdade enquanto a
+   * demonstração era mercearia inventada. Os cinco preços da Home hoje foram lidos nas placas de
+   * um balcão real — chamá-los de fictícios é errar para o lado da falsa modéstia, que na frente
+   * do dono da loja desmente a única coisa que a demonstração tem para provar.
+   *
+   * O selo continua obrigatório, e continua sendo o mesmo texto em toda tela: o que ele diz
+   * agora é o que o dado é, com as duas naturezas separadas.
+   */
+  it("marca os Achados com o selo que descreve o dado como ele é", () => {
+    expect(html).toContain(DEMO_NATUREZA_DO_DADO);
+    expect(html).not.toContain("dados fictícios · exemplos para demonstrar o formato");
   });
 
   it("não repete o aviso de ambiente dentro da página — a faixa é o único lugar", () => {
@@ -123,9 +160,18 @@ describe("HTML inicial da Home (SSR)", () => {
     expect(html).toContain('href="/whatsapp"');
   });
 
-  it("não apresenta nenhum mercado real como participante", () => {
-    for (const entry of buildDemoOpportunities()) {
-      expect(entry.market.name).toMatch(/^Mercado (principal|local \d)$/);
+  /**
+   * A REGRA DOS NOMES REAIS, NA SUA FORMA FINAL.
+   *
+   * Os cinco mercados da demo v2 são reais — Açougue Mota, Safra, Savegnago, Atacadão e
+   * Pague Menos — porque cada preço veio de material publicado por eles (encarte, tabloide)
+   * ou fotografado neles (placa, painel), tudo na planilha do Founder. O que continua
+   * proibido é o que sempre esteve por trás da regra: **nomear um mercado num preço que ele
+   * nunca informou.** Redes fora da planilha não aparecem.
+   */
+  it("nenhum mercado fora da planilha é nomeado", () => {
+    for (const rede of ["Assaí", "Carrefour", "Pão de Açúcar", "Tenda", "Mix Mateus"]) {
+      expect(html, `a Home cita a rede ${rede}`).not.toContain(rede);
     }
   });
 });
@@ -170,15 +216,17 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
 
   it("uma anatomia, duas composições: um destaque e o resto em linha (R3.3B)", () => {
     // O destaque é o único preço no tamanho de destaque; os secundários usam o tamanho de lista.
-    // Se a lista voltar a ser Card v2 completo, o primeiro número muda e este teste reprova —
-    // que é a regressão de densidade que R3.3 mediu e R3.3B manteve.
     expect(html).toContain("Outros Achados");
     const [destaque, ...lista] = tamanhosDePreco(html);
-    expect(lista).toHaveLength(2);
-    expect(lista[0]).toBe(lista[1]);
+    expect(lista).toHaveLength(9);
+    for (const tamanho of lista) expect(tamanho).toBe(lista[0]);
     expect(destaque).toBeGreaterThan(lista[0]);
-    // E as duas composições saem do mesmo domínio: nenhum card sem procedência.
-    expect(html.match(/Mercado (principal|local \d)/g) ?? []).toHaveLength(3);
+    // E as duas composições saem do mesmo domínio: nenhum card sem procedência. A contagem
+    // é pelos rótulos de coleta do §15 — um por card, dez no total, somados entre as
+    // quatro origens reais em vez de uma origem única inventada para todas.
+    const selos = (html.match(/Foto em loja|Encarte da loja|Painel da loja|Cartaz na loja/g) ?? [])
+      .length;
+    expect(selos).toBe(10);
   });
 
   it("segue a ordem completa: contexto, busca, Achados, procedência, piloto", () => {
@@ -200,7 +248,10 @@ describe("primeira dobra e ordem da Home (North Star v1.2.2)", () => {
     // R3.3C §7 encurtou para uma frase. A segunda — "no piloto, cada preço será publicado com
     // origem identificada" — é verdadeira e é exatamente o assunto de `/como-funciona`, para
     // onde o botão logo abaixo leva. O que a Home precisa dizer aqui é sobre ESTES preços.
-    expect(html).toContain("Nesta demonstração, os preços são fictícios.");
+    // 09/08/2026: "os preços são fictícios" saiu junto com os preços fictícios. O bloco de
+    // procedência continua declarando a natureza do dado — com a frase que corresponde a ele.
+    expect(html).toContain(DEMO_NATUREZA_DO_DADO);
+    expect(html).not.toContain("Nesta demonstração, os preços são fictícios.");
     expect(html).not.toContain("No piloto, cada preço será publicado com origem identificada.");
   });
 
@@ -287,120 +338,106 @@ describe("R3.3A — o que a Home deixou de mostrar", () => {
 });
 
 // A anatomia é verificada no HTML de verdade, com o fixture de verdade — não em classes CSS.
-// O fixture cobre naturalmente a matriz que importa:
-//   Arroz  store_list    validade sim   preço anterior sim   gôndola não
-//   Café   social_media  validade sim   preço anterior não   gôndola não
-//   Leite  weekly_audit  validade não   preço anterior não   gôndola sim
+//
+// A MATRIZ DO FIXTURE MUDOU EM 09/08/2026, E ELA FICOU MAIS POBRE DE PROPÓSITO.
+//
+// O fixture de mercearia variava fonte, validade e gôndola entre os três Achados, e a anatomia
+// era exercitada de graça. O do açougue não varia nada disso: uma coleta, um dia, uma fonte
+// (`shelf_photo`), nenhuma validade anunciada — porque foi isso que aconteceu no balcão.
+//
+// Inventar variação para o teste continuar cobrindo a matriz seria escrever dado falso para
+// deixar a suíte confortável. Os casos que dependiam da variação passam a ser exercitados onde
+// ela existe de verdade: no laboratório de estados (`laboratorio-home-estados`) e nos testes
+// de unidade do Card v2, que constroem as ofertas que quiserem.
 describe("anatomia do card oficial de Achado", () => {
-  const [arroz, cafe, leite] = buildDemoOpportunities();
+  const [bucho] = buildDemoOpportunities();
 
   it("mostra produto, marca e gramatura em campos separados", () => {
-    // As DUAS composições separam nome, marca e variante (CARD-V2-SPEC itens 2, 3 e 4). Em
-    // R3.3 só o destaque fazia isso, porque a lista era outro componente e concatenava tudo num
-    // título. Com a lista derivada da mesma visão, o título concatenado deixou de existir — e é
-    // isso que este teste passou a exigir: nome e marca inteiros, gramatura inteira, e nenhuma
-    // frase costurada onde deveria haver campos.
-    expect(html).toContain("Arroz");
-    expect(html).toContain("Ouro do Campo");
-    expect(html).toContain("5 kg");
-    expect(html).toContain("Serra Alta");
-    expect(html).toContain("500 g");
-
-    // O TÍTULO DO DESTAQUE PASSOU A SER A IDENTIDADE INTEIRA, e é deliberado: a busca, a
-    // comparação e o detalhe escrevem "Café Serra Alta Tradicional 500 g", e uma Home que
-    // chama o mesmo item de "Café" dá dois nomes à mesma coisa em quatro telas (§8).
-    //
-    // O que continua proibido — e é o que este teste passou a medir — é a LISTA concatenar.
-    // Nela a embalagem tem 80 px e o card tem três linhas: a identidade completa no título
-    // transformaria cada item num parágrafo, que foi o defeito que R3.3B corrigiu.
+    // As DUAS composições separam nome, marca e gramatura (CARD-V2-SPEC itens 2, 3 e 4). A
+    // demo v2 devolveu ao catálogo o que o do açougue não tinha: produto embalado com marca
+    // e quantidade estruturada — então a proteção contra o título costurado voltou a ter
+    // alvo, e a gramatura precisa aparecer inteira ao lado de cada embalado.
+    expect(html).toContain("Bucho bovino");
+    expect(html).toContain("Bisteca bovina");
     const lista = html.slice(html.indexOf("Outros Achados"));
-    expect(lista).not.toContain("Arroz Ouro do Campo Tipo 1 5 kg");
-    expect(lista).not.toContain("Leite Boa Serra Integral 1 L");
-    // e os campos continuam separados lá, cada um no seu elemento
-    expect(lista).toContain("Tipo 1 · 5 kg");
-    expect(lista).toContain("Integral · 1 L");
-  });
-
-  it("nenhuma marca real aparece no fixture de demonstração", () => {
-    // O assessment da North Star V2 já tinha rejeitado marcas reais nas telas; R3.3B fechou a
-    // ponta que faltava, que era o dado. Uma ilustração genérica ao lado do nome de uma marca
-    // existente representa a embalagem daquela marca por mais genérico que seja o traço.
-    for (const marca of ["Camil", "Pilão", "Italac", "Tio João", "Melitta", "3 Corações"]) {
-      expect(html, `o fixture não pode citar a marca real "${marca}"`).not.toContain(marca);
+    for (const [nome, marca, gramatura] of [
+      ["Óleo de soja", "Liza", "900 ml"],
+      ["Lasanha", "Sadia", "600 g"],
+      ["Petisco para gatos", "Dreamies", "80 g"],
+      ["Lava-roupas em pó", "Tixan Ypê", "2,2 kg"],
+      // A linha compacta mostra a quantidade ESTRUTURADA ("350 ml"), não o texto livre da
+      // embalagem ("lata 350 ml") — é a estruturada que alimenta o R$/L ao lado.
+      ["Cerveja", "Corona Extra", "350 ml"],
+      ["Desodorante aerossol", "Nivea", "200 ml"],
+    ]) {
+      expect(lista, nome).toContain(nome);
+      expect(lista, nome).toContain(marca);
+      expect(lista, nome).toContain(gramatura);
     }
   });
 
-  it("compõe o preço com o símbolo menor que o valor", () => {
+  it("compõe o preço com o símbolo menor que o valor — e o protagonista do granel é o R$/kg observado", () => {
     expect(html).toContain(">R$</span>");
-    expect(html).toContain(">26,49</span>");
+    // V4 §4 — o bucho: o número grande é o OBSERVADO 24,99, com a unidade colada nele.
+    expect(html).toContain(">24,99</span>");
+    expect(html).toContain(">/kg</span>");
+    // O calculado não sumiu: virou simulação nomeada, secundária ("500 g ≈ R$ 12,50").
+    expect(html).toContain("500 g \u2248 R$\u00a012,50");
   });
 
-  it("oferece o preço por extenso a quem usa leitor de tela", () => {
-    expect(html).toContain("26 reais e 49 centavos");
-    expect(html).toContain("5 reais e 29 centavos");
+  it("oferece o preço por extenso a quem usa leitor de tela — com as duas metades", () => {
+    // Quem ouve não vê tamanhos de fonte: o falado diz o calculado E o observado.
+    expect(html).toContain("12 reais e 50 centavos por aproximadamente 500 gramas");
+    expect(html).toContain("24 reais e 99 centavos por quilo");
   });
 
   it("mostra o mercado e o bairro, e a localidade do piloto no cabeçalho", () => {
-    // R3.3B trocou o sufixo "· Artemis" repetido em cada card pelo BAIRRO, que é o dado mais
-    // específico e o que de fato ancora proximidade. A localidade continua dita uma vez, onde
-    // vale para a página inteira: o eyebrow da primeira dobra.
-    expect(html).toContain("Mercado local 3");
-    expect(html).toContain("Vila Antiga");
-    expect(html).toContain("Jardim Novo");
+    expect(html).toContain("Açougue Mota");
     expect(html).toContain("Artemis · Piracicaba, SP");
   });
 
   it("traz a linha de procedência com origem, atualização e validade", () => {
-    // Uma grafia só, desde R3.3B: as duas composições leem `sourceLabel()`. Antes o card da
-    // lista escrevia a mesma origem em minúscula, numa linha mono própria — duas grafias do
-    // mesmo dado, que é o sintoma de duas anatomias.
-    expect(html).toContain("Verificado em pesquisa");
-    expect(html).toContain("Informado pelo mercado");
-    expect(html).toContain("Informado pelo mercado");
-    // A data vem do fixture, que é relativa ao instante em que o loader roda. Fixá-la em texto
-    // fazia o teste passar no dia em que foi escrito e reprovar no dia seguinte.
-    expect(html).toContain(`observado em ${formatDate(arroz.observed_at)}`);
-    // E a ausência de validade é DITA, nunca omitida — senão o leitor supõe prazo indefinido.
+    // O rótulo é o da coleta (§15), nunca o nome técnico do arquivo nem um genérico que não
+    // descreve o que aconteceu.
+    expect(html).toContain("Foto em loja");
+    expect(html).toContain("Encarte da loja");
+    expect(html).toContain(`observado em ${formatDate(bucho.observed_at)}`);
+    // A ausência de validade é DITA no destaque — o balcão não anunciou prazo nenhum.
     expect(html).toContain("validade não informada");
   });
 
-  it("mostra validade só quando o mercado informou", () => {
-    expect(arroz.valid_until).not.toBeNull();
-    expect(leite.valid_until).toBeNull();
-    // Duas validades informadas no fixture, dois chips — nem um a mais.
-    expect(html.match(/válido até/g) ?? []).toHaveLength(2);
+  it("validade só onde o material anunciou uma — e nela, a data real", () => {
+    // Balcão e foto: nulo. Encarte: a validade impressa no próprio encarte. Nenhum chip
+    // "válido até" além dos que o material sustenta — urgência fabricada continua proibida.
+    const comValidade = (buildDemoOpportunities() as OfertaCardV2[]).filter(
+      (e) => e.valid_until !== null,
+    );
+    expect(comValidade.length).toBeGreaterThan(0);
+    expect((html.match(/válido até/g) ?? []).length).toBe(comValidade.length);
+    expect(html).toContain("válido até 09/08/2026");
   });
 
   it("não mostra preço anterior em Achado nenhum, e nem carrega o dado", () => {
-    // O card exibia "antes R$ 29,90". DL-030 tirou isso do Card v2 em 06/08/2026 e a Home
-    // continuou exibindo, porque o caminho estava protegido naquela branch. R3.3 fecha.
-    for (const entry of [arroz, cafe, leite]) {
+    for (const entry of buildDemoOpportunities()) {
       expect(entry).not.toHaveProperty("previous_price");
     }
     expect(html).not.toContain("antes <s>");
     expect(html).not.toMatch(/antes\s*R\$/);
-    expect(html).not.toContain("29,90");
+    // O "de R$ 8,99" que os encartes imprimem NÃO entra: preço riscado sem contrato (P-01)
+    // continua fora, mesmo agora que a fonte o anuncia.
+    expect(html).not.toMatch(/de\s*R\$/);
   });
 
   it("a natureza da origem é dita pelo selo, e por ele só", () => {
-    // Até R3.3A o card da lista escrevia à mão "Preço de gôndola observado, sem remarcação."
-    // para duas das seis origens. A frase estava certa e a regra também — mas era um SEGUNDO
-    // canal para o que o selo de origem já diz, com a sua descrição, e manter dois canais para
-    // o mesmo dado é manter duas chances de eles discordarem.
-    //
-    // Com a lista derivada do Card v2, sobrou um canal: o selo. O que este teste guarda é que
-    // ele continua completo — rótulo visível mais descrição para leitor de tela — e que nenhuma
-    // origem recebe a descrição de outra.
-    // Cada Achado nomeia a SUA origem, e nenhuma origem aparece mais vezes do que existe no
-    // fixture — que é como se pega uma composição herdando o rótulo da outra.
-    expect(arroz.source_type).toBe("store_list");
-    expect(cafe.source_type).toBe("store_list");
-    expect(leite.source_type).toBe("weekly_audit");
-    // Café e arroz compartilham `store_list`; o leite é `weekly_audit`. A contagem por origem
-    // é o que pega uma composição herdando o rótulo da outra — e ela tem de bater com o
-    // fixture, não com um número fixo.
-    expect(html.match(/Informado pelo mercado/g) ?? []).toHaveLength(2);
-    expect(html.match(/Verificado em pesquisa/g) ?? []).toHaveLength(1);
+    const achados = buildDemoOpportunities();
+    const origens = new Set(achados.map((a) => a.source_type));
+    // Duas origens de enum no fixture da Home: foto/placa (`shelf_photo`) e material
+    // publicado pelo mercado (`store_list`). Nenhum card herda o rótulo do outro: a soma
+    // dos rótulos bate com a contagem de cards.
+    expect(origens).toEqual(new Set(["shelf_photo", "store_list"]));
+    const selos = (html.match(/Foto em loja|Encarte da loja|Painel da loja|Cartaz na loja/g) ?? [])
+      .length;
+    expect(selos).toBe(achados.length);
     expect(html).not.toContain("Preço de gôndola observado, sem remarcação.");
   });
 
@@ -433,27 +470,23 @@ describe("anatomia do card oficial de Achado", () => {
  * um guarda que não dependa de alguém olhar de novo.
  */
 describe("R3.3B — o que a Home passou a mostrar", () => {
-  it("todo Achado tem imagem, e nenhuma se apresenta como foto do produto", () => {
-    const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
-    expect(imgs).toHaveLength(3);
+  it("cada imagem de PRODUTO declara a própria origem — IA no corte, encarte no de marca", () => {
+    // Dez imagens para dez Achados — nenhum card da Home fica em placeholder. Os logos de
+    // mercado (V3) vivem em `/img/demo/mercados/` e ficam FORA desta régua: são identidade
+    // da loja, decorativos (`alt` vazio, nome escrito ao lado), não retrato de produto.
+    const imgs = html.match(/<img[^>]*src="\/img\/demo\/comparaveis\/[^"]*"[^>]*>/g) ?? [];
+    expect(imgs).toHaveLength(10);
     for (const img of imgs) {
-      // "genérica" saiu do alt junto com o desenho genérico: o asset agora é uma embalagem
-      // FICTÍCIA com rótulo. O que o alt continua obrigado a dizer — e o que o princípio 11
-      // protege — é que não é FOTO.
-      expect(img).toContain("Ilustração");
-      expect(img).toContain("fictícia");
-      expect(img).toContain("não é foto do produto");
+      const declaraIA = img.includes("gerada por IA") && img.includes("não é a peça vendida");
+      const declaraEncarte = img.includes("encarte do mercado");
+      expect(declaraIA || declaraEncarte, img).toBe(true);
     }
   });
 
   it("o destaque carrega o LCP e os da lista não", () => {
-    // Três imagens, uma só com prioridade. Se a lista virar `eager`, a primeira pintura passa a
-    // esperar por imagens que estão abaixo da dobra. A contagem é sobre os `<img>` — o `<link
-    // rel="preload">` que o roteador emite para a mesma imagem também carrega o atributo, e
-    // contá-lo junto faria o teste medir duas coisas diferentes com o mesmo número.
-    const imgs = html.match(/<img[^>]*src="\/img\/demo\/[^"]*"[^>]*>/g) ?? [];
+    const imgs = html.match(/<img[^>]*src="\/img\/demo\/comparaveis\/[^"]*"[^>]*>/g) ?? [];
     expect(imgs.filter((i) => i.includes('fetchPriority="high"'))).toHaveLength(1);
-    expect(imgs.filter((i) => i.includes('loading="lazy"'))).toHaveLength(2);
+    expect(imgs.filter((i) => i.includes('loading="lazy"'))).toHaveLength(9);
   });
 
   it("a linha de lista inteira é o link, e leva ao produto", () => {
@@ -470,8 +503,7 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
     // §7: "remover labels de fixture no meio da experiência" e "elementos que pareçam debug". A
     // frase sobre dados fictícios CONTINUA — o que saiu foi a moldura tracejada em monoespaçada
     // que a fazia parecer anotação de laboratório.
-    expect(html).toContain("dados fictícios · exemplos para demonstrar o formato");
-    expect(html).not.toContain("border-dashed");
+    expect(html).toContain(DEMO_NATUREZA_DO_DADO);
     expect(html).not.toContain("◌");
   });
 
@@ -509,21 +541,19 @@ describe("R3.3B — o que a Home passou a mostrar", () => {
       secao.indexOf("/>", secao.indexOf("<img")),
       secao.indexOf("</article>"),
     );
-    const nome = card.indexOf(">Café Serra Alta Tradicional 500 g<");
-    const quantidade = card.indexOf("500 g");
-    const preco = card.indexOf("17,49");
+    const nome = card.indexOf(">Frango inteiro<");
+    const preco = card.indexOf("4,00");
     expect(nome).toBeGreaterThan(-1);
-    expect(quantidade).toBeGreaterThan(nome);
-    expect(preco).toBeGreaterThan(quantidade);
+    expect(preco).toBeGreaterThan(nome);
   });
 
   it("a hierarquia visual do preço é uma só por composição", () => {
-    // Um preço em tamanho de destaque, dois em tamanho de lista, e o de destaque é o maior.
-    // Se os três empatarem, não há hierarquia — que foi exatamente o diagnóstico do §8.
+    // Um preço em tamanho de destaque, nove em tamanho de lista, e o de destaque é o maior.
+    // Se todos empatarem, não há hierarquia — que foi exatamente o diagnóstico do §8.
     const tamanhos = tamanhosDePreco(html);
-    expect(tamanhos).toHaveLength(3);
+    expect(tamanhos).toHaveLength(10);
     const [destaque, ...lista] = tamanhos;
-    expect(new Set(lista).size, "os dois preços de lista têm de ter o mesmo peso").toBe(1);
+    expect(new Set(lista).size, "os preços de lista têm de ter o mesmo peso").toBe(1);
     expect(destaque).toBeGreaterThan(lista[0]);
   });
 

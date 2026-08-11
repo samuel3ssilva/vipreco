@@ -39,7 +39,8 @@
  */
 import { computeUnitPrice } from "@/lib/unit-price";
 import type { UnitPriceBasis } from "@/lib/unit-price";
-import { formatPriceParts, formatRelativeDay, spokenPrice } from "@/lib/format";
+import { PESO_PADRAO, faladoAproximado, precoParaGramas, rotuloDoPeso } from "@/lib/peso-variavel";
+import { formatPrice, formatPriceParts, formatRelativeDay, spokenPrice } from "@/lib/format";
 import { sourceLabel, SOURCE_LABELS } from "@/lib/sources";
 import type { EvidenceLevel } from "@/lib/sources";
 import { temporalState } from "@/lib/temporal";
@@ -94,6 +95,18 @@ export interface ImagemDeProduto {
    * as duas passam pelo mesmo portão.
    */
   ilustrativa?: boolean;
+  /**
+   * Como o arquivo foi feito, porque disso depende como ele é desenhado.
+   *
+   * - `recorte` (padrão) — arte com fundo transparente, tipicamente SVG. Cabe DENTRO da moldura,
+   *   com respiro, sobre a superfície do card;
+   * - `foto` — imagem retangular com fundo próprio. Preenche a moldura inteira.
+   *
+   * É campo declarado e não dedução por extensão de arquivo. Um `.png` pode ser qualquer um dos
+   * dois, e adivinhar erraria em silêncio: recorte esticado até preencher fica cortado nas
+   * bordas, e foto encolhida para caber deixa duas faixas vazias de cada lado.
+   */
+  formato?: "recorte" | "foto";
 }
 
 /**
@@ -108,8 +121,73 @@ export interface ImagemDeProduto {
  * política de imagem é R6. Exigir qualquer um deles faria o card só funcionar num banco
  * que ainda não existe.
  */
+/**
+ * A unidade em que o preço é cobrado, quando ela não é "a embalagem".
+ *
+ * Carne é vendida a quilo, e a placa do balcão escreve isso junto do número: `R$ 20,99 KG`.
+ * Um card que mostrasse só `R$ 20,99` estaria afirmando outra coisa — o preço de uma peça —,
+ * e é o tipo de erro que quem compra carne percebe na hora.
+ *
+ * É **campo declarado**, nunca inferido. Nada aqui olha para o nome do produto e conclui
+ * "isto é carne, então é por quilo": inferência em tempo de apresentação é o que o
+ * `MVP-DATA-CONTRACT.md` §2 proíbe, e com razão — ela erra em silêncio.
+ *
+ * Não confundir com preço unitário (`UnitarioExibido`). Aquele é CALCULADO a partir de
+ * quantidade estruturada, para comparar embalagens de tamanhos diferentes. Este é a unidade
+ * em que o preço já foi observado.
+ */
+export type PriceUnit = "kg" | "L" | "un";
+
 export interface OfertaCardV2 extends Opportunity {
   offer_state?: OfferState;
+  /** `"kg"` quando o preço observado é por quilo. Ausente = preço da embalagem. */
+  price_unit?: PriceUnit;
+  /**
+   * Preço condicionado a cartão, clube, app ou compra casada — **sempre ao lado do preço
+   * cheio, nunca no lugar dele** (mandato v2 §8).
+   *
+   * O preço cheio é o que qualquer pessoa paga sem condição nenhuma; é ele que ordena a
+   * lista (`CLAUDE.md` princípio 4: a ordem é pelo preço de prateleira, nunca pelo preço
+   * efetivo). O de clube aparece como informação adicional, com a condição colada nele —
+   * uma promoção cujo requisito não está escrito é uma promessa que o produto não faz.
+   */
+  clube?: { preco: number; condicao: string };
+  /**
+   * A unidade de VENDA que o mercado anunciou junto do número, quando o preço não é o da
+   * embalagem comprável isolada — "lata" no "R$ 3,79 por lata, venda só no pack de 12" do
+   * Safra (V4.2 §4). Vira o sufixo colado no número grande ("R$ 3,79/lata"): sem ele, o
+   * preço afirmaria um desembolso avulso que o encarte não oferece. Campo declarado,
+   * nunca inferido do texto da condição — inferência em apresentação erra em silêncio.
+   */
+  unidade_de_venda?: string;
+  /**
+   * Tamanho do pack OBRIGATÓRIO quando o preço observado é por `unidade_de_venda` mas a
+   * compra mínima é o pack inteiro — o "(venda somente no pack)" do encarte do Safra
+   * (V4.3 §1). Com ele declarado, o número grande passa a ser o DESEMBOLSO MÍNIMO REAL
+   * (preço × pack, arredondado ao centavo): "R$ 3,79" como protagonista afirmaria uma
+   * compra de R$ 3,79 que o mercado não vende. O por-unidade anunciado continua na tela,
+   * secundário. Campo declarado, nunca inferido do texto da condição; sem
+   * `unidade_de_venda` ele é ignorado — um pack de quê?
+   */
+  pack_obrigatorio?: number;
+  /**
+   * Como a fonte é dita ao usuário quando o rótulo genérico do enum não descreve a coleta:
+   * "Foto em loja", "Painel da loja", "Encarte da loja" (§15 — nome técnico de arquivo
+   * nunca vira copy). Ausente, vale `sourceLabel(source_type)`. O `source_type` continua
+   * sendo o enum do domínio; isto é apresentação, não classificação.
+   */
+  fonte_rotulo?: string;
+  /**
+   * Esta oferta **não foi observada**: existe para mostrar como a comparação vai funcionar.
+   *
+   * A demonstração do açougue tem duas naturezas de linha na mesma lista — preço que eu fui
+   * ver, e preço de exemplo. Sem esta distinção no DADO, a única coisa que separaria as duas
+   * seria a lembrança de quem montou a tela, e a lista inteira passaria a afirmar observação
+   * onde não houve nenhuma.
+   *
+   * Quem a carrega perde a procedência na tela: não se atribui fonte a um número inventado.
+   */
+  exemplo_ilustrativo?: boolean;
   /**
    * De onde veio a quantidade estruturada.
    *
@@ -153,7 +231,33 @@ export interface PrecoExibido {
   /** `R$` e `26,49` separados — o card compõe os dois em tamanhos diferentes. */
   simbolo: string;
   numero: string;
+  /**
+   * A unidade a que o número grande se refere, quando ela não é "a embalagem": `"/kg"`
+   * num produto de peso variável — colada no número, porque `R$ 7,99` sem o `/kg` afirmaria
+   * o preço de uma peça (V4 §4). `null` quando o preço é o da embalagem (a gramatura já
+   * está na identidade).
+   */
+  quantidade: string | null;
+  /**
+   * "pack 12" — a embalagem mínima a que o número grande se refere, quando a venda só
+   * existe em pack obrigatório declarado (V4.3 §1). Desenhada colada abaixo do número,
+   * porque "R$ 45,48" sem o pack afirmaria o preço de uma lata. `null` fora do pack.
+   */
+  embalagemMinima: string | null;
+  /**
+   * "R$ 3,79/lata" — o por-unidade anunciado pelo mercado, SECUNDÁRIO quando o pack é
+   * obrigatório: é informação real do encarte, mas não é um desembolso possível. `null`
+   * fora do pack obrigatório.
+   */
+  porUnidade: string | null;
   /** O que o leitor de tela ouve no lugar da composição visual. */
+  falado: string;
+}
+
+/** O preço de clube/cartão como a tela pode mostrá-lo: número e condição, inseparáveis. */
+export interface ClubeExibido {
+  precoTexto: string;
+  condicao: string;
   falado: string;
 }
 
@@ -185,6 +289,12 @@ export interface ProcedenciaExibida {
   relativo: string;
   /** `null` quando o mercado não informou validade. A ausência é dita, nunca inventada. */
   validoAte: string | null;
+  /**
+   * `true` quando a validade informada já passou. O componente troca o verbo — "valeu até"
+   * em vez de "válido até" — porque afirmar vigência depois do vencimento é a mentira que o
+   * §18 do mandato de polish proíbe. A data continua a mesma; só o tempo verbal diz a verdade.
+   */
+  validadePassada: boolean;
 }
 
 export interface CtaExibido {
@@ -197,7 +307,16 @@ export interface VisaoDoCard {
   identidade: IdentidadeExibida;
   mercado: { nome: string; bairro: string | null };
   preco: PrecoExibido;
+  /**
+   * A SIMULAÇÃO de quantidade do peso variável — "500 g ≈ R$ 4,00" —, sempre secundária
+   * (V4 §4). O "≈" é a ressalva: o valor não foi observado, foi calculado do R$/kg pela
+   * mesma `precoParaGramas` de sempre, e a balança define o final. `null` fora do peso
+   * variável. O leitor de tela já ouve o cálculo dentro de `preco.falado`.
+   */
+  simulacao: string | null;
   unitario: UnitarioExibido | null;
+  /** Preço de clube/cartão, quando o mercado anunciou um. Nunca substitui `preco`. */
+  clube: ClubeExibido | null;
   procedencia: ProcedenciaExibida;
   /** Condição da promoção, como o mercado a informou. Nunca separada do preço. */
   condicao: string | null;
@@ -209,6 +328,15 @@ export interface VisaoDoCard {
   /** `null` quando não há imagem com correspondência exata aprovada. */
   imagem: ImagemDeProduto | null;
   cta: CtaExibido;
+  /**
+   * `true` quando a linha é exemplo, e não observação.
+   *
+   * Quem lê isto tem uma obrigação: **não desenhar procedência**. `procedencia` continua
+   * preenchida porque `source_type` é obrigatório no domínio, mas ela não descreve nada real
+   * numa linha de exemplo — exibi-la seria carimbar "foto da etiqueta" num preço que ninguém
+   * fotografou.
+   */
+  exemploIlustrativo: boolean;
 }
 
 // ---------------------------------------------------------------------------------
@@ -222,6 +350,19 @@ const UNIDADE_ESCRITA: Record<QuantityUnit, string> = {
   ml: "ml",
   l: "L",
   un: "un",
+};
+
+/** Como o leitor de tela ouve a unidade do preço. "kg" soletrado é ruído. */
+const UNIDADE_FALADA: Record<PriceUnit, string> = {
+  kg: "por quilo",
+  L: "por litro",
+  un: "por unidade",
+};
+
+const BASE_POR_UNIDADE_DE_PRECO: Record<PriceUnit, UnitPriceBasis> = {
+  kg: "per_kg",
+  L: "per_l",
+  un: "per_un",
 };
 
 const ROTULO_DA_BASE: Record<UnitPriceBasis, string> = {
@@ -418,40 +559,204 @@ function resolverCta(oferta: OfertaCardV2, ativa: boolean): CtaExibido {
  * começa a decidir apresentação. Aqui ele recebe a função e usa; o componente passa a do
  * produto, o teste passa a que quiser.
  */
+export interface OpcoesDaVisao {
+  /**
+   * Quantidade escolhida para produtos de peso variável, em gramas. Só é lida quando a
+   * oferta declara `price_unit: "kg"`. Padrão: `PESO_PADRAO` (500 g).
+   */
+  gramas?: number;
+  /**
+   * A demonstração é um SNAPSHOT HISTÓRICO (§18 do mandato de polish): preço observado
+   * numa data real não desaparece nem ganha tarja de urgência quando a validade do encarte
+   * passa. Com esta opção, os estados derivados só do RELÓGIO ("Oferta expirada", "Preço
+   * desatualizado") não produzem rótulo — a moldura factual fica na linha de procedência
+   * ("observado em 09/08 · valeu até 09/08") e na nota da demonstração. Um `offer_state`
+   * DECLARADO continua produzindo rótulo: suprimir estado dito pelo dado seria esconder.
+   *
+   * O caminho do piloto nunca liga esta opção: lá o preço vencido continua saindo da lista
+   * pela regra do princípio 2, no `isValidPrice()` e na RLS, que não mudaram.
+   */
+  snapshotHistorico?: boolean;
+}
+
+/**
+ * O pack obrigatório declarado, resolvido em desembolso mínimo e rótulo — ou `null`.
+ *
+ * Só existe quando `unidade_de_venda` E `pack_obrigatorio` (inteiro > 1) estão declarados
+ * juntos. O desembolso é preço-fonte × pack com arredondamento monetário determinístico ao
+ * centavo — o preço-fonte nunca muda; o que muda é qual número pode ser protagonista.
+ */
+function packObrigatorio(
+  oferta: OfertaCardV2,
+): { desembolso: number; rotulo: string; unidades: number } | null {
+  const unidades = oferta.pack_obrigatorio;
+  if (oferta.unidade_de_venda === undefined || unidades === undefined) return null;
+  if (!Number.isInteger(unidades) || unidades <= 1) return null;
+  return {
+    desembolso: Math.round(oferta.price * unidades * 100) / 100,
+    rotulo: `pack ${unidades}`,
+    unidades,
+  };
+}
+
+/**
+ * O preço que pode viajar SOZINHO — no texto de compartilhamento, que não leva a tela
+ * junto (V4.3 §1). Com pack obrigatório declarado, é o desembolso mínimo com o rótulo do
+ * pack; sem ele, o preço observado, como sempre foi.
+ */
+export function precoParaCompartilhar(oferta: OfertaCardV2): { preco: number; embalagem?: string } {
+  const pack = packObrigatorio(oferta);
+  if (pack === null) return { preco: oferta.price };
+  return { preco: pack.desembolso, embalagem: pack.rotulo };
+}
+
+/** O sufixo colado no número grande do peso variável: "R$ 7,99" + "/kg". */
+const SUFIXO_POR_UNIDADE: Record<PriceUnit, string> = {
+  kg: "/kg",
+  L: "/L",
+  un: "/un",
+};
+
+/**
+ * O preço principal e o secundário — §0 do mandato v2, corrigido pela V4 §4.
+ *
+ * **Embalado**: o número grande é o preço da embalagem, como sempre foi; o secundário é o
+ * unitário calculado de quantidade estruturada aprovada (`calcularUnitario`).
+ *
+ * **Peso variável** (`price_unit: "kg"`): o número grande é o PREÇO OBSERVADO — R$ 7,99/kg,
+ * com a unidade colada no número —, porque é ele que a placa do balcão diz e ele que compara
+ * mercados. O preço calculado para a quantidade escolhida vira SIMULAÇÃO, nomeada e
+ * secundária: "500 g ≈ R$ 4,00". A V3 invertia isso ("R$ 4,00 · aprox. 500 g" grande), e a
+ * leitura errada possível — "um frango inteiro custa R$ 4,00 e pesa 500 g" — é exatamente a
+ * que a V4 §4 manda impedir. O falado diz os dois, na mesma ordem do visual.
+ */
+function resolverPrecos(
+  oferta: OfertaCardV2,
+  gramas: number,
+): { preco: PrecoExibido; simulacao: string | null; unitario: UnitarioExibido | null } {
+  if (oferta.price_unit === undefined) {
+    const unidadeDeVenda = oferta.unidade_de_venda;
+    const pack = packObrigatorio(oferta);
+
+    // V4.3 §1 — venda só no pack: o protagonista é o desembolso mínimo real. "R$ 3,79"
+    // grande com "venda somente no pack de 12" embaixo induzia a crer numa compra de
+    // R$ 3,79 que o mercado não vende; o número grande passa a ser o que sai do bolso.
+    // O por-unidade e o normalizado continuam na tela, secundários — nenhum dado sumiu.
+    if (pack !== null) {
+      const { currency, amount } = formatPriceParts(pack.desembolso);
+      return {
+        preco: {
+          valor: pack.desembolso,
+          simbolo: currency,
+          numero: amount,
+          quantidade: null,
+          embalagemMinima: pack.rotulo,
+          porUnidade: `${formatPrice(oferta.price)}/${unidadeDeVenda}`,
+          falado: `${spokenPrice(pack.desembolso)} o pack de ${pack.unidades} — ${spokenPrice(oferta.price)} por ${unidadeDeVenda}`,
+        },
+        simulacao: null,
+        unitario: calcularUnitario(oferta),
+      };
+    }
+
+    const { currency, amount } = formatPriceParts(oferta.price);
+    return {
+      preco: {
+        valor: oferta.price,
+        simbolo: currency,
+        numero: amount,
+        // V4.2 §4 — a unidade de venda anunciada cola no número ("R$ 3,79/lata"),
+        // exatamente como o "/kg" do granel: o número nunca afirma mais que a placa.
+        quantidade: unidadeDeVenda === undefined ? null : `/${unidadeDeVenda}`,
+        embalagemMinima: null,
+        porUnidade: null,
+        falado:
+          unidadeDeVenda === undefined
+            ? spokenPrice(oferta.price)
+            : `${spokenPrice(oferta.price)} por ${unidadeDeVenda}`,
+      },
+      simulacao: null,
+      unitario: calcularUnitario(oferta),
+    };
+  }
+
+  const calculado = precoParaGramas(oferta.price, gramas);
+  const { currency, amount } = formatPriceParts(oferta.price);
+  return {
+    preco: {
+      valor: oferta.price,
+      simbolo: currency,
+      numero: amount,
+      quantidade: SUFIXO_POR_UNIDADE[oferta.price_unit],
+      embalagemMinima: null,
+      porUnidade: null,
+      falado: `${spokenPrice(oferta.price)} ${UNIDADE_FALADA[oferta.price_unit]} — ${spokenPrice(calculado)} ${faladoAproximado(gramas)}`,
+    },
+    // "≈" e não "=": o número não foi observado. `rotuloAproximado` continua sendo a forma
+    // falada/da ficha; aqui o rótulo curto é o do benchmark ("500 g ≈ R$ 4,00").
+    simulacao: `${rotuloDoPeso(gramas)} ≈ ${formatPrice(calculado)}`,
+    // O normalizado não repete: o número grande JÁ É o R$/kg.
+    unitario: null,
+  };
+}
+
+function resolverClube(oferta: OfertaCardV2): ClubeExibido | null {
+  if (oferta.clube === undefined) return null;
+  return {
+    precoTexto: formatPriceParts(oferta.clube.preco).amount,
+    condicao: oferta.clube.condicao,
+    falado: `${spokenPrice(oferta.clube.preco)} ${oferta.clube.condicao}`,
+  };
+}
+
 export function montarVisaoDoCard(
   oferta: OfertaCardV2,
   now: Date,
   formatarData: (valor: string) => string,
+  opcoes: OpcoesDaVisao = {},
 ): VisaoDoCard {
   const temporal = temporalState(oferta, now);
-  const estado = resolverEstado(oferta, temporal);
+  const derivadoDoRelogio = resolverEstado(oferta, temporal);
+  // No snapshot histórico só o estado DECLARADO rotula; o do relógio vira tempo verbal na
+  // procedência ("valeu até"), nunca supressão da data.
+  const estado =
+    opcoes.snapshotHistorico === true && (oferta.offer_state ?? "active") === "active"
+      ? null
+      : derivadoDoRelogio;
   const quantidade = escreverQuantidade(oferta);
-  const { currency, amount } = formatPriceParts(oferta.price);
+  // Com pack obrigatório, a quantidade exibida é o que se COMPRA, não só o que se bebe:
+  // "350 ml" ao lado de R$ 45,48 lia como uma lata a preço de doze (Fable review §1).
+  const pack = packObrigatorio(oferta);
+  const quantidadeExibida =
+    pack !== null && quantidade.texto !== null
+      ? `${pack.rotulo} × ${quantidade.texto}`
+      : quantidade.texto;
+  const { preco, simulacao, unitario } = resolverPrecos(oferta, opcoes.gramas ?? PESO_PADRAO);
 
   return {
     identidade: {
       nome: oferta.product.name,
       marca: oferta.product.brand,
       variante: oferta.product.variant,
-      quantidade: quantidade.texto,
+      quantidade: quantidadeExibida,
       complemento: quantidade.complemento,
       quantidadeEstruturada: quantidade.estruturada,
       embalagem: escreverEmbalagem(oferta.product.package_type ?? null, oferta.product.variant),
     },
     mercado: { nome: oferta.market.name, bairro: oferta.market.neighborhood },
-    preco: {
-      valor: oferta.price,
-      simbolo: currency,
-      numero: amount,
-      falado: spokenPrice(oferta.price),
-    },
-    unitario: calcularUnitario(oferta),
+    preco,
+    simulacao,
+    unitario,
+    clube: resolverClube(oferta),
     procedencia: {
-      origem: sourceLabel(oferta.source_type),
+      // O rótulo declarado pela coleta manda; o do enum é o fallback (§15).
+      origem: oferta.fonte_rotulo ?? sourceLabel(oferta.source_type),
       nivel: SOURCE_LABELS[oferta.source_type].level,
       observadoEm: formatarData(oferta.observed_at),
       relativo: formatRelativeDay(oferta.observed_at, now),
       validoAte: oferta.valid_until === null ? null : formatarData(oferta.valid_until),
+      validadePassada:
+        oferta.valid_until !== null && new Date(oferta.valid_until).getTime() < now.getTime(),
     },
     condicao: oferta.special_condition,
     temporal,
@@ -459,5 +764,6 @@ export function montarVisaoDoCard(
     naListaOrganica: estado === null,
     imagem: resolverImagem(oferta),
     cta: resolverCta(oferta, estado === null),
+    exemploIlustrativo: oferta.exemplo_ilustrativo === true,
   };
 }

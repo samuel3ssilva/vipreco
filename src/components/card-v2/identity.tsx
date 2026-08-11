@@ -30,29 +30,22 @@ export function ProductIdentity({
   tituloId: string;
   destaque: boolean;
 }) {
-  const detalhes = [identidade.marca, identidade.variante].filter(
-    (v): v is string => typeof v === "string" && v.length > 0,
-  );
-
   /**
-   * O TÍTULO DO DESTAQUE É A IDENTIDADE INTEIRA — e é uma correção de coerência, não de gosto.
-   *
-   * Até aqui ele mostrava só `nome`. Numa Home cujo primeiro card diz **"Café"** e cuja busca,
-   * comparação e detalhe dizem **"Café Serra Alta Tradicional 500 g"**, a mesma coisa tem dois
-   * nomes em quatro telas — que é exatamente o que o §8 do mandato proíbe.
-   *
-   * A referência faz igual: o título é "Café Pilão Tradicional" e a linha abaixo repete
-   * "Pilão • Tradicional • 500 g". A repetição não é desperdício — o título identifica o
-   * produto de longe, e a linha abaixo separa os três campos para quem for comparar.
-   *
-   * Na variante de lista o título continua sendo só o nome: ali a embalagem tem 80 px e o card
-   * inteiro tem três linhas, e a identidade completa transformaria cada item num parágrafo.
+   * O TÍTULO DO DESTAQUE É A IDENTIDADE INTEIRA (V4 §8) — e, desde a V4.2 §5, o que o
+   * título já disse NÃO se repete na linha de apoio: no destaque as linhas de apoio
+   * somem; na lista o título é só o nome, e marca/variante/gramatura continuam. Regra
+   * visual e genérica — os dados não mudam, só a decisão do que exibir.
    */
   const titulo = destaque
     ? [identidade.nome, identidade.marca, identidade.variante, identidade.quantidade]
         .filter((v): v is string => typeof v === "string" && v.length > 0)
         .join(" ")
     : identidade.nome;
+  const jaNoTitulo = (v: string) => titulo.toLowerCase().includes(v.toLowerCase());
+
+  const detalhes = [identidade.marca, identidade.variante].filter(
+    (v): v is string => typeof v === "string" && v.length > 0 && !jaNoTitulo(v),
+  );
 
   return (
     <div className="min-w-0">
@@ -71,7 +64,7 @@ export function ProductIdentity({
         <p className="text-muted-foreground mt-0.5 text-sm leading-snug">{detalhes.join(" · ")}</p>
       ) : null}
 
-      {identidade.quantidade !== null ? (
+      {identidade.quantidade !== null && !jaNoTitulo(identidade.quantidade) ? (
         // Sem `truncate` e sem `line-clamp`, de propósito: a gramatura é o que separa dois
         // produtos que de resto são o mesmo. Cortá-la para caber é apagar a comparação.
         //
@@ -123,17 +116,29 @@ export function ProductIdentity({
  * de "Outros Achados", onde a imagem serve para reconhecer, não para dominar.
  */
 const TAMANHO_DA_IMAGEM = {
-  compacto: "size-[4.5rem] min-[360px]:size-20",
-  lista: "size-24",
-  // R3.3C: o destaque escalona por faixa de largura, e o número sai de uma conta, não do gosto.
-  // Desde que o PREÇO passou para a coluna ao lado da imagem, os dois disputam a mesma largura:
-  // a 320 px sobram 144 px para a coluna com a imagem em 96, e "R$ 26,49" a 2.25rem ocupa ~130
-  // deles. Cada degrau de imagem só entra na largura em que a coluna já comporta o preço maior.
+  // 09/08/2026: `compacto` passou a servir também a linha da comparação, que já tem selo de
+  // posição, nome de mercado, preço e chevron na mesma linha. A 96 px a imagem espremia o nome
+  // do mercado até ele virar "Aç…" — e nome de loja truncado, na tela que existe para comparar
+  // lojas, é o pior lugar possível para economizar largura.
+  // 10/08/2026 (polish §7/§9): 80 px de base e 96 px a partir de 390 — o benchmark de grocery
+  // mostra que o reconhecimento do produto é o que faz a lista escanear. O degrau de 96 só
+  // entra onde a coluna do nome ainda comporta o preço sem truncar (medido a 360: não cabe).
+  compacto: "size-20 min-[390px]:size-24",
+  // V3: a linha da comparação ganhou o avatar do mercado, e a conta de largura mudou — a
+  // 320 px, avatar (40) + imagem + nome + preço só fecham sem colisão com a imagem em 64.
+  // O degrau para 80 entra a partir de 390, onde a coluna do nome volta a sobrar.
+  rank: "size-16 min-[390px]:size-20",
+  lista: "size-24 min-[360px]:size-28",
+  // V4 §3: o destaque voltou a dividir a linha com o preço, e o preço agora pode carregar o
+  // sufixo "/kg" — a conta da coluna mudou. A 320 px (card p-4): 320−32−112−14 = 162 px para a
+  // coluna, e "R$ 39,90" + "/kg" a 2rem ocupa ~140. Cada degrau de imagem só entra na largura
+  // em que a coluna já comporta o preço do degrau correspondente.
   destaque: "size-28 min-[360px]:size-32 min-[430px]:size-36 sm:size-40",
-  // A ficha da oferta (tela 4) é a única em que o produto não divide a largura com uma lista:
-  // ela pode dar à embalagem o tamanho que a referência dá, e é isso que faz a tela parecer
-  // ficha comercial em vez de linha de resultado.
-  ficha: "size-32 min-[360px]:size-36 min-[430px]:size-40 sm:size-44",
+  // A ficha da oferta (tela 4) é a única em que o produto não divide a largura com uma lista —
+  // mas desde a V4 §4 o preço dela pode carregar "/kg", e a 320 px "R$ 24,99/kg" ao lado de uma
+  // imagem de 144 estourava a página (medido pelo QA de larguras, ficha do bucho). O primeiro
+  // degrau desceu para 128; a coluna do preço passa a ter 144 px, que comporta 2rem + sufixo.
+  ficha: "size-32 min-[360px]:size-36 min-[430px]:size-44 sm:size-48",
 } as const;
 
 export type TamanhoDaImagem = keyof typeof TAMANHO_DA_IMAGEM;
@@ -158,17 +163,31 @@ export function ProductImage({
     );
   }
 
+  // FOTO PREENCHE, RECORTE CABE DENTRO — e o formato vem declarado no dado, não deduzido.
+  //
+  // A arte de embalagem tem fundo transparente e precisa de respiro para não encostar na borda
+  // da moldura. A foto de produto traz o próprio fundo: dar respiro a ela desenha uma faixa da
+  // cor do card em volta de uma imagem que já era retangular, e o resultado parece thumbnail
+  // colada, não fotografia.
+  const foto = imagem.formato === "foto";
+
   return (
     <img
       src={imagem.src}
       // Curto e factual. Repetir o card inteiro no `alt` faz o leitor de tela ouvir o
       // produto duas vezes — uma na imagem, outra no título logo abaixo.
       alt={imagem.alt}
-      width={128}
-      height={128}
+      width={160}
+      height={160}
       loading={prioridade ? "eager" : "lazy"}
       fetchPriority={prioridade ? "high" : "auto"}
-      className={cn(classe, "bg-surface/70 shrink-0 rounded-xl object-contain p-1")}
+      className={cn(
+        classe,
+        // V4 §15 — o frame é UM: mesmo raio, mesma borda sutil em toda superfície. É a
+        // moldura comum que faz 24 recortes de fontes diferentes parecerem um catálogo só.
+        "border-border/60 shrink-0 rounded-xl border",
+        foto ? "object-cover" : "bg-surface/70 object-contain p-1",
+      )}
     />
   );
 }

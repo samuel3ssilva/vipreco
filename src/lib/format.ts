@@ -56,6 +56,26 @@ export function formatProductName(
 }
 
 /**
+ * A linha de apoio do título — SÓ com o que o título ainda não disse (V4.2 §5).
+ *
+ * "Cerveja Original lata 350 ml" seguido de "lata 350 ml" é a mesma informação duas vezes,
+ * e repetição é o que faz uma tela parecer dump de banco. A regra é VISUAL e genérica:
+ * marca, variante ou tamanho só entram aqui se não estiverem escritos no título — os DADOS
+ * não mudam, só a decisão do que exibir. Informação que o título não carrega continua
+ * aparecendo, sempre.
+ */
+export function formatProductDetails(
+  product: Pick<Product, "name" | "brand" | "variant" | "size_text">,
+  titulo: string = formatProductName(product),
+): string {
+  const t = titulo.toLowerCase();
+  return [product.brand, product.variant, product.size_text]
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .filter((v) => !t.includes(v.toLowerCase()))
+    .join(" · ");
+}
+
+/**
  * Data no fuso do piloto (Artemis/Piracicaba-SP), não no fuso do dispositivo.
  *
  * O fuso é fixado de propósito: as datas passaram a ser renderizadas no servidor (Worker, em
@@ -71,10 +91,45 @@ export function formatDate(value: string | Date): string {
   }).format(date);
 }
 
-/** Texto relativo simples: "hoje", "ontem", "há 3 dias". */
+/**
+ * Data curta — "09/08", sem o ano — para as LINHAS de lista (V4 §9/§22).
+ *
+ * A forma completa continua em `formatDate` e continua sendo a da ficha, onde se decide.
+ * Numa linha de comparação o ano repetido em cada item é ruído: todos os preços da
+ * demonstração (e do piloto) são do ciclo corrente, e a ficha, a um toque, tem a data
+ * inteira. Mesmo fuso fixado, pelo mesmo motivo de `formatDate`.
+ */
+export function formatDiaMes(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
+/**
+ * O dia CIVIL do instante, no fuso do piloto, como número de dias desde a época.
+ *
+ * É o que permite comparar "que dia era" em vez de "quantas horas se passaram". A conta por
+ * janelas de 24h que existia antes chamava de "hoje" um preço observado ontem à noite —
+ * "observado em 09/08 · hoje" lido no dia 10 é uma contradição impressa, e a regra do
+ * produto é que data e período permanecem verdadeiros.
+ */
+function diaCivil(date: Date): number {
+  const [ano, mes, dia] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  })
+    .format(date)
+    .split("-")
+    .map(Number);
+  return Date.UTC(ano, mes - 1, dia) / 86_400_000;
+}
+
+/** Texto relativo simples: "hoje", "ontem", "há 3 dias" — por dia civil, não por 24 h. */
 export function formatRelativeDay(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === "string" ? new Date(value) : value;
-  const days = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  const days = diaCivil(now) - diaCivil(date);
   if (days <= 0) return "hoje";
   if (days === 1) return "ontem";
   if (days < 30) return `há ${days} dias`;

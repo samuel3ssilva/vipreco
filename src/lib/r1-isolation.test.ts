@@ -59,10 +59,26 @@ describe("o domínio de R1 continua isolado", () => {
     expect(consumerFiles.length).toBeGreaterThan(20);
   });
 
-  it.each(R1_MODULES)("nenhum componente, rota ou serviço importa %s", (modulo) => {
+  /**
+   * A REGRA GANHOU UMA DISTINÇÃO EM 09/08/2026: **valor ≠ tipo.**
+   *
+   * O que ela sempre protegeu é que nenhuma tela CALCULE quantidade, unitário ou
+   * equivalência por conta própria — o cálculo passa pelo portão de `card-v2.ts` /
+   * `demo-catalog.ts`, que são domínio. Um `import type` não calcula nada: é apagado na
+   * compilação e existe para a tela poder DECLARAR que recebe `UnitPriceBasis` em vez de
+   * uma string qualquer. Proibi-lo obrigaria a duplicar o tipo — duas verdades para o
+   * mesmo contrato, que é o defeito que este arquivo existe para impedir.
+   *
+   * O import de VALOR continua proibido, e a demo v2 é a prova de que a distinção
+   * segura: a comparação por custo unitário chegou às telas sem que nenhuma rota chame
+   * `computeUnitPrice` — quem calcula é `custoUnitarioDaOferta`, no catálogo.
+   */
+  it.each(R1_MODULES)("nenhum componente, rota ou serviço importa VALOR de %s", (modulo) => {
     const importadores = consumerFiles.filter((file) => {
       const source = readFileSync(file, "utf-8");
-      return source.includes(`@/${modulo}"`) || source.includes(`@/${modulo}'`);
+      return [...source.matchAll(/import\s+([^;]*?)from\s+["']@\/([\w/-]+)["']/g)].some(
+        (m) => m[2] === modulo && !m[1].trimStart().startsWith("type "),
+      );
     });
     expect(importadores).toEqual([]);
   });

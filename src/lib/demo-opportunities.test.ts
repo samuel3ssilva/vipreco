@@ -1,21 +1,31 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEMO_FIXTURE_REFERENCE,
   DEMO_MARKETS,
   HOME_OPPORTUNITY_COUNT,
   buildDemoOpportunities,
 } from "@/lib/demo-opportunities";
+import {
+  ACOUGUE_MOTA,
+  construirOfertasDemo,
+  custoUnitarioDaOferta,
+  grupoDoProduto,
+} from "@/lib/demo-catalog";
+import { montarVisaoDoCard } from "@/lib/card-v2";
 import { isValidPrice } from "@/lib/comparison";
-import { isGtinWellFormed } from "@/lib/gtin";
 import { normalizeSearchText } from "@/lib/normalize";
 import { formatDate, formatRelativeDay } from "@/lib/format";
 
-const NOW = new Date("2026-07-31T02:30:00.000Z"); // 30/07 23:30 em America/Sao_Paulo
+/**
+ * Dentro da janela real da coleta: tudo observado (08–09/08), nada vencido (encartes valem
+ * até 23:59 de 09/08; tabloide Safra até 12/08). As datas do catálogo são as REAIS — fora
+ * da janela, as ofertas de encarte expiram como o produto manda, e há teste para isso.
+ */
+const NOW = new Date("2026-08-09T18:00:00-03:00");
 
-describe("fixture de demonstração da Home", () => {
-  it("entrega exatamente três Achados", () => {
+describe("fixture de demonstração da Home — demo v2", () => {
+  it("entrega exatamente dez Achados — o herói e a vitrine da V3", () => {
     expect(buildDemoOpportunities(NOW)).toHaveLength(HOME_OPPORTUNITY_COUNT);
-    expect(HOME_OPPORTUNITY_COUNT).toBe(3);
+    expect(HOME_OPPORTUNITY_COUNT).toBe(10);
   });
 
   it("marca preço, produto e mercado como demonstração", () => {
@@ -23,24 +33,34 @@ describe("fixture de demonstração da Home", () => {
       expect(entry.is_demo).toBe(true);
       expect(entry.product.is_demo).toBe(true);
       expect(entry.market.is_demo).toBe(true);
-      expect(entry.source_reference).toBe(DEMO_FIXTURE_REFERENCE);
-      // O prefixo mudou de `demo-fixture-` para `demo-price-` quando a Home deixou de ter
-      // fixture próprio e passou a SELECIONAR do catálogo único (`@/lib/demo-catalog`). O
-      // que a asserção protege é o mesmo: nenhum id daqui pode se passar por id de banco.
-      expect(entry.id).toMatch(/^demo-price-/);
+      // Cada oferta declara a coleta de onde veio — encarte, tabloide, foto ou painel. Um
+      // texto único para todas seria mais simples e menos verdadeiro: as coletas foram
+      // quatro, em dias e materiais diferentes.
+      expect(entry.source_reference, entry.id).toBeTruthy();
+      // Nenhum id daqui pode se passar por id de banco.
+      expect(entry.id).toMatch(/^demo-v[23]-/);
     }
   });
 
-  it("não apresenta nenhum mercado real como participante", () => {
+  /**
+   * A REGRA DOS NOMES REAIS VIROU DO AVESSO DUAS VEZES, E AGORA TEM A SUA FORMA FINAL.
+   *
+   * Primeiro era "nenhum mercado real" (mercearia fictícia). Depois, "a loja da coleta pode
+   * ter nome real" (Açougue Mota). Com a planilha do Founder, os CINCO mercados são reais —
+   * e o que a regra sempre protegeu fica explícito: **nenhum mercado é nomeado sem que o
+   * preço tenha vindo de material dele** (encarte publicado, tabloide, placa fotografada).
+   * Pendurar preço em rede que nunca o anunciou continua proibido — e agora é testável:
+   * toda oferta declara a coleta de origem.
+   */
+  it("todo mercado nomeado tem oferta vinda de material dele próprio", () => {
     for (const entry of buildDemoOpportunities(NOW)) {
-      expect(entry.market.name).toMatch(/^Mercado (principal|local \d)$/);
+      expect(entry.source_reference, `${entry.market.name} sem coleta declarada`).toMatch(
+        /Encarte|Tabloide|Foto|Painel|Cartaz/i,
+      );
     }
   });
 
   it("não carrega segredo, telefone nem dado pessoal", () => {
-    // Os campos livres são onde um dado pessoal poderia entrar sem querer. Identificadores
-    // (GTIN, UUID) ficam de fora de propósito: são sequências de dígitos legítimas e disparariam
-    // qualquer heurística de telefone.
     const camposLivres = buildDemoOpportunities(NOW)
       .flatMap((entry) => [
         entry.market.name,
@@ -66,43 +86,99 @@ describe("fixture de demonstração da Home", () => {
 
   it("produz apenas preços válidos pela regra de domínio", () => {
     for (const entry of buildDemoOpportunities(NOW)) {
-      expect(isValidPrice(entry, NOW)).toBe(true);
+      expect(isValidPrice(entry, NOW), entry.id).toBe(true);
     }
   });
 
-  it("mantém a data exibida coerente com o texto relativo", () => {
-    // A ORDEM MUDOU: o café é o primeiro Achado, porque é por ele que o golden path da
-    // demonstração começa (§9). Arroz e leite vêm em seguida.
-    const [cafe, arroz, leite] = buildDemoOpportunities(NOW);
-    expect(formatRelativeDay(cafe.observed_at, NOW)).toBe("ontem");
-    expect(formatDate(cafe.observed_at)).toBe("29/07/2026");
-    expect(formatRelativeDay(arroz.observed_at, NOW)).toBe("ontem");
-    expect(formatDate(arroz.observed_at)).toBe("29/07/2026");
-    expect(formatRelativeDay(leite.observed_at, NOW)).toBe("há 2 dias");
-    expect(formatDate(leite.observed_at)).toBe("28/07/2026");
+  it("as datas exibidas são as reais da coleta, e o relativo bate com elas", () => {
+    // Mota foi fotografado em 08/08; encartes e loja do Safra são de 09/08. Nada de datas
+    // escalonadas para simular histórico: a coleta foi a que foi.
+    for (const entry of buildDemoOpportunities(NOW)) {
+      const data = formatDate(entry.observed_at);
+      expect(["08/08/2026", "09/08/2026"], entry.id).toContain(data);
+      expect(formatRelativeDay(entry.observed_at, NOW), entry.id).toBe(
+        data === "08/08/2026" ? "ontem" : "hoje",
+      );
+      if (entry.market.id === ACOUGUE_MOTA.id) {
+        expect(data, `${entry.id}: a foto do balcão do Mota é de 08/08`).toBe("08/08/2026");
+      }
+    }
+  });
+
+  it("o herói da V3 é o frango inteiro do Safra — porque o Safra tem o menor R$/kg dele", () => {
+    const [primeiro] = buildDemoOpportunities(NOW);
+    expect(primeiro.product.name).toBe("Frango inteiro");
+    expect(primeiro.price).toBe(7.99);
+    expect(primeiro.price_unit).toBe("kg");
+    // A escolha do GRUPO é curadoria editorial declarada (V3 §4: universal, comparação de
+    // 25%, imagem clara); a escolha do MERCADO não é de ninguém: 7,99 < 9,99. Se o Mota
+    // baixar o preço, o herói mostra o Mota.
+    const grupo = grupoDoProduto(primeiro.product_id)!;
+    const menor = Math.min(...grupo.sementes.map((s) => s.price));
+    expect(primeiro.price).toBe(menor);
+  });
+
+  it("a vitrine da V3: dez grupos, oito categorias, com o bucho revisado ainda dentro", () => {
+    const nomes = buildDemoOpportunities(NOW).map((o) => o.product.name);
+    expect(nomes).toEqual([
+      "Frango inteiro",
+      "Bisteca bovina",
+      "Bucho bovino",
+      "Cebola",
+      "Cerveja",
+      "Lasanha",
+      "Óleo de soja",
+      "Desodorante aerossol",
+      "Petisco para gatos",
+      "Lava-roupas em pó",
+    ]);
+    // O bucho continua na vitrine (V3 §5 — revisado, com a foto correta), mostrando o Mota.
+    const bucho = buildDemoOpportunities(NOW).find((o) => o.product.name === "Bucho bovino");
+    expect(bucho!.market.id).toBe(ACOUGUE_MOTA.id);
+  });
+
+  it("o representante do grupo de embalagens diferentes é o de melhor custo unitário", () => {
+    // Dreamies na vitrine: o card mostra o Atacadão de 80 g (R$ 98,75/kg), e não o menor
+    // desembolso (R$ 5,95 por 40 g) — porque o critério declarado do grupo é custo/kg, e o
+    // card da vitrine não pode contar uma história diferente da tela de comparação.
+    const dreamies = buildDemoOpportunities(NOW).find((o) => o.product.brand === "Dreamies");
+    expect(dreamies).toBeDefined();
+    expect(dreamies!.product.size_text).toBe("80 g");
+    expect(dreamies!.price).toBe(7.9);
+    expect(custoUnitarioDaOferta(dreamies!)).toBe(98.75);
   });
 
   it("nenhum Achado carrega preço anterior — o campo saiu em R3.3", () => {
-    // Ele existia, e um item do fixture o usava. Saiu junto com o que o exibia: sem P-01
-    // decidida (MVP-DOCS-02), não há critério escrito para QUAL observação anterior conta.
-    // Deixar o número no dado mantém vivo o componente que o mostra — é adiar, não decidir.
     for (const entry of buildDemoOpportunities(NOW)) {
       expect(entry).not.toHaveProperty("previous_price");
       expect(entry).not.toHaveProperty("previous_observed_at");
     }
   });
 
-  it("oferece os mesmos mercados fictícios do seed, em ordem alfabética como o catálogo", () => {
+  it("oferece os cinco mercados da planilha, e só eles", () => {
     expect(DEMO_MARKETS.map((market) => market.name)).toEqual([
-      "Mercado local 2",
-      "Mercado local 3",
-      "Mercado local 4",
-      "Mercado principal",
+      "Açougue Mota",
+      "Safra",
+      "Savegnago",
+      "Atacadão",
+      "Pague Menos",
     ]);
     for (const market of DEMO_MARKETS) {
       expect(market.is_demo).toBe(true);
       expect(market.is_active).toBe(true);
-      expect(market.name).toMatch(/^Mercado (principal|local \d)$/);
+    }
+  });
+
+  it("bairro só existe onde a planilha valida um — e distância não existe em lugar nenhum", () => {
+    // Mota é de Artemis; Safra é loja única com endereço no Leia-me da planilha. Os outros
+    // três são preços de rede/tabloide regional: bairro nulo, porque afirmar um seria
+    // inventar proximidade (§16).
+    const porNome = new Map(DEMO_MARKETS.map((m) => [m.name, m]));
+    expect(porNome.get("Açougue Mota")!.neighborhood).toBe("Artemis");
+    expect(porNome.get("Safra")!.neighborhood).toBe("Mário Dedini");
+    for (const nome of ["Savegnago", "Atacadão", "Pague Menos"]) {
+      expect(porNome.get(nome)!.neighborhood, nome).toBeNull();
+      expect(porNome.get(nome)!.address, nome).toBeNull();
     }
   });
 
@@ -120,30 +196,78 @@ describe("fixture de demonstração da Home", () => {
     expect(primeiro[0]).not.toBe(segundo[0]);
     expect(primeiro).toEqual(segundo);
   });
+
+  it("depois do vencimento dos encartes a Home continua inteira — snapshot histórico (§18)", () => {
+    // Em 13/08 os encartes de 09/08 e o tabloide de 12/08 já venceram, e a demo NÃO apaga
+    // as ofertas: ela é um snapshot de preços OBSERVADOS em agosto de 2026, e some com uma
+    // oferta seria destruir a demonstração dias depois da coleta. O que a honestidade exige
+    // é o tempo verbal: `validadePassada` fica true nas vencidas e a tela escreve "valeu
+    // até", nunca vigência. O caminho do piloto continua expirando pelo princípio 2.
+    const depois = buildDemoOpportunities(new Date("2026-08-13T12:00:00-03:00"));
+    expect(depois).toHaveLength(HOME_OPPORTUNITY_COUNT);
+    const vencidas = depois.filter(
+      (o) =>
+        o.valid_until !== null &&
+        Date.parse(o.valid_until) < Date.parse("2026-08-13T12:00:00-03:00"),
+    );
+    expect(vencidas.length).toBeGreaterThan(0);
+    // E a ordem/vencedor por grupo não muda com o relógio: preço não muda ao vencer.
+    expect(depois.map((o) => o.id)).toEqual(buildDemoOpportunities(NOW).map((o) => o.id));
+  });
 });
 
 describe("fixture de demonstração — GTIN", () => {
-  it("nenhum GTIN do fixture reprova no dígito verificador", () => {
-    // O fixture espelha o seed. Um código inválido aqui é o mesmo defeito adiado: no dia
-    // em que a validação existir, o dado de demonstração deixa de passar.
-    for (const achado of buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"))) {
-      const gtin = achado.product.gtin;
-      if (gtin === null) continue;
-      expect(isGtinWellFormed(gtin), `GTIN ${gtin} reprova a validação GS1`).toBe(true);
+  it("nenhum produto da demonstração tem GTIN", () => {
+    // Nenhum código de barras foi coletado nas fontes; inventar um seria afirmação falsa
+    // sobre um identificador global, e emprestar um real colide com um produto de alguém.
+    for (const achado of buildDemoOpportunities(NOW)) {
+      expect(achado.product.gtin, achado.product.name).toBeNull();
     }
   });
 
-  it("produto sem GTIN continua sendo um produto normal, não um produto quebrado", () => {
-    const achados = buildDemoOpportunities(new Date("2026-08-03T12:00:00Z"));
-    const semGtin = achados.filter((achado) => achado.product.gtin === null);
-    expect(semGtin.length).toBeGreaterThan(0);
-    for (const achado of semGtin) {
-      // GTIN é opcional: nome, marca e tamanho seguem exibíveis e a busca por texto,
-      // que é como o usuário realmente chega ao produto, não depende do código.
+  it("produto sem GTIN continua sendo um produto normal, encontrável por texto", () => {
+    for (const achado of buildDemoOpportunities(NOW)) {
       expect(achado.product.name).toBeTruthy();
-      expect(achado.product.brand).toBeTruthy();
-      expect(achado.product.size_text).toBeTruthy();
       expect(normalizeSearchText(achado.product.name).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("Cerveja Original — a verdade do preço do pack obrigatório (V4.3 §1)", () => {
+  // Fonte: Safra_Tabloide_Verso 06-08 a 12-08 — "Cerveja Original lata 350ml pack com
+  // 12 unid. (venda somente no pack)", R$ 3,79 A UNIDADE. A planilha do Founder registra
+  // a mesma nota: "preco por unidade, venda so no pack". Não é possível comprar uma lata.
+  const ofertas = construirOfertasDemo();
+  const safra = ofertas.find((o) => o.id === "demo-v3-original-safra");
+  if (safra === undefined) throw new Error("oferta demo-v3-original-safra não encontrada");
+
+  it("o preço-fonte segue sendo o da planilha (3,79) e o pack é declarado, não inferido", () => {
+    expect(safra.price).toBe(3.79);
+    expect(safra.unidade_de_venda).toBe("lata");
+    expect(safra.pack_obrigatorio).toBe(12);
+    expect(safra.special_condition).toBe("Venda somente no pack de 12.");
+  });
+
+  it("o protagonista é o desembolso mínimo real: R$ 45,48, rotulado 'pack 12'", () => {
+    const v = montarVisaoDoCard(safra, NOW, formatDate, { snapshotHistorico: true });
+    expect(v.preco.valor).toBe(45.48);
+    expect(v.preco.numero).toBe("45,48");
+    expect(v.preco.embalagemMinima).toBe("pack 12");
+    // Por-lata e R$/L continuam, SECUNDÁRIOS — nada foi escondido, nada foi promovido.
+    expect(v.preco.porUnidade).toMatch(/^R\$\s3,79\/lata$/);
+    expect(v.unitario?.display).toBe(10.83);
+    expect(v.unitario?.basis).toBe("per_l");
+  });
+
+  it("nenhuma oferta demo com condição de pack fica sem o pack declarado — o contrato anti-contradição", () => {
+    // O guard lê o texto que o TESTE pode ler (a exibição nunca infere): se a condição
+    // fala de pack obrigatório, o dado declarado tem de existir — senão o número grande
+    // voltaria a afirmar um desembolso avulso que o mercado não vende.
+    for (const o of ofertas) {
+      if (o.special_condition !== null && /\bpack\b/i.test(o.special_condition)) {
+        expect(o.unidade_de_venda, o.id).toBeDefined();
+        expect(o.pack_obrigatorio, o.id).toBeDefined();
+      }
     }
   });
 });

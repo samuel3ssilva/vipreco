@@ -134,8 +134,11 @@ describe("HTML — a meta robots no documento", () => {
 });
 
 describe("ausência de regressão — o produto continua o mesmo", () => {
-  it("a faixa de ambiente de teste continua no HTML", async () => {
-    expect(await renderizar("/")).toContain("AMBIENTE DE TESTE");
+  it("a identificação de ambiente de teste continua no HTML", async () => {
+    // V4 §16: pill "DEMO" no header, com a frase completa no acessível — nada foi removido.
+    const html = await renderizar("/");
+    expect(html).toContain(">DEMO<");
+    expect(html).toContain("não é a versão pública");
   });
 
   it("as rotas do produto continuam renderizando conteúdo", async () => {

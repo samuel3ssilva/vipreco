@@ -32,6 +32,14 @@ describe("texto compartilhado", () => {
     expect(texto).toContain("via ViPreço");
   });
 
+  it("com pack obrigatório, o desembolso viaja com o rótulo do pack (V4.3 §1)", () => {
+    // O texto compartilhado não leva a tela junto: "R$ 45,48" sem o pack afirmaria o
+    // preço de uma lata.
+    const texto = buildShareText({ ...ACHADO, preco: 45.48, embalagem: "pack 12" });
+    expect(texto).toContain("45,48");
+    expect(texto).toContain("(pack 12)");
+  });
+
   it("não inventa validade quando o mercado não informou", () => {
     const texto = buildShareText({ ...ACHADO, validUntil: null });
     expect(texto).not.toContain("Válido até");

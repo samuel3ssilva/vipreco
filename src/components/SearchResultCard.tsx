@@ -1,97 +1,145 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Store } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { MarketAvatar } from "@/components/MarketAvatar";
 import { ProductImage } from "@/components/card-v2/identity";
-import { formatPrice, formatProductName } from "@/lib/format";
+import { isDemoMode } from "@/lib/app-mode";
+import { montarVisaoDoCard } from "@/lib/card-v2";
+import { formatDate, formatPrice, formatProductDetails, formatProductName } from "@/lib/format";
 import type { ResumoDeBusca } from "@/services/demo-source";
 
 /**
- * O card de resultado da busca — Tela 2 do North Star.
+ * O card de resultado da busca e do catálogo — Tela 2 do North Star, redesenhado pela V4 §5.
  *
  * =============================================================================
- * ELE PRECISA PARECER CATÁLOGO, NÃO TABELA (§3 do mandato)
+ * O CARD INTEIRO É O LINK — NENHUM BOTÃO VERDE POR CARD
  * =============================================================================
  *
- * A busca anterior era um painel de sugestões: linha, linha, linha, cada uma com nome e um
- * preço pequeno à direita. Funcionava e parecia um autocomplete de sistema interno — que é
- * exatamente o diagnóstico do Founder, "muito sistema, pouco produto".
+ * A V3 punha um CTA sólido de 48 px dentro de cada card. Com 24 produtos, isso era o mesmo
+ * botão verde repetido 24 vezes — e o que se repete deixa de ser ação e vira textura: a
+ * tela parecia sistema interno, não catálogo. A V4 §5 é explícita: no catálogo, o card
+ * inteiro é clicável, com chevron; o CTA verde é reservado às ações realmente principais
+ * (hero da Home, ficha da oferta — §6). O alvo de toque não encolheu: cresceu para o card
+ * inteiro, e o nome acessível do link é o card na ordem em que está escrito.
  *
- * A referência resolve com três decisões, e são estas três:
+ * A informação do rótulo antigo ("Comparar em N mercados") não saiu: virou a linha final
+ * do card, em texto — continua dizendo que existe comparação, sem gastar um botão.
  *
- *  1. **a embalagem ocupa uma coluna inteira** à esquerda, alta o suficiente para o produto
- *     ser reconhecido antes de ser lido;
- *  2. **o preço é verde e grande**, e o rótulo acima dele delimita o que ele é —
- *     "menor preço observado", não "menor preço";
- *  3. **o CTA verde fecha o card**, em largura inteira. Um card de catálogo termina numa ação.
+ * =============================================================================
+ * O NÚMERO GRANDE É O QUE A PLACA DIZ (§0 corrigido pela V4 §4)
+ * =============================================================================
  *
- * O que NÃO entrou da referência: preço unitário. Ele só aparece quando existe quantidade
- * estruturada aprovada, e a fixture não tem — a porta é a mesma de `montarVisaoDoCard`, e
- * mostrar "R$ 34,98/kg" derivado de texto livre seria inventar a conta.
+ * Embalado: preço da embalagem, gramatura na identidade, R$/kg (ou R$/L, R$/un) pequeno
+ * logo abaixo. Peso variável: R$/kg observado com a unidade colada, simulação "500 g ≈
+ * R$ 4,00" abaixo. É a mesma `montarVisaoDoCard` das outras telas — o card de busca não
+ * tem conta própria.
+ *
+ * O escopo continua dito: "menor preço observado" / "melhor custo observado" qualificam o
+ * número — uma afirmação sobre o que este produto viu, a única que o piloto sustenta. Nos
+ * grupos de embalagens diferentes a gramatura da vencedora vem junto, porque sem ela o
+ * número não identifica nada (§5).
  */
-export function SearchResultCard({ resumo }: { resumo: ResumoDeBusca }) {
-  const { product, imagem, menorPreco, mercado, mercados } = resumo;
-  const detalhes = [product.brand, product.variant, product.size_text].filter(Boolean).join(" · ");
+export function SearchResultCard({ resumo, now }: { resumo: ResumoDeBusca; now: Date }) {
+  const { product, imagem, melhor, basePorUnidade, mercados } = resumo;
+  // V4.2 §5 — a linha de apoio só diz o que o título ainda não disse.
+  const detalhes = formatProductDetails(product);
+  const visao =
+    melhor === null
+      ? null
+      : montarVisaoDoCard(melhor, now, formatDate, { snapshotHistorico: isDemoMode() });
+  const embalagensDiferentes = basePorUnidade !== undefined;
 
   return (
     <li>
-      <article className="border-border bg-card shadow-card overflow-hidden rounded-xl border">
-        <div className="flex items-start gap-3.5 p-3.5 sm:gap-4 sm:p-4">
-          <ProductImage
-            imagem={imagem}
-            categoria={product.category}
-            tamanho="destaque"
-            prioridade={false}
-          />
+      <Link
+        to="/produto/$productId"
+        params={{ productId: product.id }}
+        className="border-border bg-card shadow-card hover:bg-surface group flex items-start gap-3 overflow-hidden rounded-xl border p-3 transition-colors"
+      >
+        <ProductImage imagem={imagem} categoria={product.category} tamanho="lista" />
 
-          <div className="flex min-w-0 flex-1 flex-col">
-            <h2 className="font-display line-clamp-2 text-[1.0625rem] leading-tight font-bold sm:text-lg">
-              {formatProductName(product)}
-            </h2>
-            <p className="text-muted-foreground mt-0.5 text-[0.8125rem] leading-snug">{detalhes}</p>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {/* Três linhas, não duas: com duas, "…Dolce Gusto…" e "…Sempre Livre 32…" cortavam
+              exatamente a variante/contagem que identifica o SKU — num catálogo cuja tese é
+              identidade exata, o nome truncado derrota o card (Fable review). */}
+          <h2 className="font-display line-clamp-3 text-base leading-tight font-bold">
+            {formatProductName(product)}
+          </h2>
+          {detalhes.length > 0 ? (
+            <p className="text-muted-foreground text-xs leading-snug">{detalhes}</p>
+          ) : null}
 
-            {menorPreco === null ? (
-              <p className="text-muted-foreground mt-2 text-sm">
-                Sem preço válido nos mercados monitorados.
+          {visao === null || melhor === null ? (
+            <p className="text-muted-foreground mt-1.5 text-sm">
+              Sem preço válido nos mercados monitorados.
+            </p>
+          ) : (
+            <>
+              {/* O RÓTULO É O ESCOPO. "Menor preço" sozinho é uma afirmação sobre o mundo;
+                  com "observado" é uma afirmação sobre o que este produto viu. */}
+              <p className="text-muted-foreground mt-1 text-[0.6875rem]">
+                {embalagensDiferentes ? "Melhor custo observado" : "Menor preço observado"}
               </p>
-            ) : (
-              <>
-                {/* O RÓTULO É O ESCOPO. "Menor preço" sozinho é uma afirmação sobre o mundo;
-                    "menor preço observado" é uma afirmação sobre o que este produto viu, que é
-                    a única que o piloto sustenta. */}
-                <p className="text-muted-foreground mt-2 text-xs">Menor preço observado</p>
-                <p
-                  aria-hidden="true"
-                  className="font-display text-primary text-[1.75rem] leading-none font-extrabold tabular-nums min-[430px]:text-[2rem]"
-                >
-                  <span className="text-[62%] font-bold">R$</span>
-                  <span className="ml-1">{formatPrice(menorPreco).replace("R$", "").trim()}</span>
-                </p>
-                <span className="sr-only">Menor preço observado: {formatPrice(menorPreco)}</span>
-
-                {mercado ? (
-                  <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug">
-                    <Store aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                    <span>
-                      {mercado.name}
-                      {mercado.neighborhood ? ` · ${mercado.neighborhood}` : ""}
-                    </span>
-                  </p>
+              <p
+                aria-hidden="true"
+                className="font-display text-primary text-[1.5rem] leading-none font-extrabold tabular-nums"
+              >
+                <span className="text-[62%] font-bold">R$</span>
+                <span className="ml-0.5">{visao.preco.numero}</span>
+                {visao.preco.quantidade !== null ? (
+                  <span className="text-muted-foreground ml-0.5 text-[45%] font-bold">
+                    {visao.preco.quantidade}
+                  </span>
                 ) : null}
-              </>
-            )}
-          </div>
+              </p>
+              {/* V4.3 §1 — o pack a que o número grande se refere, colado nele: "R$ 45,48"
+                  sem o "pack 12" afirmaria o preço de uma lata. O por-unidade vem abaixo,
+                  secundário — informação do encarte, não um desembolso possível. */}
+              {visao.preco.embalagemMinima !== null ? (
+                <p aria-hidden="true" className="text-muted-foreground text-xs font-bold">
+                  {visao.preco.embalagemMinima}
+                </p>
+              ) : null}
+              {visao.preco.porUnidade !== null ? (
+                <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
+                  {visao.preco.porUnidade}
+                </p>
+              ) : null}
+              {visao.simulacao !== null ? (
+                <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
+                  {visao.simulacao}
+                </p>
+              ) : null}
+              {/* O normalizado, menor: é ele que torna as ofertas comparáveis, e nunca é o
+                  protagonista. Nos grupos de embalagens diferentes a gramatura da vencedora
+                  vem junto — sem ela o número não identifica nada. */}
+              {visao.unitario !== null ? (
+                <p aria-hidden="true" className="text-muted-foreground text-xs tabular-nums">
+                  {embalagensDiferentes && melhor.product.size_text !== null
+                    ? `${melhor.product.size_text} · `
+                    : ""}
+                  {formatPrice(visao.unitario.display)} {visao.unitario.rotulo}
+                </p>
+              ) : null}
+              <span className="sr-only">{visao.preco.falado}</span>
+
+              <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-[0.8125rem] leading-snug">
+                <MarketAvatar market={melhor.market} tamanho="sm" />
+                <span className="min-w-0">{melhor.market.name}</span>
+              </p>
+
+              {/* A antiga label do botão, agora como texto: diz que a comparação existe. */}
+              <p className="text-primary mt-1 text-xs font-semibold">
+                {mercados > 1 ? `Comparar em ${mercados} mercados` : "Ver preço e procedência"}
+              </p>
+            </>
+          )}
         </div>
 
-        <div className="px-3.5 pb-3.5 sm:px-4 sm:pb-4">
-          <Link
-            to="/produto/$productId"
-            params={{ productId: product.id }}
-            className="btn-base btn-primary btn-touch-48 w-full"
-          >
-            {mercados > 1 ? `Comparar em ${mercados} mercados` : "Ver preço e procedência"}
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
-        </div>
-      </article>
+        <ChevronRight
+          aria-hidden="true"
+          className="text-muted-foreground group-hover:text-primary mt-1 size-5 shrink-0 self-start"
+        />
+      </Link>
     </li>
   );
 }

@@ -1,28 +1,49 @@
 import { MapPin, Store } from "lucide-react";
+import { MarketAvatar } from "@/components/MarketAvatar";
+import type { Market } from "@/types/domain";
 
 /**
- * R3.2 — mercado e bairro, em texto.
+ * R3.2 — mercado e bairro; V3 — com o avatar do mercado quando há logo fornecido.
  *
  * =============================================================================
- * SEM LOGOTIPO. NÃO É UMA ESCOLHA ESTÉTICA
+ * LOGO É IDENTIFICAÇÃO, E A REGRA MUDOU POR DECISÃO DO FOUNDER (V3 §2)
  * =============================================================================
  *
- * O North Star mostra logotipos de rede. Nenhuma dessas redes é parceira, nenhum direito
- * de uso foi obtido, e um logotipo num card de comparação de preços comunica exatamente o
- * que não é verdade: que aquele mercado participa do produto.
+ * A R3.2 tinha proibido logotipo aqui porque nenhum direito de uso havia sido obtido. No
+ * mandato da V3 o Founder FORNECEU os logos (Safra, Savegnago, Atacadão, Pague Menos) e
+ * mandou aplicá-los — a decisão registrada é essa, e vale para a demonstração. O que a
+ * mudança NÃO muda: logo não implica parceria (o ambiente se declara demonstração), não
+ * reordena nada, e o nome por extenso continua obrigatório ao lado. Quem não tem logo
+ * (Açougue Mota) recebe monograma no mesmo quadro — ver `MarketAvatar`.
  *
- * Até haver autorização registrada, o mercado é identificado por **texto**
- * (`R3-COMPONENT-INVENTORY.md`, `MarketBadge`). O ícone genérico ao lado é decorativo e
- * não identifica marca nenhuma.
+ * Sem `market` (caminho do piloto, ou chamador antigo) o desenho continua o de sempre:
+ * texto com o ícone genérico decorativo.
  *
  * O bairro é âncora de proximidade — "é aqui perto" é metade da razão de alguém confiar
  * num preço local. Quando o mercado não tem bairro cadastrado, a linha simplesmente não
  * aparece: inventar um bairro seria inventar a proximidade.
  */
 
-export function MarketBadge({ nome, destaque }: { nome: string; destaque: boolean }) {
+export function MarketBadge({
+  nome,
+  destaque,
+  market,
+}: {
+  nome: string;
+  destaque: boolean;
+  market?: Market;
+}) {
+  const texto = destaque ? "text-base font-semibold" : "text-sm font-semibold";
+  if (market !== undefined) {
+    return (
+      <p className={`flex items-center gap-1.5 ${texto}`}>
+        <MarketAvatar market={market} tamanho="sm" />
+        <span className="min-w-0">{nome}</span>
+      </p>
+    );
+  }
   return (
-    <p className={destaque ? "text-base font-semibold" : "text-sm font-semibold"}>
+    <p className={texto}>
       <Store aria-hidden="true" className="mr-1 inline-block size-4 shrink-0 align-[-0.15em]" />
       {nome}
     </p>

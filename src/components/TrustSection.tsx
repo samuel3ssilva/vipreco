@@ -22,7 +22,7 @@ import { ShieldCheck } from "lucide-react";
  * princípio inviolável do produto, não copy de apoio — e por isso a redução da Home só pôde
  * acontecer depois de o texto existir do outro lado.
  */
-export function TrustSection({ isDemo }: { isDemo: boolean }) {
+export function TrustSection() {
   return (
     // R3.3B trocou o `card-base` por uma superfície calma. O bloco estava desenhado como card —
     // borda, sombra, fundo branco —, e um card no rodapé compete pela mesma leitura que os cards
@@ -41,16 +41,12 @@ export function TrustSection({ isDemo }: { isDemo: boolean }) {
           <p className="text-muted-foreground mt-1 max-w-prose text-sm">
             Cada preço mostra mercado, fonte, atualização e validade.
           </p>
-          {/* R3.3C §7 ("não voltar com uma seção extensa na Home") encurtou esta linha de duas
-              frases para uma. A segunda dizia que no piloto cada preço teria origem identificada —
-              informação verdadeira e útil, que é exatamente o assunto de `/como-funciona`, para
-              onde o botão logo abaixo leva. O que a Home precisa dizer aqui é só que ESTES preços
-              são fictícios, e isso continua dito. */}
-          {isDemo ? (
-            <p className="meta-text mt-1.5 max-w-prose">
-              Nesta demonstração, os preços são fictícios.
-            </p>
-          ) : null}
+          {/* A LINHA SAIU DAQUI EM 09/08/2026, e o motivo é repetição, não recuo.
+              Ela dizia "nesta demonstração, os preços são fictícios" — frase que virou falsa
+              quando cinco dos dez preços passaram a ser observados de verdade. A substituta
+              honesta já está impressa duas telas acima, logo abaixo dos Achados, e imprimir a
+              MESMA frase longa outra vez a meia rolagem de distância não acrescenta honestidade:
+              acrescenta ruído, e ensina a pular o aviso. */}
         </div>
       </div>
 

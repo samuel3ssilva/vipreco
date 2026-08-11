@@ -423,17 +423,24 @@ describe("o SQL de alinhamento das marcas demo", () => {
     expect(updates).toHaveLength(1);
     expect(updates[0]).toMatch(/UPDATE public\.products SET brand = alvo\[3\] WHERE id = /);
 
-    // As marcas de destino são exatamente as que a Home mostra. Se alguém trocar uma das
-    // duas pontas sem trocar a outra, o alinhamento passa a desalinhar — que é o defeito
-    // que ele existe para consertar.
-    // A FONTE MUDOU DE ARQUIVO, NÃO DE PAPEL. As marcas viviam em `demo-opportunities.ts`,
-    // que era o fixture próprio da Home; desde 08/08/2026 a Home apenas SELECIONA do catálogo
-    // único que a busca, a comparação e o detalhe também leem. É lá que os literais estão, e é
-    // contra ele que o alinhamento do banco precisa continuar batendo.
-    const fixture = readFileSync(join(RAIZ, "src/lib/demo-catalog.ts"), "utf-8");
+    // A OUTRA PONTA MUDOU DE ARQUIVO DUAS VEZES, E AGORA PAROU NO LUGAR CERTO.
+    //
+    // As marcas viviam em `demo-opportunities.ts`; em 08/08/2026 passaram para o catálogo único
+    // `demo-catalog.ts`, porque a Home deixou de ter fixture próprio. Em 09/08/2026 o catálogo
+    // trocou de ramo inteiro — virou a demonstração do Açougue Mota, onde não há marca nenhuma,
+    // e as marcas de mercearia sumiram dele.
+    //
+    // O erro seria seguir o catálogo. Este SQL **não** roda contra o catálogo: ele roda contra o
+    // banco, alinhando `products.brand` de quatro linhas do seed. A referência versionada do
+    // banco é `supabase/seed.sql`, e sempre foi — o fixture só servia de âncora enquanto os dois
+    // descreviam o mesmo universo. Agora que não descrevem, a âncora certa fica óbvia.
+    //
+    // O que o teste protege continua idêntico: se alguém trocar uma ponta sem trocar a outra, o
+    // alinhamento passa a desalinhar, que é o defeito que ele existe para consertar.
+    const seedSql = readFileSync(join(RAIZ, "supabase/seed.sql"), "utf-8");
     for (const marca of ["Ouro do Campo", "Serra Alta", "Boa Serra"]) {
       expect(ALINHAMENTO, `o alinhamento não cita ${marca}`).toContain(`'${marca}'`);
-      expect(fixture, `o fixture não usa ${marca}`).toContain(`"${marca}"`);
+      expect(seedSql, `o seed não usa ${marca}`).toContain(`'${marca}'`);
     }
   });
 

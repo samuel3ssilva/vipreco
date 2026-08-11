@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { montarVisaoDoCard } from "@/lib/card-v2";
+import { montarVisaoDoCard, precoParaCompartilhar } from "@/lib/card-v2";
 import type { OfertaCardV2 } from "@/lib/card-v2";
 import type { Market, Product } from "@/types/domain";
 
@@ -322,6 +322,46 @@ describe("estado da oferta", () => {
     expect(v.naListaOrganica).toBe(false);
   });
 
+  it("no snapshot histórico, o relógio não rotula — mas estado DECLARADO continua rotulando", () => {
+    // §18 do mandato de polish: a demo é um snapshot de preços observados. A validade
+    // vencida vira tempo verbal na procedência ("valeu até"), não rótulo nem exclusão —
+    // e a oferta segue na lista orgânica da demonstração. Um `offer_state` dito pelo DADO
+    // (encerrada, esgotada) continua produzindo rótulo: suprimir dado seria esconder.
+    const snapshot = { snapshotHistorico: true };
+    const vencida = montarVisaoDoCard(
+      oferta({ valid_until: dia(-3), observed_at: dia(-14) }),
+      AGORA,
+      formatarData,
+      snapshot,
+    );
+    expect(vencida.estado).toBeNull();
+    expect(vencida.naListaOrganica).toBe(true);
+    expect(vencida.procedencia.validadePassada).toBe(true);
+
+    const antiga = montarVisaoDoCard(
+      oferta({ valid_until: null, observed_at: dia(-21) }),
+      AGORA,
+      formatarData,
+      snapshot,
+    );
+    expect(antiga.estado).toBeNull();
+    expect(antiga.procedencia.validadePassada).toBe(false);
+
+    const encerrada = montarVisaoDoCard(
+      oferta({ offer_state: "ended" }),
+      AGORA,
+      formatarData,
+      snapshot,
+    );
+    expect(encerrada.estado?.chave).toBe("ended");
+  });
+
+  it("fora do snapshot, `validadePassada` acompanha o relógio e a vigente fica falsa", () => {
+    expect(visao({ valid_until: dia(-1) }).procedencia.validadePassada).toBe(true);
+    expect(visao({ valid_until: dia(5) }).procedencia.validadePassada).toBe(false);
+    expect(visao({ valid_until: null }).procedencia.validadePassada).toBe(false);
+  });
+
   it("todo estado exibido vem escrito — cor nunca é o único canal", () => {
     // WCAG 2.2 SC 1.4.1. Um estado sem palavra seria cor sozinha, e cor sozinha não
     // comunica. A frase explicativa que acompanhava o rótulo saiu em 06/08/2026 — ela
@@ -378,6 +418,103 @@ describe("preço", () => {
     expect(v.preco.simbolo).toBe("R$");
     expect(v.preco.numero).toBe("26,49");
     expect(v.preco.falado).toBe("26 reais e 49 centavos");
+  });
+
+  it("a unidade de venda declarada cola no número — 'R$ 3,79/lata' (V4.2 §4)", () => {
+    // Sem o sufixo, o número afirmaria um desembolso avulso que o encarte não oferece.
+    const v = visao({ price: 3.79, unidade_de_venda: "lata" });
+    expect(v.preco.quantidade).toBe("/lata");
+    expect(v.preco.falado).toBe("3 reais e 79 centavos por lata");
+  });
+
+  it("sem unidade de venda declarada, nada é inferido: sufixo ausente", () => {
+    expect(visao({ price: 3.79 }).preco.quantidade).toBeNull();
+  });
+});
+
+describe("pack obrigatório — o protagonista é o desembolso mínimo real (V4.3 §1)", () => {
+  const original = { price: 3.79, unidade_de_venda: "lata", pack_obrigatorio: 12 };
+
+  it("o número grande é 12 × 3,79 = R$ 45,48, com arredondamento determinístico", () => {
+    // 3.79 * 12 em ponto flutuante dá 45.480000000000004 — o centavo é arredondado
+    // uma única vez, no mesmo lugar, para todo mundo.
+    const v = visao(original);
+    expect(v.preco.valor).toBe(45.48);
+    expect(v.preco.numero).toBe("45,48");
+    expect(v.preco.embalagemMinima).toBe("pack 12");
+    // O sufixo por-unidade sai do número grande: "R$ 45,48/lata" seria mentira.
+    expect(v.preco.quantidade).toBeNull();
+  });
+
+  it("o por-unidade anunciado continua na tela, secundário — informação nunca some", () => {
+    const v = visao(original);
+    expect(v.preco.porUnidade).toMatch(/^R\$\s3,79\/lata$/);
+    expect(v.preco.falado).toBe(
+      "45 reais e 48 centavos o pack de 12 — 3 reais e 79 centavos por lata",
+    );
+  });
+
+  it("preço protagonista e condição de pack nunca se contradizem", () => {
+    // O contrato do §6: se a venda é só no pack, o desembolso mínimo É o protagonista;
+    // o preço por lata nunca volta a ser o número grande.
+    const v = visao({ ...original, special_condition: "Venda somente no pack de 12." });
+    expect(v.preco.valor).toBe(45.48);
+    expect(v.condicao).toBe("Venda somente no pack de 12.");
+  });
+
+  it("sem unidade de venda, pack declarado sozinho é ignorado — um pack de quê?", () => {
+    const v = visao({ price: 3.79, pack_obrigatorio: 12 });
+    expect(v.preco.valor).toBe(3.79);
+    expect(v.preco.embalagemMinima).toBeNull();
+    expect(v.preco.porUnidade).toBeNull();
+  });
+
+  it("pack não inteiro ou ≤ 1 não vira desembolso: dado inválido não inventa preço", () => {
+    expect(visao({ price: 3.79, unidade_de_venda: "lata", pack_obrigatorio: 1 }).preco.valor).toBe(
+      3.79,
+    );
+    expect(
+      visao({ price: 3.79, unidade_de_venda: "lata", pack_obrigatorio: 2.5 }).preco.valor,
+    ).toBe(3.79);
+  });
+
+  it("o preço unitário normalizado (R$/L) permanece derivado e secundário", () => {
+    // A quantidade estruturada da lata (350 ml) segue sendo a base do R$/L — o pack não
+    // muda o denominador da comparação entre embalagens diferentes.
+    const v = visao({
+      ...original,
+      product: produto({ quantity_value: 350, quantity_unit: "ml" }),
+      quantity_provenance: "confirmed",
+    });
+    expect(v.unitario?.display).toBe(10.83);
+    expect(v.unitario?.basis).toBe("per_l");
+  });
+
+  it("o preço que viaja sozinho é o desembolso com o rótulo do pack", () => {
+    expect(precoParaCompartilhar(oferta(original))).toEqual({
+      preco: 45.48,
+      embalagem: "pack 12",
+    });
+    expect(precoParaCompartilhar(oferta({ price: 3.79 }))).toEqual({ preco: 3.79 });
+  });
+
+  it("a quantidade de identidade diz o que se COMPRA: pack 12 × 350 ml, nunca 350 ml solto", () => {
+    // "350 ml" ao lado de R$ 45,48 lia como uma lata a preço de doze (Fable review):
+    // ao lado do desembolso do pack, a identidade carrega o pack junto.
+    const v = visao({
+      ...original,
+      product: produto({ quantity_value: 350, quantity_unit: "ml" }),
+      quantity_provenance: "confirmed",
+    });
+    expect(v.identidade.quantidade).toBe("pack 12 × 350 ml");
+    // Sem pack declarado, a quantidade continua a de sempre.
+    expect(
+      visao({
+        price: 3.79,
+        product: produto({ quantity_value: 350, quantity_unit: "ml" }),
+        quantity_provenance: "confirmed",
+      }).identidade.quantidade,
+    ).toBe("350 ml");
   });
 });
 

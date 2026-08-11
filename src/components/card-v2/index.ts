@@ -25,5 +25,5 @@ export { ProductCardV2, ProductCardV2Skeleton } from "./product-card-v2";
 export { AchadoCompacto } from "./compact";
 export { ProductIdentity, ProductImage } from "./identity";
 export { MarketBadge, NeighborhoodLabel } from "./market";
-export { PriceDisplay, PromotionCondition, UnitPrice } from "./price";
+export { PriceDisplay, PromotionCondition, SimulacaoDePeso, UnitPrice } from "./price";
 export { OfferStatus, ProvenanceBlock, ValidityLabel } from "./provenance";
